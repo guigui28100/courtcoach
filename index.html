@@ -54,9 +54,9 @@
           <p class="eyebrow">Tennis Club Houdan · bientôt disponible</p>
           <h1 id="hero-titre">Le tennis du club,<br><em>dans ta poche.</em></h1>
           <p class="hero__lead">
-            CourtCoach sera l'application des élèves, des parents et des
-            enseignants du club&nbsp;: tes cours, tes exercices et tes progrès,
-            au même endroit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+            Filme ton coup, envoie-le à ton coach&nbsp;: il l'analyse image par image
+            et te renvoie ses conseils, des exercices sur mesure et, si tu le veux,
+            un cours particulier.
           </p>
           <div class="hero__actions">
             <a class="btn btn--ball" href="compte.html#inscription">Créer mon compte</a>
@@ -67,26 +67,28 @@
         <!-- Aperçu (fictif) de l'application -->
         <div class="phone" aria-hidden="true">
           <div class="phone__screen">
-            <p class="phone__hello">Bonjour&nbsp;!</p>
-            <p class="phone__label">Prochain cours</p>
-            <div class="phone__card phone__card--clay">
-              <span class="phone__day">Mar.<b>14</b></span>
-              <span>
-                <strong>Revers lifté</strong>
-                <small>18 h 00 · Court n° 2</small>
-              </span>
+            <p class="phone__hello">Ton revers</p>
+            <div class="phone__video">
+              <svg viewBox="0 0 200 130">
+                <rect width="200" height="130" fill="#16294a"/>
+                <circle cx="88" cy="34" r="9" fill="#8fa6cc"/>
+                <path d="M88 44v34M88 52l30 10M88 52l-22 16M88 78l-16 34M88 78l20 34" stroke="#8fa6cc" stroke-width="6" stroke-linecap="round" fill="none"/>
+                <path d="M88 52l30 10" stroke="#dcf247" stroke-width="3" stroke-linecap="round"/>
+                <path d="M88 52L66 68" stroke="#dcf247" stroke-width="3" stroke-linecap="round"/>
+                <path d="M80 60a12 12 0 0 1 14 -6" stroke="#dcf247" stroke-width="2" fill="none"/>
+                <text x="104" y="48" fill="#dcf247" font-size="14" font-weight="700" font-family="sans-serif">112°</text>
+                <circle cx="150" cy="40" r="14" fill="none" stroke="#ff4d4d" stroke-width="3"/>
+              </svg>
             </div>
-            <p class="phone__label">Ma progression</p>
+            <p class="phone__label">Analyse de ton coach</p>
             <div class="phone__card">
-              <span class="phone__meter"><span style="--val: 72%"></span></span>
-              <small>Service · 72&nbsp;%</small>
-              <span class="phone__meter"><span style="--val: 45%"></span></span>
-              <small>Volée · 45&nbsp;%</small>
+              <strong>Coude trop près du corps</strong>
+              <small>Laisse plus d'espace à l'impact.</small>
             </div>
-            <p class="phone__label">Exercice du jour</p>
+            <p class="phone__label">Exercice</p>
             <div class="phone__card phone__card--ink">
               <span class="phone__play"></span>
-              <span><strong>Jeu de jambes</strong><small>Vidéo · 3 min</small></span>
+              <span><strong>Balle lâchée</strong><small>3 × 12 balles</small></span>
             </div>
           </div>
         </div>
@@ -96,29 +98,39 @@
     <!-- ===== Fonctions de l'app ===== -->
     <section id="fonctions" class="section" aria-labelledby="fonctions-titre">
       <div class="wrap">
-        <p class="eyebrow eyebrow--clay">Ce que prépare CourtCoach</p>
-        <h2 id="fonctions-titre">Tout ce qu'il faut pour progresser entre deux cours.</h2>
+        <p class="eyebrow eyebrow--clay">Ce que fait CourtCoach</p>
+        <h2 id="fonctions-titre">Ton coach analyse ton geste, tu progresses.</h2>
 
         <ul class="features" role="list">
           <li class="feature">
-            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
-            <h3>Le planning des cours</h3>
-            <p>Tes horaires, ton court et les changements de dernière minute. Lorem ipsum dolor sit amet, consectetur adipiscing.</p>
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.8-2.8z"/></svg>
+            <h3>Envoie ta vidéo</h3>
+            <p>Un coup droit, un service, un revers&nbsp;: filme-toi avec ton téléphone et envoie la séquence à ton coach en quelques secondes.</p>
           </li>
           <li class="feature">
-            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.8-2.8z"/></svg>
-            <h3>Des exercices en vidéo</h3>
-            <p>Les gestes vus en cours, à revoir tranquillement à la maison. Sed do eiusmod tempor incididunt ut labore.</p>
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            <h3>Analyse image par image</h3>
+            <p>Ton coach dessine sur ta vidéo&nbsp;: traits, ronds, flèches, textes et angles du corps mesurés en degrés.</p>
+          </li>
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></svg>
+            <h3>Compare et mesure tes progrès</h3>
+            <p>Deux gestes superposés ou côte à côte&nbsp;: tu vois la différence avec un modèle, ou ton évolution d'un mois à l'autre.</p>
           </li>
           <li class="feature">
             <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.5h18M6 17V12M11 17V8M16 17v-6M20 5l-4.5 3.5L11 5.5 6 9"/></svg>
-            <h3>Le suivi de progression</h3>
-            <p>Des objectifs simples, fixés avec ton enseignant, pour voir le chemin parcouru. Ut enim ad minim veniam.</p>
+            <h3>Des exercices sur mesure</h3>
+            <p>Après l'analyse, tu reçois les exercices et mises en situation à travailler pour corriger précisément ce qui coince.</p>
           </li>
           <li class="feature">
             <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 3.5V7A1.5 1.5 0 0 1 4 5.5z"/><path d="M8 10h8M8 13.5h5"/></svg>
-            <h3>Les nouvelles du club</h3>
-            <p>Tournois, animations, fermetures des courts&nbsp;: plus rien ne t'échappe. Quis nostrud exercitation ullamco.</p>
+            <h3>Échange direct avec ton coach</h3>
+            <p>Pose tes questions, envoie des photos ou d'autres vidéos&nbsp;: la discussion reste au même endroit, vidéo par vidéo.</p>
+          </li>
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
+            <h3>Cours particulier en un clic</h3>
+            <p>Envie de travailler en direct&nbsp;? Un bouton, tes disponibilités, et ta demande arrive chez ton coach.</p>
           </li>
         </ul>
       </div>
@@ -135,28 +147,28 @@
             <span class="score__num" aria-hidden="true">15</span>
             <div>
               <h3>Crée ton compte</h3>
-              <p>Quelques secondes suffisent. Lorem ipsum dolor sit amet.</p>
+              <p>Quelques secondes, puis remplis ton profil de joueur.</p>
             </div>
           </li>
           <li class="score__step">
             <span class="score__num" aria-hidden="true">30</span>
             <div>
-              <h3>Rejoins ton groupe</h3>
-              <p>Ton enseignant t'ajoute à ton créneau de cours. Consectetur adipiscing elit.</p>
+              <h3>Envoie ta vidéo</h3>
+              <p>Filme ton coup et dis à ton coach ce que tu veux améliorer.</p>
             </div>
           </li>
           <li class="score__step">
             <span class="score__num" aria-hidden="true">40</span>
             <div>
-              <h3>Suis tes séances</h3>
-              <p>Planning, consignes et exercices au même endroit. Sed do eiusmod tempor.</p>
+              <h3>Reçois l'analyse</h3>
+              <p>Images annotées, conseils et exercices, dans ta messagerie.</p>
             </div>
           </li>
           <li class="score__step score__step--win">
             <span class="score__num" aria-hidden="true">Jeu</span>
             <div>
               <h3>Progresse&nbsp;!</h3>
-              <p>Tu vois tes progrès, séance après séance. Ut labore et dolore magna.</p>
+              <p>Travaille les exercices, renvoie une vidéo et compare.</p>
             </div>
           </li>
         </ol>
@@ -172,15 +184,15 @@
         <div class="audiences">
           <article class="audience">
             <h3>Élèves</h3>
-            <p>Retrouve tes cours et tes exercices, et fixe-toi des objectifs. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <p>Envoie tes vidéos, reçois des conseils personnalisés et des exercices, et demande un cours particulier quand tu veux.</p>
           </article>
           <article class="audience">
             <h3>Parents</h3>
-            <p>Gardez un œil sur les horaires et les nouvelles du club. Duis aute irure dolor in reprehenderit in voluptate.</p>
+            <p>Remplissez la fiche de votre enfant, suivez ses progrès et échangez avec son coach en toute simplicité.</p>
           </article>
           <article class="audience">
             <h3>Enseignants</h3>
-            <p>Préparez vos séances et partagez des exercices en un clic. Excepteur sint occaecat cupidatat non proident.</p>
+            <p>Analysez les vidéos avec des outils de dessin et de mesure d'angles, comparez deux gestes et renvoyez vos conseils.</p>
           </article>
         </div>
       </div>
@@ -190,7 +202,7 @@
     <section class="cta" aria-labelledby="cta-titre">
       <div class="wrap cta__inner">
         <h2 id="cta-titre">Balle de match&nbsp;: sois parmi les premiers.</h2>
-        <p>L'application est en cours de préparation. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <p>Essaie dès maintenant la démonstration&nbsp;: crée un compte d'essai et découvre l'application, côté élève comme côté coach.</p>
         <a class="btn btn--ink" href="compte.html#inscription">Créer mon compte</a>
       </div>
     </section>

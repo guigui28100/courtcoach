@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mon espace – CourtCoach</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body data-page="espace">
+  <main id="contenu">
+    <section class="app-head">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay" id="eyebrow"></p>
+        <h1 id="hello"></h1>
+        <p id="sub"></p>
+      </div>
+    </section>
+
+    <div class="wrap app-main">
+      <p class="demo-note">
+        <strong>Démonstration.</strong> Tout reste sur ton appareil. Pour tester les échanges,
+        utilise le bouton « Mode élève / Mode coach » en haut de la page.
+      </p>
+
+      <!-- ===== Côté élève ===== -->
+      <div id="vue-eleve" hidden>
+        <div class="cards cards--3">
+          <div class="card stat"><b id="st-profil">0 %</b><span>Profil complété</span>
+            <div class="progress" aria-hidden="true"><span id="st-profil-bar"></span></div>
+            <a href="profil.html">Compléter mon profil</a>
+          </div>
+          <div class="card stat"><b id="st-videos">0</b><span>Vidéos envoyées</span><a href="videos.html">Voir mes vidéos</a></div>
+          <div class="card stat"><b id="st-analyses">0</b><span>Analyses reçues</span><a href="messages.html">Lire mes messages</a></div>
+        </div>
+
+        <section aria-labelledby="actions-titre">
+          <h2 id="actions-titre">Que veux-tu faire&nbsp;?</h2>
+          <div class="cards cards--2">
+            <div class="card card--ink">
+              <h3>Envoyer une vidéo de mon coup</h3>
+              <p>Filme un coup droit, un revers, un service… Ton coach l'analyse et te répond avec des conseils et des exercices.</p>
+              <a class="btn btn--ball" href="videos.html#envoyer">Envoyer une vidéo</a>
+            </div>
+            <div class="card">
+              <h3>Demander un cours particulier</h3>
+              <p>Tu veux travailler avec ton coach en direct&nbsp;? Envoie ta demande en quelques secondes.</p>
+              <a class="btn btn--clay" href="#cours">Demander un cours</a>
+            </div>
+          </div>
+        </section>
+
+        <section id="cours" aria-labelledby="cours-titre">
+          <h2 id="cours-titre">Demander un cours particulier</h2>
+          <form class="form-section" id="form-cours" novalidate>
+            <div class="fields-2">
+              <div class="field">
+                <label for="c-type">Type de cours</label>
+                <select id="c-type" name="type">
+                  <option value="individuel">Cours individuel (1 heure)</option>
+                  <option value="duo">Cours à deux</option>
+                  <option value="video">Reprise en direct d'une analyse vidéo</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="c-objectif">Sur quoi veux-tu travailler&nbsp;?</label>
+                <select id="c-objectif" name="objectif">
+                  <option>Coup droit</option><option>Revers</option><option>Service</option>
+                  <option>Retour de service</option><option>Volée</option><option>Smash</option>
+                  <option>Jeu de jambes</option><option>Autre</option>
+                </select>
+              </div>
+            </div>
+            <fieldset class="field">
+              <legend>Jours qui t'arrangent</legend>
+              <div class="chips">
+                <label><input type="checkbox" name="jours" value="Lundi"> Lun.</label>
+                <label><input type="checkbox" name="jours" value="Mardi"> Mar.</label>
+                <label><input type="checkbox" name="jours" value="Mercredi"> Mer.</label>
+                <label><input type="checkbox" name="jours" value="Jeudi"> Jeu.</label>
+                <label><input type="checkbox" name="jours" value="Vendredi"> Ven.</label>
+                <label><input type="checkbox" name="jours" value="Samedi"> Sam.</label>
+                <label><input type="checkbox" name="jours" value="Dimanche"> Dim.</label>
+              </div>
+            </fieldset>
+            <div class="field">
+              <label for="c-moment">Moment de la journée</label>
+              <select id="c-moment" name="moment">
+                <option>Peu importe</option><option>Matin</option><option>Après-midi</option><option>Soirée</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c-message">Un message pour ton coach (facultatif)</label>
+              <textarea id="c-message" name="message" placeholder="Par exemple : j'ai un tournoi dans 3 semaines…"></textarea>
+            </div>
+            <button class="btn btn--clay" type="submit">Envoyer ma demande</button>
+            <p class="status-line" role="status" id="cours-status"></p>
+          </form>
+
+          <h3>Mes demandes</h3>
+          <ul class="list" id="mes-cours"></ul>
+        </section>
+
+        <section aria-labelledby="dern-titre">
+          <h2 id="dern-titre">Dernières analyses de mon coach</h2>
+          <ul class="list" id="dernieres-analyses"></ul>
+        </section>
+      </div>
+
+      <!-- ===== Côté coach ===== -->
+      <div id="vue-coach" hidden>
+        <div class="cards cards--3">
+          <div class="card stat"><b id="co-attente">0</b><span>Vidéos à analyser</span></div>
+          <div class="card stat"><b id="co-faites">0</b><span>Analyses envoyées</span></div>
+          <div class="card stat"><b id="co-cours">0</b><span>Demandes de cours en attente</span></div>
+        </div>
+
+        <section aria-labelledby="co-video-titre">
+          <h2 id="co-video-titre">Vidéos à analyser</h2>
+          <ul class="list" id="co-videos"></ul>
+          <p><a class="btn btn--outline" href="videos.html#envoyer">Ajouter une vidéo de référence</a></p>
+        </section>
+
+        <section aria-labelledby="co-cours-titre">
+          <h2 id="co-cours-titre">Demandes de cours particulier</h2>
+          <ul class="list" id="co-demandes"></ul>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="store.js"></script>
+  <script src="layout.js"></script>
+  <script src="espace.js"></script>
+</body>
+</html>
