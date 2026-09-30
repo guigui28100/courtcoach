@@ -115,8 +115,9 @@
     if (isCoach && v.status === "reference") {
       actions.push(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Ouvrir"));
     }
-    if (v.status !== "reference") {
-      actions.push(h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, isCoach || v.status !== "analysee" ? "Discuter" : "Lire l'analyse"));
+    // La discussion n'existe qu'après l'analyse
+    if (v.status === "analysee") {
+      actions.push(h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, isCoach ? "Discussion" : "Lire l'analyse et répondre"));
     }
     actions.push(h("button", {
       type: "button", class: "btn btn--small btn--danger",

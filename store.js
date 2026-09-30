@@ -112,7 +112,6 @@ const CC = (() => {
   // Chaque élève a un identifiant ; ses vidéos, demandes et messages y sont rattachés.
   const accounts = () => read("accounts", []);
   const me = () => read("me", null);
-  const threadGeneral = (studentId) => "general." + studentId;
 
   // Anciennes données (avant les dossiers d'élèves) : on les rattache au premier élève créé
   function migrateLegacy(id) {
@@ -120,8 +119,7 @@ const CC = (() => {
     if (legacyProfile) { write("profile." + id, legacyProfile); remove("profile"); }
     saveVideos(videos().map((v) => (v.owner === "eleve" && !v.studentId ? { ...v, studentId: id } : v)));
     write("lessons", lessons().map((l) => (l.studentId ? l : { ...l, studentId: id })));
-    const legacyGeneral = read("msg.general", null);
-    if (legacyGeneral) { write("msg." + threadGeneral(id), legacyGeneral); remove("msg.general"); }
+    remove("msg.general"); // l'ancienne « discussion générale » n'existe plus
   }
 
   // Crée (ou retrouve, grâce à l'e-mail) un compte élève et en fait l'élève courant
@@ -211,15 +209,24 @@ const CC = (() => {
     return full;
   }
 
+  // La discussion n'existe que rattachée à une vidéo, et seulement une fois l'analyse du coach envoyée
+  const isDiscussionOpen = (videoId) => messages(videoId).some((m) => m.from === "coach" && m.analysis);
+  // Vrai si, depuis la dernière analyse, le dernier mot est celui de l'élève (le coach doit répondre)
+  function awaitingCoach(videoId) {
+    const list = messages(videoId);
+    const lastAnalysis = list.map((m) => !!m.analysis).lastIndexOf(true);
+    return lastAnalysis >= 0 && list.length - 1 > lastAnalysis && list[list.length - 1].from === "eleve";
+  }
+
   const lessons = () => read("lessons", []);
   const saveLessons = (list) => write("lessons", list);
 
   return {
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, getFile, deleteFile, fileURL,
-    SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, threadGeneral, students, studentName, ageOf,
+    SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, students, studentName, ageOf,
     profile, saveProfile, profileCompletion, PROFILE_SECTIONS,
     videos, saveVideos, videoById, updateVideo, removeVideo,
-    messages, addMessage, lessons, saveLessons,
+    messages, addMessage, isDiscussionOpen, awaitingCoach, lessons, saveLessons,
   };
 })();

@@ -39,7 +39,7 @@
     analyses.sort((a, b) => b.m.date.localeCompare(a.m.date)).slice(0, 5).forEach(({ v, m }) => {
       listA.append(h("li", { class: "list__item" },
         h("div", { class: "list__main" }, h("strong", {}, v.title), h("small", {}, "Reçue le " + CC.fmtDate(m.date))),
-        h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, "Lire l'analyse")));
+        h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, "Lire et répondre")));
     });
     if (!analyses.length) listA.append(emptyBox("Pas encore d'analyse. Envoie ta première vidéo !"));
 
@@ -99,16 +99,10 @@
       };
       CC.saveLessons([...CC.lessons(), lesson]);
 
-      // La demande apparaît aussi dans la discussion générale avec le coach
-      const summary = "Demande de cours particulier — " + (TYPES[lesson.type] || "Cours") + " sur : " + lesson.objectif +
-        ". Jours : " + (lesson.days.join(", ") || "à définir") + " (" + lesson.moment + ")." +
-        (lesson.message ? "\n" + lesson.message : "");
-      CC.addMessage(CC.threadGeneral(me), { from: "eleve", text: summary });
-
       form.reset();
       const status = $("cours-status");
       status.className = "status-line is-ok";
-      status.textContent = "Demande envoyée ! Ton coach te répondra dans la discussion générale.";
+      status.textContent = "Demande envoyée ! Sa réponse (acceptée ou refusée) s'affichera dans « Mes demandes ».";
       renderLessons(me);
     });
   }
@@ -127,6 +121,15 @@
     $("co-attente").textContent = waiting.length;
     $("co-cours").textContent = pendingLessons.length;
 
+    // Élèves qui ont répondu après une analyse : le coach doit répondre
+    const replies = videos.filter((v) => v.owner === "eleve" && CC.awaitingCoach(v.id));
+    $("co-reponses-section").hidden = !replies.length;
+    replies.forEach((v) => {
+      $("co-reponses").append(h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, CC.studentName(v.studentId) + " — " + v.title), h("small", {}, "A répondu à ton analyse")),
+        h("a", { class: "btn btn--small btn--clay", href: "messages.html?id=" + v.id }, "Lire et répondre")));
+    });
+
     const vList = $("co-videos");
     waiting.slice().reverse().forEach((v) => {
       vList.append(h("li", { class: "list__item" },
@@ -142,9 +145,8 @@
     const dList = $("co-demandes");
     lessons.slice().reverse().forEach((l) => {
       const [label, cls] = STATUS[l.status] || STATUS.attente;
-      const reply = (status, text) => () => {
+      const reply = (status) => () => {
         CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x)));
-        CC.addMessage(CC.threadGeneral(l.studentId), { from: "coach", text });
         location.reload();
       };
       dList.append(h("li", { class: "list__item" },
@@ -155,8 +157,8 @@
           h("a", { href: "eleve.html?id=" + l.studentId }, "Voir son dossier")),
         l.status === "attente"
           ? h("div", { class: "btn-row" },
-              h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte", "Super, j'accepte ta demande de cours ! Je te propose un créneau très vite.") }, "Accepter"),
-              h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse", "Je ne peux pas te prendre sur ces créneaux. Propose-moi d'autres jours ?") }, "Refuser"))
+              h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
+              h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))
           : h("span", { class: "badge " + cls }, label)));
     });
     if (!lessons.length) dList.append(emptyBox("Aucune demande de cours."));

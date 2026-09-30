@@ -1,4 +1,5 @@
-// Page « Messages » : discussions entre l'élève et le coach (texte, photos, vidéos, analyses).
+// Page « Analyse et discussion » : l'analyse du coach pour UNE vidéo, puis l'échange qui suit
+// (texte, photos, vidéos). La discussion s'ouvre seulement une fois l'analyse envoyée.
 (() => {
   const role = CC.role();
   if (!role) return;
@@ -6,48 +7,25 @@
   const $ = (id) => document.getElementById(id);
   const isCoach = role === "coach";
   const me = isCoach ? null : CC.ensureMe();
-  if (isCoach) $("titre-page").textContent = "Échanger avec mes élèves";
 
-  const params = new URLSearchParams(location.search);
-  let threadId = params.get("id");
-
-  // ----- Liste des discussions -----
-  // Élève : sa discussion générale + une discussion par vidéo.
-  // Coach : la même chose pour chacun de ses élèves.
-  function threads() {
-    const list = [];
-    const studentIds = isCoach ? CC.students().map((a) => a.id) : [me];
-    studentIds.forEach((sid) => {
-      list.push({
-        id: CC.threadGeneral(sid), studentId: sid, video: null, general: true,
-        title: isCoach ? "Général — " + CC.studentName(sid) : "Discussion générale",
-        sub: "Questions, demandes de cours…",
-      });
-    });
-    CC.videos().filter((v) => v.owner === "eleve" && studentIds.includes(v.studentId)).forEach((v) => {
-      list.push({
-        id: v.id, studentId: v.studentId, video: v, general: false,
-        title: (isCoach ? CC.studentName(v.studentId) + " · " : "") + v.title,
-        sub: CC.SHOTS[v.shot] || "Coup",
-      });
-    });
-    list.forEach((t) => {
-      const msgs = CC.messages(t.id);
-      t.last = msgs.length ? msgs[msgs.length - 1] : null;
-    });
-    // Les plus récentes d'abord ; pour l'élève, la discussion générale reste en haut
-    const byDate = (a, b) => (b.last ? b.last.date : "").localeCompare(a.last ? a.last.date : "");
-    if (!isCoach) return [list[0], ...list.slice(1).sort(byDate)];
-    return list.sort(byDate);
+  // Il n'y a pas de messagerie libre : on arrive ici depuis une vidéo
+  const video = CC.videoById(new URLSearchParams(location.search).get("id"));
+  if (!video || video.owner !== "eleve" || (!isCoach && video.studentId !== me)) {
+    location.replace(isCoach ? "eleves.html" : "videos.html");
+    return;
   }
+  const studentName = CC.studentName(video.studentId);
+  const studentFirstName = CC.profile(video.studentId).prenom || "Élève";
 
-  function renderList(all) {
-    $("threads").replaceChildren(...all.map((t) =>
-      h("a", { class: "thread-link", href: "messages.html?id=" + t.id, "aria-current": String(t.id === threadId) },
-        h("b", {}, t.title),
-        h("small", {}, t.last ? (t.last.from === role ? "Toi : " : "") + (t.last.text ? t.last.text.slice(0, 60) : t.last.analysis ? "Analyse du coach" : "Pièce jointe") : t.sub))));
-    if (!all.length) $("threads").append(h("p", { class: "hint", style: "padding:var(--s2)" }, "Aucun élève pour l'instant."));
+  // ----- En-tête -----
+  $("titre-page").textContent = video.title;
+  $("sous-titre").textContent = (CC.SHOTS[video.shot] || "Coup") + " · envoyée le " + CC.fmtDate(video.date) + (isCoach ? " · " + studentName : "");
+  if (isCoach) {
+    $("lien-retour").href = "eleve.html?id=" + video.studentId + "&video=" + video.id;
+    $("lien-retour").textContent = "← Dossier de " + studentName;
   }
+  const actions = $("thread-actions");
+  if (isCoach) actions.append(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + video.id }, video.status === "analysee" ? "Reprendre l'analyse" : "Analyser la vidéo"));
 
   // ----- Affichage d'un message -----
   function attachment(f) {
@@ -71,7 +49,7 @@
       return holder;
     });
     return h("div", { class: "analysis" },
-      h("h3", {}, "Analyse de ton coach"),
+      h("h3", {}, isCoach ? "Ton analyse" : "Analyse de ton coach"),
       a.observation ? h("div", {}, h("h4", {}, "Observation"), h("p", {}, a.observation)) : null,
       a.strengths ? h("div", {}, h("h4", {}, "Points forts"), h("p", {}, a.strengths)) : null,
       a.improve ? h("div", {}, h("h4", {}, "À améliorer"), h("p", {}, a.improve)) : null,
@@ -83,10 +61,9 @@
         : null);
   }
 
-  function bubble(m, t) {
+  function bubble(m) {
     const mine = m.from === role;
-    const studentName = t.studentId ? (CC.profile(t.studentId).prenom || "Élève") : "Élève";
-    const who = m.from === "coach" ? "Coach" : studentName;
+    const who = m.from === "coach" ? "Coach" : studentFirstName;
     return h("article", { class: "bubble" + (mine ? " bubble--mine" : "") },
       h("span", { class: "bubble__who" }, mine ? "Toi (" + who + ")" : who),
       m.text ? h("p", {}, m.text) : null,
@@ -95,41 +72,28 @@
       h("time", { class: "bubble__time", datetime: m.date }, CC.fmtDateTime(m.date)));
   }
 
-  // ----- Discussion ouverte -----
+  // ----- Affichage de la discussion (ouverte ou fermée) -----
   function render() {
-    const all = threads();
-    const chat = $("chat");
-    const found = all.find((x) => x.id === threadId);
-    chat.dataset.view = found ? "thread" : "list";
-    const t = found || all[0];
-    renderList(all);
-    if (!t) {
-      $("thread-title").textContent = "Aucune discussion";
-      $("log").replaceChildren(h("p", { class: "hint" }, "Les discussions apparaissent dès qu'un élève crée son compte."));
-      $("composer").hidden = true;
-      return;
-    }
-    $("composer").hidden = false;
-    $("thread-title").textContent = t.title;
-
-    const actions = $("thread-actions");
-    actions.replaceChildren();
-    if (isCoach) {
-      if (t.video) actions.append(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + t.id }, "Analyser la vidéo"));
-      actions.append(h("a", { class: "btn btn--small btn--outline", href: "eleve.html?id=" + t.studentId }, "Dossier de l'élève"));
-    } else if (t.video) {
-      actions.append(h("a", { class: "btn btn--small btn--outline", href: "videos.html" }, "Mes vidéos"));
-    }
-
+    const open = CC.isDiscussionOpen(video.id);
+    const list = CC.messages(video.id);
     const log = $("log");
-    const list = CC.messages(t.id);
-    log.replaceChildren(...list.map((m) => bubble(m, t)));
-    if (!list.length) log.append(h("p", { class: "hint" }, "Aucun message pour l'instant. Écris le premier !"));
+    log.replaceChildren(...list.map(bubble));
+    if (!list.length) log.append(h("p", { class: "hint" }, "Rien pour l'instant."));
     log.scrollTop = log.scrollHeight;
-    $("composer").dataset.thread = t.id;
+
+    $("composer").hidden = !open;
+    $("verrou").hidden = open;
+    if (!open) {
+      $("verrou-texte").textContent = isCoach
+        ? "La discussion s'ouvrira dès que tu auras envoyé ton analyse à l'élève."
+        : "Ton coach n'a pas encore envoyé son analyse. Tu pourras lui répondre ici dès qu'elle sera arrivée.";
+      $("verrou-actions").replaceChildren(isCoach
+        ? h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + video.id }, "Analyser la vidéo")
+        : h("a", { class: "btn btn--small btn--outline", href: "videos.html" }, "Mes vidéos"));
+    }
   }
 
-  // ----- Envoi -----
+  // ----- Envoi (seulement quand la discussion est ouverte) -----
   let pending = [];
   function renderPending() {
     $("pending").replaceChildren(...pending.map((f, i) =>
@@ -145,6 +109,7 @@
   $("composer").addEventListener("submit", async (event) => {
     event.preventDefault();
     const status = $("msg-status");
+    if (!CC.isDiscussionOpen(video.id)) return;
     const text = $("texte").value.trim();
     if (!text && !pending.length) {
       status.className = "status-line is-error";
@@ -160,13 +125,11 @@
         if (!type) continue;
         files.push({ id: await CC.putFile(f), type, name: f.name });
       }
-      const id = $("composer").dataset.thread;
-      CC.addMessage(id, { from: role, text, files });
+      CC.addMessage(video.id, { from: role, text, files });
       $("texte").value = "";
       pending = [];
       renderPending();
       status.textContent = "";
-      threadId = id;
       render();
     } catch (e) {
       status.className = "status-line is-error";
