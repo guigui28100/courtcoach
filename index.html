@@ -30,9 +30,7 @@
         <a href="#etapes">Comment ça marche</a>
         <a href="#pour-qui">Pour qui ?</a>
       </nav>
-      <button class="btn btn--small btn--ink" type="button" data-open-auth="connexion">
-        Connexion
-      </button>
+      <a class="btn btn--small btn--ink" href="compte.html#connexion">Connexion</a>
     </div>
   </header>
 
@@ -61,12 +59,8 @@
             au même endroit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
           </p>
           <div class="hero__actions">
-            <button class="btn btn--ball" type="button" data-open-auth="inscription">
-              Créer mon compte
-            </button>
-            <button class="btn btn--ghost" type="button" data-open-auth="connexion">
-              J'ai déjà un compte
-            </button>
+            <a class="btn btn--ball" href="compte.html#inscription">Créer mon compte</a>
+            <a class="btn btn--ghost" href="compte.html#connexion">J'ai déjà un compte</a>
           </div>
         </div>
 
@@ -197,7 +191,7 @@
       <div class="wrap cta__inner">
         <h2 id="cta-titre">Balle de match&nbsp;: sois parmi les premiers.</h2>
         <p>L'application est en cours de préparation. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-        <button class="btn btn--ink" type="button" data-open-auth="inscription">Créer mon compte</button>
+        <a class="btn btn--ink" href="compte.html#inscription">Créer mon compte</a>
       </div>
     </section>
   </main>
@@ -210,51 +204,5 @@
     </div>
   </footer>
 
-  <!-- ===== Fenêtre Connexion / Inscription ===== -->
-  <dialog class="auth" id="auth" aria-labelledby="auth-titre">
-    <div class="auth__head">
-      <h2 id="auth-titre">Espace membre</h2>
-      <button class="auth__close" type="button" data-close-auth aria-label="Fermer la fenêtre">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-
-    <div class="tabs" role="tablist" aria-label="Choisir entre connexion et inscription">
-      <button class="tabs__tab" type="button" role="tab" id="tab-connexion" aria-controls="panel-connexion" aria-selected="true">Connexion</button>
-      <button class="tabs__tab" type="button" role="tab" id="tab-inscription" aria-controls="panel-inscription" aria-selected="false" tabindex="-1">Inscription</button>
-    </div>
-
-    <p class="auth__notice">
-      L'espace membre n'est pas encore ouvert. Ce formulaire est une
-      démonstration&nbsp;: rien n'est envoyé ni enregistré.
-    </p>
-
-    <form class="auth__form" id="panel-connexion" role="tabpanel" aria-labelledby="tab-connexion" novalidate>
-      <label for="co-email">Adresse e-mail</label>
-      <input id="co-email" name="email" type="email" autocomplete="email" inputmode="email" required>
-      <label for="co-mdp">Mot de passe</label>
-      <input id="co-mdp" name="password" type="password" autocomplete="current-password" required>
-      <button class="btn btn--ink btn--block" type="submit">Se connecter</button>
-      <p class="auth__status" role="status"></p>
-    </form>
-
-    <form class="auth__form" id="panel-inscription" role="tabpanel" aria-labelledby="tab-inscription" hidden novalidate>
-      <fieldset class="roles">
-        <legend>Je suis</legend>
-        <label><input type="radio" name="profil" value="eleve" checked> Élève</label>
-        <label><input type="radio" name="profil" value="parent"> Parent</label>
-        <label><input type="radio" name="profil" value="enseignant"> Enseignant</label>
-      </fieldset>
-      <label for="in-email">Adresse e-mail</label>
-      <input id="in-email" name="email" type="email" autocomplete="email" inputmode="email" required>
-      <label for="in-mdp">Mot de passe</label>
-      <input id="in-mdp" name="password" type="password" autocomplete="new-password" aria-describedby="in-mdp-aide" required>
-      <p class="auth__hint" id="in-mdp-aide">8 caractères minimum.</p>
-      <button class="btn btn--clay btn--block" type="submit">Créer mon compte</button>
-      <p class="auth__status" role="status"></p>
-    </form>
-  </dialog>
-
-  <script src="script.js"></script>
 </body>
 </html>
