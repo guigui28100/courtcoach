@@ -534,7 +534,7 @@
     const mine = others.filter((v) => v.status !== "reference");
     selectB.replaceChildren(h("option", { value: "" }, "— Choisir une vidéo —"));
     const group = (label, list) => list.length && selectB.append(h("optgroup", { label },
-      list.map((v) => h("option", { value: v.id }, v.title + " (" + (CC.SHOTS[v.shot] || "coup") + ", " + CC.fmtDate(v.date) + ")"))));
+      list.map((v) => h("option", { value: v.id }, (v.studentId ? CC.studentName(v.studentId) + " — " : "") + v.title + " (" + (CC.SHOTS[v.shot] || "coup") + ", " + CC.fmtDate(v.date) + ")"))));
     group("Vidéos de référence", refs);
     group("Vidéos des élèves", mine);
   }
@@ -771,7 +771,7 @@
   // 8. Fiche de l'élève
   // =====================================================
   function renderProfile() {
-    const p = CC.profile();
+    const p = video.studentId ? CC.profile(video.studentId) : {};
     const age = (() => {
       if (!p.naissance) return "";
       const d = new Date(p.naissance), n = new Date();
@@ -792,6 +792,12 @@
   // =====================================================
   // 9. Démarrage
   // =====================================================
+  if (video.studentId) {
+    $("lien-retour").href = "eleve.html?id=" + video.studentId + "&video=" + video.id;
+    $("lien-retour").textContent = "← Dossier de " + CC.studentName(video.studentId);
+    $("meta-video").textContent += " · " + CC.studentName(video.studentId);
+  }
+  if (video.status !== "reference" && !video.seen) CC.updateVideo(video.id, { seen: true });
   if (isReference) {
     $("feedback").hidden = true;
     $("colonnes").hidden = true;
@@ -803,6 +809,17 @@
   renderCaptures();
   setMode("single");
   setPlayingUi();
+
+  // Lien « comparer avec une autre vidéo » (?b=…&mode=side) : on charge directement la vidéo B
+  const wantedB = CC.videoById(params.get("b"));
+  if (wantedB) {
+    selectB.value = wantedB.id;
+    CC.fileURL(wantedB.fileId).then((url) => {
+      if (!url) return;
+      loadB(url, wantedB.title);
+      if (params.get("mode") === "overlay") setMode("overlay");
+    });
+  }
 
   CC.fileURL(video.fileId).then((url) => {
     if (!url) {

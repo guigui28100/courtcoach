@@ -2,6 +2,7 @@
 (() => {
   const role = CC.role();
   if (!role) return;
+  if (role === "coach") { location.replace("eleves.html"); return; } // le coach consulte les fiches dans le dossier de chaque élève
   const form = document.getElementById("form-profil");
   const status = document.getElementById("profil-status");
   const parentBlock = document.getElementById("bloc-parent");
@@ -74,16 +75,6 @@
     status.textContent = "Profil enregistré ✓";
     refresh();
   });
-
-  // Côté coach : fiche en lecture seule
-  if (role === "coach") {
-    Array.from(form.elements).forEach((el) => { el.disabled = true; });
-    document.getElementById("zone-boutons").hidden = true;
-    document.getElementById("eyebrow").textContent = "Fiche élève";
-    document.getElementById("titre").textContent = "Profil de l'élève";
-    document.getElementById("sous-titre").textContent = "Lecture seule : c'est l'élève qui remplit et modifie sa fiche.";
-    document.getElementById("note-demo").hidden = true;
-  }
 
   refresh();
 })();

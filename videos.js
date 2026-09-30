@@ -4,6 +4,7 @@
   if (!role) return;
   const { h } = CC;
   const isCoach = role === "coach";
+  const me = isCoach ? null : CC.ensureMe();
   const $ = (id) => document.getElementById(id);
   const MAX_SIZE = 400 * 1024 * 1024; // 400 Mo
 
@@ -59,6 +60,7 @@
         id: CC.uid(),
         fileId,
         owner: isCoach ? "coach" : "eleve",
+        studentId: me,
         title: form.elements.titre.value.trim() || file.name.replace(/\.[^.]+$/, ""),
         shot: form.elements.coup.value,
         question: isCoach ? "" : form.elements.question.value.trim(),
@@ -93,7 +95,7 @@
 
   function visibleVideos() {
     let list = CC.videos();
-    if (!isCoach) list = list.filter((v) => v.owner === "eleve");
+    if (!isCoach) list = list.filter((v) => v.owner === "eleve" && v.studentId === me);
     if (filter !== "toutes") list = list.filter((v) => v.status === filter);
     return list.slice().reverse();
   }
@@ -107,7 +109,8 @@
 
     const actions = [];
     if (isCoach && v.status !== "reference") {
-      actions.push(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, v.status === "analysee" ? "Reprendre l'analyse" : "Analyser"));
+      actions.push(h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Ouvrir le dossier"));
+      actions.push(h("a", { class: "btn btn--small btn--outline", href: "analyse.html?id=" + v.id }, v.status === "analysee" ? "Reprendre l'analyse" : "Analyser"));
     }
     if (isCoach && v.status === "reference") {
       actions.push(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Ouvrir"));
@@ -128,7 +131,7 @@
     return h("article", { class: "video-card" },
       h("div", { class: "video-card__thumb" }, thumb),
       h("div", { class: "video-card__body" },
-        h("h3", {}, v.title),
+        h("h3", {}, isCoach && v.studentId ? CC.studentName(v.studentId) + " — " + v.title : v.title),
         h("div", { class: "video-card__meta" }, badge, h("span", {}, CC.SHOTS[v.shot] || "Coup"), h("span", {}, "· " + CC.fmtDate(v.date) + " · " + CC.fmtSize(v.size))),
         h("div", { class: "btn-row" }, actions)));
   }

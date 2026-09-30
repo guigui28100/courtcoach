@@ -12,29 +12,25 @@
     refuse: ["Refusée", "badge--no"],
   };
 
-  const prenom = CC.profile().prenom;
   const videos = CC.videos();
-  const lessons = CC.lessons();
-
   const isAnalysis = (m) => m.from === "coach" && m.analysis;
   const analysesOf = (v) => CC.messages(v.id).filter(isAnalysis);
-
-  function emptyBox(text) {
-    return h("li", { class: "empty" }, text);
-  }
+  const emptyBox = (text) => h("li", { class: "empty" }, text);
 
   // ---------- Élève ----------
   function renderEleve() {
+    const me = CC.ensureMe();
+    const prenom = CC.profile(me).prenom;
     $("vue-eleve").hidden = false;
     $("eyebrow").textContent = "Mon espace élève";
     $("hello").textContent = prenom ? "Bonjour " + prenom + " !" : "Bienvenue sur CourtCoach !";
     $("sub").textContent = "Envoie tes vidéos, reçois les conseils de ton coach et suis tes progrès.";
 
-    const pct = CC.profileCompletion();
+    const pct = CC.profileCompletion(me);
     $("st-profil").textContent = pct + " %";
     $("st-profil-bar").style.setProperty("--val", pct + "%");
 
-    const mine = videos.filter((v) => v.owner === "eleve");
+    const mine = videos.filter((v) => v.owner === "eleve" && v.studentId === me);
     $("st-videos").textContent = mine.length;
     const analyses = mine.flatMap((v) => analysesOf(v).map((m) => ({ v, m })));
     $("st-analyses").textContent = analyses.length;
@@ -47,13 +43,15 @@
     });
     if (!analyses.length) listA.append(emptyBox("Pas encore d'analyse. Envoie ta première vidéo !"));
 
-    renderLessons();
+    renderLessons(me);
+    setupLessonToggle();
+    setupLessonForm(me);
   }
 
-  function renderLessons() {
+  function renderLessons(me) {
     const list = $("mes-cours");
     list.replaceChildren();
-    const mine = CC.lessons().slice().reverse();
+    const mine = CC.lessons().filter((l) => l.studentId === me).reverse();
     mine.forEach((l) => {
       const [label, cls] = STATUS[l.status] || STATUS.attente;
       list.append(h("li", { class: "list__item" },
@@ -83,13 +81,14 @@
     window.addEventListener("hashchange", () => { if (location.hash === "#cours") setOpen(true, true); });
   }
 
-  function setupLessonForm() {
+  function setupLessonForm(me) {
     const form = $("form-cours");
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(form);
       const lesson = {
         id: CC.uid(),
+        studentId: me,
         date: new Date().toISOString(),
         type: data.get("type"),
         objectif: data.get("objectif"),
@@ -98,21 +97,19 @@
         message: String(data.get("message") || "").trim(),
         status: "attente",
       };
-      const all = CC.lessons();
-      all.push(lesson);
-      CC.saveLessons(all);
+      CC.saveLessons([...CC.lessons(), lesson]);
 
-      // La demande apparaît aussi dans la discussion avec le coach
+      // La demande apparaît aussi dans la discussion générale avec le coach
       const summary = "Demande de cours particulier — " + (TYPES[lesson.type] || "Cours") + " sur : " + lesson.objectif +
         ". Jours : " + (lesson.days.join(", ") || "à définir") + " (" + lesson.moment + ")." +
         (lesson.message ? "\n" + lesson.message : "");
-      CC.addMessage("general", { from: "eleve", text: summary });
+      CC.addMessage(CC.threadGeneral(me), { from: "eleve", text: summary });
 
       form.reset();
       const status = $("cours-status");
       status.className = "status-line is-ok";
       status.textContent = "Demande envoyée ! Ton coach te répondra dans la discussion générale.";
-      renderLessons();
+      renderLessons(me);
     });
   }
 
@@ -121,22 +118,24 @@
     $("vue-coach").hidden = false;
     $("eyebrow").textContent = "Espace coach";
     $("hello").textContent = "Bonjour coach !";
-    $("sub").textContent = "Les vidéos à analyser et les demandes de cours de tes élèves.";
+    $("sub").textContent = "Chaque élève a son dossier : sa fiche, ses vidéos, tes analyses et ses demandes.";
 
-    const fromStudents = videos.filter((v) => v.owner === "eleve");
-    const waiting = fromStudents.filter((v) => v.status !== "analysee");
+    const lessons = CC.lessons();
+    const waiting = videos.filter((v) => v.owner === "eleve" && v.status !== "analysee");
     const pendingLessons = lessons.filter((l) => l.status === "attente");
+    $("co-eleves").textContent = CC.students().length;
     $("co-attente").textContent = waiting.length;
-    $("co-faites").textContent = fromStudents.length - waiting.length;
     $("co-cours").textContent = pendingLessons.length;
 
     const vList = $("co-videos");
-    waiting.forEach((v) => {
+    waiting.slice().reverse().forEach((v) => {
       vList.append(h("li", { class: "list__item" },
         h("div", { class: "list__main" },
-          h("strong", {}, v.title),
+          h("strong", {}, CC.studentName(v.studentId) + " — " + v.title),
           h("small", {}, (CC.SHOTS[v.shot] || "Coup") + " · envoyée le " + CC.fmtDate(v.date))),
-        h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Analyser")));
+        h("div", { class: "btn-row" },
+          v.seen ? null : h("span", { class: "badge badge--new" }, "Nouveau"),
+          h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Ouvrir le dossier"))));
     });
     if (!waiting.length) vList.append(emptyBox("Rien à analyser : tout est à jour 🎾"));
 
@@ -145,14 +144,15 @@
       const [label, cls] = STATUS[l.status] || STATUS.attente;
       const reply = (status, text) => () => {
         CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x)));
-        CC.addMessage("general", { from: "coach", text });
+        CC.addMessage(CC.threadGeneral(l.studentId), { from: "coach", text });
         location.reload();
       };
       dList.append(h("li", { class: "list__item" },
         h("div", { class: "list__main" },
-          h("strong", {}, (TYPES[l.type] || "Cours") + " · " + l.objectif),
+          h("strong", {}, CC.studentName(l.studentId) + " — " + (TYPES[l.type] || "Cours") + " · " + l.objectif),
           h("small", {}, [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ")),
-          l.message ? h("small", {}, "« " + l.message + " »") : null),
+          l.message ? h("small", {}, "« " + l.message + " »") : null,
+          h("a", { href: "eleve.html?id=" + l.studentId }, "Voir son dossier")),
         l.status === "attente"
           ? h("div", { class: "btn-row" },
               h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte", "Super, j'accepte ta demande de cours ! Je te propose un créneau très vite.") }, "Accepter"),
@@ -163,5 +163,5 @@
   }
 
   if (role === "coach") renderCoach();
-  else { renderEleve(); setupLessonToggle(); setupLessonForm(); }
+  else renderEleve();
 })();

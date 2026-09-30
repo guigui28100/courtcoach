@@ -5,31 +5,48 @@
   const { h } = CC;
   const $ = (id) => document.getElementById(id);
   const isCoach = role === "coach";
+  const me = isCoach ? null : CC.ensureMe();
   if (isCoach) $("titre-page").textContent = "Échanger avec mes élèves";
 
   const params = new URLSearchParams(location.search);
   let threadId = params.get("id");
 
   // ----- Liste des discussions -----
+  // Élève : sa discussion générale + une discussion par vidéo.
+  // Coach : la même chose pour chacun de ses élèves.
   function threads() {
-    const list = [{ id: "general", title: "Discussion générale", sub: "Questions, demandes de cours…", video: null }];
-    CC.videos().filter((v) => v.owner === "eleve").forEach((v) => {
-      list.push({ id: v.id, title: v.title, sub: CC.SHOTS[v.shot] || "Coup", video: v });
+    const list = [];
+    const studentIds = isCoach ? CC.students().map((a) => a.id) : [me];
+    studentIds.forEach((sid) => {
+      list.push({
+        id: CC.threadGeneral(sid), studentId: sid, video: null, general: true,
+        title: isCoach ? "Général — " + CC.studentName(sid) : "Discussion générale",
+        sub: "Questions, demandes de cours…",
+      });
+    });
+    CC.videos().filter((v) => v.owner === "eleve" && studentIds.includes(v.studentId)).forEach((v) => {
+      list.push({
+        id: v.id, studentId: v.studentId, video: v, general: false,
+        title: (isCoach ? CC.studentName(v.studentId) + " · " : "") + v.title,
+        sub: CC.SHOTS[v.shot] || "Coup",
+      });
     });
     list.forEach((t) => {
       const msgs = CC.messages(t.id);
       t.last = msgs.length ? msgs[msgs.length - 1] : null;
     });
-    // Les plus récentes d'abord ; la discussion générale reste en haut
-    return [list[0], ...list.slice(1).sort((a, b) => (b.last ? b.last.date : "").localeCompare(a.last ? a.last.date : ""))];
+    // Les plus récentes d'abord ; pour l'élève, la discussion générale reste en haut
+    const byDate = (a, b) => (b.last ? b.last.date : "").localeCompare(a.last ? a.last.date : "");
+    if (!isCoach) return [list[0], ...list.slice(1).sort(byDate)];
+    return list.sort(byDate);
   }
 
-  function renderList() {
-    const nav = $("threads");
-    nav.replaceChildren(...threads().map((t) =>
+  function renderList(all) {
+    $("threads").replaceChildren(...all.map((t) =>
       h("a", { class: "thread-link", href: "messages.html?id=" + t.id, "aria-current": String(t.id === threadId) },
         h("b", {}, t.title),
         h("small", {}, t.last ? (t.last.from === role ? "Toi : " : "") + (t.last.text ? t.last.text.slice(0, 60) : t.last.analysis ? "Analyse du coach" : "Pièce jointe") : t.sub))));
+    if (!all.length) $("threads").append(h("p", { class: "hint", style: "padding:var(--s2)" }, "Aucun élève pour l'instant."));
   }
 
   // ----- Affichage d'un message -----
@@ -66,9 +83,10 @@
         : null);
   }
 
-  function bubble(m) {
+  function bubble(m, t) {
     const mine = m.from === role;
-    const who = m.from === "coach" ? "Coach" : (CC.profile().prenom || "Élève");
+    const studentName = t.studentId ? (CC.profile(t.studentId).prenom || "Élève") : "Élève";
+    const who = m.from === "coach" ? "Coach" : studentName;
     return h("article", { class: "bubble" + (mine ? " bubble--mine" : "") },
       h("span", { class: "bubble__who" }, mine ? "Toi (" + who + ")" : who),
       m.text ? h("p", {}, m.text) : null,
@@ -78,28 +96,37 @@
   }
 
   // ----- Discussion ouverte -----
-  function renderThread() {
+  function render() {
+    const all = threads();
     const chat = $("chat");
-    if (!threadId) { chat.dataset.view = "list"; threadId = null; }
-    else chat.dataset.view = "thread";
-    const t = threads().find((x) => x.id === (threadId || "general")) || threads()[0];
-    if (!threadId) threadId = null;
-    const id = t.id;
-
+    const found = all.find((x) => x.id === threadId);
+    chat.dataset.view = found ? "thread" : "list";
+    const t = found || all[0];
+    renderList(all);
+    if (!t) {
+      $("thread-title").textContent = "Aucune discussion";
+      $("log").replaceChildren(h("p", { class: "hint" }, "Les discussions apparaissent dès qu'un élève crée son compte."));
+      $("composer").hidden = true;
+      return;
+    }
+    $("composer").hidden = false;
     $("thread-title").textContent = t.title;
+
     const actions = $("thread-actions");
     actions.replaceChildren();
-    if (t.video) {
-      if (isCoach) actions.append(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + id }, "Analyser la vidéo"));
-      else actions.append(h("a", { class: "btn btn--small btn--outline", href: "videos.html" }, "Mes vidéos"));
+    if (isCoach) {
+      if (t.video) actions.append(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + t.id }, "Analyser la vidéo"));
+      actions.append(h("a", { class: "btn btn--small btn--outline", href: "eleve.html?id=" + t.studentId }, "Dossier de l'élève"));
+    } else if (t.video) {
+      actions.append(h("a", { class: "btn btn--small btn--outline", href: "videos.html" }, "Mes vidéos"));
     }
 
     const log = $("log");
-    const list = CC.messages(id);
-    log.replaceChildren(...list.map(bubble));
+    const list = CC.messages(t.id);
+    log.replaceChildren(...list.map((m) => bubble(m, t)));
     if (!list.length) log.append(h("p", { class: "hint" }, "Aucun message pour l'instant. Écris le premier !"));
     log.scrollTop = log.scrollHeight;
-    $("composer").dataset.thread = id;
+    $("composer").dataset.thread = t.id;
   }
 
   // ----- Envoi -----
@@ -139,8 +166,8 @@
       pending = [];
       renderPending();
       status.textContent = "";
-      renderThread();
-      renderList();
+      threadId = id;
+      render();
     } catch (e) {
       status.className = "status-line is-error";
       status.textContent = "Envoi impossible (espace insuffisant ?).";
@@ -152,6 +179,5 @@
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("composer").requestSubmit();
   });
 
-  renderList();
-  renderThread();
+  render();
 })();

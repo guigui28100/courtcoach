@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dossier élève – CourtCoach</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body data-page="eleves">
+  <main id="contenu">
+    <section class="app-head">
+      <div class="wrap">
+        <a href="eleves.html" style="font-weight:700;display:inline-flex;min-height:44px;align-items:center">← Tous mes élèves</a>
+        <p class="eyebrow eyebrow--clay">Dossier élève</p>
+        <h1 id="nom"></h1>
+        <div class="chips-info" id="infos"></div>
+        <div class="btn-row" style="margin-top: var(--s2)">
+          <a class="btn btn--clay btn--small" id="lien-discussion" href="messages.html">Discuter avec lui / elle</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap app-main" id="contenu-dossier">
+      <div class="new-banner" id="banniere" role="status" hidden></div>
+
+      <div class="dossier-grid">
+        <div>
+          <section aria-labelledby="videos-titre">
+            <h2 id="videos-titre">Ses vidéos</h2>
+            <div class="video-grid video-grid--dossier" id="videos"></div>
+          </section>
+
+          <section aria-labelledby="analyses-titre">
+            <h2 id="analyses-titre">Analyses envoyées</h2>
+            <ul class="list" id="analyses"></ul>
+          </section>
+
+          <section aria-labelledby="cours-titre">
+            <h2 id="cours-titre">Demandes de cours particulier</h2>
+            <ul class="list" id="cours"></ul>
+          </section>
+        </div>
+
+        <aside>
+          <div class="card" id="fiche-card">
+            <h2 style="font-size:1.3rem">Fiche de l'élève</h2>
+            <div id="fiche"></div>
+          </div>
+          <div class="card" style="margin-top: var(--s2)">
+            <h2 style="font-size:1.3rem">Mes notes privées</h2>
+            <p class="hint">Seul toi peux les lire. Elles sont enregistrées automatiquement.</p>
+            <div class="field" style="margin: var(--s1) 0 0">
+              <label class="sr-only" for="notes">Notes privées sur cet élève</label>
+              <textarea id="notes" placeholder="Points à travailler, rappels, observations…"></textarea>
+            </div>
+            <p class="status-line" role="status" id="notes-status"></p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script src="store.js"></script>
+  <script src="layout.js"></script>
+  <script src="eleve.js"></script>
+</body>
+</html>
