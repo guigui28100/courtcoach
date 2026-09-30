@@ -20,3 +20,10 @@
   pousser la branche et ouvrir une pull request pour que je voie l'aperçu Vercel
   avant de publier.
 - À la fin, résumer en 2 ou 3 phrases ce qui a été changé.
+
+## État de l'application (démonstration)
+- Les pages `espace`, `profil`, `videos`, `analyse` et `messages` fonctionnent en **démonstration** :
+  tout est enregistré dans le navigateur de la personne (aucun envoi sur Internet).
+- Pour recevoir de vraies vidéos d'élèves, il faudra plus tard un service en ligne
+  (comptes, stockage des vidéos, messagerie). À décider avec moi avant de le faire,
+  car cela touche aux données personnelles, surtout celles des mineurs.

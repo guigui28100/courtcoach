@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mon profil – CourtCoach</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body data-page="profil">
+  <main id="contenu">
+    <section class="app-head">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay" id="eyebrow">Mon profil</p>
+        <h1 id="titre">Ton profil de joueur</h1>
+        <p id="sous-titre">Plus ton coach en sait sur toi, mieux il peut t'aider. Tu peux tout modifier à tout moment.</p>
+      </div>
+    </section>
+
+    <div class="wrap app-main">
+      <p class="demo-note" id="note-demo">
+        <strong>Démonstration.</strong> Ces informations restent uniquement dans ton navigateur : elles ne sont envoyées nulle part.
+      </p>
+
+      <div class="card" style="margin-bottom: var(--s3)">
+        <strong id="pct-label">Profil complété : 0 %</strong>
+        <div class="progress" aria-hidden="true"><span id="pct-bar"></span></div>
+      </div>
+
+      <form id="form-profil" novalidate>
+        <fieldset class="form-section" style="border: 1px solid var(--line)">
+          <legend class="sr-only">Formulaire de profil</legend>
+
+          <h2>État civil</h2>
+          <div class="fields-2">
+            <div class="field"><label for="prenom">Prénom</label><input id="prenom" name="prenom" type="text" autocomplete="given-name"></div>
+            <div class="field"><label for="nom">Nom</label><input id="nom" name="nom" type="text" autocomplete="family-name"></div>
+            <div class="field"><label for="naissance">Date de naissance</label><input id="naissance" name="naissance" type="date" autocomplete="bday"></div>
+            <fieldset class="field">
+              <legend>Sexe</legend>
+              <div class="chips">
+                <label><input type="radio" name="sexe" value="F"> Femme</label>
+                <label><input type="radio" name="sexe" value="H"> Homme</label>
+                <label><input type="radio" name="sexe" value=""> Ne pas préciser</label>
+              </div>
+            </fieldset>
+            <div class="field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" inputmode="email" autocomplete="email"></div>
+            <div class="field"><label for="telephone">Téléphone</label><input id="telephone" name="telephone" type="tel" inputmode="tel" autocomplete="tel"></div>
+            <div class="field"><label for="ville">Ville</label><input id="ville" name="ville" type="text" autocomplete="address-level2"></div>
+          </div>
+        </fieldset>
+
+        <div class="form-section" id="bloc-parent" hidden>
+          <h2>Responsable légal</h2>
+          <p class="hint">Obligatoire pour les moins de 18 ans.</p>
+          <div class="fields-2">
+            <div class="field"><label for="parent-nom">Nom et prénom du parent</label><input id="parent-nom" name="parent_nom" type="text"></div>
+            <div class="field"><label for="parent-tel">Téléphone du parent</label><input id="parent-tel" name="parent_tel" type="tel" inputmode="tel"></div>
+            <div class="field"><label for="parent-email">E-mail du parent</label><input id="parent-email" name="parent_email" type="email" inputmode="email"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Mon tennis</h2>
+          <div class="fields-2">
+            <fieldset class="field">
+              <legend>Je joue de la main</legend>
+              <div class="chips">
+                <label><input type="radio" name="lateralite" value="Droitier"> Droite</label>
+                <label><input type="radio" name="lateralite" value="Gaucher"> Gauche</label>
+                <label><input type="radio" name="lateralite" value="Ambidextre"> Les deux</label>
+              </div>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Mon revers</legend>
+              <div class="chips">
+                <label><input type="radio" name="revers" value="À une main"> Une main</label>
+                <label><input type="radio" name="revers" value="À deux mains"> Deux mains</label>
+              </div>
+            </fieldset>
+            <div class="field">
+              <label for="classement">Classement / niveau</label>
+              <select id="classement" name="classement">
+                <option value="">Choisir…</option>
+                <option>Débutant</option><option>Non classé</option><option>NC (Non classé FFT)</option>
+                <option>40</option><option>30/5</option><option>30/4</option><option>30/3</option><option>30/2</option><option>30/1</option><option>30</option>
+                <option>15/5</option><option>15/4</option><option>15/3</option><option>15/2</option><option>15/1</option><option>15</option>
+                <option>5/6</option><option>4/6</option><option>3/6</option><option>2/6</option><option>1/6</option>
+                <option>0</option><option>Plus haut (-2/6, -4/6…)</option>
+              </select>
+            </div>
+            <div class="field"><label for="licence">N° de licence FFT (facultatif)</label><input id="licence" name="licence" type="text" inputmode="text" autocomplete="off"></div>
+            <div class="field"><label for="annees">Années de pratique</label><input id="annees" name="annees" type="number" min="0" max="80" inputmode="numeric"></div>
+            <div class="field">
+              <label for="frequence">Séances par semaine</label>
+              <select id="frequence" name="frequence">
+                <option value="">Choisir…</option><option>Moins d'une</option><option>1</option><option>2</option><option>3</option><option>4 ou plus</option>
+              </select>
+            </div>
+            <div class="field"><label for="club">Club</label><input id="club" name="club" type="text" placeholder="Tennis Club Houdan"></div>
+            <div class="field">
+              <label for="surface">Surface préférée</label>
+              <select id="surface" name="surface">
+                <option value="">Choisir…</option><option>Terre battue</option><option>Dur</option><option>Gazon synthétique</option><option>Indoor</option><option>Pas de préférence</option>
+              </select>
+            </div>
+            <div class="field"><label for="materiel">Raquette / matériel</label><input id="materiel" name="materiel" type="text" placeholder="Marque, modèle, tamis…"></div>
+            <div class="field"><label for="taille">Taille (cm, facultatif)</label><input id="taille" name="taille" type="number" min="80" max="230" inputmode="numeric"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Santé et objectifs</h2>
+          <div class="field">
+            <label for="sante">Blessures, douleurs ou points d'attention</label>
+            <textarea id="sante" name="sante" placeholder="Épaule, poignet, dos, genoux…"></textarea>
+            <small>Ces informations aident ton coach à adapter les exercices.</small>
+          </div>
+          <div class="field">
+            <label for="objectifs">Mes objectifs</label>
+            <textarea id="objectifs" name="objectifs" placeholder="Progresser en compétition, gagner en régularité, me faire plaisir…"></textarea>
+          </div>
+          <fieldset class="field">
+            <legend>Mes disponibilités</legend>
+            <div class="chips">
+              <label><input type="checkbox" name="dispos" value="Semaine matin"> Semaine · matin</label>
+              <label><input type="checkbox" name="dispos" value="Semaine soir"> Semaine · soir</label>
+              <label><input type="checkbox" name="dispos" value="Mercredi"> Mercredi</label>
+              <label><input type="checkbox" name="dispos" value="Samedi"> Samedi</label>
+              <label><input type="checkbox" name="dispos" value="Dimanche"> Dimanche</label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="form-section">
+          <div class="field" style="margin-bottom:0">
+            <div class="chips">
+              <label><input type="checkbox" name="consentement" value="oui" id="consentement"> J'accepte que mon coach voie ces informations (pour les mineurs : accord du responsable légal).</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row" id="zone-boutons">
+          <button class="btn btn--clay" type="submit">Enregistrer mon profil</button>
+          <a class="btn btn--outline" href="espace.html">Retour à mon espace</a>
+        </div>
+        <p class="status-line" role="status" id="profil-status"></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="store.js"></script>
+  <script src="layout.js"></script>
+  <script src="profil.js"></script>
+</body>
+</html>

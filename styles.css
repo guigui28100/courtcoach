@@ -429,7 +429,7 @@ a { color: inherit; }
   .features { grid-template-columns: repeat(2, 1fr); gap: var(--s3); }
 }
 @media (min-width: 1000px) {
-  .features { grid-template-columns: repeat(4, 1fr); }
+  .features { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Étapes « tableau de score » */
@@ -675,3 +675,7 @@ a { color: inherit; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Aperçu vidéo dans le téléphone de l'accueil */
+.phone__video { border-radius: 12px; overflow: hidden; line-height: 0; background: #16294a; }
+.phone__video svg { width: 100%; height: auto; }

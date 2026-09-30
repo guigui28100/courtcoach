@@ -1,4 +1,5 @@
-// Formulaires « Créer mon compte » et « Se connecter » (démonstration : rien n'est envoyé ni enregistré).
+// Formulaires « Créer mon compte » et « Se connecter » (démonstration : rien n'est envoyé sur Internet).
+// Après validation, on entre dans l'application avec le rôle choisi (élève ou coach).
 document.querySelectorAll(".form").forEach((form) => {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -31,7 +32,10 @@ document.querySelectorAll(".form").forEach((form) => {
       return;
     }
 
-    form.reset();
-    status.textContent = "Merci ! L'espace membre ouvrira bientôt. Aucune information n'a été enregistrée.";
+    // Rôle : « enseignant » ou « coach » → coach ; sinon élève
+    const choice = form.querySelector('input[name="profil"]:checked, input[name="mode"]:checked');
+    CC.setRole(choice && (choice.value === "enseignant" || choice.value === "coach") ? "coach" : "eleve");
+    status.textContent = "C'est parti ! Ouverture de ton espace…";
+    location.href = "espace.html";
   });
 });
