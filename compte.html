@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon compte – CourtCoach</title>
+  <meta name="description" content="Crée ton compte CourtCoach ou connecte-toi à l'espace membre du Tennis Club Houdan.">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <!-- ===== En-tête ===== -->
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="CourtCoach, retour à l'accueil">
+        <svg class="brand__ball" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="15" fill="var(--ball)"/>
+          <path d="M5 6c6 5 6 15 0 20M27 6c-6 5-6 15 0 20" fill="none" stroke="#10203a" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="brand__name">Court<span>Coach</span></span>
+      </a>
+      <nav class="topbar__nav" aria-label="Pages du site">
+        <a href="index.html">Accueil</a>
+        <a href="index.html#fonctions">L'app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <!-- ===== Titre de la page ===== -->
+    <section class="page-head" aria-labelledby="page-titre">
+      <svg class="hero__court" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="4">
+          <rect x="20" y="20" width="360" height="820"/>
+          <line x1="65" y1="20" x2="65" y2="840"/>
+          <line x1="335" y1="20" x2="335" y2="840"/>
+          <line x1="65" y1="215" x2="335" y2="215"/>
+          <line x1="65" y1="645" x2="335" y2="645"/>
+          <line x1="200" y1="215" x2="200" y2="645"/>
+        </g>
+      </svg>
+      <div class="wrap">
+        <a class="back-link" href="index.html">
+          <span aria-hidden="true">←</span> Retour à l'accueil
+        </a>
+        <h1 id="page-titre">Ton espace CourtCoach</h1>
+        <p>Nouveau au club&nbsp;? Crée ton compte. Tu as déjà un compte&nbsp;? Connecte-toi.</p>
+      </div>
+    </section>
+
+    <!-- ===== Créer son compte / Se connecter ===== -->
+    <section class="account" aria-label="Créer un compte ou se connecter">
+      <div class="wrap">
+        <nav class="jump" aria-label="Aller directement à">
+          <a href="#inscription">Je suis nouveau</a>
+          <a href="#connexion">J'ai un compte</a>
+        </nav>
+
+        <div class="account__grid">
+          <!-- Créer son compte -->
+          <section class="auth-card auth-card--new" id="inscription" aria-labelledby="inscription-titre">
+            <h2 id="inscription-titre">Créer mon compte</h2>
+            <p class="auth-card__intro">Gratuit pour tous les membres du club. Lorem ipsum dolor sit amet.</p>
+            <p class="auth__notice">
+              L'espace membre n'est pas encore ouvert. Ce formulaire est une
+              démonstration&nbsp;: rien n'est envoyé ni enregistré.
+            </p>
+
+            <form class="form" novalidate>
+              <fieldset class="roles">
+                <legend>Je suis</legend>
+                <label><input type="radio" name="profil" value="eleve" checked> Élève</label>
+                <label><input type="radio" name="profil" value="parent"> Parent</label>
+                <label><input type="radio" name="profil" value="enseignant"> Enseignant</label>
+              </fieldset>
+              <label for="in-email">Adresse e-mail</label>
+              <input id="in-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+              <label for="in-mdp">Mot de passe</label>
+              <input id="in-mdp" name="password" type="password" autocomplete="new-password" aria-describedby="in-mdp-aide" required>
+              <p class="auth__hint" id="in-mdp-aide">8 caractères minimum.</p>
+              <button class="btn btn--clay btn--block" type="submit">Créer mon compte</button>
+              <p class="auth__status" role="status"></p>
+            </form>
+          </section>
+
+          <!-- Se connecter -->
+          <section class="auth-card auth-card--login" id="connexion" aria-labelledby="connexion-titre">
+            <h2 id="connexion-titre">Se connecter</h2>
+            <p class="auth-card__intro">Content de te revoir&nbsp;! Consectetur adipiscing elit.</p>
+
+            <form class="form" novalidate>
+              <label for="co-email">Adresse e-mail</label>
+              <input id="co-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+              <label for="co-mdp">Mot de passe</label>
+              <input id="co-mdp" name="password" type="password" autocomplete="current-password" required>
+              <button class="btn btn--ink btn--block" type="submit">Se connecter</button>
+              <p class="auth__status" role="status"></p>
+            </form>
+
+            <p class="auth-card__small">Pas encore de compte&nbsp;? <a href="#inscription">Crée-le ici</a></p>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Pied de page ===== -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <p><strong>Tennis Club Houdan</strong> · Houdan (78)</p>
+      <p>Site en construction – aucune donnée personnelle n'est collectée.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
