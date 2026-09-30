@@ -246,14 +246,7 @@ a { color: inherit; }
   line-height: .95;
   margin-bottom: var(--s3);
 }
-.hero h1 em {
-  font-style: normal;
-  color: var(--ink);
-  background: var(--ball);
-  padding: 0 .12em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
+.hero h1 em { font-style: normal; }
 
 .hero__lead {
   font-size: 1.15rem;
