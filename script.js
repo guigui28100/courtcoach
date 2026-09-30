@@ -34,7 +34,9 @@ document.querySelectorAll(".form").forEach((form) => {
 
     // Rôle : « enseignant » ou « coach » → coach ; sinon élève
     const choice = form.querySelector('input[name="profil"]:checked, input[name="mode"]:checked');
-    CC.setRole(choice && (choice.value === "enseignant" || choice.value === "coach") ? "coach" : "eleve");
+    const isCoach = choice && (choice.value === "enseignant" || choice.value === "coach");
+    CC.setRole(isCoach ? "coach" : "eleve");
+    if (!isCoach) CC.signUpStudent(email.value); // un dossier est créé pour cet élève (ou retrouvé grâce à l'e-mail)
     status.textContent = "C'est parti ! Ouverture de ton espace…";
     location.href = "espace.html";
   });

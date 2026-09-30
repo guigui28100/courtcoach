@@ -108,17 +108,82 @@ const CC = (() => {
   const role = () => read("role", null); // "eleve" ou "coach"
   const setRole = (r) => write("role", r);
 
-  const profile = () => read("profile", {});
-  const saveProfile = (p) => write("profile", p);
+  // ---------- Élèves (comptes) ----------
+  // Chaque élève a un identifiant ; ses vidéos, demandes et messages y sont rattachés.
+  const accounts = () => read("accounts", []);
+  const me = () => read("me", null);
+  const threadGeneral = (studentId) => "general." + studentId;
+
+  // Anciennes données (avant les dossiers d'élèves) : on les rattache au premier élève créé
+  function migrateLegacy(id) {
+    const legacyProfile = read("profile", null);
+    if (legacyProfile) { write("profile." + id, legacyProfile); remove("profile"); }
+    saveVideos(videos().map((v) => (v.owner === "eleve" && !v.studentId ? { ...v, studentId: id } : v)));
+    write("lessons", lessons().map((l) => (l.studentId ? l : { ...l, studentId: id })));
+    const legacyGeneral = read("msg.general", null);
+    if (legacyGeneral) { write("msg." + threadGeneral(id), legacyGeneral); remove("msg.general"); }
+  }
+
+  // Crée (ou retrouve, grâce à l'e-mail) un compte élève et en fait l'élève courant
+  function signUpStudent(email) {
+    const list = accounts();
+    const clean = String(email || "").trim().toLowerCase();
+    let account = clean ? list.find((a) => a.email === clean) : null;
+    if (!account) {
+      account = { id: uid(), email: clean, created: new Date().toISOString() };
+      if (!list.length) migrateLegacy(account.id);
+      write("accounts", [...list, account]);
+    }
+    write("me", account.id);
+    return account;
+  }
+
+  // Élève courant ; en démonstration, on en crée un automatiquement si besoin
+  function ensureMe() {
+    const id = me();
+    if (id && accounts().some((a) => a.id === id)) return id;
+    const first = accounts()[0];
+    if (first) { write("me", first.id); return first.id; }
+    return signUpStudent("").id;
+  }
+
+  const profile = (id) => read("profile." + (id || ensureMe()), {});
+  const saveProfile = (p, id) => write("profile." + (id || ensureMe()), p);
+
+  const students = () => accounts();
+  function studentName(id) {
+    const p = read("profile." + id, {});
+    const full = [p.prenom, p.nom].filter(Boolean).join(" ").trim();
+    if (full) return full;
+    const a = accounts().find((x) => x.id === id);
+    return a && a.email ? a.email.split("@")[0] : "Élève (profil à compléter)";
+  }
+  function ageOf(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return null;
+    const now = new Date();
+    let a = now.getFullYear() - d.getFullYear();
+    if (now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) a -= 1;
+    return a;
+  }
 
   // Champs du profil pris en compte pour la jauge « profil complété »
   const PROFILE_KEYS = ["prenom", "nom", "naissance", "email", "telephone", "ville",
     "lateralite", "revers", "classement", "annees", "frequence", "objectifs"];
-  function profileCompletion() {
-    const p = profile();
+  function profileCompletion(id) {
+    const p = profile(id);
     const filled = PROFILE_KEYS.filter((k) => p[k] !== undefined && String(p[k]).trim() !== "").length;
     return Math.round((filled / PROFILE_KEYS.length) * 100);
   }
+
+  // Les rubriques de la fiche, pour l'affichage en lecture seule (dossier de l'élève)
+  const PROFILE_SECTIONS = [
+    ["État civil", [["prenom", "Prénom"], ["nom", "Nom"], ["naissance", "Naissance"], ["sexe", "Sexe"], ["email", "E-mail"], ["telephone", "Téléphone"], ["ville", "Ville"]]],
+    ["Responsable légal", [["parent_nom", "Nom"], ["parent_tel", "Téléphone"], ["parent_email", "E-mail"]]],
+    ["Tennis", [["lateralite", "Main"], ["revers", "Revers"], ["classement", "Classement"], ["licence", "Licence FFT"], ["annees", "Années de pratique"], ["frequence", "Séances / semaine"], ["club", "Club"], ["surface", "Surface préférée"], ["materiel", "Matériel"], ["taille", "Taille (cm)"]]],
+    ["Santé et objectifs", [["sante", "Santé"], ["objectifs", "Objectifs"], ["dispos", "Disponibilités"]]],
+  ];
 
   const videos = () => read("videos", []);
   const saveVideos = (list) => write("videos", list);
@@ -152,7 +217,8 @@ const CC = (() => {
   return {
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, getFile, deleteFile, fileURL,
-    SHOTS, role, setRole, profile, saveProfile, profileCompletion,
+    SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, threadGeneral, students, studentName, ageOf,
+    profile, saveProfile, profileCompletion, PROFILE_SECTIONS,
     videos, saveVideos, videoById, updateVideo, removeVideo,
     messages, addMessage, lessons, saveLessons,
   };

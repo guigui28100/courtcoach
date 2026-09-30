@@ -9,6 +9,7 @@
     return;
   }
   const isCoach = role === "coach";
+  if (!isCoach) CC.ensureMe(); // en démonstration, un élève existe toujours
   const page = document.body.dataset.page;
 
   const icon = (paths) => {
@@ -23,17 +24,25 @@
     videos: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.8-2.8z"/>',
     messages: '<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 3.5V7A1.5 1.5 0 0 1 4 5.5z"/>',
     profil: '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/>',
+    eleves: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4M16 5.6a3.2 3.2 0 0 1 0 5.8M18 14.8c1.8.6 2.9 2.4 3.2 5.2"/>',
   };
 
-  const items = [
-    ["espace", "espace.html", "Espace"],
-    ["videos", "videos.html", isCoach ? "Vidéos" : "Mes vidéos"],
-    ["messages", "messages.html", "Messages"],
-    ["profil", "profil.html", isCoach ? "Fiche élève" : "Mon profil"],
-  ];
+  const items = isCoach
+    ? [
+        ["espace", "espace.html", "Espace"],
+        ["eleves", "eleves.html", "Élèves"],
+        ["videos", "videos.html", "Vidéos"],
+        ["messages", "messages.html", "Messages"],
+      ]
+    : [
+        ["espace", "espace.html", "Espace"],
+        ["videos", "videos.html", "Mes vidéos"],
+        ["messages", "messages.html", "Messages"],
+        ["profil", "profil.html", "Mon profil"],
+      ];
 
   const link = (key, href, label, cls) =>
-    h("a", { href, class: cls, "aria-current": page === key || (key === "videos" && page === "analyse") ? "page" : null },
+    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && page === "analyse") ? "page" : null },
       cls === "tabbar__link" ? icon(ICONS[key]) : null, h("span", {}, label));
 
   const switchRole = h("button", {
