@@ -65,6 +65,24 @@
     if (!mine.length) list.append(emptyBox("Aucune demande pour l'instant."));
   }
 
+  // Le formulaire de cours n'apparaît que lorsqu'on clique sur « Demander un cours »
+  function setupLessonToggle() {
+    const button = $("btn-cours");
+    const section = $("cours");
+    function setOpen(open, scroll) {
+      section.hidden = !open;
+      button.setAttribute("aria-expanded", String(open));
+      button.textContent = open ? "Masquer le formulaire" : "Demander un cours";
+      if (open && scroll) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+        $("c-type").focus({ preventScroll: true });
+      }
+    }
+    button.addEventListener("click", () => setOpen(section.hidden, true));
+    if (location.hash === "#cours") setOpen(true, true);
+    window.addEventListener("hashchange", () => { if (location.hash === "#cours") setOpen(true, true); });
+  }
+
   function setupLessonForm() {
     const form = $("form-cours");
     form.addEventListener("submit", (event) => {
@@ -145,5 +163,5 @@
   }
 
   if (role === "coach") renderCoach();
-  else { renderEleve(); setupLessonForm(); }
+  else { renderEleve(); setupLessonToggle(); setupLessonForm(); }
 })();
