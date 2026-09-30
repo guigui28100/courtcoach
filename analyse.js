@@ -763,7 +763,7 @@
     renderExercises();
     renderCaptures();
     status.className = "status-line is-ok";
-    status.replaceChildren("Analyse envoyée ✓ ", h("a", { href: "messages.html?id=" + video.id }, "Voir dans la discussion"));
+    status.replaceChildren("Analyse envoyée ✓ La discussion avec l'élève est maintenant ouverte. ", h("a", { href: "messages.html?id=" + video.id }, "Voir l'analyse et la discussion"));
   });
   $("lien-messages").href = "messages.html?id=" + video.id;
 

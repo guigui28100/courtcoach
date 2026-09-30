@@ -32,17 +32,15 @@
         ["espace", "espace.html", "Espace"],
         ["eleves", "eleves.html", "Élèves"],
         ["videos", "videos.html", "Vidéos"],
-        ["messages", "messages.html", "Messages"],
       ]
     : [
         ["espace", "espace.html", "Espace"],
         ["videos", "videos.html", "Mes vidéos"],
-        ["messages", "messages.html", "Messages"],
         ["profil", "profil.html", "Mon profil"],
       ];
 
   const link = (key, href, label, cls) =>
-    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && page === "analyse") ? "page" : null },
+    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
       cls === "tabbar__link" ? icon(ICONS[key]) : null, h("span", {}, label));
 
   const switchRole = h("button", {
@@ -70,7 +68,7 @@
       switchRole,
       h("a", { class: "topbar__quit", href: "index.html", onclick: () => CC.setRole(null) }, "Quitter")));
 
-  const tabbar = h("nav", { class: "tabbar", "aria-label": "Menu principal" },
+  const tabbar = h("nav", { class: "tabbar", "aria-label": "Menu principal", style: "grid-template-columns: repeat(" + items.length + ", 1fr)" },
     items.map(([k, href, label]) => link(k, href, label, "tabbar__link")));
 
   const footer = h("footer", { class: "footer" },

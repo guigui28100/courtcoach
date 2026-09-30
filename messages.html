@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Messages – CourtCoach</title>
+  <title>Analyse et discussion – CourtCoach</title>
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#B8471F">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -13,32 +13,35 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="app.css">
 </head>
-<body data-page="messages">
+<body data-page="discussion">
   <main id="contenu">
     <section class="app-head">
       <div class="wrap">
-        <p class="eyebrow eyebrow--clay">Messages</p>
-        <h1 id="titre-page">Échanger avec mon coach</h1>
-        <p>Texte, photos et vidéos : une discussion par vidéo, et une discussion générale.</p>
+        <a href="videos.html" id="lien-retour" style="font-weight:700;display:inline-flex;min-height:44px;align-items:center">← Mes vidéos</a>
+        <p class="eyebrow eyebrow--clay">Analyse et discussion</p>
+        <h1 id="titre-page"></h1>
+        <p id="sous-titre"></p>
       </div>
     </section>
 
     <div class="wrap app-main">
-      <div class="chat" id="chat" data-view="list">
-        <nav class="chat__list" aria-label="Discussions" id="threads"></nav>
-
+      <div class="chat">
         <section class="chat__main" aria-labelledby="thread-title">
           <div class="chat__head">
-            <div>
-              <a class="only-mobile" href="messages.html" style="min-height:44px;align-items:center;font-weight:700">← Toutes les discussions</a>
-              <h2 id="thread-title"></h2>
-            </div>
+            <h2 id="thread-title">Analyse et échanges</h2>
             <div class="btn-row" id="thread-actions"></div>
           </div>
-          <div class="chat__log" id="log" role="log" aria-live="polite" aria-label="Messages de la discussion" tabindex="0"></div>
-          <form class="composer" id="composer" novalidate>
+          <div class="chat__log" id="log" role="log" aria-live="polite" aria-label="Analyse et messages" tabindex="0"></div>
+
+          <!-- Affiché tant que l'analyse n'est pas envoyée : la discussion est fermée -->
+          <div class="chat__lock" id="verrou" hidden>
+            <p id="verrou-texte"></p>
+            <div class="btn-row" id="verrou-actions"></div>
+          </div>
+
+          <form class="composer" id="composer" novalidate hidden>
             <label class="sr-only" for="texte">Ton message</label>
-            <textarea id="texte" placeholder="Écris ton message…"></textarea>
+            <textarea id="texte" placeholder="Une question sur l'analyse ? Un exercice pas clair ? Écris ici…"></textarea>
             <div class="composer__files" id="pending" aria-live="polite"></div>
             <div class="composer__actions">
               <label class="btn btn--small btn--outline" for="pieces" style="cursor:pointer">

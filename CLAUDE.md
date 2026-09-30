@@ -27,3 +27,5 @@
 - Pour recevoir de vraies vidéos d'élèves, il faudra plus tard un service en ligne
   (comptes, stockage des vidéos, messagerie). À décider avec moi avant de le faire,
   car cela touche aux données personnelles, surtout celles des mineurs.
+- Il n'y a **pas de messagerie libre** : la discussion entre l'élève et le coach existe seulement
+  rattachée à une analyse vidéo, et elle s'ouvre une fois l'analyse envoyée.

@@ -32,7 +32,6 @@
   // ----- En-tête -----
   document.title = "Dossier de " + name + " – CourtCoach";
   $("nom").textContent = name;
-  $("lien-discussion").href = "messages.html?id=" + CC.threadGeneral(sid);
   const age = CC.ageOf(p.naissance);
   const infos = [
     age !== null ? age + " ans" : null,
@@ -61,17 +60,18 @@
     const thumb = h("video", { muted: true, playsinline: true, preload: "metadata", "aria-hidden": "true", tabindex: "-1" });
     CC.fileURL(v.fileId).then((url) => { if (url) thumb.src = url + "#t=0.3"; });
     const badge = v.status === "analysee" ? h("span", { class: "badge badge--ok" }, "Analysée") : h("span", { class: "badge badge--wait" }, "À analyser");
+    const reply = CC.awaitingCoach(v.id) ? h("span", { class: "badge badge--new" }, "L'élève a répondu") : null;
     // Vidéo précédente du même coup : pour comparer l'évolution
     const previous = videos.find((o) => o.shot === v.shot && o.date < v.date);
     return h("article", { class: "video-card" + (v.id === wantedVideo ? " video-card--focus" : ""), id: "video-" + v.id },
       h("div", { class: "video-card__thumb" }, thumb),
       h("div", { class: "video-card__body" },
         h("h3", {}, v.title),
-        h("div", { class: "video-card__meta" }, badge, h("span", {}, CC.SHOTS[v.shot] || "Coup"), h("span", {}, "· " + CC.fmtDate(v.date))),
+        h("div", { class: "video-card__meta" }, badge, reply, h("span", {}, CC.SHOTS[v.shot] || "Coup"), h("span", {}, "· " + CC.fmtDate(v.date))),
         v.question ? h("p", { class: "hint" }, "« " + v.question + " »") : null,
         h("div", { class: "btn-row" },
           h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, v.status === "analysee" ? "Reprendre l'analyse" : "Analyser"),
-          h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, "Discuter"),
+          v.status === "analysee" ? h("a", { class: "btn btn--small btn--outline", href: "messages.html?id=" + v.id }, "Discussion") : null,
           previous ? h("a", { class: "btn btn--small btn--outline", href: "analyse.html?id=" + v.id + "&b=" + previous.id + "&mode=side" }, "Comparer avec la précédente") : null)));
   }
   const vBox = $("videos");
@@ -100,9 +100,8 @@
   const cList = $("cours");
   lessons.forEach((l) => {
     const [label, cls] = STATUS[l.status] || STATUS.attente;
-    const reply = (status, text) => () => {
+    const reply = (status) => () => {
       CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x)));
-      CC.addMessage(CC.threadGeneral(sid), { from: "coach", text });
       location.reload();
     };
     cList.append(h("li", { class: "list__item" },
@@ -112,8 +111,8 @@
         l.message ? h("small", {}, "« " + l.message + " »") : null),
       l.status === "attente"
         ? h("div", { class: "btn-row" },
-            h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte", "Super, j'accepte ta demande de cours ! Je te propose un créneau très vite.") }, "Accepter"),
-            h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse", "Je ne peux pas te prendre sur ces créneaux. Propose-moi d'autres jours ?") }, "Refuser"))
+            h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
+            h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))
         : h("span", { class: "badge " + cls }, label)));
   });
   if (!lessons.length) cList.append(h("li", { class: "empty" }, "Aucune demande de cours."));
