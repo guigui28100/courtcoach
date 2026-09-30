@@ -57,6 +57,14 @@
     <!-- ===== Créer son compte / Se connecter ===== -->
     <section class="account" aria-label="Créer un compte ou se connecter">
       <div class="wrap">
+        <div class="demo-box">
+          <p><strong>Pas envie de créer un compte&nbsp;?</strong> Entre directement dans la démonstration&nbsp;:</p>
+          <div class="btn-row">
+            <button class="btn btn--small btn--ink" type="button" data-demo="eleve">Essayer côté élève</button>
+            <button class="btn btn--small btn--outline" type="button" data-demo="coach">Essayer côté coach</button>
+          </div>
+        </div>
+
         <nav class="jump" aria-label="Aller directement à">
           <a href="#inscription">Je suis nouveau</a>
           <a href="#connexion">J'ai un compte</a>
@@ -66,7 +74,7 @@
           <!-- Créer son compte -->
           <section class="auth-card auth-card--new" id="inscription" aria-labelledby="inscription-titre">
             <h2 id="inscription-titre">Créer mon compte</h2>
-            <p class="auth-card__intro">Gratuit pour tous les membres du club. Lorem ipsum dolor sit amet.</p>
+            <p class="auth-card__intro">Gratuit pour tous les membres du club.</p>
             <p class="auth__notice">
               <strong>Démonstration&nbsp;:</strong> invente ce que tu veux, rien n'est envoyé sur Internet.
               Tu entres ensuite dans l'application pour l'essayer.
@@ -92,7 +100,7 @@
           <!-- Se connecter -->
           <section class="auth-card auth-card--login" id="connexion" aria-labelledby="connexion-titre">
             <h2 id="connexion-titre">Se connecter</h2>
-            <p class="auth-card__intro">Content de te revoir&nbsp;! Consectetur adipiscing elit.</p>
+            <p class="auth-card__intro">Content de te revoir&nbsp;!</p>
 
             <form class="form" novalidate>
               <fieldset class="roles">
@@ -125,5 +133,6 @@
 
   <script src="store.js"></script>
   <script src="script.js"></script>
+  <script src="demo.js"></script>
 </body>
 </html>
