@@ -607,7 +607,7 @@ a { color: inherit; }
 @media (min-width: 860px) {
   .jump { display: none; }
   .account { padding-top: 0; }
-  .account__grid { grid-template-columns: 1fr 1fr; gap: var(--s4); margin-top: calc(-1 * var(--s4)); position: relative; }
+  .account__grid { grid-template-columns: 1fr 1fr; gap: var(--s4); }
   .auth-card { padding: var(--s4); box-shadow: 0 20px 50px -30px rgba(16,32,58,.45); }
 }
 
@@ -679,3 +679,19 @@ a { color: inherit; }
 /* Aperçu vidéo dans le téléphone de l'accueil */
 .phone__video { border-radius: 12px; overflow: hidden; line-height: 0; background: #16294a; }
 .phone__video svg { width: 100%; height: auto; }
+
+/* Boutons « Essayer la démo » */
+.demo-try { margin-top: var(--s4); }
+.demo-try p { margin: 0 0 var(--s1); font-weight: 700; }
+.demo-try__buttons { display: flex; flex-wrap: wrap; gap: var(--s1); }
+
+.demo-box {
+  margin: var(--s3) 0;
+  padding: var(--s2);
+  background: #fff8d6;
+  border: 1px solid var(--ball-dark);
+  border-radius: var(--radius);
+}
+.demo-box p { margin: 0 0 var(--s1); }
+.demo-box .btn-row { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.jump { margin: 0 0 var(--s3); }
