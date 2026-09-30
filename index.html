@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CourtCoach – Tennis Club Houdan</title>
+  <meta name="description" content="CourtCoach, la future application du Tennis Club Houdan : planning des cours, exercices et suivi de progression.">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <!-- ===== En-tête ===== -->
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="#" aria-label="CourtCoach, retour en haut de la page">
+        <svg class="brand__ball" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="15" fill="var(--ball)"/>
+          <path d="M5 6c6 5 6 15 0 20M27 6c-6 5-6 15 0 20" fill="none" stroke="#10203a" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="brand__name">Court<span>Coach</span></span>
+      </a>
+      <nav class="topbar__nav" aria-label="Sections de la page">
+        <a href="#fonctions">L'app</a>
+        <a href="#etapes">Comment ça marche</a>
+        <a href="#pour-qui">Pour qui ?</a>
+      </nav>
+      <button class="btn btn--small btn--ink" type="button" data-open-auth="connexion">
+        Connexion
+      </button>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <!-- ===== Bandeau principal ===== -->
+    <section class="hero" aria-labelledby="hero-titre">
+      <svg class="hero__court" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="4">
+          <rect x="20" y="20" width="360" height="820"/>
+          <line x1="65" y1="20" x2="65" y2="840"/>
+          <line x1="335" y1="20" x2="335" y2="840"/>
+          <line x1="65" y1="215" x2="335" y2="215"/>
+          <line x1="65" y1="645" x2="335" y2="645"/>
+          <line x1="200" y1="215" x2="200" y2="645"/>
+          <line x1="0" y1="430" x2="400" y2="430" stroke-width="6" stroke-dasharray="2 8"/>
+        </g>
+      </svg>
+
+      <div class="wrap hero__grid">
+        <div class="hero__text">
+          <p class="eyebrow">Tennis Club Houdan · bientôt disponible</p>
+          <h1 id="hero-titre">Le tennis du club,<br><em>dans ta poche.</em></h1>
+          <p class="hero__lead">
+            CourtCoach sera l'application des élèves, des parents et des
+            enseignants du club&nbsp;: tes cours, tes exercices et tes progrès,
+            au même endroit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          </p>
+          <div class="hero__actions">
+            <button class="btn btn--ball" type="button" data-open-auth="inscription">
+              Créer mon compte
+            </button>
+            <button class="btn btn--ghost" type="button" data-open-auth="connexion">
+              J'ai déjà un compte
+            </button>
+          </div>
+        </div>
+
+        <!-- Aperçu (fictif) de l'application -->
+        <div class="phone" aria-hidden="true">
+          <div class="phone__screen">
+            <p class="phone__hello">Bonjour&nbsp;!</p>
+            <p class="phone__label">Prochain cours</p>
+            <div class="phone__card phone__card--clay">
+              <span class="phone__day">Mar.<b>14</b></span>
+              <span>
+                <strong>Revers lifté</strong>
+                <small>18 h 00 · Court n° 2</small>
+              </span>
+            </div>
+            <p class="phone__label">Ma progression</p>
+            <div class="phone__card">
+              <span class="phone__meter"><span style="--val: 72%"></span></span>
+              <small>Service · 72&nbsp;%</small>
+              <span class="phone__meter"><span style="--val: 45%"></span></span>
+              <small>Volée · 45&nbsp;%</small>
+            </div>
+            <p class="phone__label">Exercice du jour</p>
+            <div class="phone__card phone__card--ink">
+              <span class="phone__play"></span>
+              <span><strong>Jeu de jambes</strong><small>Vidéo · 3 min</small></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Fonctions de l'app ===== -->
+    <section id="fonctions" class="section" aria-labelledby="fonctions-titre">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay">Ce que prépare CourtCoach</p>
+        <h2 id="fonctions-titre">Tout ce qu'il faut pour progresser entre deux cours.</h2>
+
+        <ul class="features" role="list">
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
+            <h3>Le planning des cours</h3>
+            <p>Tes horaires, ton court et les changements de dernière minute. Lorem ipsum dolor sit amet, consectetur adipiscing.</p>
+          </li>
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.8-2.8z"/></svg>
+            <h3>Des exercices en vidéo</h3>
+            <p>Les gestes vus en cours, à revoir tranquillement à la maison. Sed do eiusmod tempor incididunt ut labore.</p>
+          </li>
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20.5h18M6 17V12M11 17V8M16 17v-6M20 5l-4.5 3.5L11 5.5 6 9"/></svg>
+            <h3>Le suivi de progression</h3>
+            <p>Des objectifs simples, fixés avec ton enseignant, pour voir le chemin parcouru. Ut enim ad minim veniam.</p>
+          </li>
+          <li class="feature">
+            <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 3.5V7A1.5 1.5 0 0 1 4 5.5z"/><path d="M8 10h8M8 13.5h5"/></svg>
+            <h3>Les nouvelles du club</h3>
+            <p>Tournois, animations, fermetures des courts&nbsp;: plus rien ne t'échappe. Quis nostrud exercitation ullamco.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== Étapes, comptées comme au tennis ===== -->
+    <section id="etapes" class="section section--sand" aria-labelledby="etapes-titre">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay">Comment ça marche</p>
+        <h2 id="etapes-titre">Quatre points pour gagner le jeu.</h2>
+
+        <ol class="score" role="list">
+          <li class="score__step">
+            <span class="score__num" aria-hidden="true">15</span>
+            <div>
+              <h3>Crée ton compte</h3>
+              <p>Quelques secondes suffisent. Lorem ipsum dolor sit amet.</p>
+            </div>
+          </li>
+          <li class="score__step">
+            <span class="score__num" aria-hidden="true">30</span>
+            <div>
+              <h3>Rejoins ton groupe</h3>
+              <p>Ton enseignant t'ajoute à ton créneau de cours. Consectetur adipiscing elit.</p>
+            </div>
+          </li>
+          <li class="score__step">
+            <span class="score__num" aria-hidden="true">40</span>
+            <div>
+              <h3>Suis tes séances</h3>
+              <p>Planning, consignes et exercices au même endroit. Sed do eiusmod tempor.</p>
+            </div>
+          </li>
+          <li class="score__step score__step--win">
+            <span class="score__num" aria-hidden="true">Jeu</span>
+            <div>
+              <h3>Progresse&nbsp;!</h3>
+              <p>Tu vois tes progrès, séance après séance. Ut labore et dolore magna.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== Pour qui ===== -->
+    <section id="pour-qui" class="section section--ink" aria-labelledby="pourqui-titre">
+      <div class="wrap">
+        <p class="eyebrow">Pour qui&nbsp;?</p>
+        <h2 id="pourqui-titre">Une app, trois façons de l'utiliser.</h2>
+
+        <div class="audiences">
+          <article class="audience">
+            <h3>Élèves</h3>
+            <p>Retrouve tes cours et tes exercices, et fixe-toi des objectifs. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+          </article>
+          <article class="audience">
+            <h3>Parents</h3>
+            <p>Gardez un œil sur les horaires et les nouvelles du club. Duis aute irure dolor in reprehenderit in voluptate.</p>
+          </article>
+          <article class="audience">
+            <h3>Enseignants</h3>
+            <p>Préparez vos séances et partagez des exercices en un clic. Excepteur sint occaecat cupidatat non proident.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Appel final ===== -->
+    <section class="cta" aria-labelledby="cta-titre">
+      <div class="wrap cta__inner">
+        <h2 id="cta-titre">Balle de match&nbsp;: sois parmi les premiers.</h2>
+        <p>L'application est en cours de préparation. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+        <button class="btn btn--ink" type="button" data-open-auth="inscription">Créer mon compte</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Pied de page ===== -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <p><strong>Tennis Club Houdan</strong> · Houdan (78)</p>
+      <p>Site en construction – aucune donnée personnelle n'est collectée.</p>
+    </div>
+  </footer>
+
+  <!-- ===== Fenêtre Connexion / Inscription ===== -->
+  <dialog class="auth" id="auth" aria-labelledby="auth-titre">
+    <div class="auth__head">
+      <h2 id="auth-titre">Espace membre</h2>
+      <button class="auth__close" type="button" data-close-auth aria-label="Fermer la fenêtre">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Choisir entre connexion et inscription">
+      <button class="tabs__tab" type="button" role="tab" id="tab-connexion" aria-controls="panel-connexion" aria-selected="true">Connexion</button>
+      <button class="tabs__tab" type="button" role="tab" id="tab-inscription" aria-controls="panel-inscription" aria-selected="false" tabindex="-1">Inscription</button>
+    </div>
+
+    <p class="auth__notice">
+      L'espace membre n'est pas encore ouvert. Ce formulaire est une
+      démonstration&nbsp;: rien n'est envoyé ni enregistré.
+    </p>
+
+    <form class="auth__form" id="panel-connexion" role="tabpanel" aria-labelledby="tab-connexion" novalidate>
+      <label for="co-email">Adresse e-mail</label>
+      <input id="co-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+      <label for="co-mdp">Mot de passe</label>
+      <input id="co-mdp" name="password" type="password" autocomplete="current-password" required>
+      <button class="btn btn--ink btn--block" type="submit">Se connecter</button>
+      <p class="auth__status" role="status"></p>
+    </form>
+
+    <form class="auth__form" id="panel-inscription" role="tabpanel" aria-labelledby="tab-inscription" hidden novalidate>
+      <fieldset class="roles">
+        <legend>Je suis</legend>
+        <label><input type="radio" name="profil" value="eleve" checked> Élève</label>
+        <label><input type="radio" name="profil" value="parent"> Parent</label>
+        <label><input type="radio" name="profil" value="enseignant"> Enseignant</label>
+      </fieldset>
+      <label for="in-email">Adresse e-mail</label>
+      <input id="in-email" name="email" type="email" autocomplete="email" inputmode="email" required>
+      <label for="in-mdp">Mot de passe</label>
+      <input id="in-mdp" name="password" type="password" autocomplete="new-password" aria-describedby="in-mdp-aide" required>
+      <p class="auth__hint" id="in-mdp-aide">8 caractères minimum.</p>
+      <button class="btn btn--clay btn--block" type="submit">Créer mon compte</button>
+      <p class="auth__status" role="status"></p>
+    </form>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
