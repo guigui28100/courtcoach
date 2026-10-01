@@ -68,7 +68,7 @@
       const axis = comp.GOAL_AXES.find((a) => a.key === g.axis) || { label: "", color: "#b8471f" };
       const bar = h("span", { class: "goal__bar" }, h("span", {}));
       bar.firstChild.style.width = (g.progress || 0) + "%"; bar.firstChild.style.background = axis.color;
-      return h("li", {}, h("div", {}, h("strong", {}, axis.label + " : "), g.title || "(sans titre)", " — ", h("strong", {}, (g.progress || 0) + " %"),
+      return h("li", {}, h("div", {}, h("strong", {}, axis.label + " : "), g.title || "(sans titre)", " — ", h("strong", {}, (g.progress || 0) + " %"), comp.analysesOfGoal(p.id, g).length ? " · " + comp.analysesOfGoal(p.id, g).length + " analyse(s) vidéo" : "",
         g.indicator ? h("div", { class: "hint" }, g.indicator + (g.deadline ? " · avant le " + CC.fmtDate(g.deadline) : "")) : null), bar);
     }))) : null;
 
@@ -85,6 +85,7 @@
       const imgs = h("div", { class: "b-analysis__imgs" });
       (a.captures || []).slice(0, 4).forEach((cid, i) => CC.fileURL(cid).then((url) => { if (url) imgs.append(h("img", { src: url, alt: "Image annotée " + (i + 1) })); }));
       return h("div", { class: "b-analysis" }, h("h3", {}, (a.videoTitle || "Analyse") + " · " + CC.fmtDate(a.date)),
+        comp.goalsOfAnalysis(p.id, a).length ? h("p", {}, h("strong", {}, "Objectifs travaillés : "), comp.goalsOfAnalysis(p.id, a).map((g) => g.title).join(" ; ")) : null,
         a.observation ? h("p", {}, a.observation) : null,
         a.strengths ? h("p", {}, h("strong", {}, "Points forts : "), a.strengths) : null,
         a.improve ? h("p", {}, h("strong", {}, "À améliorer : "), a.improve) : null, imgs);

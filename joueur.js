@@ -176,6 +176,12 @@
             h("div", { class: "field goal__progress" }, h("label", {}, "Progression ", pct,
               h("input", { type: "range", min: "0", max: "100", step: "5", value: String(g.progress || 0), "aria-label": "Progression de l'objectif",
                 oninput: (e) => { g.progress = Number(e.target.value); paint(); card.classList.toggle("goal--done", g.progress >= 100); save(); refreshAxis(); refreshSummary(); } })), bar)),
+          (() => {
+            const linked = comp.analysesOfGoal(id, g);
+            return linked.length ? h("details", { class: "goal__links" }, h("summary", {}, "🎥 " + linked.length + " analyse" + (linked.length > 1 ? "s" : "") + " vidéo liée" + (linked.length > 1 ? "s" : "")),
+              h("ul", {}, linked.map((a) => h("li", {}, h("a", { href: "joueur.html?id=" + id + "#videos" }, (a.videoTitle || "Analyse") + " · " + CC.fmtDate(a.date))))))
+              : h("p", { class: "hint" }, "Aucune analyse vidéo liée pour l'instant.");
+          })(),
           h("button", { type: "button", class: "btn btn--small btn--danger", onclick: () => {
             list.splice(list.indexOf(g), 1); save(); card.remove(); refreshAxis(); refreshSummary();
           } }, "Supprimer"));
@@ -436,6 +442,7 @@
       return h("details", { class: "analysis-item" },
         h("summary", {}, h("strong", {}, a.videoTitle || "Analyse"), " · " + CC.fmtDate(a.date) + " · " + (CC.SHOTS[a.shot] || "")),
         h("div", { class: "analysis" },
+          comp.goalsOfAnalysis(id, a).length ? h("div", { class: "chips-info" }, comp.goalsOfAnalysis(id, a).map((g) => h("span", { class: "badge badge--ok" }, "🎯 " + (g.title || "Objectif")))) : null,
           a.observation ? h("div", {}, h("h4", {}, "Observation"), h("p", {}, a.observation)) : null,
           a.strengths ? h("div", {}, h("h4", {}, "Points forts"), h("p", {}, a.strengths)) : null,
           a.improve ? h("div", {}, h("h4", {}, "À améliorer"), h("p", {}, a.improve)) : null,

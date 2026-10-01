@@ -172,6 +172,10 @@ CC.comp = (() => {
   }
   const analysesIn = (pid, season, t) => analyses(pid).filter((a) => inPeriod(a.date, season, t)).sort((a, b) => a.date.localeCompare(b.date));
 
+  // Objectifs liés à une analyse (ceux de la saison où l'analyse a été faite) et analyses liées à un objectif
+  const goalsOfAnalysis = (pid, a) => goals(pid, seasonOf(a.date)).filter((g) => (a.goalIds || []).includes(g.id));
+  const analysesOfGoal = (pid, g) => analyses(pid).filter((a) => (a.goalIds || []).includes(g.id)).sort((x, y) => y.date.localeCompare(x.date));
+
   // Vidéos d'un joueur
   const videosOf = (pid) => CC.videos().filter((v) => v.playerId === pid).sort((a, b) => b.date.localeCompare(a.date));
 
@@ -345,7 +349,7 @@ CC.comp = (() => {
     goals, saveGoals, goalsProgress,
     getEval, saveEval, hasEval, completion, axisAverage, overallAverage, evaluatedPeriods, allSkillKeys,
     matches, saveMatches, matchesIn,
-    analyses, saveAnalyses, addAnalysis, analysesIn, videosOf,
+    analyses, saveAnalyses, addAnalysis, analysesIn, videosOf, goalsOfAnalysis, analysesOfGoal,
     suggestAppreciation, bulletinText, addExamples,
   };
 })();

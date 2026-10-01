@@ -50,6 +50,7 @@
               h("strong", {}, g.title || "(sans titre)"),
               g.indicator ? h("span", { class: "hint" }, "Comment on le mesure : " + g.indicator) : null,
               g.deadline ? h("span", { class: "hint" }, "À atteindre avant le " + CC.fmtDate(g.deadline)) : null,
+              comp.analysesOfGoal(id, g).length ? h("span", { class: "hint" }, "🎥 Travaillé dans " + comp.analysesOfGoal(id, g).length + " analyse(s) vidéo (onglet « Mes analyses »)") : null,
               h("span", {}, h("strong", {}, (g.progress || 0) + " %"), (g.progress || 0) >= 100 ? " 🎉 objectif atteint !" : ""), bar);
           }));
       })) : h("p", { class: "empty" }, "Ton coach n'a pas encore fixé d'objectifs pour cette saison."));
@@ -100,6 +101,7 @@
       });
       return h("details", { class: "analysis-item" }, h("summary", {}, h("strong", {}, a.videoTitle || "Analyse"), " · " + CC.fmtDate(a.date)),
         h("div", { class: "analysis" },
+          comp.goalsOfAnalysis(id, a).length ? h("div", { class: "chips-info" }, comp.goalsOfAnalysis(id, a).map((g) => h("span", { class: "badge badge--ok" }, "🎯 " + (g.title || "Objectif")))) : null,
           a.observation ? h("div", {}, h("h4", {}, "Observation"), h("p", {}, a.observation)) : null,
           a.strengths ? h("div", {}, h("h4", {}, "Points forts"), h("p", {}, a.strengths)) : null,
           a.improve ? h("div", {}, h("h4", {}, "À améliorer"), h("p", {}, a.improve)) : null,
