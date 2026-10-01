@@ -44,7 +44,7 @@
   const items = isCoach
     ? [
         ["espace", "espace.html", "Espace"],
-        ["eleves", "eleves.html", "Demande de coaching", "Coaching"],
+        ["eleves", "eleves.html", "Demandes de coaching", "Coaching"],
         ["suivi", "suivi.html", "Centre de compétition jeunes", "Centre jeunes"],
         ["videos", "videos.html", "Vidéos"],
       ]
