@@ -1,6 +1,19 @@
 /* En-tête, menu du bas (téléphone) et pied de page des pages de l'application. */
 (() => {
   const { h } = CC;
+
+  // Si quelque chose se passe mal, on l'affiche au lieu de rester silencieux
+  let problemShown = false;
+  function showProblem(text) {
+    if (problemShown || /ResizeObserver loop/.test(text)) return;
+    problemShown = true;
+    document.body.append(h("div", { class: "problem-banner", role: "alert" },
+      "Petit problème technique : " + text + ". Recharge la page ; si ça continue, recopie cette phrase pour la donner à ton assistant.",
+      h("button", { type: "button", onclick: (e) => e.target.parentElement.remove() }, "Fermer")));
+  }
+  window.addEventListener("error", (e) => showProblem((e.message || "erreur") + (e.filename ? " (" + e.filename.split("/").pop() + " ligne " + e.lineno + ")" : "")));
+  window.addEventListener("unhandledrejection", (e) => showProblem(String((e.reason && e.reason.message) || e.reason || "erreur")));
+
   const role = CC.role();
 
   // Sans « connexion » (démo), on renvoie vers la page de compte.

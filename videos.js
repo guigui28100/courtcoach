@@ -12,11 +12,30 @@
   if (isCoach) {
     $("eyebrow").textContent = "Vidéos";
     $("titre").textContent = "Vidéos des élèves";
-    $("sous-titre").textContent = "Ouvre une vidéo pour l'analyser, ou ajoute une vidéo de référence (un geste modèle) pour la comparer.";
-    $("envoi-titre").textContent = "Ajouter une vidéo de référence";
-    $("fichier-label").textContent = "Vidéo de référence";
-    $("fichier-aide").textContent = "Un geste modèle : tu pourras la superposer ou la mettre à côté de la vidéo d'un élève.";
+    $("sous-titre").textContent = "Ouvre une vidéo pour l'analyser, ou ajoutes-en une : celle d'un élève (filmée pendant un cours) ou un modèle de référence.";
+    $("envoi-titre").textContent = "Ajouter une vidéo";
+    $("fichier-label").textContent = "Vidéo";
+    $("fichier-aide").textContent = "Tu pourras l'analyser (dessins, angles, images annotées) et la comparer à une autre.";
     $("btn-envoyer").textContent = "Ajouter la vidéo";
+
+    // À qui est cette vidéo ? Par défaut : à un élève, s'il y en a
+    const students = CC.students();
+    const fieldset = $("champ-destinataire");
+    fieldset.hidden = false;
+    $("eleve-id").replaceChildren(...students.map((a) => h("option", { value: a.id }, CC.studentName(a.id))));
+    const radios = Array.from(fieldset.querySelectorAll('input[name="destinataire"]'));
+    const forStudent = radios.find((r) => r.value === "eleve");
+    const forModel = radios.find((r) => r.value === "reference");
+    if (!students.length) {
+      forStudent.disabled = true;
+      forModel.checked = true;
+      $("destinataire-aide").textContent = "Il n'y a pas encore d'élève : la vidéo sera un modèle. Pour tester avec un élève, ajoute d'abord les vidéos d'exemple ci-dessus.";
+    } else {
+      forStudent.checked = true;
+    }
+    const syncStudentField = () => { $("champ-eleve").hidden = !forStudent.checked; };
+    radios.forEach((r) => r.addEventListener("change", syncStudentField));
+    syncStudentField();
     $("champ-question").hidden = true;
     $("liste-titre").textContent = "Bibliothèque";
   } else {
@@ -56,17 +75,20 @@
     status.textContent = "Enregistrement en cours…";
     try {
       const fileId = await CC.putFile(file);
+      // Coach : la vidéo est celle d'un élève (à analyser) ou un modèle de référence
+      const coachForStudent = isCoach && form.elements.destinataire.value === "eleve" && form.elements.eleve.value;
       const video = {
         id: CC.uid(),
         fileId,
-        owner: isCoach ? "coach" : "eleve",
-        studentId: me,
+        owner: isCoach && !coachForStudent ? "coach" : "eleve",
+        studentId: isCoach ? (coachForStudent ? form.elements.eleve.value : null) : me,
         title: form.elements.titre.value.trim() || file.name.replace(/\.[^.]+$/, ""),
         shot: form.elements.coup.value,
         question: isCoach ? "" : form.elements.question.value.trim(),
         date: new Date().toISOString(),
         size: file.size,
-        status: isCoach ? "reference" : "attente",
+        status: isCoach && !coachForStudent ? "reference" : "attente",
+        seen: Boolean(coachForStudent), // le coach vient de l'ajouter : ce n'est pas une « nouvelle vidéo » à découvrir
       };
       CC.saveVideos([...CC.videos(), video]);
       if (!isCoach) {
@@ -74,11 +96,21 @@
           from: "eleve",
           text: "Voici ma vidéo (" + (CC.SHOTS[video.shot] || "coup") + ")." + (video.question ? "\n" + video.question : ""),
         });
+      } else if (coachForStudent) {
+        CC.addMessage(video.id, { from: "coach", text: "Vidéo ajoutée par ton coach (" + (CC.SHOTS[video.shot] || "coup") + ")." });
       }
       form.reset();
+      if (isCoach) {
+        // form.reset() remet le choix « élève / modèle » comme au départ
+        const wantStudent = CC.students().length > 0;
+        form.elements.destinataire.value = wantStudent ? "eleve" : "reference";
+        $("champ-eleve").hidden = !wantStudent;
+      }
       preview.hidden = true;
       status.className = "status-line is-ok";
-      status.textContent = isCoach ? "Vidéo de référence ajoutée ✓" : "Vidéo envoyée ✓ Ton coach va l'analyser.";
+      status.textContent = isCoach
+        ? (coachForStudent ? "Vidéo ajoutée au dossier de l'élève ✓ Tu peux l'analyser." : "Vidéo de référence ajoutée ✓")
+        : "Vidéo envoyée ✓ Ton coach va l'analyser.";
       render();
     } catch (e) {
       fail("Impossible d'enregistrer la vidéo (espace insuffisant ?). Essaie une vidéo plus courte.");
@@ -113,7 +145,7 @@
       actions.push(h("a", { class: "btn btn--small btn--outline", href: "analyse.html?id=" + v.id }, v.status === "analysee" ? "Reprendre l'analyse" : "Analyser"));
     }
     if (isCoach && v.status === "reference") {
-      actions.push(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Ouvrir"));
+      actions.push(h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Analyser"));
     }
     // La discussion n'existe qu'après l'analyse
     if (v.status === "analysee") {
