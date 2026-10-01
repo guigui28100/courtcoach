@@ -613,6 +613,14 @@
   // ----- Retour visible quand on capture : éclair sur la vidéo + message flottant -----
   let toastTimer = 0;
   function showToast(text, options) {
+    try {
+      showToastInner(text, options);
+    } catch (e) {
+      console.error(e);
+      alert(text); // dernier recours : on ne reste jamais sans réponse
+    }
+  }
+  function showToastInner(text, options) {
     const o = options || {};
     const toast = $("toast");
     toast.className = "toast" + (o.error ? " toast--error" : "");
@@ -639,6 +647,10 @@
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("délai dépassé")), ms)),
+  ]);
   const fileSafe = (text) => String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "video";
 
   async function capture() {
@@ -683,7 +695,7 @@
 
       let id;
       try {
-        id = await CC.putFile(blob);
+        id = await withTimeout(CC.putFile(blob), 8000);
       } catch (e) {
         // Le stockage du navigateur refuse l'image : on la télécharge pour ne rien perdre
         downloadBlob(blob, name);
@@ -693,7 +705,10 @@
       draft.captures.push(id);
       saveDraft();
       renderCaptures();
-      revealCaptures(true);
+      if ($("captures").querySelectorAll(".capture-card").length !== draft.captures.length) {
+        throw new Error("l'image n'a pas pu être affichée dans l'analyse");
+      }
+      revealCaptures(true).catch(() => {});
       const sideBySide = getComputedStyle($("panneau")).position === "sticky" && !$("panneau").hidden;
       showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + (sideBySide ? " (à droite)" : ""), {
         thumb,
@@ -768,6 +783,21 @@
     $("tray-sent").hidden = !draft.sent.length;
     $("captures-sent").replaceChildren(...draft.sent.map((id, i) => captureThumb(id, i, false)));
 
+    // Bande fixe en bas de l'écran : les images capturées sont toujours sous les yeux
+    const strip = $("strip");
+    strip.hidden = !draft.captures.length;
+    document.body.classList.toggle("has-strip", draft.captures.length > 0);
+    $("strip-count").textContent = String(draft.captures.length);
+    $("strip-thumbs").replaceChildren(...draft.captures.map((id, i) => {
+      const link = h("a", { class: "strip__thumb", target: "_blank", rel: "noopener", "aria-label": "Voir l'image " + (i + 1) + " en grand" });
+      CC.fileURL(id).then((url) => {
+        if (!url) return;
+        link.href = url;
+        link.append(h("img", { src: url, alt: "Image annotée " + (i + 1) }));
+      });
+      return link;
+    }));
+
     // Pastille avec le nombre d'images sur le bouton « Capturer »
     const badge = $("capture-count");
     if (badge) { badge.textContent = String(draft.captures.length); badge.hidden = !draft.captures.length; }
@@ -796,6 +826,20 @@
       ($("tray").offsetParent ? $("tray") : $("captures")).scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }
+
+  // Le bouton de la bande : on va voir les images dans « Mon analyse », quelle que soit la mise en page
+  $("strip-go").addEventListener("click", () => {
+    const panel = $("panneau");
+    const target = $("captures").closest(".form-section") || $("captures");
+    if (getComputedStyle(panel).position === "sticky") {
+      panel.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
+    } else {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    target.classList.remove("section-flash");
+    void target.offsetWidth;
+    target.classList.add("section-flash");
+  });
 
   // =====================================================
   // 7. Analyse écrite et exercices

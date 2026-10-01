@@ -170,6 +170,13 @@
     </div>
   </main>
 
+  <!-- Bande des images capturées : toujours visible en bas de l'écran, quelle que soit la mise en page -->
+  <div class="strip" id="strip" role="region" aria-label="Images capturées" hidden>
+    <strong class="strip__title">Images annotées <span class="tray__count" id="strip-count">0</span></strong>
+    <div class="strip__thumbs" id="strip-thumbs"></div>
+    <button type="button" class="btn btn--small btn--ball" id="strip-go">Voir dans mon analyse</button>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="store.js"></script>
