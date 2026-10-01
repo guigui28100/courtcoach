@@ -95,6 +95,13 @@
     location.href = "joueur.html?id=" + p.id + "#profil";
   });
 
+  // ----- Libérer de la place (brouillons et images capturées pendant les tests) -----
+  function freeSpace() {
+    if (!confirm("Supprimer les brouillons d'analyse et les images capturées de test ?")) return;
+    Object.keys(localStorage).filter((k) => k.indexOf("courtcoach.draft.") === 0 || k.indexOf("courtcoach.file.ls:") === 0).forEach((k) => localStorage.removeItem(k));
+    $("btn-exemples").click();
+  }
+
   // ----- Joueurs d'exemple -----
   $("btn-exemples").addEventListener("click", async () => {
     const button = $("btn-exemples");
@@ -112,7 +119,13 @@
       }
     } catch (e) {
       status.className = "status-line is-error";
-      status.textContent = "Impossible de charger les joueurs d'exemple : " + CC.describeError(e);
+      if (e && e.message === "MEMOIRE_PLEINE") {
+        status.replaceChildren("Ton navigateur n'a plus de place pour enregistrer de nouvelles données. ",
+          h("button", { type: "button", class: "btn btn--small btn--outline", onclick: freeSpace }, "Libérer de la place"),
+          " (supprime seulement les brouillons d'analyse et les images capturées pendant les tests, pas les vidéos ni les joueurs).");
+      } else {
+        status.textContent = "Impossible de charger les joueurs d'exemple : " + CC.describeError(e);
+      }
       render();
     }
     button.disabled = false;

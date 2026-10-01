@@ -89,7 +89,9 @@ CC.comp = (() => {
 
   // ---------- Joueurs ----------
   const players = () => read("comp.players", []);
-  const savePlayers = (list) => write("comp.players", list);
+  const savePlayers = (list) => {
+    if (!write("comp.players", list)) throw new Error("MEMOIRE_PLEINE");
+  };
   const player = (id) => players().find((p) => p.id === id);
   function addPlayer(data) {
     const p = { id: uid(), created: new Date().toISOString(), ...data };
