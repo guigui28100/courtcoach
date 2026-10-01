@@ -103,6 +103,16 @@
         <p class="status-line" role="status" id="studio-status"></p>
       </div>
 
+      <!-- Les images capturées, juste sous la vidéo : on les retrouve là où on travaille -->
+      <section class="tray" id="tray" aria-labelledby="tray-titre">
+        <h2 class="tray__title" id="tray-titre">Images annotées <span class="tray__count" id="tray-count">0</span></h2>
+        <div class="captures captures--tray" id="captures-tray"></div>
+        <div id="tray-sent" hidden>
+          <h3 class="tray__subtitle">Déjà envoyées à l'élève</h3>
+          <div class="captures captures--tray" id="captures-sent"></div>
+        </div>
+      </section>
+
       <div class="studio-cols" id="colonnes">
         <!-- Retour à l'élève -->
         <section id="feedback" aria-labelledby="fb-titre">

@@ -451,3 +451,11 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 var(--s2); min-width: 0; }
   .toast { flex-wrap: wrap; width: 92vw; max-width: 92vw; }
   .toast__action { flex: 1 1 100%; }
 }
+
+/* Images annotées : plateau juste sous la lecture */
+.tray { margin-top: var(--s2); padding: var(--s2); background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.tray__title { display: flex; align-items: center; gap: 10px; margin: 0 0 var(--s1); font-size: 1.15rem; max-width: none; }
+.tray__count { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 99px; background: var(--ball); color: var(--ink); font-size: .9rem; font-weight: 800; }
+.tray__subtitle { margin: var(--s2) 0 var(--s1); font-size: .95rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.captures--tray { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); margin-bottom: 0; }
+.capture__missing { margin: 0; padding: var(--s2); color: #fff; font-size: .85rem; text-align: center; }
