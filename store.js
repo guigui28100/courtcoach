@@ -263,14 +263,15 @@ const CC = (() => {
   }
 
   // Crée (ou retrouve, grâce à l'e-mail) un compte élève et en fait l'élève courant
-  function signUpStudent(email, consent) {
+  function signUpStudent(email, consent, extra) {
     const list = accounts();
     const clean = String(email || "").trim().toLowerCase();
     let account = clean ? list.find((a) => a.email === clean) : null;
     if (!account) {
-      account = { id: uid(), email: clean, created: new Date().toISOString() };
+      account = { id: uid(), email: clean, created: new Date().toISOString(), kind: (extra && extra.kind) || "adulte" };
       if (!list.length) migrateLegacy(account.id);
       write("accounts", [...list, account]);
+      if (extra && extra.prenom) saveProfile({ ...read("profile." + account.id, {}), prenom: extra.prenom }, account.id);
     }
     // Trace du consentement (politique lue ; accord d'un parent pour les moins de 15 ans)
     if (consent) {
@@ -461,7 +462,7 @@ const CC = (() => {
 
   return {
     fill, PRIVACY_VERSION, exportStudentData, deleteStudent,
-    VERSION: "30",
+    VERSION: "31",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,

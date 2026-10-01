@@ -41,6 +41,6 @@
 ## Vie privée et RGPD (comptes de mineurs)
 - Page `confidentialite.html` (politique en français), à garder à jour. Pied de page avec lien « Confidentialité » sur toutes les pages.
 - Aucun service extérieur : polices dans `fonts/`, pas de statistiques ni de cookies de suivi. Ne rien ajouter qui appelle un autre site (en-têtes de sécurité dans `vercel.json`, qui bloquent de toute façon).
-- Création de compte : case « politique lue » obligatoire + accord d'un parent pour les moins de 15 ans.
+- Création de compte : trois profils (Adulte, Jeune du Centre de compétition jeunes, Enseignant). Case « politique lue » obligatoire ; pour un jeune : prénom + accord du parent, puis validation par le coach (page `suivi`, « Inscriptions de jeunes à valider »).
 - Droits : « Mon profil » permet de télécharger et de supprimer ses données ; le dossier d'un joueur peut être téléchargé / supprimé par le coach. Pas de vidéo d'un joueur sans autorisation des parents enregistrée.
 - La liste de ce qui reste à faire avant de vraies données est dans `RGPD-A-FAIRE.md`.

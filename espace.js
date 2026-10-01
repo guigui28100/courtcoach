@@ -22,6 +22,10 @@
     const me = CC.ensureMe();
     const prenom = CC.profile(me).prenom;
     $("vue-eleve").hidden = false;
+    const acc = CC.accounts().find((a) => a.id === me);
+    if (acc && acc.kind === "jeune" && !CC.comp.playerOfAccount(me)) {
+      $("vue-eleve").prepend(h("p", { class: "demo-note" }, h("strong", {}, "Inscription en attente."), " Ton coach doit valider ton inscription au Centre de compétition jeunes. Dès que c'est fait, l'onglet « Mon suivi » apparaît dans ton menu."));
+    }
     $("eyebrow").textContent = "Mon espace élève";
     $("hello").textContent = prenom ? "Bonjour " + prenom + " !" : "Bienvenue sur CourtCoach !";
     $("sub").textContent = "Envoie tes vidéos, reçois les conseils de ton coach et suis tes progrès.";
@@ -137,6 +141,7 @@
       chip(waiting.length + replies.length, "à analyser ou lire", "à analyser ou lire", waiting.length + replies.length, "#co-todo-section"),
       chip(pendingLessons.length, "demande de cours", "demandes de cours", pendingLessons.length, "#co-todo-section"));
     $("co-resume-centre").replaceChildren(
+      chip(CC.accounts().filter((a) => a.kind === "jeune" && !players.some((p) => p.accountId === a.id)).length, "inscription à valider", "inscriptions à valider", CC.accounts().filter((a) => a.kind === "jeune" && !players.some((p) => p.accountId === a.id)).length, "suivi.html#inscriptions"),
       chip(unanalysed.length, "vidéo à analyser", "vidéos à analyser", unanalysed.length, "suivi.html"),
       chip(toPrepare.length, "bulletin à préparer", "bulletins à préparer", toPrepare.length, "suivi.html"));
 
@@ -166,6 +171,11 @@
       centre.push(h("li", { class: "list__item" },
         h("div", { class: "list__main" }, h("strong", {}, CC.comp.fullName(p) + " — " + v.title), h("small", {}, "🎥 " + (CC.SHOTS[v.shot] || "Coup") + " · ajoutée le " + CC.fmtDate(v.date))),
         h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Analyser")));
+    });
+    CC.accounts().filter((a) => a.kind === "jeune" && !players.some((p) => p.accountId === a.id)).forEach((a) => {
+      centre.push(h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, ((CC.profile(a.id).prenom || "").trim() || "Jeune") + " — nouvelle inscription"), h("small", {}, "🆕 Compte créé avec l'accord d'un parent, à valider")),
+        h("a", { class: "btn btn--small btn--clay", href: "suivi.html#inscriptions" }, "Valider")));
     });
     toPrepare.forEach((p) => {
       const pct = CC.comp.completion(CC.comp.getEval(p.id, cur.season, cur.t));

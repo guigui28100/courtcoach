@@ -81,24 +81,26 @@
 
             <form class="form" novalidate>
               <fieldset class="roles">
-                <legend>Je suis</legend>
-                <label><input type="radio" name="profil" value="eleve" checked> Élève</label>
-                <label><input type="radio" name="profil" value="parent"> Parent</label>
+                <legend>Je m'inscris en tant que</legend>
+                <label><input type="radio" name="profil" value="adulte" checked> Adulte (adhérent)</label>
+                <label><input type="radio" name="profil" value="jeune"> Jeune du Centre de compétition jeunes</label>
                 <label><input type="radio" name="profil" value="enseignant"> Enseignant</label>
               </fieldset>
-              <label for="in-email">Adresse e-mail</label>
+              <p class="auth__hint" id="aide-profil"></p>
+
+              <div id="bloc-jeune" hidden>
+                <label for="in-prenom">Prénom du jeune</label>
+                <input id="in-prenom" name="prenom" type="text" autocomplete="given-name" maxlength="40">
+              </div>
+
+              <label for="in-email" id="lbl-email">Adresse e-mail</label>
               <input id="in-email" name="email" type="email" autocomplete="email" inputmode="email" required>
               <label for="in-mdp">Mot de passe</label>
               <input id="in-mdp" name="password" type="password" autocomplete="new-password" aria-describedby="in-mdp-aide" required>
               <p class="auth__hint" id="in-mdp-aide">8 caractères minimum.</p>
 
-              <fieldset class="roles" id="bloc-age">
-                <legend>Mon âge</legend>
-                <label><input type="radio" name="age" value="15plus" checked> 15 ans ou plus</label>
-                <label><input type="radio" name="age" value="moins15"> Moins de 15 ans</label>
-              </fieldset>
-              <label class="check" id="bloc-parent" hidden><input type="checkbox" name="parent"> <span>Mon parent ou mon responsable légal est d'accord, il a lu la politique de confidentialité et m'aide à créer ce compte.</span></label>
-              <label class="check"><input type="checkbox" name="politique"> <span>J'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a> : mes informations ne servent qu'au suivi au club.</span></label>
+              <label class="check" id="bloc-parent" hidden><input type="checkbox" name="parent"> <span>Je suis le parent ou le responsable légal de ce jeune : j'autorise son inscription et j'ai lu la politique de confidentialité.</span></label>
+              <label class="check"><input type="checkbox" name="politique"> <span>J'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a> : les informations ne servent qu'au suivi au club.</span></label>
               <button class="btn btn--clay btn--block" type="submit">Créer mon compte</button>
               <p class="auth__status" role="status"></p>
             </form>
@@ -112,7 +114,7 @@
             <form class="form" novalidate>
               <fieldset class="roles">
                 <legend>Je me connecte en tant que</legend>
-                <label><input type="radio" name="mode" value="eleve" checked> Élève ou parent</label>
+                <label><input type="radio" name="mode" value="eleve" checked> Adulte ou jeune du Centre</label>
                 <label><input type="radio" name="mode" value="coach"> Coach</label>
               </fieldset>
               <label for="co-email">Adresse e-mail</label>

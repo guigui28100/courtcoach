@@ -18,7 +18,38 @@
     return now || list[0] || null;
   }
 
+  // Comptes de jeunes inscrits, pas encore reliés à une fiche du Centre
+  function renderPending() {
+    const players = comp.players();
+    const pending = CC.accounts().filter((a) => a.kind === "jeune" && !players.some((p) => p.accountId === a.id));
+    $("inscriptions").hidden = !pending.length;
+    CC.fill($("liste-insc"), pending.map((a) => {
+      const prenom = (CC.profile(a.id).prenom || "").trim();
+      const free = players.filter((p) => !p.accountId);
+      const select = h("select", { "aria-label": "Relier à une fiche existante", id: "rel-" + a.id },
+        h("option", { value: "" }, "Relier à une fiche existante…"), free.map((p) => h("option", { value: p.id }, comp.fullName(p))));
+      return h("li", { class: "list__item list__item--wrap" },
+        h("div", { class: "list__main" }, h("strong", {}, (prenom || "Jeune") + " — inscrit le " + CC.fmtDate(a.created)),
+          h("small", {}, "Accord du parent coché à l'inscription · " + (a.email || "sans e-mail"))),
+        h("div", { class: "btn-row" },
+          h("button", { type: "button", class: "btn btn--small btn--clay", onclick: () => {
+            const p = comp.addPlayer({ prenom: prenom || "Jeune", nom: "", accountId: a.id });
+            location.href = "joueur.html?id=" + p.id + "#profil";
+          } }, "Créer sa fiche"),
+          free.length ? select : null,
+          free.length ? h("button", { type: "button", class: "btn btn--small btn--outline", onclick: () => {
+            if (!select.value) { select.focus(); return; }
+            comp.updatePlayer(select.value, { accountId: a.id }); render();
+          } }, "Relier") : null,
+          h("button", { type: "button", class: "btn btn--small btn--danger", onclick: async () => {
+            if (!confirm("Refuser cette inscription et supprimer le compte ?")) return;
+            await CC.deleteStudent(a.id); render();
+          } }, "Refuser")));
+    }));
+  }
+
   function render() {
+    renderPending();
     const players = comp.players();
 
     // ----- Chiffres clés -----
