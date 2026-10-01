@@ -37,6 +37,7 @@
     videos: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2v5.6l4.8-2.8z"/>',
     messages: '<path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 3.5V7A1.5 1.5 0 0 1 4 5.5z"/>',
     profil: '<circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/>',
+    suivi: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v2a3 3 0 0 0 3 3M16 6h3v2a3 3 0 0 1-3 3M12 13v4M8.5 20h7"/>',
     eleves: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4M16 5.6a3.2 3.2 0 0 1 0 5.8M18 14.8c1.8.6 2.9 2.4 3.2 5.2"/>',
   };
 
@@ -44,6 +45,7 @@
     ? [
         ["espace", "espace.html", "Espace"],
         ["eleves", "eleves.html", "Élèves"],
+        ["suivi", "suivi.html", "Compétition"],
         ["videos", "videos.html", "Vidéos"],
       ]
     : [
@@ -53,7 +55,7 @@
       ];
 
   const link = (key, href, label, cls) =>
-    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
+    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "suivi" && (page === "joueur" || page === "bulletin")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
       cls === "tabbar__link" ? icon(ICONS[key]) : null, h("span", {}, label));
 
   const switchRole = h("button", {

@@ -122,25 +122,31 @@
   // ----- Liste -----
   let filter = "toutes";
   const FILTERS = isCoach
-    ? [["toutes", "Toutes"], ["attente", "À analyser"], ["analysee", "Analysées"], ["reference", "Références"]]
+    ? [["toutes", "Toutes"], ["attente", "À analyser"], ["analysee", "Analysées"], ["reference", "Références"], ["joueurs", "Pôle compétition"]]
     : [];
 
   function visibleVideos() {
     let list = CC.videos();
     if (!isCoach) list = list.filter((v) => v.owner === "eleve" && v.studentId === me);
-    if (filter !== "toutes") list = list.filter((v) => v.status === filter);
+    if (filter === "joueurs") list = list.filter((v) => v.playerId);
+    else if (filter !== "toutes") list = list.filter((v) => v.status === filter && !v.playerId);
     return list.slice().reverse();
   }
 
   function card(v) {
     const thumb = h("video", { muted: true, playsinline: true, preload: "metadata", "aria-hidden": "true", tabindex: "-1" });
     CC.fileURL(v.fileId).then((url) => { if (url) thumb.src = url + "#t=0.3"; });
-    const badge = v.status === "reference" ? h("span", { class: "badge badge--ref" }, "Référence")
+    const squad = v.playerId ? CC.comp.player(v.playerId) : null;
+    const badge = squad ? h("span", { class: "badge badge--new" }, "Pôle compétition")
+      : v.status === "reference" ? h("span", { class: "badge badge--ref" }, "Référence")
       : v.status === "analysee" ? h("span", { class: "badge badge--ok" }, "Analysée")
       : h("span", { class: "badge badge--wait" }, "En attente");
 
     const actions = [];
-    if (isCoach && v.status !== "reference") {
+    if (isCoach && squad) {
+      actions.push(h("a", { class: "btn btn--small btn--clay", href: "joueur.html?id=" + squad.id + "#videos" }, "Dossier du joueur"));
+      actions.push(h("a", { class: "btn btn--small btn--outline", href: "analyse.html?id=" + v.id }, "Analyser"));
+    } else if (isCoach && v.status !== "reference") {
       actions.push(h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Ouvrir le dossier"));
       actions.push(h("a", { class: "btn btn--small btn--outline", href: "analyse.html?id=" + v.id }, v.status === "analysee" ? "Reprendre l'analyse" : "Analyser"));
     }
@@ -164,7 +170,7 @@
     return h("article", { class: "video-card" },
       h("div", { class: "video-card__thumb" }, thumb),
       h("div", { class: "video-card__body" },
-        h("h3", {}, isCoach && v.studentId ? CC.studentName(v.studentId) + " — " + v.title : v.title),
+        h("h3", {}, isCoach && squad ? CC.comp.fullName(squad) + " — " + v.title : isCoach && v.studentId ? CC.studentName(v.studentId) + " — " + v.title : v.title),
         h("div", { class: "video-card__meta" }, badge, h("span", {}, CC.SHOTS[v.shot] || "Coup"), h("span", {}, "· " + CC.fmtDate(v.date) + " · " + CC.fmtSize(v.size))),
         h("div", { class: "btn-row" }, actions)));
   }
