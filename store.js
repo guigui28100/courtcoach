@@ -142,7 +142,21 @@ const CC = (() => {
     if (id && accounts().some((a) => a.id === id)) return id;
     const first = accounts()[0];
     if (first) { write("me", first.id); return first.id; }
-    return signUpStudent("").id;
+    const demo = exampleAccount();
+    write("me", demo.id);
+    return demo.id;
+  }
+
+  // Élève fictif « Alex Exemple » : sert aux vidéos d'exemple (aucune vraie personne)
+  function exampleAccount() {
+    const list = accounts();
+    let account = list.find((a) => a.example);
+    if (!account) {
+      account = { id: uid(), email: "alex.exemple@exemple.invalid", example: true, created: new Date().toISOString() };
+      if (!list.length) migrateLegacy(account.id);
+      write("accounts", [...list, account]);
+    }
+    return account;
   }
 
   const profile = (id) => read("profile." + (id || ensureMe()), {});
@@ -218,13 +232,52 @@ const CC = (() => {
     return lastAnalysis >= 0 && list.length - 1 > lastAnalysis && list[list.length - 1].from === "eleve";
   }
 
+  // ---------- Vidéos d'exemple pour tester ----------
+  // Ajoute une vidéo « envoyée par l'élève » (à analyser) et une vidéo de référence « modèle » du coach.
+  // Les fichiers sont dans le dossier demo/. Renvoie le nombre de vidéos ajoutées.
+  async function addExamples(studentId, options) {
+    const opts = options || {};
+    const account = accounts().find((a) => a.id === studentId);
+    if (opts.fillProfile && account && account.example && !Object.keys(read("profile." + studentId, {})).length) {
+      write("profile." + studentId, {
+        prenom: "Alex", nom: "Exemple", naissance: "2011-06-15", lateralite: "Droitier", revers: "À deux mains",
+        classement: "30/4", annees: "2", frequence: "2", club: "Tennis Club Houdan",
+        objectifs: "Gagner en régularité (profil fictif, pour les tests)", parent_nom: "Parent Exemple",
+      });
+    }
+    const jobs = [
+      { flag: "eleve", url: "demo/exemple-eleve.webm", owner: "eleve", studentId, title: "Exemple — coup droit", shot: "coup_droit",
+        question: "J'ai l'impression que mon bras est trop collé au corps et que je touche la balle trop tard.", status: "attente", ago: 0 },
+      { flag: "modele", url: "demo/exemple-modele.webm", owner: "coach", studentId: null, title: "Exemple — coup droit modèle", shot: "coup_droit",
+        question: "", status: "reference", ago: 1000 },
+    ];
+    let added = 0;
+    for (const job of jobs) {
+      const exists = videos().some((v) => v.example === job.flag && (job.flag === "modele" || v.studentId === studentId));
+      if (exists) continue;
+      const response = await fetch(job.url);
+      if (!response.ok) throw new Error("Vidéo d'exemple introuvable : " + job.url);
+      const blob = await response.blob();
+      const fileId = await putFile(blob);
+      saveVideos([...videos(), {
+        id: uid(), fileId, owner: job.owner, studentId: job.studentId, title: job.title, shot: job.shot, question: job.question,
+        date: new Date(Date.now() - job.ago).toISOString(), size: blob.size, status: job.status, example: job.flag,
+      }]);
+      if (job.owner === "eleve") {
+        addMessage(videos().slice(-1)[0].id, { from: "eleve", text: "Voici ma vidéo (" + SHOTS[job.shot] + ").\n" + job.question });
+      }
+      added += 1;
+    }
+    return added;
+  }
+
   const lessons = () => read("lessons", []);
   const saveLessons = (list) => write("lessons", list);
 
   return {
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, getFile, deleteFile, fileURL,
-    SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, students, studentName, ageOf,
+    SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, exampleAccount, addExamples, students, studentName, ageOf,
     profile, saveProfile, profileCompletion, PROFILE_SECTIONS,
     videos, saveVideos, videoById, updateVideo, removeVideo,
     messages, addMessage, isDiscussionOpen, awaitingCoach, lessons, saveLessons,

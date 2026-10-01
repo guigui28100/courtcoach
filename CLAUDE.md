@@ -29,3 +29,5 @@
   car cela touche aux données personnelles, surtout celles des mineurs.
 - Il n'y a **pas de messagerie libre** : la discussion entre l'élève et le coach existe seulement
   rattachée à une analyse vidéo, et elle s'ouvre une fois l'analyse envoyée.
+- Le dossier `demo/` contient deux vidéos d'exemple **fictives** (un bonhomme qui fait un coup droit) pour tester ;
+  l'élève « Alex Exemple » est lui aussi fictif. Aucune vraie personne n'y figure.
