@@ -598,7 +598,7 @@
   // 6. Capture d'une image annotée
   // =====================================================
   const DRAFT_KEY = "draft." + video.id;
-  const draft = Object.assign({ observation: "", strengths: "", improve: "", exercises: [], captures: [], sent: [] }, CC.read(DRAFT_KEY, {}));
+  const draft = Object.assign({ observation: "", strengths: "", improve: "", exercises: [], captures: [], sent: [], captions: {} }, CC.read(DRAFT_KEY, {}));
   const saveDraft = () => CC.write(DRAFT_KEY, draft);
 
   function paintPane(ctx, p, x, y, w, hh) {
@@ -616,10 +616,11 @@
     const o = options || {};
     const toast = $("toast");
     toast.className = "toast" + (o.error ? " toast--error" : "");
-    toast.replaceChildren(
+    toast.replaceChildren(...[
       o.thumb ? h("img", { src: o.thumb, alt: "" }) : null,
       h("span", {}, text),
-      o.action ? h("button", { type: "button", class: "toast__action", onclick: o.action.run }, o.action.label) : null);
+      o.action ? h("button", { type: "button", class: "toast__action", onclick: o.action.run }, o.action.label) : null,
+    ].filter(Boolean)); // (replaceChildren écrirait « null » pour un élément vide)
     toast.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toast.hidden = true; }, o.error ? 7000 : 4500);
@@ -692,9 +693,11 @@
       draft.captures.push(id);
       saveDraft();
       renderCaptures();
-      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓", {
+      revealCaptures(true);
+      const sideBySide = getComputedStyle($("panneau")).position === "sticky" && !$("panneau").hidden;
+      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + (sideBySide ? " (à droite)" : ""), {
         thumb,
-        action: { label: "Voir mes images", run: () => { $("toast").hidden = true; $("tray").scrollIntoView({ behavior: "smooth", block: "center" }); } },
+        action: sideBySide ? null : { label: "Voir mes images", run: () => { $("toast").hidden = true; revealCaptures(false); } },
       });
     } catch (e) {
       console.error(e);
@@ -715,26 +718,83 @@
           h("img", { src: url, alt: "Image annotée " + (i + 1) })),
         h("a", { class: "capture__dl", href: url, download: "image-annotee-" + (i + 1) + ".png", "aria-label": "Télécharger l'image " + (i + 1), title: "Télécharger" }, "⬇"));
     });
-    if (removable) {
-      holder.append(h("button", { type: "button", "aria-label": "Retirer l'image " + (i + 1),
-        onclick: () => { draft.captures.splice(i, 1); saveDraft(); CC.deleteFile(id).catch(() => {}); renderCaptures(); } }, "✕"));
-    }
+    if (removable) holder.append(h("button", { type: "button", "aria-label": "Retirer l'image " + (i + 1), onclick: () => removeCapture(id) }, "✕"));
     return holder;
   }
 
-  function renderCaptures() {
-    // Le plateau sous la vidéo et la liste du formulaire montrent les mêmes images
-    [$("captures-tray"), $("captures")].forEach((box) => {
-      box.replaceChildren(...draft.captures.map((id, i) => captureThumb(id, i, true)));
-      if (!draft.captures.length) box.append(h("p", { class: "hint", style: "grid-column:1/-1" }, "Aucune image pour l'instant : clique sur « Capturer » dans la barre d'outils."));
+  // Une carte dans le panneau « Mon analyse » : l'image en grand + un champ pour la commenter
+  function captureCard(id, i) {
+    const picture = h("div", { class: "capture-card__img" });
+    CC.fileURL(id).then((url) => {
+      if (!url) { picture.append(h("p", { class: "capture__missing" }, "Image introuvable")); return; }
+      picture.append(h("a", { href: url, target: "_blank", rel: "noopener", "aria-label": "Ouvrir l'image " + (i + 1) + " en grand" },
+        h("img", { src: url, alt: "Image annotée " + (i + 1) })));
+      actions.prepend(h("a", { class: "btn btn--small btn--outline", href: url, download: "image-annotee-" + (i + 1) + ".png" }, "⬇ Télécharger"));
     });
+    const actions = h("div", { class: "capture-card__actions" },
+      h("button", { type: "button", class: "btn btn--small btn--danger", "aria-label": "Retirer l'image " + (i + 1), onclick: () => removeCapture(id) }, "Retirer"));
+    const note = h("textarea", {
+      rows: "2", placeholder: "Commentaire sur cette image (facultatif) — l'élève le verra",
+      "aria-label": "Commentaire de l'image " + (i + 1),
+      oninput: (e) => { draft.captions[id] = e.target.value; saveDraft(); },
+    }, draft.captions[id] || "");
+    return h("article", { class: "capture-card", "data-id": id },
+      h("div", { class: "capture-card__title" }, h("strong", {}, "Image " + (i + 1))),
+      picture, note, actions);
+  }
+
+  function removeCapture(id) {
+    draft.captures = draft.captures.filter((x) => x !== id);
+    delete draft.captions[id];
+    saveDraft();
+    CC.deleteFile(id).catch(() => {});
+    renderCaptures();
+  }
+
+  function renderCaptures() {
+    // Panneau « Mon analyse » (cartes avec commentaire)
+    const cards = $("captures");
+    cards.replaceChildren(...draft.captures.map((id, i) => captureCard(id, i)));
+    if (!draft.captures.length) cards.append(h("p", { class: "hint empty-hint" }, "Aucune image pour l'instant : clique sur « Capturer » dans la barre d'outils."));
+    $("panel-count").textContent = String(draft.captures.length);
+
+    // Plateau sous la vidéo (miniatures) : utile sur téléphone ou pour une vidéo de référence
+    const tray = $("captures-tray");
+    tray.replaceChildren(...draft.captures.map((id, i) => captureThumb(id, i, true)));
+    if (!draft.captures.length) tray.append(h("p", { class: "hint", style: "grid-column:1/-1" }, "Aucune image pour l'instant : clique sur « Capturer » dans la barre d'outils."));
     $("tray-count").textContent = String(draft.captures.length);
+
     // Images déjà envoyées avec une analyse : on les garde sous les yeux
     $("tray-sent").hidden = !draft.sent.length;
     $("captures-sent").replaceChildren(...draft.sent.map((id, i) => captureThumb(id, i, false)));
+
     // Pastille avec le nombre d'images sur le bouton « Capturer »
     const badge = $("capture-count");
     if (badge) { badge.textContent = String(draft.captures.length); badge.hidden = !draft.captures.length; }
+  }
+
+  // Amène la dernière image capturée sous les yeux : dans le panneau de droite s'il est à côté, sinon on descend vers lui
+  async function revealCaptures(highlightLast) {
+    const panel = $("panneau");
+    const sideBySide = getComputedStyle(panel).position === "sticky";
+    const card = highlightLast ? $("captures").querySelector(".capture-card:last-of-type") : null;
+    if (card) {
+      card.classList.remove("capture-card--new");
+      void card.offsetWidth;
+      card.classList.add("capture-card--new");
+    }
+    if (sideBySide) {
+      // On attend que les images soient affichées : la hauteur des cartes change quand elles se chargent
+      for (let i = 0; i < 30; i++) {
+        const images = Array.from($("captures").querySelectorAll("img"));
+        if (images.length >= $("captures").querySelectorAll(".capture-card").length && images.every((img) => img.complete)) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      const target = card || $("captures");
+      panel.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
+    } else if (!highlightLast) {
+      ($("tray").offsetParent ? $("tray") : $("captures")).scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }
 
   // =====================================================
@@ -823,6 +883,7 @@
         improve: draft.improve.trim(),
         exercises: exercises.map((e) => ({ title: e.title.trim(), detail: e.detail.trim(), reps: e.reps.trim() })),
         captures: draft.captures.slice(),
+        captureNotes: Object.fromEntries(draft.captures.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
       },
     });
     CC.updateVideo(video.id, { status: "analysee" });
@@ -869,8 +930,8 @@
   }
   if (video.status !== "reference" && !video.seen) CC.updateVideo(video.id, { seen: true });
   if (isReference) {
-    $("feedback").hidden = true;
-    $("colonnes").hidden = true;
+    studio.classList.add("studio--reference");
+    $("panneau").hidden = true;
   }
   fillSelectB();
   renderProfile();
