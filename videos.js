@@ -186,4 +186,12 @@
   }
 
   render();
+
+  // Espace utilisé : pratique si le navigateur refuse d'enregistrer de nouveaux fichiers
+  CC.storageInfo().then((info) => {
+    const total = CC.videos().filter((v) => isCoach || (v.owner === "eleve" && v.studentId === me)).reduce((sum, v) => sum + (v.size || 0), 0);
+    const parts = ["Tes vidéos pèsent " + CC.fmtSize(total)];
+    if (info.quota) parts.push("le navigateur t'accorde environ " + CC.fmtSize(info.quota) + " (déjà utilisé : " + CC.fmtSize(info.usage) + ")");
+    $("espace-stockage").textContent = parts.join(" · ") + ".";
+  });
 })();

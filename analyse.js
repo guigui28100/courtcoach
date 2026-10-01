@@ -695,11 +695,13 @@
 
       let id;
       try {
-        id = await withTimeout(CC.putFile(blob), 8000);
+        id = await withTimeout(CC.putFile(blob), 25000);
       } catch (e) {
         // Le stockage du navigateur refuse l'image : on la télécharge pour ne rien perdre
         downloadBlob(blob, name);
-        showToast("Le navigateur ne peut pas garder l'image dans l'analyse : elle a été téléchargée sur ton appareil.", { error: true, thumb });
+        const info = await CC.storageInfo();
+        const space = info.videosSize > 50e6 ? " Tes vidéos pèsent déjà " + CC.fmtSize(info.videosSize) + " : supprime les vidéos dont tu n'as plus besoin (page « Vidéos »)." : "";
+        showToast("Le navigateur ne peut pas garder l'image dans l'analyse : elle a été téléchargée sur ton appareil." + space + " Détail technique : " + CC.describeError(e), { error: true, thumb });
         return;
       }
       draft.captures.push(id);
@@ -710,7 +712,8 @@
       }
       revealCaptures(true).catch(() => {});
       const sideBySide = getComputedStyle($("panneau")).position === "sticky" && !$("panneau").hidden;
-      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + (sideBySide ? " (à droite)" : ""), {
+      const spare = CC.isSpareId(id) ? " (gardée en mode de secours)" : "";
+      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + spare + (sideBySide ? " (à droite)" : ""), {
         thumb,
         action: sideBySide ? null : { label: "Voir mes images", run: () => { $("toast").hidden = true; revealCaptures(false); } },
       });
