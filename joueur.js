@@ -447,7 +447,6 @@
           a.strengths ? h("div", {}, h("h4", {}, "Points forts"), h("p", {}, a.strengths)) : null,
           a.improve ? h("div", {}, h("h4", {}, "À améliorer"), h("p", {}, a.improve)) : null,
           caps.length ? h("div", {}, h("h4", {}, "Images annotées"), h("div", { class: "analysis__caps" }, caps)) : null,
-          (a.exercises || []).length ? h("div", {}, h("h4", {}, "Exercices"), h("ol", {}, a.exercises.map((x) => h("li", {}, h("strong", {}, x.title), x.reps ? " — " + x.reps : "", x.detail ? h("div", {}, x.detail) : null)))) : null,
           h("button", { type: "button", class: "btn btn--small btn--danger", onclick: () => { if (!confirm("Supprimer cette analyse du dossier ?")) return; comp.saveAnalyses(id, comp.analyses(id).filter((x) => x.id !== a.id)); renderVideos(); renderHeader(); } }, "Supprimer cette analyse")));
     });
 
