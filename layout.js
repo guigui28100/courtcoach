@@ -74,9 +74,12 @@
         ["profil", "profil.html", "Mon profil"],
       ];
 
+  // Pastille « nouveau » sur « Espace » quand le coach a répondu à une demande de cours
+  const newAnswers = !isCoach ? CC.lessons().filter((x) => x.studentId === CC.ensureMe() && x.seenByStudent === false && x.status !== "attente").length : 0;
   const link = (key, href, label, cls, short) =>
     h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "suivi" && (page === "joueur" || page === "bulletin" || page === "mon-suivi")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
-      cls === "tabbar__link" ? icon(ICONS[key]) : null, short ? (cls === "tabbar__link" ? h("span", {}, short) : [h("span", { class: "lbl-long" }, label), h("span", { class: "lbl-short" }, short)]) : h("span", {}, label));
+      cls === "tabbar__link" ? icon(ICONS[key]) : null,
+      key === "espace" && newAnswers ? h("span", { class: "dot-new", "aria-label": newAnswers + " nouvelle réponse du coach" }, String(newAnswers)) : null, short ? (cls === "tabbar__link" ? h("span", {}, short) : [h("span", { class: "lbl-long" }, label), h("span", { class: "lbl-short" }, short)]) : h("span", {}, label));
 
   const switchRole = h("button", {
     type: "button",
@@ -116,6 +119,7 @@
 
   document.body.prepend(h("a", { class: "skip-link", href: "#contenu" }, "Aller au contenu"), header);
   document.body.append(footer, tabbar);
+  document.addEventListener("cc:answers-seen", () => document.querySelectorAll(".dot-new").forEach((d) => d.remove()));
   document.body.classList.add("app", isCoach ? "app--coach" : "app--eleve");
   document.dispatchEvent(new CustomEvent("cc:ready", { detail: { role } }));
 })();

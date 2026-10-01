@@ -595,3 +595,15 @@ body.app small, .hint { font-size: .875rem; }
 @media (max-width: 1099px) { .topbar .lbl-long { display: none; } .topbar .lbl-short { display: inline; } }
 
 .footer__inner .footer__safe { flex-basis: 100%; background: rgba(255,255,255,.1); padding: 10px 14px; border-radius: 10px; line-height: 1.45; }
+
+/* Réponses du coach aux demandes de cours */
+.answers { display: grid; gap: 10px; margin-bottom: var(--s2); }
+.answers:empty { display: none; }
+.answer { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 14px; border: 2px solid; }
+.answer p { margin: 2px 0 0; }
+.answer--ok { background: #eef8f1; border-color: #2f8f5b; }
+.answer--no { background: #fdf0ee; border-color: #b3261e; }
+.dot-new { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin-left: 6px; border-radius: 99px; background: #b3261e; color: #fff; font-size: .75rem; font-weight: 800; line-height: 1; vertical-align: middle; }
+.tabbar__link { position: relative; }
+.tabbar__link .dot-new { position: absolute; top: 2px; left: calc(50% + 8px); margin: 0; }
+.list__main .reply { color: var(--ink); font-weight: 600; }
