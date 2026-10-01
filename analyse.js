@@ -868,6 +868,13 @@
 
   $("envoyer").addEventListener("click", () => {
     const status = $("envoi-status");
+    if (isReference) {
+      // Le brouillon est déjà enregistré à chaque modification ; on le confirme simplement
+      saveDraft();
+      status.className = "status-line is-ok";
+      status.textContent = "Analyse enregistrée ✓ Cette vidéo est une référence : elle reste privée, personne ne la reçoit.";
+      return;
+    }
     const exercises = draft.exercises.filter((e) => e.title.trim());
     if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !exercises.length && !draft.captures.length) {
       status.className = "status-line is-error";
@@ -930,8 +937,13 @@
   }
   if (video.status !== "reference" && !video.seen) CC.updateVideo(video.id, { seen: true });
   if (isReference) {
+    // Vidéo de référence : même panneau d'analyse, mais privé (aucun élève ne la reçoit)
     studio.classList.add("studio--reference");
-    $("panneau").hidden = true;
+    $("fb-titre").textContent = "Mon analyse (privée)";
+    $("ref-note").hidden = false;
+    $("envoyer").textContent = "Enregistrer mon analyse";
+    $("lien-messages").hidden = true;
+    $("fiche").hidden = true;
   }
   fillSelectB();
   renderProfile();

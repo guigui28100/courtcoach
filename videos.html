@@ -39,6 +39,20 @@
             <small id="fichier-aide">Filme-toi de profil ou de face, en entier, avec une bonne lumière. 5 à 20 secondes suffisent.</small>
           </div>
           <video id="apercu" class="preview-video" controls playsinline muted hidden></video>
+
+          <!-- Coach : cette vidéo est un modèle, ou celle d'un élève (par exemple filmée pendant un cours) -->
+          <fieldset class="field" id="champ-destinataire" hidden>
+            <legend>Cette vidéo est…</legend>
+            <div class="chips">
+              <label><input type="radio" name="destinataire" value="eleve"> La vidéo d'un de mes élèves</label>
+              <label><input type="radio" name="destinataire" value="reference"> Un modèle de référence</label>
+            </div>
+            <div id="champ-eleve" hidden style="margin-top: 8px">
+              <label for="eleve-id" style="font-weight:700">Quel élève&nbsp;?</label>
+              <select id="eleve-id" name="eleve"></select>
+            </div>
+            <small id="destinataire-aide"></small>
+          </fieldset>
           <div class="fields-2">
             <div class="field">
               <label for="titre-video">Titre (facultatif)</label>
