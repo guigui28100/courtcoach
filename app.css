@@ -415,3 +415,39 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 var(--s2); min-width: 0; }
 .example-box { margin: 0 0 var(--s3); padding: var(--s2); background: #fff; border: 2px dashed var(--clay); border-radius: var(--radius); }
 .example-box p { margin: 0 0 var(--s1); }
 .example-box .status-line { margin: var(--s1) 0 0; }
+
+/* Capture d'image : éclair sur la vidéo, message flottant, pastille sur le bouton */
+.stage-box { position: relative; }
+.flash { position: absolute; inset: 0; z-index: 20; background: #fff; opacity: 0; pointer-events: none; border-radius: var(--radius); }
+.flash.is-on { animation: shutter .5s ease-out; }
+@keyframes shutter { 0% { opacity: .9; } 100% { opacity: 0; } }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 80;
+  display: flex; align-items: center; gap: 12px; width: max-content; max-width: min(92vw, 480px);
+  padding: 10px 14px; background: var(--ink); color: #fff; border-radius: 14px; font-weight: 700;
+  box-shadow: 0 14px 40px -12px rgba(0, 0, 0, .6); border-left: 6px solid var(--ball);
+}
+.toast[hidden] { display: none; }
+.toast--error { background: #8a1d16; border-left-color: #ffb4ab; }
+.toast img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #000; flex: none; }
+.toast__action { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--ball); color: var(--ink); font: inherit; font-weight: 800; cursor: pointer; flex: none; }
+@media (min-width: 860px) { .toast { bottom: 28px; } }
+
+.tool { position: relative; }
+.tool__badge {
+  position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px;
+  background: var(--ball); color: var(--ink); font-size: .8rem; font-weight: 800; line-height: 22px; text-align: center;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.capture__dl {
+  position: absolute; top: 4px; left: 4px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .92); color: var(--ink); text-decoration: none; font-size: 1rem;
+}
+
+/* Téléphone : le message flottant passe à la ligne proprement */
+.toast span { flex: 1 1 150px; min-width: 0; }
+@media (max-width: 599px) {
+  .toast { flex-wrap: wrap; width: 92vw; max-width: 92vw; }
+  .toast__action { flex: 1 1 100%; }
+}

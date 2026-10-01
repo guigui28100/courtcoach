@@ -425,6 +425,7 @@
     h("span", { class: "toolbar__sep", "aria-hidden": "true" }),
     h("div", { class: "toolbar__group" },
       iconBtn("btn-capture", "Capturer l'image", '<path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>', () => capture())));
+  $("btn-capture").append(h("span", { class: "tool__badge", id: "capture-count", hidden: true, "aria-label": "images capturées" }));
   selectTool(style.tool);
 
   // =====================================================
@@ -609,45 +610,103 @@
     ctx.restore();
   }
 
+  // ----- Retour visible quand on capture : éclair sur la vidéo + message flottant -----
+  let toastTimer = 0;
+  function showToast(text, options) {
+    const o = options || {};
+    const toast = $("toast");
+    toast.className = "toast" + (o.error ? " toast--error" : "");
+    toast.replaceChildren(
+      o.thumb ? h("img", { src: o.thumb, alt: "" }) : null,
+      h("span", {}, text),
+      o.action ? h("button", { type: "button", class: "toast__action", onclick: o.action.run }, o.action.label) : null);
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, o.error ? 7000 : 4500);
+  }
+  function flash() {
+    const el = $("flash");
+    el.classList.remove("is-on");
+    void el.offsetWidth; // relance l'animation
+    el.classList.add("is-on");
+  }
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const link = h("a", { href: url, download: name });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  const fileSafe = (text) => String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "video";
+
   async function capture() {
-    const status = $("studio-status");
-    if (!A.videoWidth) { status.className = "status-line is-error"; status.textContent = "La vidéo n'est pas encore chargée."; return; }
-    pause();
-    const out = document.createElement("canvas");
-    const ctx = out.getContext("2d");
-    const ratioOf = (v) => (v.videoWidth || 16) / (v.videoHeight || 9);
-
-    if (mode() === "side" && panes.b.loaded) {
-      const H = Math.min(A.videoHeight, 720);
-      const wA = Math.round(H * ratioOf(A)), wB = Math.round(H * ratioOf(B)), gap = 8;
-      out.width = wA + gap + wB; out.height = H;
-      ctx.fillStyle = "#0b1424"; ctx.fillRect(0, 0, out.width, out.height);
-      paintPane(ctx, panes.a, 0, 0, wA, H);
-      paintPane(ctx, panes.b, wA + gap, 0, wB, H);
-    } else {
-      const W = Math.min(A.videoWidth, 1280), H = Math.round(W / ratioOf(A));
-      out.width = W; out.height = H;
-      ctx.drawImage(A, 0, 0, W, H);
-      if (mode() === "overlay" && panes.b.loaded) {
-        // B est « contenue » dans la zone de A, comme à l'écran
-        const k = Math.min(W / B.videoWidth, H / B.videoHeight);
-        const bw = B.videoWidth * k, bh = B.videoHeight * k;
-        ctx.globalAlpha = Number($("opacite").value) / 100;
-        ctx.drawImage(B, (W - bw) / 2, (H - bh) / 2, bw, bh);
-        ctx.globalAlpha = 1;
+    try {
+      if (!A.videoWidth) {
+        showToast("La vidéo n'est pas encore chargée (ou son format n'est pas lu par ce navigateur).", { error: true });
+        return;
       }
-      const t = A.currentTime;
-      panes.a.shapes.forEach((s) => { if (visible(s, t)) drawShape(ctx, s, W, H); });
-    }
+      pause();
+      const out = document.createElement("canvas");
+      const ctx = out.getContext("2d");
+      const ratioOf = (v) => (v.videoWidth || 16) / (v.videoHeight || 9);
 
-    const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
-    if (!blob) { status.className = "status-line is-error"; status.textContent = "La capture a échoué."; return; }
-    const id = await CC.putFile(blob);
-    draft.captures.push(id);
-    saveDraft();
-    renderCaptures();
-    status.className = "status-line is-ok";
-    status.textContent = "Image ajoutée à ton analyse ✓";
+      if (mode() === "side" && panes.b.loaded) {
+        const H = Math.min(A.videoHeight, 720);
+        const wA = Math.round(H * ratioOf(A)), wB = Math.round(H * ratioOf(B)), gap = 8;
+        out.width = wA + gap + wB; out.height = H;
+        ctx.fillStyle = "#0b1424"; ctx.fillRect(0, 0, out.width, out.height);
+        paintPane(ctx, panes.a, 0, 0, wA, H);
+        paintPane(ctx, panes.b, wA + gap, 0, wB, H);
+      } else {
+        const W = Math.min(A.videoWidth, 1280), H = Math.round(W / ratioOf(A));
+        out.width = W; out.height = H;
+        ctx.drawImage(A, 0, 0, W, H);
+        if (mode() === "overlay" && panes.b.loaded) {
+          // B est « contenue » dans la zone de A, comme à l'écran
+          const k = Math.min(W / B.videoWidth, H / B.videoHeight);
+          const bw = B.videoWidth * k, bh = B.videoHeight * k;
+          ctx.globalAlpha = Number($("opacite").value) / 100;
+          ctx.drawImage(B, (W - bw) / 2, (H - bh) / 2, bw, bh);
+          ctx.globalAlpha = 1;
+        }
+        const t = A.currentTime;
+        panes.a.shapes.forEach((s) => { if (visible(s, t)) drawShape(ctx, s, W, H); });
+      }
+
+      const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("toBlob vide");
+      flash();
+      const thumb = URL.createObjectURL(blob);
+      const name = "image-annotee-" + fileSafe(video.title) + "-" + (draft.captures.length + 1) + ".png";
+
+      // Vidéo de référence : pas d'analyse à envoyer, on télécharge simplement l'image
+      if (isReference) {
+        downloadBlob(blob, name);
+        showToast("Image téléchargée sur ton appareil.", { thumb });
+        return;
+      }
+
+      let id;
+      try {
+        id = await CC.putFile(blob);
+      } catch (e) {
+        // Le stockage du navigateur refuse l'image : on la télécharge pour ne rien perdre
+        downloadBlob(blob, name);
+        showToast("Le navigateur ne peut pas garder l'image dans l'analyse : elle a été téléchargée sur ton appareil.", { error: true, thumb });
+        return;
+      }
+      draft.captures.push(id);
+      saveDraft();
+      renderCaptures();
+      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓", {
+        thumb,
+        action: { label: "Voir mes images", run: () => { $("toast").hidden = true; $("captures").scrollIntoView({ behavior: "smooth", block: "center" }); } },
+      });
+    } catch (e) {
+      console.error(e);
+      showToast("La capture n'a pas fonctionné. Réessaie, ou recharge la page.", { error: true });
+    }
   }
 
   function renderCaptures() {
@@ -657,14 +716,19 @@
       const holder = h("div", { class: "capture" });
       CC.fileURL(id).then((url) => {
         if (!url) return;
-        holder.prepend(h("a", { href: url, target: "_blank", rel: "noopener", "aria-label": "Voir l'image annotée " + (i + 1) },
-          h("img", { src: url, alt: "Image annotée " + (i + 1) })));
+        holder.prepend(
+          h("a", { href: url, target: "_blank", rel: "noopener", "aria-label": "Voir l'image annotée " + (i + 1) },
+            h("img", { src: url, alt: "Image annotée " + (i + 1) })),
+          h("a", { class: "capture__dl", href: url, download: "image-annotee-" + (i + 1) + ".png", "aria-label": "Télécharger l'image " + (i + 1), title: "Télécharger" }, "⬇"));
       });
       holder.append(h("button", { type: "button", "aria-label": "Retirer l'image " + (i + 1),
         onclick: () => { draft.captures.splice(i, 1); saveDraft(); CC.deleteFile(id).catch(() => {}); renderCaptures(); } }, "✕"));
       box.append(holder);
     });
     if (!draft.captures.length) box.append(h("p", { class: "hint", style: "grid-column:1/-1" }, "Aucune image pour l'instant."));
+    // Pastille avec le nombre d'images sur le bouton « Capturer »
+    const badge = $("capture-count");
+    if (badge) { badge.textContent = String(draft.captures.length); badge.hidden = !draft.captures.length; }
   }
 
   // =====================================================
