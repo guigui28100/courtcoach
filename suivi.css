@@ -233,3 +233,6 @@ body.app .bulletin-paper .hint { color: var(--b-muted); font-size: .8125rem; lin
 .coach-zone .list__item { background: var(--chalk); }
 .coach-zone--centre .list__item { background: #fff; }
 .coach-zone .centre-card { border: 0; padding: 0; background: transparent; box-shadow: none; }
+
+.list__item--wrap { flex-wrap: wrap; }
+.list__item--wrap .btn-row select { min-height: 40px; max-width: 100%; }
