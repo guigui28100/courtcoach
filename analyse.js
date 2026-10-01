@@ -639,20 +639,20 @@
     void el.offsetWidth; // relance l'animation
     el.classList.add("is-on");
   }
-  function downloadBlob(blob, name) {
-    const url = URL.createObjectURL(blob);
-    const link = h("a", { href: url, download: name });
+  function downloadDataUrl(dataUrl, name) {
+    const link = h("a", { href: dataUrl, download: name });
     document.body.append(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
-  const withTimeout = (promise, ms) => Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error("délai dépassé")), ms)),
-  ]);
   const fileSafe = (text) => String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "video";
 
+  // État d'enregistrement des captures (en mémoire seulement)
+  const saving = new Set();   // images « mem: » en cours d'enregistrement
+  const unsaved = new Set();  // images « mem: » que le navigateur n'a pas pu enregistrer
+
+  // La capture ne dépend d'aucun enregistrement : l'image est affichée tout de suite,
+  // puis sauvegardée en arrière-plan (sous forme de texte, sans « fichier »).
   async function capture() {
     try {
       if (!A.videoWidth) {
@@ -687,23 +687,12 @@
         panes.a.shapes.forEach((s) => { if (visible(s, t)) drawShape(ctx, s, W, H); });
       }
 
-      const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("toBlob vide");
+      const dataUrl = out.toDataURL("image/jpeg", 0.92);
+      if (!dataUrl || dataUrl.length < 200) throw new Error("l'image obtenue est vide");
       flash();
-      const thumb = URL.createObjectURL(blob);
-      const name = "image-annotee-" + fileSafe(video.title) + "-" + (draft.captures.length + 1) + ".png";
 
-      let id;
-      try {
-        id = await withTimeout(CC.putFile(blob), 25000);
-      } catch (e) {
-        // Le stockage du navigateur refuse l'image : on la télécharge pour ne rien perdre
-        downloadBlob(blob, name);
-        const info = await CC.storageInfo();
-        const space = info.videosSize > 50e6 ? " Tes vidéos pèsent déjà " + CC.fmtSize(info.videosSize) + " : supprime les vidéos dont tu n'as plus besoin (page « Vidéos »)." : "";
-        showToast("Le navigateur ne peut pas garder l'image dans l'analyse : elle a été téléchargée sur ton appareil." + space + " Détail technique : " + CC.describeError(e), { error: true, thumb });
-        return;
-      }
+      // 1) Affichage immédiat : l'image est dans l'analyse tout de suite
+      const id = CC.memoryImage(dataUrl);
       draft.captures.push(id);
       saveDraft();
       renderCaptures();
@@ -712,29 +701,58 @@
       }
       revealCaptures(true).catch(() => {});
       const sideBySide = getComputedStyle($("panneau")).position === "sticky" && !$("panneau").hidden;
-      const spare = CC.isSpareId(id) ? " (gardée en mode de secours)" : "";
-      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + spare + (sideBySide ? " (à droite)" : ""), {
-        thumb,
+      showToast("Image " + draft.captures.length + " ajoutée à ton analyse ✓" + (sideBySide ? " (à droite)" : ""), {
+        thumb: dataUrl,
         action: sideBySide ? null : { label: "Voir mes images", run: () => { $("toast").hidden = true; revealCaptures(false); } },
       });
+
+      // 2) Sauvegarde en arrière-plan
+      persistCapture(id, dataUrl, "image-annotee-" + fileSafe(video.title) + "-" + draft.captures.length + ".jpg");
     } catch (e) {
       console.error(e);
-      showToast("La capture n'a pas fonctionné. Réessaie, ou recharge la page.", { error: true });
+      showToast("La capture n'a pas fonctionné (" + CC.describeError(e) + "). Réessaie, ou recharge la page.", { error: true });
     }
   }
 
-  // Une miniature : image cliquable, téléchargement, et (si on peut) bouton pour la retirer
+  async function persistCapture(memId, dataUrl, fileName) {
+    saving.add(memId);
+    renderCaptures();
+    try {
+      const realId = await CC.persistImage(dataUrl);
+      saving.delete(memId);
+      const i = draft.captures.indexOf(memId);
+      if (i < 0) { CC.deleteFile(realId).catch(() => {}); return; } // retirée entre-temps
+      draft.captures[i] = realId;
+      if (draft.captions[memId] !== undefined) { draft.captions[realId] = draft.captions[memId]; delete draft.captions[memId]; }
+      CC.cacheImage(realId, dataUrl);
+      CC.forgetMemoryImage(memId);
+      saveDraft();
+      renderCaptures();
+    } catch (e) {
+      saving.delete(memId);
+      if (!draft.captures.includes(memId)) return;
+      unsaved.add(memId);
+      renderCaptures();
+      const info = await CC.storageInfo();
+      const space = info.videosSize > 50e6 ? " Tes vidéos pèsent " + CC.fmtSize(info.videosSize) + " : supprime celles dont tu n'as plus besoin (page « Vidéos »)." : "";
+      showToast("L'image est bien affichée, mais ton navigateur refuse de la SAUVEGARDER : elle disparaîtra si tu quittes la page. Utilise « Télécharger ». Détail : " + CC.describeError(e) + "." + space, { error: true });
+    }
+  }
+
+  const stateOf = (id) => saving.has(id) ? "saving" : unsaved.has(id) ? "unsaved" : id.indexOf("mem:") === 0 ? "lost" : "saved";
+
+  // Une miniature : image cliquable (en grand), téléchargement, et (si on peut) bouton pour la retirer
   function captureThumb(id, i, removable) {
     const holder = h("div", { class: "capture" });
     CC.fileURL(id).then((url) => {
       if (!url) {
-        holder.prepend(h("p", { class: "capture__missing" }, "Image introuvable"));
+        holder.prepend(h("p", { class: "capture__missing" }, "Image perdue"));
         return;
       }
       holder.prepend(
-        h("a", { href: url, target: "_blank", rel: "noopener", "aria-label": "Voir l'image annotée " + (i + 1) },
+        h("button", { type: "button", class: "capture__open", "aria-label": "Voir l'image annotée " + (i + 1) + " en grand", onclick: () => CC.lightbox(url, "Image annotée " + (i + 1)) },
           h("img", { src: url, alt: "Image annotée " + (i + 1) })),
-        h("a", { class: "capture__dl", href: url, download: "image-annotee-" + (i + 1) + ".png", "aria-label": "Télécharger l'image " + (i + 1), title: "Télécharger" }, "⬇"));
+        h("a", { class: "capture__dl", href: url, download: "image-annotee-" + (i + 1) + ".jpg", "aria-label": "Télécharger l'image " + (i + 1), title: "Télécharger" }, "⬇"));
     });
     if (removable) holder.append(h("button", { type: "button", "aria-label": "Retirer l'image " + (i + 1), onclick: () => removeCapture(id) }, "✕"));
     return holder;
@@ -742,41 +760,55 @@
 
   // Une carte dans le panneau « Mon analyse » : l'image en grand + un champ pour la commenter
   function captureCard(id, i) {
+    const state = stateOf(id);
     const picture = h("div", { class: "capture-card__img" });
-    CC.fileURL(id).then((url) => {
-      if (!url) { picture.append(h("p", { class: "capture__missing" }, "Image introuvable")); return; }
-      picture.append(h("a", { href: url, target: "_blank", rel: "noopener", "aria-label": "Ouvrir l'image " + (i + 1) + " en grand" },
-        h("img", { src: url, alt: "Image annotée " + (i + 1) })));
-      actions.prepend(h("a", { class: "btn btn--small btn--outline", href: url, download: "image-annotee-" + (i + 1) + ".png" }, "⬇ Télécharger"));
-    });
     const actions = h("div", { class: "capture-card__actions" },
       h("button", { type: "button", class: "btn btn--small btn--danger", "aria-label": "Retirer l'image " + (i + 1), onclick: () => removeCapture(id) }, "Retirer"));
+    CC.fileURL(id).then((url) => {
+      if (!url) { picture.append(h("p", { class: "capture__missing" }, "Image perdue")); return; }
+      picture.append(h("button", { type: "button", class: "capture__open", "aria-label": "Voir l'image " + (i + 1) + " en grand", onclick: () => CC.lightbox(url, "Image annotée " + (i + 1)) },
+        h("img", { src: url, alt: "Image annotée " + (i + 1) })));
+      actions.prepend(h("a", { class: "btn btn--small btn--outline", href: url, download: "image-annotee-" + (i + 1) + ".jpg" }, "⬇ Télécharger"));
+    });
     const note = h("textarea", {
       rows: "2", placeholder: "Commentaire sur cette image (facultatif) — l'élève le verra",
       "aria-label": "Commentaire de l'image " + (i + 1),
       oninput: (e) => { draft.captions[id] = e.target.value; saveDraft(); },
     }, draft.captions[id] || "");
-    return h("article", { class: "capture-card", "data-id": id },
-      h("div", { class: "capture-card__title" }, h("strong", {}, "Image " + (i + 1))),
+    const label = state === "saving" ? h("span", { class: "capture-card__state" }, "Enregistrement…")
+      : state === "unsaved" ? h("span", { class: "capture-card__state capture-card__state--warn" }, "⚠ Non sauvegardée : elle disparaîtra si tu quittes la page. Télécharge-la.")
+      : state === "lost" ? h("span", { class: "capture-card__state capture-card__state--warn" }, "Cette image n'avait pas pu être sauvegardée : elle est perdue. Retire-la.")
+      : h("span", { class: "capture-card__state capture-card__state--ok" }, "Enregistrée ✓");
+    return h("article", { class: "capture-card", "data-id": id, "data-state": state },
+      h("div", { class: "capture-card__title" }, h("strong", {}, "Image " + (i + 1)), label),
       picture, note, actions);
   }
 
   function removeCapture(id) {
     draft.captures = draft.captures.filter((x) => x !== id);
     delete draft.captions[id];
+    saving.delete(id);
+    unsaved.delete(id);
     saveDraft();
     CC.deleteFile(id).catch(() => {});
     renderCaptures();
   }
 
   function renderCaptures() {
+    // On garde la position du panneau et le curseur dans le champ de commentaire pendant la mise à jour
+    const panel = $("panneau");
+    const keepScroll = panel.scrollTop;
+    const focusedNote = document.activeElement && document.activeElement.matches && document.activeElement.matches("#captures .capture-card textarea") ? document.activeElement : null;
+    const focusIndex = focusedNote ? Array.from($("captures").querySelectorAll(".capture-card textarea")).indexOf(focusedNote) : -1;
+    const focusRange = focusedNote ? [focusedNote.selectionStart, focusedNote.selectionEnd] : null;
+
     // Panneau « Mon analyse » (cartes avec commentaire)
     const cards = $("captures");
     cards.replaceChildren(...draft.captures.map((id, i) => captureCard(id, i)));
     if (!draft.captures.length) cards.append(h("p", { class: "hint empty-hint" }, "Aucune image pour l'instant : clique sur « Capturer » dans la barre d'outils."));
     $("panel-count").textContent = String(draft.captures.length);
 
-    // Plateau sous la vidéo (miniatures) : utile sur téléphone ou pour une vidéo de référence
+    // Plateau sous la vidéo (miniatures) : utile sur téléphone
     const tray = $("captures-tray");
     tray.replaceChildren(...draft.captures.map((id, i) => captureThumb(id, i, true)));
     if (!draft.captures.length) tray.append(h("p", { class: "hint", style: "grid-column:1/-1" }, "Aucune image pour l'instant : clique sur « Capturer » dans la barre d'outils."));
@@ -792,29 +824,35 @@
     document.body.classList.toggle("has-strip", draft.captures.length > 0);
     $("strip-count").textContent = String(draft.captures.length);
     $("strip-thumbs").replaceChildren(...draft.captures.map((id, i) => {
-      const link = h("a", { class: "strip__thumb", target: "_blank", rel: "noopener", "aria-label": "Voir l'image " + (i + 1) + " en grand" });
+      const thumb = h("button", { type: "button", class: "strip__thumb", "aria-label": "Voir l'image " + (i + 1) + " en grand" });
       CC.fileURL(id).then((url) => {
         if (!url) return;
-        link.href = url;
-        link.append(h("img", { src: url, alt: "Image annotée " + (i + 1) }));
+        thumb.append(h("img", { src: url, alt: "Image annotée " + (i + 1) }));
+        thumb.addEventListener("click", () => CC.lightbox(url, "Image annotée " + (i + 1)));
       });
-      return link;
+      return thumb;
     }));
 
     // Pastille avec le nombre d'images sur le bouton « Capturer »
     const badge = $("capture-count");
     if (badge) { badge.textContent = String(draft.captures.length); badge.hidden = !draft.captures.length; }
+
+    panel.scrollTop = keepScroll;
+    if (focusIndex >= 0) {
+      const again = $("captures").querySelectorAll(".capture-card textarea")[focusIndex];
+      if (again) { again.focus({ preventScroll: true }); try { again.setSelectionRange(focusRange[0], focusRange[1]); } catch (e) { /* rien */ } }
+    }
   }
 
   // Amène la dernière image capturée sous les yeux : dans le panneau de droite s'il est à côté, sinon on descend vers lui
   async function revealCaptures(highlightLast) {
     const panel = $("panneau");
     const sideBySide = getComputedStyle(panel).position === "sticky";
-    const card = highlightLast ? $("captures").querySelector(".capture-card:last-of-type") : null;
-    if (card) {
-      card.classList.remove("capture-card--new");
-      void card.offsetWidth;
-      card.classList.add("capture-card--new");
+    const lastCard = () => $("captures").querySelector(".capture-card:last-of-type");
+    if (highlightLast && lastCard()) {
+      lastCard().classList.remove("capture-card--new");
+      void lastCard().offsetWidth;
+      lastCard().classList.add("capture-card--new");
     }
     if (sideBySide) {
       // On attend que les images soient affichées : la hauteur des cartes change quand elles se chargent
@@ -823,7 +861,7 @@
         if (images.length >= $("captures").querySelectorAll(".capture-card").length && images.every((img) => img.complete)) break;
         await new Promise((r) => setTimeout(r, 50));
       }
-      const target = card || $("captures");
+      const target = (highlightLast && lastCard()) || $("captures");
       panel.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
     } else if (!highlightLast) {
       ($("tray").offsetParent ? $("tray") : $("captures")).scrollIntoView({ behavior: "smooth", block: "center" });
@@ -913,7 +951,7 @@
     $(id).addEventListener("input", (e) => { draft[key] = e.target.value; saveDraft(); });
   });
 
-  $("envoyer").addEventListener("click", () => {
+  $("envoyer").addEventListener("click", async () => {
     const status = $("envoi-status");
     if (isReference) {
       // Le brouillon est déjà enregistré à chaque modification ; on le confirme simplement
@@ -922,8 +960,13 @@
       status.textContent = "Analyse enregistrée ✓ Cette vidéo est une référence : elle reste privée, personne ne la reçoit.";
       return;
     }
+    // Images encore en cours d'enregistrement : on patiente un peu
+    for (let i = 0; i < 40 && saving.size; i++) await new Promise((r) => setTimeout(r, 250));
+    const lost = draft.captures.filter((id) => id.indexOf("mem:") === 0);
+    if (lost.length && !confirm(lost.length + " image(s) n'ont pas pu être sauvegardées par ton navigateur et ne seront pas envoyées à l'élève. Envoyer quand même l'analyse sans elle(s) ?")) return;
+    const sendIds = draft.captures.filter((id) => id.indexOf("mem:") !== 0);
     const exercises = draft.exercises.filter((e) => e.title.trim());
-    if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !exercises.length && !draft.captures.length) {
+    if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !exercises.length && !sendIds.length) {
       status.className = "status-line is-error";
       status.textContent = "Ajoute au moins une observation, une image ou un exercice avant d'envoyer.";
       return;
@@ -936,13 +979,13 @@
         strengths: draft.strengths.trim(),
         improve: draft.improve.trim(),
         exercises: exercises.map((e) => ({ title: e.title.trim(), detail: e.detail.trim(), reps: e.reps.trim() })),
-        captures: draft.captures.slice(),
-        captureNotes: Object.fromEntries(draft.captures.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
+        captures: sendIds,
+        captureNotes: Object.fromEntries(sendIds.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
       },
     });
     CC.updateVideo(video.id, { status: "analysee" });
     // Un nouveau brouillon vide pour une éventuelle prochaine analyse (les images envoyées restent visibles sous la vidéo)
-    Object.assign(draft, { observation: "", strengths: "", improve: "", exercises: [], sent: [...draft.sent, ...draft.captures], captures: [] });
+    Object.assign(draft, { observation: "", strengths: "", improve: "", exercises: [], sent: [...draft.sent, ...sendIds], captures: [] });
     saveDraft();
     ["obs", "forts", "progres"].forEach((id) => { $(id).value = ""; });
     renderExercises();

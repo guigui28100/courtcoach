@@ -122,14 +122,59 @@ const CC = (() => {
       const isImage = blob.type && blob.type.indexOf("image/") === 0;
       if (!isImage || blob.size > 8e6) throw error;
       let dataUrl;
-      try { dataUrl = await imageToJpegDataUrl(blob); } catch (e) { throw error; }
+      try { dataUrl = await withTimeout(imageToJpegDataUrl(blob), 5000); } catch (e) { throw error; }
       const spareId = "ls:" + uid();
       if (!write(SPARE_PREFIX + spareId, dataUrl)) throw error; // la mémoire de secours est pleine aussi
       return spareId;
     }
   }
 
+  // ---------- Images sous forme de TEXTE (data URL) ----------
+  // Les captures n'utilisent plus de « fichiers » (blob) : certains navigateurs les bloquent.
+  //  mem:  affichée tout de suite, gardée seulement tant que la page est ouverte
+  //  im:   enregistrée dans la grande mémoire (IndexedDB), sous forme de texte
+  //  ls:   enregistrée dans la mémoire simple (localStorage) si la grande mémoire refuse
+  const memImages = new Map();
+  const isImageId = (id) => typeof id === "string" && /^(mem|im|ls):/.test(id);
+  const memoryImage = (dataUrl) => { const id = "mem:" + uid(); memImages.set(id, dataUrl); return id; };
+  const forgetMemoryImage = (id) => { memImages.delete(id); urlCache.delete(id); };
+  const cacheImage = (id, dataUrl) => urlCache.set(id, dataUrl);
+
+  async function persistImage(dataUrl) {
+    const id = "im:" + uid();
+    try {
+      await withTimeout(run("readwrite", (s) => s.put(dataUrl, id)), 8000);
+      return id;
+    } catch (error) {
+      lastStoreError = error;
+      const spareId = "ls:" + uid();
+      if (dataUrl.length < 4e6 && write(SPARE_PREFIX + spareId, dataUrl)) return spareId;
+      throw error;
+    }
+  }
+
+  // (Pour le test de fonctionnement) enregistre un petit texte dans la grande mémoire, sans repli
+  async function putTextIDB(text) {
+    const id = "im:" + uid();
+    await withTimeout(run("readwrite", (s) => s.put(text, id)), 8000);
+    return id;
+  }
+
+  async function imageData(id) {
+    if (urlCache.has(id)) return urlCache.get(id);
+    let data = null;
+    if (id.indexOf("mem:") === 0) data = memImages.get(id) || null;
+    else if (id.indexOf("ls:") === 0) data = read(SPARE_PREFIX + id, null);
+    else data = (await withTimeout(run("readonly", (s) => s.get(id)), 8000).catch(() => null)) || null;
+    if (data) urlCache.set(id, data);
+    return data;
+  }
+
   async function getFile(id) {
+    if (isImageId(id)) {
+      const data = await imageData(id);
+      return data ? (await fetch(data)).blob() : undefined;
+    }
     if (isSpareId(id)) {
       const dataUrl = read(SPARE_PREFIX + id, null);
       return dataUrl ? (await fetch(dataUrl)).blob() : undefined;
@@ -137,18 +182,36 @@ const CC = (() => {
     return run("readonly", (s) => s.get(id));
   }
   async function deleteFile(id) {
+    if (isImageId(id)) {
+      urlCache.delete(id);
+      if (id.indexOf("mem:") === 0) { memImages.delete(id); return; }
+      if (id.indexOf("ls:") === 0) { remove(SPARE_PREFIX + id); return; }
+    }
     if (isSpareId(id)) { remove(SPARE_PREFIX + id); return; }
     return run("readwrite", (s) => s.delete(id));
   }
 
   const urlCache = new Map();
   async function fileURL(id) {
+    if (isImageId(id)) return imageData(id);
     if (urlCache.has(id)) return urlCache.get(id);
     const blob = await getFile(id);
     if (!blob) return null;
     const url = URL.createObjectURL(blob);
     urlCache.set(id, url);
     return url;
+  }
+
+  // Affiche une image en grand par-dessus la page (sans ouvrir de nouvel onglet)
+  function lightbox(url, alt) {
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+    const overlay = h("div", { class: "lightbox", role: "dialog", "aria-modal": "true", "aria-label": alt || "Image", onclick: close },
+      h("img", { src: url, alt: alt || "" }),
+      h("button", { type: "button", class: "lightbox__close", "aria-label": "Fermer l'image", onclick: close }, "✕"));
+    document.body.append(overlay);
+    document.addEventListener("keydown", onKey);
+    overlay.querySelector("button").focus();
   }
 
   // Espace utilisé par le navigateur pour ce site (si le navigateur sait le dire)
@@ -344,9 +407,10 @@ const CC = (() => {
   const saveLessons = (list) => write("lessons", list);
 
   return {
-    VERSION: "15",
+    VERSION: "16",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
-    putFile, putFileIDB, isSpareId, getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,
+    putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
+    getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,
     lastStoreError: () => lastStoreError,
     SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, exampleAccount, addExamples, students, studentName, ageOf,
     profile, saveProfile, profileCompletion, PROFILE_SECTIONS,

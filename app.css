@@ -540,3 +540,31 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 var(--s2); min-width: 0; }
   body.has-strip { padding-bottom: 190px; }
   body.has-strip .toast { bottom: calc(190px + env(safe-area-inset-bottom)); }
 }
+
+/* Image affichée en grand par-dessus la page */
+.lightbox { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .9); cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #000; }
+.lightbox__close { position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border: 0; border-radius: 50%; background: #fff; color: var(--ink); font-size: 1.2rem; cursor: pointer; }
+
+/* Les images sont des boutons (agrandir) : même rendu que des liens */
+.capture__open { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; line-height: 0; }
+.capture__open img { display: block; width: 100%; }
+.capture-card__title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.capture-card__state { font-size: .85rem; font-weight: 700; color: var(--muted); }
+.capture-card__state--ok { color: #1f6b3a; }
+.capture-card__state--warn { color: #8a1d16; }
+.capture-card[data-state="unsaved"], .capture-card[data-state="lost"] { border-color: #b3261e; }
+button.strip__thumb { padding: 0; cursor: zoom-in; }
+.analysis__fig .capture__open { cursor: zoom-in; }
+.bubble .capture__open img { border-radius: 10px; margin-top: 8px; }
+
+/* Cartes d'images plus compactes : on voit l'image, son état, le commentaire et les boutons d'un seul coup d'œil */
+.capture-card__img img { max-height: 210px; }
+.capture-card textarea { min-height: 52px; margin-top: 6px; }
+.capture-card__title { margin-bottom: 4px; }
+.capture-card__actions { margin-top: 6px; }
+
+/* Le panneau « Mon analyse » s'arrête au-dessus de la bande d'images (elle ne le recouvre plus) */
+@media (min-width: 1100px) {
+  body.has-strip .studio-right { max-height: calc(100vh - 96px - 84px); }
+}

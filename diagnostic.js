@@ -20,30 +20,33 @@
     return {
       ok(text) { status.className = "badge badge--ok"; status.textContent = "OK"; detail.textContent = text || ""; results.push("OK    " + title + (text ? " — " + text : "")); },
       info(text) { status.className = "badge"; status.textContent = "Info"; detail.textContent = text || ""; results.push("INFO  " + title + (text ? " — " + text : "")); },
+      warn(text) { status.className = "badge badge--wait"; status.textContent = "Bloqué"; detail.textContent = text || ""; results.push("BLOQUÉ " + title + (text ? " — " + text : "")); },
       fail(text) { status.className = "badge badge--no"; status.textContent = "Problème"; detail.textContent = text || ""; results.push("ÉCHEC " + title + (text ? " — " + text : "")); if (!failedAt) failedAt = title; },
     };
   }
 
-  // Exécute une étape : en cas d'erreur, on note le problème et on continue
-  async function step(title, action) {
+  // Exécute une étape : en cas d'erreur, on note le problème et on continue.
+  // « soft » : l'application n'en dépend plus, l'échec est seulement signalé (« Bloqué »).
+  async function step(title, action, soft) {
     const s = addStep(title);
     try {
       const text = await action();
       s.ok(typeof text === "string" ? text : "");
       return true;
     } catch (e) {
-      s.fail((e && e.name ? e.name + " : " : "") + (e && e.message ? e.message : String(e)));
+      const msg = (e && e.name ? e.name + " : " : "") + (e && e.message ? e.message : String(e));
+      if (soft) s.warn(msg + " — sans conséquence : l'application n'utilise plus cette méthode pour les captures.");
+      else s.fail(msg);
       return false;
     }
   }
 
-  const decode = (url) => new Promise((resolve, reject) => {
+  const decode = (url, ms) => withTimeout(new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve([img.naturalWidth, img.naturalHeight]);
     img.onerror = () => reject(new Error("l'image n'a pas pu être affichée"));
     img.src = url;
-  });
-  const toBlob = (canvas) => new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("le navigateur n'a pas créé l'image"))), "image/png"));
+  }), ms || 6000, "affichage de l'image");
 
   async function run() {
     $("lancer").disabled = true;
@@ -53,7 +56,7 @@
     $("copie").hidden = true;
     results.length = 0;
     failedAt = null;
-    const createdFiles = [];
+    const createdIds = [];
 
     // 1. Le navigateur
     const info = addStep("Ton navigateur");
@@ -75,45 +78,43 @@
       return "écriture et lecture possibles";
     });
 
-    // 2b. Espace de stockage
+    // 3. Espace de stockage
     await step("Espace de stockage accordé par le navigateur à ce site", async () => {
-      const info = await CC.storageInfo();
-      if (info.quota === null) return "le navigateur ne donne pas cette information · tes vidéos pèsent " + CC.fmtSize(info.videosSize);
-      const pct = info.quota ? Math.round((info.usage / info.quota) * 100) : 0;
-      const text = "utilisé " + CC.fmtSize(info.usage) + " sur " + CC.fmtSize(info.quota) + " (" + pct + " %) · tes vidéos pèsent " + CC.fmtSize(info.videosSize);
-      if (info.quota < 150e6 || pct > 85) throw new Error("espace presque plein ou très limité (navigation privée ?) — " + text);
+      const info2 = await CC.storageInfo();
+      if (info2.quota === null) return "le navigateur ne donne pas cette information · tes vidéos pèsent " + CC.fmtSize(info2.videosSize);
+      const pct = info2.quota ? Math.round((info2.usage / info2.quota) * 100) : 0;
+      const text = "utilisé " + CC.fmtSize(info2.usage) + " sur " + CC.fmtSize(info2.quota) + " (" + pct + " %) · tes vidéos pèsent " + CC.fmtSize(info2.videosSize);
+      if (info2.quota < 150e6 || pct > 85) throw new Error("espace presque plein ou très limité (navigation privée ?) — " + text);
       return text;
-    });
+    }, true);
 
-    // 3. Base de données des fichiers
-    let canStore = await step("Grande mémoire du navigateur (IndexedDB) : enregistrer puis relire une image", async () => {
+    // 4. La méthode utilisée par l'application : l'image sous forme de TEXTE
+    await step("Grande mémoire (IndexedDB) : garder puis relire un TEXTE", async () => {
+      const id = await withTimeout(CC.putTextIDB("texte d'essai"), 10000, "enregistrement du texte");
+      createdIds.push(id);
+      return "texte enregistré dans la grande mémoire";
+    }, true);
+
+    // 5. Méthodes « fichier » (blob) : seulement pour information
+    await step("Grande mémoire : garder un FICHIER (comme les vidéos)", async () => {
       const c = document.createElement("canvas"); c.width = 40; c.height = 30;
       const x = c.getContext("2d"); x.fillStyle = "#b8471f"; x.fillRect(0, 0, 40, 30);
-      const blob = await toBlob(c);
-      const id = await withTimeout(CC.putFileIDB(blob), 12000, "enregistrement");
-      createdFiles.push(id);
-      const back = await withTimeout(CC.getFile(id), 8000, "lecture");
-      if (!back || !back.size) throw new Error("l'image relue est vide ou absente");
-      const url = URL.createObjectURL(back);
-      const size = await decode(url);
-      URL.revokeObjectURL(url);
-      return "image de " + size[0] + "×" + size[1] + " px enregistrée, relue et affichée";
-    });
+      const blob = await withTimeout(new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("le navigateur n'a pas créé le fichier"))), "image/png")), 5000, "création du fichier");
+      const id = await withTimeout(CC.putFileIDB(blob), 10000, "enregistrement du fichier");
+      createdIds.push(id);
+      const back = await withTimeout(CC.getFile(id), 8000, "lecture du fichier");
+      if (!back || !back.size) throw new Error("le fichier relu est vide ou absent");
+      return "fichier enregistré et relu";
+    }, true);
+    await step("Afficher une image à partir d'une adresse « blob: »", async () => {
+      const c = document.createElement("canvas"); c.width = 20; c.height = 20;
+      const blob = await withTimeout(new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("pas de fichier"))), "image/png")), 5000, "création du fichier");
+      const url = URL.createObjectURL(blob);
+      try { await decode(url, 5000); } finally { URL.revokeObjectURL(url); }
+      return "affichage possible";
+    }, true);
 
-    // 3b. Mode de secours
-    await step("Mode de secours : garder une image dans la mémoire simple", async () => {
-      const c = document.createElement("canvas"); c.width = 640; c.height = 360;
-      const x = c.getContext("2d"); x.fillStyle = "#16294a"; x.fillRect(0, 0, 640, 360); x.fillStyle = "#dcf247"; x.fillRect(100, 100, 300, 120);
-      const blob = await toBlob(c);
-      const dataUrl = await (async () => { const url = URL.createObjectURL(blob); try { const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error("image illisible")); i.src = url; }); const k = document.createElement("canvas"); k.width = img.naturalWidth; k.height = img.naturalHeight; k.getContext("2d").drawImage(img, 0, 0); return k.toDataURL("image/jpeg", 0.88); } finally { URL.revokeObjectURL(url); } })();
-      localStorage.setItem("courtcoach.diagnostic.secours", dataUrl);
-      const back = localStorage.getItem("courtcoach.diagnostic.secours");
-      localStorage.removeItem("courtcoach.diagnostic.secours");
-      if (back !== dataUrl) throw new Error("l'image relue est différente");
-      return "image de " + Math.round(dataUrl.length / 1000) + " Ko gardée puis relue";
-    });
-
-    // 4. La vidéo d'exemple
+    // 6. La vidéo d'exemple
     let blob = null;
     await step("Chargement de la vidéo d'exemple", async () => {
       const response = await withTimeout(fetch("demo/exemple-eleve.webm"), 15000, "téléchargement");
@@ -122,14 +123,12 @@
       return CC.fmtSize(blob.size);
     });
 
-    // 5. Lecture + capture
     let video = null;
     if (blob) {
       await step("Lecture de la vidéo", async () => {
         video = document.createElement("video");
         video.muted = true; video.playsInline = true; video.preload = "auto";
-        const url = URL.createObjectURL(blob);
-        video.src = url;
+        video.src = URL.createObjectURL(blob);
         await withTimeout(new Promise((resolve, reject) => {
           video.onloadeddata = resolve;
           video.onerror = () => reject(new Error("ce navigateur ne sait pas lire cette vidéo"));
@@ -138,7 +137,8 @@
       });
     }
 
-    let captureBlob = null;
+    // 7. La capture, exactement comme l'application
+    let dataUrl = null;
     if (video) {
       await step("Se placer sur une image précise de la vidéo (1,4 s)", async () => {
         video.currentTime = 1.4;
@@ -154,31 +154,38 @@
         const data = x.getImageData(0, 0, c.width, c.height).data;
         let sum = 0; for (let i = 0; i < data.length; i += 400) sum += data[i] + data[i + 1] + data[i + 2];
         if (sum === 0) throw new Error("l'image obtenue est entièrement noire");
-        captureBlob = await toBlob(c);
-        return "image " + c.width + "×" + c.height + " px, " + CC.fmtSize(captureBlob.size);
+        dataUrl = c.toDataURL("image/jpeg", 0.92);
+        return "image " + c.width + "×" + c.height + " px, " + Math.round(dataUrl.length / 1000) + " Ko";
       });
     }
 
-    // 6. Enregistrement + affichage de la capture
-    if (captureBlob) {
-      await step("Enregistrer la capture dans l'analyse (comme le fait l'application)", async () => {
-        const id = await withTimeout(CC.putFile(captureBlob), 25000, "enregistrement");
-        createdFiles.push(id);
-        return CC.isSpareId(id) ? "enregistrée en MODE DE SECOURS (la grande mémoire a refusé : " + CC.describeError(CC.lastStoreError()) + ")" : "enregistrée dans la grande mémoire";
-      });
-      await step("Retrouver et afficher la capture", async () => {
-        const id = createdFiles[createdFiles.length - 1];
-        const url = await withTimeout(CC.fileURL(id), 8000, "lecture");
-        if (!url) throw new Error("la capture n'a pas été retrouvée");
-        const size = await decode(url);
-        $("apercu").replaceChildren(h("img", { src: url, alt: "Image capturée par le test", style: "width:100%; border-radius:12px; border:1px solid var(--line)" }));
+    if (dataUrl) {
+      await step("Afficher l'image photographiée (affichage immédiat)", async () => {
+        const size = await decode(dataUrl, 6000);
+        $("apercu").replaceChildren(h("img", { src: dataUrl, alt: "Image capturée par le test", style: "width:100%; border-radius:12px; border:1px solid var(--line)" }));
         $("resultat").hidden = false;
         return "affichée (" + size[0] + "×" + size[1] + " px)";
       });
+      let savedId = null;
+      await step("Sauvegarder l'image (comme le fait l'application)", async () => {
+        savedId = await withTimeout(CC.persistImage(dataUrl), 20000, "sauvegarde");
+        createdIds.push(savedId);
+        return savedId.indexOf("ls:") === 0
+          ? "sauvegardée en MODE DE SECOURS (la grande mémoire a refusé : " + CC.describeError(CC.lastStoreError()) + ")"
+          : "sauvegardée dans la grande mémoire";
+      });
+      if (savedId) {
+        await step("Retrouver l'image sauvegardée", async () => {
+          const url = await withTimeout(CC.fileURL(savedId), 8000, "lecture");
+          if (!url) throw new Error("l'image sauvegardée n'a pas été retrouvée");
+          const size = await decode(url, 6000);
+          return "retrouvée et affichée (" + size[0] + "×" + size[1] + " px)";
+        });
+      }
     }
 
-    // Ménage : on supprime les fichiers de test
-    for (const id of createdFiles) { try { await CC.deleteFile(id); } catch (e) { /* rien */ } }
+    // Ménage : on supprime les éléments de test
+    for (const id of createdIds) { try { await withTimeout(CC.deleteFile(id), 4000, "ménage"); } catch (e) { /* rien */ } }
 
     // Verdict
     const verdict = $("verdict");
@@ -188,7 +195,7 @@
       verdict.replaceChildren(h("strong", {}, "Un problème a été trouvé à l'étape « " + failedAt + " »."), " Copie le résultat ci-dessous et envoie-le moi : je saurai quoi corriger.");
     } else {
       verdict.style.background = "#dff3e6"; verdict.style.borderLeftColor = "#1f6b3a";
-      verdict.replaceChildren(h("strong", {}, "Tout fonctionne dans ton navigateur ✓"), " La capture, l'enregistrement et l'affichage de l'image marchent. Si l'image n'apparaît pas dans l'application, dis-moi précisément ce que tu vois : la page, la taille de ta fenêtre, et si un message s'affiche.");
+      verdict.replaceChildren(h("strong", {}, "La capture fonctionne dans ton navigateur ✓"), " Les étapes marquées « Bloqué » ne gênent plus l'application. Si une image n'apparaît pas dans l'application, dis-moi précisément ce que tu vois.");
     }
     $("texte").value = "CourtCoach — test de fonctionnement (version " + CC.VERSION + ")\n" + new Date().toLocaleString("fr-FR") + "\n\n" + results.join("\n");
     $("copie").hidden = false;

@@ -32,7 +32,7 @@
     const holder = h("div", {});
     CC.fileURL(f.id).then((url) => {
       if (!url) return;
-      if (f.type === "image") holder.append(h("a", { href: url, target: "_blank", rel: "noopener" }, h("img", { src: url, alt: "Photo envoyée : " + f.name, loading: "lazy" })));
+      if (f.type === "image") holder.append(h("button", { type: "button", class: "capture__open", "aria-label": "Voir la photo en grand", onclick: () => CC.lightbox(url, "Photo envoyée : " + f.name) }, h("img", { src: url, alt: "Photo envoyée : " + f.name, loading: "lazy" })));
       else holder.append(h("video", { src: url, controls: true, playsinline: true, preload: "metadata", "aria-label": "Vidéo envoyée : " + f.name }));
     });
     return holder;
@@ -41,10 +41,11 @@
   function analysisCard(a) {
     const notes = a.captureNotes || {};
     const caps = (a.captures || []).map((id, i) => {
-      const link = h("a", { target: "_blank", rel: "noopener" });
+      const link = h("button", { type: "button", class: "capture__open" });
       CC.fileURL(id).then((url) => {
         if (!url) return;
-        link.href = url;
+        link.setAttribute("aria-label", "Voir l'image annotée " + (i + 1) + " en grand");
+        link.addEventListener("click", () => CC.lightbox(url, "Image annotée " + (i + 1)));
         link.append(h("img", { src: url, alt: "Image annotée n° " + (i + 1) }));
       });
       return h("figure", { class: "analysis__fig" }, link, notes[id] ? h("figcaption", {}, notes[id]) : null);
