@@ -417,7 +417,7 @@ const CC = (() => {
 
   return {
     fill,
-    VERSION: "19",
+    VERSION: "20",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,

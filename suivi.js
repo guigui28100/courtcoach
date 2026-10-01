@@ -101,15 +101,19 @@
     const status = $("exemples-status");
     button.disabled = true;
     status.className = "status-line";
-    status.textContent = "Chargement des joueurs d'exemple…";
+    status.textContent = "Chargement des joueurs d'exemple… (quelques secondes)";
     try {
       const n = await comp.addExamples();
       status.className = "status-line is-ok";
       status.textContent = n + " joueur(s) fictif(s) ajouté(s) ✓";
       render();
+      if (CC.comp.players().some((p) => p.example) && !CC.videos().some((v) => v.example === "joueur")) {
+        status.textContent += " (les vidéos d'exemple n'ont pas pu être ajoutées sur cet appareil)";
+      }
     } catch (e) {
       status.className = "status-line is-error";
       status.textContent = "Impossible de charger les joueurs d'exemple : " + CC.describeError(e);
+      render();
     }
     button.disabled = false;
   });

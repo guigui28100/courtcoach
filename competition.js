@@ -275,10 +275,15 @@ CC.comp = (() => {
     ];
 
     // Vidéos d'exemple : les deux petites vidéos fictives (les mêmes fichiers servent à plusieurs vidéos)
+    // (si le navigateur est lent ou refuse de garder les vidéos, on crée quand même les joueurs, sans vidéos)
     let sharedA = null, sharedB = null;
     try {
-      const a = await fetch("demo/exemple-eleve.webm"); const b = await fetch("demo/exemple-modele.webm");
-      if (a.ok && b.ok) { sharedA = await CC.putFile(await a.blob()); sharedB = await CC.putFile(await b.blob()); }
+      const load = async () => {
+        const a = await fetch("demo/exemple-eleve.webm"); const b = await fetch("demo/exemple-modele.webm");
+        if (!a.ok || !b.ok) return;
+        sharedA = await CC.putFile(await a.blob()); sharedB = await CC.putFile(await b.blob());
+      };
+      await Promise.race([load(), new Promise((resolve) => setTimeout(resolve, 6000))]);
     } catch (e) { /* les vidéos d'exemple sont facultatives */ }
     const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
 
