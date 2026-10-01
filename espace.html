@@ -36,6 +36,11 @@
 
       <!-- ===== Côté élève ===== -->
       <div id="vue-eleve" hidden>
+        <section id="mes-demandes" aria-labelledby="demandes-titre" hidden>
+          <h2 id="demandes-titre">Mes demandes de cours</h2>
+          <ul class="list" id="mes-cours"></ul>
+        </section>
+
         <div class="cards cards--3">
           <div class="card stat"><b id="st-profil">0 %</b><span>Profil complété</span>
             <div class="progress" aria-hidden="true"><span id="st-profil-bar"></span></div>
@@ -107,15 +112,17 @@
             <button class="btn btn--clay" type="submit">Envoyer ma demande</button>
             <p class="status-line" role="status" id="cours-status"></p>
           </form>
-
-          <h3>Mes demandes</h3>
-          <ul class="list" id="mes-cours"></ul>
         </section>
+
 
         <section aria-labelledby="dern-titre">
           <h2 id="dern-titre">Dernières analyses de mon coach</h2>
           <ul class="list" id="dernieres-analyses"></ul>
         </section>
+
+        <details class="demo-details" id="el-demo">
+          <summary>Mode démonstration et vidéos d'exemple</summary>
+        </details>
       </div>
 
       <!-- ===== Côté coach ===== -->
