@@ -62,6 +62,7 @@
 
       <!-- Scène -->
       <div class="stage-box">
+        <div class="flash" id="flash" aria-hidden="true"></div>
         <div class="stage" id="stage">
           <div class="pane pane--a" data-pane="a" data-loaded="true">
             <video id="video-a" playsinline muted preload="auto"></video>
@@ -150,6 +151,8 @@
       </div>
     </div>
   </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="store.js"></script>
   <script src="layout.js"></script>
