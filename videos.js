@@ -26,6 +26,10 @@
     const radios = Array.from(fieldset.querySelectorAll('input[name="destinataire"]'));
     const forStudent = radios.find((r) => r.value === "eleve");
     const forModel = radios.find((r) => r.value === "reference");
+    const forPlayer = radios.find((r) => r.value === "joueur");
+    const squad = CC.comp.players();
+    $("joueur-id").replaceChildren(...squad.map((p) => h("option", { value: p.id }, CC.comp.fullName(p))));
+    if (!squad.length) forPlayer.disabled = true;
     if (!students.length) {
       forStudent.disabled = true;
       forModel.checked = true;
@@ -33,7 +37,7 @@
     } else {
       forStudent.checked = true;
     }
-    const syncStudentField = () => { $("champ-eleve").hidden = !forStudent.checked; };
+    const syncStudentField = () => { $("champ-eleve").hidden = !forStudent.checked; $("champ-joueur").hidden = !forPlayer.checked; };
     radios.forEach((r) => r.addEventListener("change", syncStudentField));
     syncStudentField();
     $("champ-question").hidden = true;
@@ -74,10 +78,23 @@
     status.className = "status-line";
     status.textContent = "Enregistrement en cours…";
     try {
+      const destination = isCoach ? form.elements.destinataire.value : "eleve";
+      const coachForStudent = isCoach && destination === "eleve" && form.elements.eleve.value;
+      const squadPlayer = isCoach && destination === "joueur" ? CC.comp.player(form.elements.joueur.value) : null;
+      if (isCoach && destination === "joueur" && !squadPlayer) { fail("Choisis un jeune du Centre de compétition jeunes."); return; }
+      if (squadPlayer && !squadPlayer.autorisation) {
+        status.className = "status-line is-error";
+        status.replaceChildren("L'autorisation des parents n'est pas enregistrée pour " + squadPlayer.prenom + " (droit à l'image). ", h("a", { href: "joueur.html?id=" + squadPlayer.id + "#profil" }, "L'enregistrer dans son dossier"));
+        button.disabled = false;
+        return;
+      }
       const fileId = await CC.putFile(file);
       // Coach : la vidéo est celle d'un élève (à analyser) ou un modèle de référence
-      const coachForStudent = isCoach && form.elements.destinataire.value === "eleve" && form.elements.eleve.value;
-      const video = {
+      const video = squadPlayer ? {
+        id: CC.uid(), fileId, owner: "coach", playerId: squadPlayer.id, studentId: null,
+        title: form.elements.titre.value.trim() || file.name.replace(/\.[^.]+$/, ""),
+        shot: form.elements.coup.value, question: "", date: new Date().toISOString(), size: file.size, status: "suivi", seen: true,
+      } : {
         id: CC.uid(),
         fileId,
         owner: isCoach && !coachForStudent ? "coach" : "eleve",
@@ -103,13 +120,15 @@
       if (isCoach) {
         // form.reset() remet le choix « élève / modèle » comme au départ
         const wantStudent = CC.students().length > 0;
-        form.elements.destinataire.value = wantStudent ? "eleve" : "reference";
-        $("champ-eleve").hidden = !wantStudent;
+        form.elements.destinataire.value = destination === "joueur" ? "joueur" : wantStudent ? "eleve" : "reference";
+        $("champ-eleve").hidden = form.elements.destinataire.value !== "eleve";
+        $("champ-joueur").hidden = form.elements.destinataire.value !== "joueur";
+        if (squadPlayer) form.elements.joueur.value = squadPlayer.id;
       }
       preview.hidden = true;
       status.className = "status-line is-ok";
       status.textContent = isCoach
-        ? (coachForStudent ? "Vidéo ajoutée au dossier de l'élève ✓ Tu peux l'analyser." : "Vidéo de référence ajoutée ✓")
+        ? (coachForStudent ? "Vidéo ajoutée au dossier de l'élève ✓ Tu peux l'analyser." : squadPlayer ? "Vidéo ajoutée au dossier de " + squadPlayer.prenom + " ✓ Tu peux l'analyser." : "Vidéo de référence ajoutée ✓")
         : "Vidéo envoyée ✓ Ton coach va l'analyser.";
       render();
     } catch (e) {
