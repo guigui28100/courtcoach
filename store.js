@@ -76,13 +76,70 @@ const CC = (() => {
       t.onabort = () => reject(t.error);
     });
   }
-  async function putFile(blob) {
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("pas de réponse après " + ms / 1000 + " s")), ms)),
+  ]);
+  const describeError = (e) => (e && e.name ? e.name : "Erreur") + (e && e.message ? " : " + e.message : "");
+
+  // Écriture « normale » dans la grande mémoire du navigateur (IndexedDB)
+  async function putFileIDB(blob) {
     const id = uid();
-    await run("readwrite", (s) => s.put(blob, id));
+    await withTimeout(run("readwrite", (s) => s.put(blob, id)), 10000);
     return id;
   }
-  const getFile = (id) => run("readonly", (s) => s.get(id));
-  const deleteFile = (id) => run("readwrite", (s) => s.delete(id));
+
+  // Mode de secours : si la grande mémoire refuse (pleine, limitée, navigation privée…), les IMAGES
+  // (captures, photos) sont gardées en JPEG dans la mémoire simple du navigateur (localStorage).
+  const SPARE_PREFIX = "file.";
+  const isSpareId = (id) => typeof id === "string" && id.indexOf("ls:") === 0;
+  async function imageToJpegDataUrl(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error("image illisible"));
+        i.src = url;
+      });
+      const scale = Math.min(1, 1000 / img.naturalWidth);
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.88);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  let lastStoreError = null;
+  async function putFile(blob) {
+    try {
+      return await putFileIDB(blob);
+    } catch (error) {
+      lastStoreError = error;
+      const isImage = blob.type && blob.type.indexOf("image/") === 0;
+      if (!isImage || blob.size > 8e6) throw error;
+      let dataUrl;
+      try { dataUrl = await imageToJpegDataUrl(blob); } catch (e) { throw error; }
+      const spareId = "ls:" + uid();
+      if (!write(SPARE_PREFIX + spareId, dataUrl)) throw error; // la mémoire de secours est pleine aussi
+      return spareId;
+    }
+  }
+
+  async function getFile(id) {
+    if (isSpareId(id)) {
+      const dataUrl = read(SPARE_PREFIX + id, null);
+      return dataUrl ? (await fetch(dataUrl)).blob() : undefined;
+    }
+    return run("readonly", (s) => s.get(id));
+  }
+  async function deleteFile(id) {
+    if (isSpareId(id)) { remove(SPARE_PREFIX + id); return; }
+    return run("readwrite", (s) => s.delete(id));
+  }
 
   const urlCache = new Map();
   async function fileURL(id) {
@@ -92,6 +149,18 @@ const CC = (() => {
     const url = URL.createObjectURL(blob);
     urlCache.set(id, url);
     return url;
+  }
+
+  // Espace utilisé par le navigateur pour ce site (si le navigateur sait le dire)
+  async function storageInfo() {
+    const info = { usage: null, quota: null, videosSize: videos().reduce((sum, v) => sum + (v.size || 0), 0) };
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const est = await navigator.storage.estimate();
+        info.usage = est.usage; info.quota = est.quota;
+      }
+    } catch (e) { /* rien */ }
+    return info;
   }
 
   // ---------- Données ----------
@@ -275,9 +344,10 @@ const CC = (() => {
   const saveLessons = (list) => write("lessons", list);
 
   return {
-    VERSION: "14",
+    VERSION: "15",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
-    putFile, getFile, deleteFile, fileURL,
+    putFile, putFileIDB, isSpareId, getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,
+    lastStoreError: () => lastStoreError,
     SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, exampleAccount, addExamples, students, studentName, ageOf,
     profile, saveProfile, profileCompletion, PROFILE_SECTIONS,
     videos, saveVideos, videoById, updateVideo, removeVideo,

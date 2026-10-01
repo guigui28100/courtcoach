@@ -75,12 +75,22 @@
       return "écriture et lecture possibles";
     });
 
+    // 2b. Espace de stockage
+    await step("Espace de stockage accordé par le navigateur à ce site", async () => {
+      const info = await CC.storageInfo();
+      if (info.quota === null) return "le navigateur ne donne pas cette information · tes vidéos pèsent " + CC.fmtSize(info.videosSize);
+      const pct = info.quota ? Math.round((info.usage / info.quota) * 100) : 0;
+      const text = "utilisé " + CC.fmtSize(info.usage) + " sur " + CC.fmtSize(info.quota) + " (" + pct + " %) · tes vidéos pèsent " + CC.fmtSize(info.videosSize);
+      if (info.quota < 150e6 || pct > 85) throw new Error("espace presque plein ou très limité (navigation privée ?) — " + text);
+      return text;
+    });
+
     // 3. Base de données des fichiers
-    let canStore = await step("Base de données des images (IndexedDB) : enregistrer puis relire une image", async () => {
+    let canStore = await step("Grande mémoire du navigateur (IndexedDB) : enregistrer puis relire une image", async () => {
       const c = document.createElement("canvas"); c.width = 40; c.height = 30;
       const x = c.getContext("2d"); x.fillStyle = "#b8471f"; x.fillRect(0, 0, 40, 30);
       const blob = await toBlob(c);
-      const id = await withTimeout(CC.putFile(blob), 8000, "enregistrement");
+      const id = await withTimeout(CC.putFileIDB(blob), 12000, "enregistrement");
       createdFiles.push(id);
       const back = await withTimeout(CC.getFile(id), 8000, "lecture");
       if (!back || !back.size) throw new Error("l'image relue est vide ou absente");
@@ -88,6 +98,19 @@
       const size = await decode(url);
       URL.revokeObjectURL(url);
       return "image de " + size[0] + "×" + size[1] + " px enregistrée, relue et affichée";
+    });
+
+    // 3b. Mode de secours
+    await step("Mode de secours : garder une image dans la mémoire simple", async () => {
+      const c = document.createElement("canvas"); c.width = 640; c.height = 360;
+      const x = c.getContext("2d"); x.fillStyle = "#16294a"; x.fillRect(0, 0, 640, 360); x.fillStyle = "#dcf247"; x.fillRect(100, 100, 300, 120);
+      const blob = await toBlob(c);
+      const dataUrl = await (async () => { const url = URL.createObjectURL(blob); try { const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error("image illisible")); i.src = url; }); const k = document.createElement("canvas"); k.width = img.naturalWidth; k.height = img.naturalHeight; k.getContext("2d").drawImage(img, 0, 0); return k.toDataURL("image/jpeg", 0.88); } finally { URL.revokeObjectURL(url); } })();
+      localStorage.setItem("courtcoach.diagnostic.secours", dataUrl);
+      const back = localStorage.getItem("courtcoach.diagnostic.secours");
+      localStorage.removeItem("courtcoach.diagnostic.secours");
+      if (back !== dataUrl) throw new Error("l'image relue est différente");
+      return "image de " + Math.round(dataUrl.length / 1000) + " Ko gardée puis relue";
     });
 
     // 4. La vidéo d'exemple
@@ -138,10 +161,10 @@
 
     // 6. Enregistrement + affichage de la capture
     if (captureBlob) {
-      await step("Enregistrer la capture dans l'analyse", async () => {
-        const id = await withTimeout(CC.putFile(captureBlob), 8000, "enregistrement");
+      await step("Enregistrer la capture dans l'analyse (comme le fait l'application)", async () => {
+        const id = await withTimeout(CC.putFile(captureBlob), 25000, "enregistrement");
         createdFiles.push(id);
-        return "enregistrée";
+        return CC.isSpareId(id) ? "enregistrée en MODE DE SECOURS (la grande mémoire a refusé : " + CC.describeError(CC.lastStoreError()) + ")" : "enregistrée dans la grande mémoire";
       });
       await step("Retrouver et afficher la capture", async () => {
         const id = createdFiles[createdFiles.length - 1];
