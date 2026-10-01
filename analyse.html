@@ -30,88 +30,103 @@
         </div>
       </div>
 
-      <!-- Choix de la 2e vidéo (comparaison) -->
-      <div class="compare-bar" id="compare-bar">
-        <div class="field">
-          <label for="video-b">Vidéo à comparer (B)</label>
-          <select id="video-b"></select>
-        </div>
-        <div class="field">
-          <label for="fichier-b">… ou un fichier de cet ordinateur</label>
-          <input id="fichier-b" type="file" accept="video/*">
-        </div>
-        <div class="field only-overlay">
-          <label for="opacite">Transparence de B</label>
-          <input id="opacite" type="range" min="0" max="100" value="50">
-        </div>
-        <div class="field">
-          <label for="decalage">Décalage de B (pour caler les deux gestes)</label>
-          <div class="offset-row">
-            <button type="button" class="btn btn--small btn--outline" id="dec-moins" aria-label="Reculer B d'une image">−1 img</button>
-            <input id="decalage" type="range" min="-3000" max="3000" step="10" value="0">
-            <button type="button" class="btn btn--small btn--outline" id="dec-plus" aria-label="Avancer B d'une image">+1 img</button>
-            <output id="decalage-val" for="decalage">0,00 s</output>
+      <div class="studio-layout">
+        <div class="studio-left">
+          <!-- Choix de la 2e vidéo (comparaison) -->
+          <div class="compare-bar" id="compare-bar">
+            <div class="field">
+              <label for="video-b">Vidéo à comparer (B)</label>
+              <select id="video-b"></select>
+            </div>
+            <div class="field">
+              <label for="fichier-b">… ou un fichier de cet ordinateur</label>
+              <input id="fichier-b" type="file" accept="video/*">
+            </div>
+            <div class="field only-overlay">
+              <label for="opacite">Transparence de B</label>
+              <input id="opacite" type="range" min="0" max="100" value="50">
+            </div>
+            <div class="field">
+              <label for="decalage">Décalage de B (pour caler les deux gestes)</label>
+              <div class="offset-row">
+                <button type="button" class="btn btn--small btn--outline" id="dec-moins" aria-label="Reculer B d'une image">−1 img</button>
+                <input id="decalage" type="range" min="-3000" max="3000" step="10" value="0">
+                <button type="button" class="btn btn--small btn--outline" id="dec-plus" aria-label="Avancer B d'une image">+1 img</button>
+                <output id="decalage-val" for="decalage">0,00 s</output>
+              </div>
+            </div>
+            <p class="hint">Astuce : mets la vidéo A sur le moment de l'impact, puis ajuste le décalage jusqu'à ce que B soit aussi à l'impact. Ensuite, les deux vidéos restent synchronisées.</p>
           </div>
-        </div>
-        <p class="hint">Astuce : mets la vidéo A sur le moment de l'impact, puis ajuste le décalage jusqu'à ce que B soit aussi à l'impact. Ensuite, les deux vidéos restent synchronisées.</p>
-      </div>
 
-      <!-- Outils -->
-      <div class="toolbar" id="toolbar" role="toolbar" aria-label="Outils d'annotation"></div>
-      <p class="hint" id="tool-hint" style="margin-bottom: var(--s1)"></p>
+          <!-- Outils -->
+          <div class="toolbar" id="toolbar" role="toolbar" aria-label="Outils d'annotation"></div>
+          <p class="hint" id="tool-hint" style="margin-bottom: var(--s1)"></p>
 
-      <!-- Scène -->
-      <div class="stage-box">
-        <div class="flash" id="flash" aria-hidden="true"></div>
-        <div class="stage" id="stage">
-          <div class="pane pane--a" data-pane="a" data-loaded="true">
-            <video id="video-a" playsinline muted preload="auto"></video>
-            <div class="grid-overlay" aria-hidden="true"></div>
-            <canvas aria-label="Zone de dessin sur la vidéo A"></canvas>
-            <span class="pane__label"></span>
+          <!-- Scène -->
+          <div class="stage-box">
+            <div class="flash" id="flash" aria-hidden="true"></div>
+            <div class="stage" id="stage">
+              <div class="pane pane--a" data-pane="a" data-loaded="true">
+                <video id="video-a" playsinline muted preload="auto"></video>
+                <div class="grid-overlay" aria-hidden="true"></div>
+                <canvas aria-label="Zone de dessin sur la vidéo A"></canvas>
+                <span class="pane__label"></span>
+              </div>
+              <div class="pane pane--b" data-pane="b" data-loaded="false">
+                <div class="pane__empty">Choisis une deuxième vidéo (B) dans la barre ci-dessus.</div>
+                <video id="video-b-el" playsinline muted preload="auto"></video>
+                <canvas aria-label="Zone de dessin sur la vidéo B"></canvas>
+                <span class="pane__label"></span>
+              </div>
+            </div>
           </div>
-          <div class="pane pane--b" data-pane="b" data-loaded="false">
-            <div class="pane__empty">Choisis une deuxième vidéo (B) dans la barre ci-dessus.</div>
-            <video id="video-b-el" playsinline muted preload="auto"></video>
-            <canvas aria-label="Zone de dessin sur la vidéo B"></canvas>
-            <span class="pane__label"></span>
+
+          <!-- Lecture -->
+          <div class="transport" aria-label="Lecture de la vidéo">
+            <div class="transport__scrub">
+              <label class="sr-only" for="scrub">Position dans la vidéo</label>
+              <input id="scrub" type="range" min="0" max="1000" value="0" step="1">
+              <span class="transport__time" id="temps" aria-live="off">0:00.00 / 0:00.00</span>
+            </div>
+            <div class="transport__row">
+              <button type="button" class="btn btn--outline" id="img-moins" aria-label="Image précédente" title="Image précédente (flèche gauche)">◀︎ img</button>
+              <button type="button" class="btn btn--clay" id="lecture" aria-label="Lecture" title="Lecture / pause (espace)">▶︎ Lecture</button>
+              <button type="button" class="btn btn--outline" id="img-plus" aria-label="Image suivante" title="Image suivante (flèche droite)">img ▶︎</button>
+              <label for="vitesse">Vitesse</label>
+              <select id="vitesse">
+                <option value="0.1">× 0,1</option><option value="0.25">× 0,25</option><option value="0.5">× 0,5</option><option value="1" selected>× 1</option>
+              </select>
+              <label for="fps">Pas d'image</label>
+              <select id="fps" title="Nombre d'images par seconde de ta vidéo (30 pour la plupart des téléphones)">
+                <option value="24">24 i/s</option><option value="25">25 i/s</option><option value="30" selected>30 i/s</option><option value="50">50 i/s</option><option value="60">60 i/s</option>
+              </select>
+            </div>
+            <p class="hint shortcuts">Raccourcis : <kbd>Espace</kbd> lecture · <kbd>←</kbd> <kbd>→</kbd> image par image · <kbd>Ctrl</kbd>+<kbd>Z</kbd> annuler</p>
+            <p class="status-line" role="status" id="studio-status"></p>
           </div>
-        </div>
-      </div>
 
-      <!-- Lecture -->
-      <div class="transport" aria-label="Lecture de la vidéo">
-        <div class="transport__scrub">
-          <label class="sr-only" for="scrub">Position dans la vidéo</label>
-          <input id="scrub" type="range" min="0" max="1000" value="0" step="1">
-          <span class="transport__time" id="temps" aria-live="off">0:00.00 / 0:00.00</span>
-        </div>
-        <div class="transport__row">
-          <button type="button" class="btn btn--outline" id="img-moins" aria-label="Image précédente" title="Image précédente (flèche gauche)">◀︎ img</button>
-          <button type="button" class="btn btn--clay" id="lecture" aria-label="Lecture" title="Lecture / pause (espace)">▶︎ Lecture</button>
-          <button type="button" class="btn btn--outline" id="img-plus" aria-label="Image suivante" title="Image suivante (flèche droite)">img ▶︎</button>
-          <label for="vitesse">Vitesse</label>
-          <select id="vitesse">
-            <option value="0.1">× 0,1</option><option value="0.25">× 0,25</option><option value="0.5">× 0,5</option><option value="1" selected>× 1</option>
-          </select>
-          <label for="fps">Pas d'image</label>
-          <select id="fps" title="Nombre d'images par seconde de ta vidéo (30 pour la plupart des téléphones)">
-            <option value="24">24 i/s</option><option value="25">25 i/s</option><option value="30" selected>30 i/s</option><option value="50">50 i/s</option><option value="60">60 i/s</option>
-          </select>
-        </div>
-        <p class="hint shortcuts">Raccourcis : <kbd>Espace</kbd> lecture · <kbd>←</kbd> <kbd>→</kbd> image par image · <kbd>Ctrl</kbd>+<kbd>Z</kbd> annuler</p>
-        <p class="status-line" role="status" id="studio-status"></p>
-      </div>
+          <!-- Les images capturées, juste sous la vidéo : on les retrouve là où on travaille -->
+          <section class="tray" id="tray" aria-labelledby="tray-titre">
+            <h2 class="tray__title" id="tray-titre">Images annotées <span class="tray__count" id="tray-count">0</span></h2>
+            <div class="captures captures--tray" id="captures-tray"></div>
+            <div id="tray-sent" hidden>
+              <h3 class="tray__subtitle">Déjà envoyées à l'élève</h3>
+              <div class="captures captures--tray" id="captures-sent"></div>
+            </div>
+          </section>
 
-      <div class="studio-cols" id="colonnes">
+        </div>
+
+        <!-- Mon analyse : à côté de la vidéo, pour voir les images capturées arriver -->
+        <aside class="studio-right" id="panneau" aria-label="Mon analyse pour l'élève">
         <!-- Retour à l'élève -->
         <section id="feedback" aria-labelledby="fb-titre">
-          <h2 id="fb-titre">Mon analyse pour l'élève</h2>
+          <h2 id="fb-titre" class="panel-title">Mon analyse pour l'élève</h2>
 
-          <div class="form-section">
-            <h3>Images annotées</h3>
-            <p class="hint">Dessine sur la vidéo, puis clique sur « Capturer » pour ajouter l'image à ton analyse.</p>
-            <div class="captures" id="captures"></div>
+          <div class="form-section form-section--captures">
+            <h3>Images annotées <span class="tray__count" id="panel-count">0</span></h3>
+            <p class="hint">Dessine sur la vidéo, puis clique sur « Capturer » : l'image arrive ici, dans ton analyse. Tu peux la commenter.</p>
+            <div class="capture-cards" id="captures"></div>
           </div>
 
           <div class="form-section">
@@ -136,8 +151,9 @@
           <p class="status-line" role="status" id="envoi-status"></p>
         </section>
 
+
         <!-- Fiche élève -->
-        <aside id="fiche" aria-labelledby="fiche-titre">
+        <div id="fiche" aria-labelledby="fiche-titre">
           <div class="card">
             <h2 id="fiche-titre" style="font-size:1.3rem">Fiche de l'élève</h2>
             <dl class="profile-mini" id="profile-mini"></dl>
@@ -147,6 +163,7 @@
             <h3>Sa question</h3>
             <p id="question-texte"></p>
           </div>
+        </div>
         </aside>
       </div>
     </div>

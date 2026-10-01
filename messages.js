@@ -39,14 +39,15 @@
   }
 
   function analysisCard(a) {
+    const notes = a.captureNotes || {};
     const caps = (a.captures || []).map((id, i) => {
-      const holder = h("a", { target: "_blank", rel: "noopener" });
+      const link = h("a", { target: "_blank", rel: "noopener" });
       CC.fileURL(id).then((url) => {
         if (!url) return;
-        holder.href = url;
-        holder.append(h("img", { src: url, alt: "Image annotée n° " + (i + 1), loading: "lazy" }));
+        link.href = url;
+        link.append(h("img", { src: url, alt: "Image annotée n° " + (i + 1) }));
       });
-      return holder;
+      return h("figure", { class: "analysis__fig" }, link, notes[id] ? h("figcaption", {}, notes[id]) : null);
     });
     return h("div", { class: "analysis" },
       h("h3", {}, isCoach ? "Ton analyse" : "Analyse de ton coach"),
