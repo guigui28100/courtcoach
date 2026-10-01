@@ -209,3 +209,19 @@ body.app .bulletin-paper .hint { color: var(--b-muted); font-size: .8125rem; lin
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .bulletin-club p { white-space: nowrap; }
+
+/* ---------- Espace coach : « À faire » ---------- */
+.todo-strip { display: flex; flex-wrap: wrap; gap: 10px; }
+.todo-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 10px 16px; border-radius: 99px; background: #fff; border: 1px solid var(--line); text-decoration: none; color: var(--muted); font-size: .9375rem; }
+.todo-chip b { font-family: var(--font-display); font-size: 1.3rem; color: var(--muted); }
+.todo-chip.is-on { border-color: var(--clay); background: #fdf1ea; color: var(--ink); }
+.todo-chip.is-on b { color: var(--clay); }
+.centre-card__row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.centre-card__row p { margin: 0; }
+.demo-details { border-top: 1px dashed var(--line); padding-top: var(--s2); color: var(--muted); }
+.demo-details summary { cursor: pointer; min-height: 40px; font-weight: 700; }
+.demo-details[open] { display: grid; gap: var(--s2); }
+
+.coach-stack { display: grid; gap: var(--s3); align-content: start; }
+.coach-stack > * { min-width: 0; margin: 0; }
+.coach-stack .btn-row { margin: 0; }

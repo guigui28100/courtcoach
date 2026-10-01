@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="suivi.css">
 </head>
 <body data-page="espace">
   <main id="contenu">
@@ -118,34 +119,35 @@
       </div>
 
       <!-- ===== Côté coach ===== -->
-      <div id="vue-coach" hidden>
-        <div class="cards cards--3">
-          <div class="card stat"><b id="co-eleves">0</b><span>Élèves</span><a href="eleves.html">Voir tous mes élèves</a></div>
-          <div class="card stat"><b id="co-attente">0</b><span>Vidéos à analyser</span></div>
-          <div class="card stat"><b id="co-cours">0</b><span>Demandes de cours en attente</span></div>
-        </div>
+      <div id="vue-coach" class="coach-stack" hidden>
+        <nav class="todo-strip" aria-label="Résumé de ce qui t'attend" id="co-resume"></nav>
 
-        <section id="co-reponses-section" aria-labelledby="co-reponses-titre" hidden>
-          <h2 id="co-reponses-titre">Réponses des élèves à lire</h2>
-          <ul class="list" id="co-reponses"></ul>
+        <section aria-labelledby="co-todo-titre" id="co-todo-section">
+          <h2 id="co-todo-titre">À faire</h2>
+          <ul class="list" id="co-todo"></ul>
         </section>
 
-        <section aria-labelledby="co-video-titre">
-          <h2 id="co-video-titre">Nouvelles vidéos à analyser</h2>
-          <p class="hint" style="margin-bottom: var(--s2)">Un clic ouvre le dossier de l'élève : sa fiche, ses vidéos, ses analyses passées.</p>
-          <ul class="list" id="co-videos"></ul>
-          <p><a class="btn btn--outline" href="videos.html#envoyer">Ajouter une vidéo de référence</a></p>
+        <section aria-labelledby="co-centre-titre">
+          <h2 id="co-centre-titre">Centre de compétition jeunes</h2>
+          <div class="card centre-card" id="co-centre"></div>
         </section>
 
-        <section aria-labelledby="co-cours-titre">
-          <h2 id="co-cours-titre">Demandes de cours particulier</h2>
+        <section aria-labelledby="co-cours-titre" id="co-demandes-section">
+          <h2 id="co-cours-titre">Historique des demandes de cours</h2>
           <ul class="list" id="co-demandes"></ul>
         </section>
+
+        <p><a class="btn btn--outline" href="videos.html#envoyer">Ajouter une vidéo (élève, jeune du Centre ou modèle)</a></p>
+
+        <details class="demo-details" id="co-demo">
+          <summary>Mode démonstration et vidéos d'exemple</summary>
+        </details>
       </div>
     </div>
   </main>
 
   <script src="store.js"></script>
+  <script src="competition.js"></script>
   <script src="layout.js"></script>
   <script src="espace.js"></script>
   <script src="exemples.js"></script>
