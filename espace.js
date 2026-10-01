@@ -112,56 +112,74 @@
     $("vue-coach").hidden = false;
     $("eyebrow").textContent = "Espace coach";
     $("hello").textContent = "Bonjour coach !";
-    $("sub").textContent = "Chaque élève a son dossier : sa fiche, ses vidéos, tes analyses et ses demandes.";
+    $("sub").textContent = "Tout ce qui t'attend aujourd'hui, au même endroit.";
+
+    // Le texte de démonstration et les vidéos d'exemple sont rangés en bas, dans un bloc replié
+    const demo = $("co-demo");
+    document.querySelectorAll(".demo-note, .example-box").forEach((el) => demo.append(el));
 
     const lessons = CC.lessons();
+    const cur = CC.comp.current();
+    const players = CC.comp.players();
+    const replies = videos.filter((v) => v.owner === "eleve" && CC.awaitingCoach(v.id));
     const waiting = videos.filter((v) => v.owner === "eleve" && v.status !== "analysee");
     const pendingLessons = lessons.filter((l) => l.status === "attente");
-    $("co-eleves").textContent = CC.students().length;
-    $("co-attente").textContent = waiting.length;
-    $("co-cours").textContent = pendingLessons.length;
+    const toPrepare = players.filter((p) => CC.comp.completion(CC.comp.getEval(p.id, cur.season, cur.t)) < 100);
+    const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
 
-    // Élèves qui ont répondu après une analyse : le coach doit répondre
-    const replies = videos.filter((v) => v.owner === "eleve" && CC.awaitingCoach(v.id));
-    $("co-reponses-section").hidden = !replies.length;
-    replies.forEach((v) => {
-      $("co-reponses").append(h("li", { class: "list__item" },
-        h("div", { class: "list__main" }, h("strong", {}, CC.studentName(v.studentId) + " — " + v.title), h("small", {}, "A répondu à ton analyse")),
-        h("a", { class: "btn btn--small btn--clay", href: "messages.html?id=" + v.id }, "Lire et répondre")));
-    });
+    // Petit bandeau de chiffres (chaque chiffre mène à la bonne page)
+    $("co-resume").replaceChildren(
+      h("a", { class: "todo-chip" + (waiting.length ? " is-on" : ""), href: "#co-todo-section" }, h("b", {}, String(waiting.length + replies.length)), " à analyser ou lire"),
+      h("a", { class: "todo-chip" + (pendingLessons.length ? " is-on" : ""), href: "#co-demandes-section" }, h("b", {}, String(pendingLessons.length)), " demande" + (pendingLessons.length > 1 ? "s" : "") + " de cours"),
+      h("a", { class: "todo-chip" + (toPrepare.length ? " is-on" : ""), href: "suivi.html" }, h("b", {}, String(toPrepare.length)), " bulletin" + (toPrepare.length > 1 ? "s" : "") + " à préparer"));
 
-    const vList = $("co-videos");
-    waiting.slice().reverse().forEach((v) => {
-      vList.append(h("li", { class: "list__item" },
-        h("div", { class: "list__main" },
-          h("strong", {}, CC.studentName(v.studentId) + " — " + v.title),
-          h("small", {}, (CC.SHOTS[v.shot] || "Coup") + " · envoyée le " + CC.fmtDate(v.date))),
+    // Liste unique « À faire », triée par urgence
+    const todo = [];
+    replies.forEach((v) => todo.push(h("li", { class: "list__item" },
+      h("div", { class: "list__main" }, h("strong", {}, CC.studentName(v.studentId) + " — " + v.title), h("small", {}, "💬 A répondu à ton analyse")),
+      h("a", { class: "btn btn--small btn--clay", href: "messages.html?id=" + v.id }, "Lire et répondre"))));
+    waiting.slice().reverse().forEach((v) => todo.push(h("li", { class: "list__item" },
+      h("div", { class: "list__main" }, h("strong", {}, CC.studentName(v.studentId) + " — " + v.title),
+        h("small", {}, "🎥 " + (CC.SHOTS[v.shot] || "Coup") + " · envoyée le " + CC.fmtDate(v.date))),
+      h("div", { class: "btn-row" }, v.seen ? null : h("span", { class: "badge badge--new" }, "Nouveau"),
+        h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Analyser")))));
+    pendingLessons.slice().reverse().forEach((l) => {
+      const reply = (status) => () => { CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x))); location.reload(); };
+      todo.push(h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, CC.studentName(l.studentId) + " — " + (TYPES[l.type] || "Cours") + " · " + l.objectif),
+          h("small", {}, "📅 " + [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ")),
+          l.message ? h("small", {}, "« " + l.message + " »") : null),
         h("div", { class: "btn-row" },
-          v.seen ? null : h("span", { class: "badge badge--new" }, "Nouveau"),
-          h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Ouvrir le dossier"))));
+          h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
+          h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))));
     });
-    if (!waiting.length) vList.append(emptyBox("Rien à analyser : tout est à jour 🎾"));
+    toPrepare.forEach((p) => {
+      const pct = CC.comp.completion(CC.comp.getEval(p.id, cur.season, cur.t));
+      todo.push(h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, CC.comp.fullName(p)), h("small", {}, "📝 Bulletin " + CC.comp.periodLabel(cur.season, cur.t).replace("Trimestre ", "T").replace(" · ", " ") + " · rempli à " + pct + " %")),
+        h("a", { class: "btn btn--small btn--outline", href: "joueur.html?id=" + p.id + "#evaluations" }, pct ? "Continuer" : "Commencer")));
+    });
+    $("co-todo").replaceChildren(...(todo.length ? todo : [emptyBox("Rien à faire, tout est à jour 🎾")]));
 
-    const dList = $("co-demandes");
-    lessons.slice().reverse().forEach((l) => {
+    // Carte du Centre de compétition jeunes
+    const goals = players.flatMap((p) => CC.comp.goals(p.id, cur.season));
+    const gp = CC.comp.goalsProgress(goals);
+    $("co-centre").replaceChildren(players.length
+      ? h("div", { class: "centre-card__row" },
+          h("p", {}, h("strong", {}, plural(players.length, "jeune suivi", "jeunes suivis")), " · objectifs de l'année atteints à ", h("strong", {}, gp === null ? "–" : gp + " %")),
+          h("a", { class: "btn btn--clay btn--small", href: "suivi.html" }, "Ouvrir le Centre"))
+      : h("div", { class: "centre-card__row" }, h("p", {}, "Aucun jeune pour l'instant. Ajoute tes jeunes compétiteurs pour suivre leurs objectifs, évaluations et bulletins."),
+          h("a", { class: "btn btn--clay btn--small", href: "suivi.html" }, "Ouvrir le Centre")));
+
+    // Historique des demandes déjà traitées
+    const done = lessons.filter((l) => l.status !== "attente");
+    $("co-demandes-section").hidden = !done.length;
+    $("co-demandes").replaceChildren(...done.slice().reverse().map((l) => {
       const [label, cls] = STATUS[l.status] || STATUS.attente;
-      const reply = (status) => () => {
-        CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x)));
-        location.reload();
-      };
-      dList.append(h("li", { class: "list__item" },
-        h("div", { class: "list__main" },
-          h("strong", {}, CC.studentName(l.studentId) + " — " + (TYPES[l.type] || "Cours") + " · " + l.objectif),
-          h("small", {}, [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ")),
-          l.message ? h("small", {}, "« " + l.message + " »") : null,
-          h("a", { href: "eleve.html?id=" + l.studentId }, "Voir son dossier")),
-        l.status === "attente"
-          ? h("div", { class: "btn-row" },
-              h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
-              h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))
-          : h("span", { class: "badge " + cls }, label)));
-    });
-    if (!lessons.length) dList.append(emptyBox("Aucune demande de cours."));
+      return h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, CC.studentName(l.studentId) + " — " + (TYPES[l.type] || "Cours") + " · " + l.objectif), h("a", { href: "eleve.html?id=" + l.studentId }, "Voir son dossier")),
+        h("span", { class: "badge " + cls }, label));
+    }));
   }
 
   if (role === "coach") renderCoach();
