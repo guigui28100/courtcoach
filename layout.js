@@ -22,6 +22,25 @@
     return;
   }
   const isCoach = role === "coach";
+
+  // Appareil partagé : déconnexion automatique après 30 minutes sans activité (protège les données des mineurs)
+  const IDLE_MS = 30 * 60 * 1000;
+  let idleTimer = 0;
+  const armIdle = () => {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { CC.setRole(null); location.replace("compte.html#connexion"); }, IDLE_MS);
+  };
+  ["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) => window.addEventListener(ev, armIdle, { passive: true }));
+  armIdle();
+
+  // Limite la longueur de tous les champs texte (évite les saisies démesurées)
+  const capLengths = (root) => root.querySelectorAll("input:not([maxlength]), textarea:not([maxlength])").forEach((el) => {
+    if (el.tagName === "TEXTAREA") el.maxLength = 3000;
+    else if (["text", "search", "tel", "url", ""].includes(el.type)) el.maxLength = 200;
+    else if (el.type === "email") el.maxLength = 254;
+  });
+  capLengths(document);
+  new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) { if (n.matches && n.matches("input, textarea")) capLengths(n.parentNode || document); else capLengths(n); } }))).observe(document.body, { childList: true, subtree: true });
   if (!isCoach) CC.ensureMe(); // en démonstration, un élève existe toujours
   const page = document.body.dataset.page;
 
@@ -87,8 +106,10 @@
   const tabbar = h("nav", { class: "tabbar", "aria-label": "Menu principal", style: "grid-template-columns: repeat(" + items.length + ", 1fr)" },
     items.map(([k, href, label, short]) => link(k, href, label, "tabbar__link", short)));
 
+  const mineur = !isCoach && (CC.accounts().find((a) => a.id === CC.ensureMe()) || {}).kind === "jeune";
   const footer = h("footer", { class: "footer" },
     h("div", { class: "wrap footer__inner" },
+      mineur ? h("p", { class: "footer__safe" }, "🛡️ Tu es mineur : tu ne peux échanger qu'avec ton coach, à propos de tes analyses. Si quelque chose te gêne, parles-en à tes parents ou à un responsable du club.") : null,
       h("p", {}, h("strong", {}, "Tennis Club Houdan"), " · CourtCoach"),
       h("p", {}, "Démonstration : les informations restent sur ton appareil, rien n'est envoyé sur Internet. ",
         h("a", { href: "confidentialite.html" }, "Confidentialité"), " · ", h("a", { href: "diagnostic.html" }, "Un souci ? Lancer le test de fonctionnement"), " · version " + CC.VERSION)));
