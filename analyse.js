@@ -983,16 +983,15 @@
     if (compPlayer) {
       saveDraft();
       const ids = draft.captures.filter((id) => id.indexOf("mem:") !== 0);
-      const exercises = draft.exercises.filter((e) => e.title.trim());
-      if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !exercises.length && !ids.length) {
+      if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !ids.length) {
         status.className = "status-line is-error";
-        status.textContent = "Ajoute au moins une observation, une image ou un exercice avant d'enregistrer.";
+        status.textContent = "Ajoute au moins une observation ou une image avant d'enregistrer.";
         return;
       }
       CC.comp.addAnalysis(compPlayer.id, {
         videoId: video.id, videoTitle: video.title, shot: video.shot,
         observation: draft.observation.trim(), strengths: draft.strengths.trim(), improve: draft.improve.trim(),
-        exercises: exercises.map((e) => ({ title: e.title.trim(), detail: e.detail.trim(), reps: e.reps.trim() })),
+        exercises: [],
         captures: ids,
         captureNotes: Object.fromEntries(ids.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
         goalIds: Object.keys(draft.goalLinks),
@@ -1084,6 +1083,7 @@
   // 9. Démarrage
   // =====================================================
   if (compPlayer) {
+    $("exos-section").hidden = true; // pas d'exercices correctifs pour les joueurs de compétition
     $("lien-retour").href = "joueur.html?id=" + compPlayer.id + "#videos";
     $("lien-retour").textContent = "← Dossier de " + comp_name();
     $("meta-video").textContent += " · " + comp_name();

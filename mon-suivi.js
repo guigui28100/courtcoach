@@ -105,8 +105,7 @@
           a.observation ? h("div", {}, h("h4", {}, "Observation"), h("p", {}, a.observation)) : null,
           a.strengths ? h("div", {}, h("h4", {}, "Points forts"), h("p", {}, a.strengths)) : null,
           a.improve ? h("div", {}, h("h4", {}, "À améliorer"), h("p", {}, a.improve)) : null,
-          caps.length ? h("div", {}, h("h4", {}, "Images annotées"), h("div", { class: "analysis__caps" }, caps)) : null,
-          (a.exercises || []).length ? h("div", {}, h("h4", {}, "Exercices"), h("ol", {}, a.exercises.map((x) => h("li", {}, h("strong", {}, x.title), x.reps ? " — " + x.reps : "", x.detail ? h("div", {}, x.detail) : null)))) : null));
+          caps.length ? h("div", {}, h("h4", {}, "Images annotées"), h("div", { class: "analysis__caps" }, caps)) : null));
     }) : h("p", { class: "empty" }, "Les analyses vidéo de ton coach apparaîtront ici."));
   }
 
