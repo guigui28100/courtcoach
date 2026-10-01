@@ -112,7 +112,7 @@
     $("vue-coach").hidden = false;
     $("eyebrow").textContent = "Espace coach";
     $("hello").textContent = "Bonjour coach !";
-    $("sub").textContent = "Tout ce qui t'attend aujourd'hui, au même endroit.";
+    $("sub").textContent = "Deux espaces distincts : les demandes de coaching des adhérents, et le Centre de compétition jeunes.";
 
     // Le texte de démonstration et les vidéos d'exemple sont rangés en bas, dans un bloc replié
     const demo = $("co-demo");
@@ -127,13 +127,20 @@
     const toPrepare = players.filter((p) => CC.comp.completion(CC.comp.getEval(p.id, cur.season, cur.t)) < 100);
     const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
 
-    // Petit bandeau de chiffres (chaque chiffre mène à la bonne page)
-    $("co-resume").replaceChildren(
-      h("a", { class: "todo-chip" + (waiting.length ? " is-on" : ""), href: "#co-todo-section" }, h("b", {}, String(waiting.length + replies.length)), " à analyser ou lire"),
-      h("a", { class: "todo-chip" + (pendingLessons.length ? " is-on" : ""), href: "#co-demandes-section" }, h("b", {}, String(pendingLessons.length)), " demande" + (pendingLessons.length > 1 ? "s" : "") + " de cours"),
-      h("a", { class: "todo-chip" + (toPrepare.length ? " is-on" : ""), href: "suivi.html" }, h("b", {}, String(toPrepare.length)), " bulletin" + (toPrepare.length > 1 ? "s" : "") + " à préparer"));
+    // Vidéos des jeunes du Centre qui attendent une analyse
+    const playerVideos = CC.videos().filter((v) => v.playerId && CC.comp.player(v.playerId));
+    const unanalysed = playerVideos.filter((v) => !CC.comp.analyses(v.playerId).some((x) => x.videoId === v.id));
 
-    // Liste unique « À faire », triée par urgence
+    // Deux bandeaux séparés : coaching (adhérents) / Centre de compétition jeunes
+    const chip = (n, one, many, on, href) => h("a", { class: "todo-chip" + (on ? " is-on" : ""), href }, h("b", {}, String(n)), " " + (n > 1 ? many : one));
+    $("co-resume").replaceChildren(
+      chip(waiting.length + replies.length, "à analyser ou lire", "à analyser ou lire", waiting.length + replies.length, "#co-todo-section"),
+      chip(pendingLessons.length, "demande de cours", "demandes de cours", pendingLessons.length, "#co-todo-section"));
+    $("co-resume-centre").replaceChildren(
+      chip(unanalysed.length, "vidéo à analyser", "vidéos à analyser", unanalysed.length, "suivi.html"),
+      chip(toPrepare.length, "bulletin à préparer", "bulletins à préparer", toPrepare.length, "suivi.html"));
+
+    // Liste « Demandes de coaching », triée par urgence
     const todo = [];
     replies.forEach((v) => todo.push(h("li", { class: "list__item" },
       h("div", { class: "list__main" }, h("strong", {}, CC.studentName(v.studentId) + " — " + v.title), h("small", {}, "💬 A répondu à ton analyse")),
@@ -153,13 +160,21 @@
           h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
           h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))));
     });
+    const centre = [];
+    unanalysed.forEach((v) => {
+      const p = CC.comp.player(v.playerId);
+      centre.push(h("li", { class: "list__item" },
+        h("div", { class: "list__main" }, h("strong", {}, CC.comp.fullName(p) + " — " + v.title), h("small", {}, "🎥 " + (CC.SHOTS[v.shot] || "Coup") + " · ajoutée le " + CC.fmtDate(v.date))),
+        h("a", { class: "btn btn--small btn--clay", href: "analyse.html?id=" + v.id }, "Analyser")));
+    });
     toPrepare.forEach((p) => {
       const pct = CC.comp.completion(CC.comp.getEval(p.id, cur.season, cur.t));
-      todo.push(h("li", { class: "list__item" },
+      centre.push(h("li", { class: "list__item" },
         h("div", { class: "list__main" }, h("strong", {}, CC.comp.fullName(p)), h("small", {}, "📝 Bulletin " + CC.comp.periodLabel(cur.season, cur.t).replace("Trimestre ", "T").replace(" · ", " ") + " · rempli à " + pct + " %")),
         h("a", { class: "btn btn--small btn--outline", href: "joueur.html?id=" + p.id + "#evaluations" }, pct ? "Continuer" : "Commencer")));
     });
-    $("co-todo").replaceChildren(...(todo.length ? todo : [emptyBox("Rien à faire, tout est à jour 🎾")]));
+    $("co-todo-centre").replaceChildren(...(centre.length || !players.length ? centre : [emptyBox("Rien à faire pour les jeunes : tout est à jour 🎾")]));
+    $("co-todo").replaceChildren(...(todo.length ? todo : [emptyBox("Aucune demande de coaching en attente 🎾")]));
 
     // Carte du Centre de compétition jeunes
     const goals = players.flatMap((p) => CC.comp.goals(p.id, cur.season));

@@ -225,3 +225,11 @@ body.app .bulletin-paper .hint { color: var(--b-muted); font-size: .8125rem; lin
 .coach-stack { display: grid; gap: var(--s3); align-content: start; }
 .coach-stack > * { min-width: 0; margin: 0; }
 .coach-stack .btn-row { margin: 0; }
+
+.coach-zone { display: grid; gap: 12px; align-content: start; padding: var(--s2); border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.coach-zone--centre { border-top: 6px solid var(--clay); background: #fffaf5; }
+.coach-zone__head { display: grid; gap: 8px; }
+.coach-zone__head h2, .coach-zone__head p { margin: 0; }
+.coach-zone .list__item { background: var(--chalk); }
+.coach-zone--centre .list__item { background: #fff; }
+.coach-zone .centre-card { border: 0; padding: 0; background: transparent; box-shadow: none; }

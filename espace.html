@@ -120,20 +120,27 @@
 
       <!-- ===== Côté coach ===== -->
       <div id="vue-coach" class="coach-stack" hidden>
-        <nav class="todo-strip" aria-label="Résumé de ce qui t'attend" id="co-resume"></nav>
-
-        <section aria-labelledby="co-todo-titre" id="co-todo-section">
-          <h2 id="co-todo-titre">À faire</h2>
+        <section class="coach-zone" aria-labelledby="co-coaching-titre" id="co-todo-section">
+          <header class="coach-zone__head">
+            <h2 id="co-coaching-titre">Demandes de coaching</h2>
+            <p class="hint">Adhérents qui te contactent : vidéos à analyser, réponses et demandes de cours.</p>
+            <nav class="todo-strip" aria-label="Résumé des demandes de coaching" id="co-resume"></nav>
+          </header>
           <ul class="list" id="co-todo"></ul>
         </section>
 
-        <section aria-labelledby="co-centre-titre">
-          <h2 id="co-centre-titre">Centre de compétition jeunes</h2>
+        <section class="coach-zone coach-zone--centre" aria-labelledby="co-centre-titre">
+          <header class="coach-zone__head">
+            <h2 id="co-centre-titre">Centre de compétition jeunes</h2>
+            <p class="hint">Suivi des jeunes compétiteurs : vidéos, objectifs, évaluations et bulletins. Séparé des demandes de coaching.</p>
+            <nav class="todo-strip" aria-label="Résumé du Centre de compétition jeunes" id="co-resume-centre"></nav>
+          </header>
+          <ul class="list" id="co-todo-centre"></ul>
           <div class="card centre-card" id="co-centre"></div>
         </section>
 
         <section aria-labelledby="co-cours-titre" id="co-demandes-section">
-          <h2 id="co-cours-titre">Historique des demandes de cours</h2>
+          <h2 id="co-cours-titre">Historique des demandes de cours (coaching)</h2>
           <ul class="list" id="co-demandes"></ul>
         </section>
 
