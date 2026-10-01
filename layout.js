@@ -87,7 +87,8 @@
   const footer = h("footer", { class: "footer" },
     h("div", { class: "wrap footer__inner" },
       h("p", {}, h("strong", {}, "Tennis Club Houdan"), " · CourtCoach"),
-      h("p", {}, "Démonstration : les informations restent sur ton appareil, rien n'est envoyé sur Internet.")));
+      h("p", {}, "Démonstration : les informations restent sur ton appareil, rien n'est envoyé sur Internet. ",
+        h("a", { href: "diagnostic.html" }, "Un souci ? Lancer le test de fonctionnement"), " · version " + CC.VERSION)));
 
   document.body.prepend(h("a", { class: "skip-link", href: "#contenu" }, "Aller au contenu"), header);
   document.body.append(footer, tabbar);

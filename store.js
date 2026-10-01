@@ -275,6 +275,7 @@ const CC = (() => {
   const saveLessons = (list) => write("lessons", list);
 
   return {
+    VERSION: "14",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, getFile, deleteFile, fileURL,
     SHOTS, role, setRole, accounts, me, ensureMe, signUpStudent, exampleAccount, addExamples, students, studentName, ageOf,

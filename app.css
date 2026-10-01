@@ -505,3 +505,38 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 var(--s2); min-width: 0; }
   background: #8a1d16; color: #fff; font-weight: 700; text-align: center;
 }
 .problem-banner button { margin-left: 12px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; color: #8a1d16; font: inherit; font-weight: 800; cursor: pointer; }
+
+/* Bande des images capturées, fixe en bas de l'écran */
+.strip {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+  display: flex; align-items: center; gap: var(--s2); padding: 8px var(--s2);
+  background: var(--ink); color: #fff; border-top: 4px solid var(--ball);
+  box-shadow: 0 -12px 30px -16px rgba(0, 0, 0, .6);
+}
+.strip[hidden] { display: none; }
+.strip__title { display: flex; align-items: center; gap: 8px; flex: none; font-size: .95rem; }
+.strip__thumbs { display: flex; gap: 8px; flex: 1; min-width: 0; overflow-x: auto; padding: 2px; }
+.strip__thumb { flex: none; width: 76px; height: 56px; border-radius: 8px; overflow: hidden; background: #000; border: 2px solid rgba(255,255,255,.35); animation: popin .35s ease-out; }
+.strip__thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@keyframes popin { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.strip .btn { flex: none; }
+/* Sur téléphone : la bande se place au-dessus du menu du bas */
+@media (max-width: 859px) {
+  .strip { bottom: calc(68px + env(safe-area-inset-bottom)); padding: 6px 10px; gap: 8px; }
+  .strip__title { font-size: .8rem; }
+  .strip .btn { padding: 0 10px; font-size: .8rem; }
+  body.has-strip .toast { bottom: calc(150px + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 860px) { body.has-strip { padding-bottom: 84px; } body.has-strip .toast { bottom: 100px; } }
+@media (max-width: 859px) { body.has-strip { padding-bottom: 150px; } }
+.section-flash { animation: newcard 1.6s ease-out; }
+
+/* Téléphone : la bande d'images passe sur deux lignes pour que les miniatures restent visibles */
+@media (max-width: 859px) {
+  .strip { flex-wrap: wrap; row-gap: 6px; }
+  .strip__title { flex: 1 1 auto; }
+  .strip__thumbs { order: 3; flex: 1 1 100%; }
+  .strip__thumb { width: 84px; height: 62px; }
+  body.has-strip { padding-bottom: 190px; }
+  body.has-strip .toast { bottom: calc(190px + env(safe-area-inset-bottom)); }
+}

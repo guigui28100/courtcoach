@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Test de fonctionnement – CourtCoach</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="CourtCoach, accueil"><span class="brand__name">Court<span>Coach</span></span></a>
+      <a class="btn btn--small btn--outline" href="espace.html">Retour à l'application</a>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <section class="app-head">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay">Test de fonctionnement</p>
+        <h1>Est-ce que la capture d'image marche chez toi&nbsp;?</h1>
+        <p>Ce test refait, dans <strong>ton</strong> navigateur, toutes les étapes d'une capture d'image, et dit laquelle pose problème. Il n'envoie rien sur Internet.</p>
+      </div>
+    </section>
+
+    <div class="wrap app-main">
+      <div class="btn-row">
+        <button class="btn btn--clay" type="button" id="lancer">Lancer le test</button>
+      </div>
+
+      <div id="verdict" class="demo-note" hidden role="status"></div>
+      <ol class="list" id="etapes" style="margin-top: var(--s3)"></ol>
+
+      <section id="resultat" hidden style="margin-top: var(--s4)">
+        <h2>Image capturée par le test</h2>
+        <p class="hint">Si tu vois bien une image ci-dessous (un bonhomme sur un court), la capture fonctionne dans ton navigateur.</p>
+        <div id="apercu" style="max-width: 520px"></div>
+      </section>
+
+      <section id="copie" hidden style="margin-top: var(--s4)">
+        <h2>Le résultat, à me transmettre</h2>
+        <p class="hint">Clique sur « Copier » puis colle le texte dans ta réponse (ou fais une capture d'écran de cette page).</p>
+        <div class="field"><label class="sr-only" for="texte">Résultat du test</label><textarea id="texte" rows="10" readonly></textarea></div>
+        <button class="btn btn--outline" type="button" id="copier">Copier le résultat</button>
+        <p class="status-line" role="status" id="copie-status"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <p><strong>Tennis Club Houdan</strong> · CourtCoach</p>
+      <p>Aucune donnée n'est envoyée : le test reste dans ton navigateur.</p>
+    </div>
+  </footer>
+
+  <script src="store.js"></script>
+  <script src="diagnostic.js"></script>
+</body>
+</html>
