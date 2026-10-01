@@ -593,3 +593,5 @@ body.app small, .hint { font-size: .875rem; }
 .topbar__link { white-space: nowrap; }
 .lbl-short { display: none; }
 @media (max-width: 1099px) { .topbar .lbl-long { display: none; } .topbar .lbl-short { display: inline; } }
+
+.footer__inner .footer__safe { flex-basis: 100%; background: rgba(255,255,255,.1); padding: 10px 14px; border-radius: 10px; line-height: 1.45; }

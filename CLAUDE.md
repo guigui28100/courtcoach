@@ -44,3 +44,4 @@
 - Création de compte : trois profils (Adulte, Jeune du Centre de compétition jeunes, Enseignant). Case « politique lue » obligatoire ; pour un jeune : prénom + accord du parent, puis validation par le coach (page `suivi`, « Inscriptions de jeunes à valider »).
 - Droits : « Mon profil » permet de télécharger et de supprimer ses données ; le dossier d'un joueur peut être téléchargé / supprimé par le coach. Pas de vidéo d'un joueur sans autorisation des parents enregistrée.
 - La liste de ce qui reste à faire avant de vraies données est dans `RGPD-A-FAIRE.md`.
+- Sécurité : aucun `innerHTML` avec du texte saisi ; pas de script écrit dans les pages (`script-src 'self'`) ; déconnexion automatique après 30 min (`layout.js`) ; `autorisation.html` = formulaire parental imprimable. La « connexion » reste fictive en démonstration (voir `RGPD-A-FAIRE.md`).

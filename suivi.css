@@ -236,3 +236,11 @@ body.app .bulletin-paper .hint { color: var(--b-muted); font-size: .8125rem; lin
 
 .list__item--wrap { flex-wrap: wrap; }
 .list__item--wrap .btn-row select { min-height: 40px; max-width: 100%; }
+
+/* ---------- Formulaire d'autorisation imprimable ---------- */
+.auth-print .blank { display: inline-block; min-width: 9rem; border-bottom: 1px solid #333; height: 1.2em; vertical-align: baseline; }
+.auth-print .blank--long { min-width: min(24rem, 90%); }
+.auth-print .tick { padding-left: 4px; font-weight: 600; }
+.auth-print .sign { margin-top: var(--s4); min-height: 90px; }
+.auth-print h1 { font-size: 1.8rem; margin-bottom: 4px; }
+@media print { .no-print, .topbar, .footer { display: none !important; } .auth-print { padding: 0; max-width: none; } }

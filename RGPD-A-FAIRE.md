@@ -19,6 +19,19 @@
 - **Cloisonnement** : un élève ne voit que son propre suivi, jamais les notes privées du coach ni les autres joueurs.
 - **En-têtes de sécurité** (fichier `vercel.json`) : le site ne peut charger que ses propres fichiers, ne peut pas être affiché dans un autre site, n'envoie pas de « référent ».
 
+## Sécurité informatique : ce qui est fait dans le site
+- **Aucune faille d'injection connue** : les textes saisis ne sont jamais interprétés comme du code (aucun `innerHTML` avec du texte saisi), et le site interdit les scripts écrits dans les pages ou venant d'ailleurs (en-têtes dans `vercel.json`).
+- **Pas d'affichage dans un autre site** (anti-« clickjacking »), connexion chiffrée imposée (HTTPS), aucune information de provenance envoyée, caméra/micro/position bloqués.
+- **Aucun mot de passe n'est enregistré** par la démonstration.
+- **Déconnexion automatique** après 30 minutes sans activité (ordinateur partagé) ; bouton pour effacer toutes les données du Centre.
+- **Longueur des champs limitée** ; seuls les fichiers vidéo (400 Mo max) sont acceptés.
+- **Conservation** : les dossiers sans activité depuis plus de 12 mois sont signalés au coach pour suppression.
+- **Formulaire d'autorisation parentale** imprimable (`autorisation.html`).
+
+## ⚠️ Limites importantes de la démonstration
+- La « connexion » est **fictive** : n'importe qui peut choisir « coach ». Cela ne pose pas de problème tant que tout reste dans le navigateur de chacun, mais **ne doit jamais exister dans un vrai service**.
+- Un site sans serveur ne peut **pas** se protéger tout seul contre le piratage de comptes, le vol de mots de passe ou l'accès aux vidéos des autres. Ces protections n'existent que côté serveur.
+
 ## À faire AVANT d'utiliser de vraies données (je ne peux pas le faire à ta place)
 1. **Décider du service en ligne** (comptes, stockage des vidéos). Choisir un hébergeur **dans l'Union européenne**, avec un contrat de sous-traitance (« DPA ») signé.
 2. **Compléter la politique** : adresse e-mail de contact du club, durée de conservation (champs surlignés en jaune dans `confidentialite.html`).
@@ -31,3 +44,6 @@
 9. **Prévoir la procédure en cas de problème** (fuite de données) : prévenir la CNIL sous 72 heures et les familles concernées.
 
 10. **Inscription « Enseignant »** : en vrai service, ne jamais laisser n'importe qui se déclarer coach. Les comptes coach doivent être créés ou validés par le club.
+11. **Sécurité du service en ligne** (à exiger de l'hébergeur ou du prestataire) : mots de passe protégés par un algorithme dédié (Argon2/bcrypt), double authentification pour le coach, limitation des tentatives de connexion, accès aux vidéos par liens privés à durée limitée, chaque famille ne voyant que ses propres données (cloisonnement strict), journal des accès, sauvegardes chiffrées, mises à jour régulières, test d'intrusion avant l'ouverture.
+12. **Comptes de coachs** : créés ou validés uniquement par le club ; limiter le nombre de personnes qui voient les dossiers de mineurs, avec un engagement de confidentialité signé.
+13. **Charte de bonne pratique avec les mineurs** : échanges uniquement via l'application, jamais en messagerie privée personnelle ; en cas de signalement, une personne référente au club.

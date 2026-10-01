@@ -118,6 +118,7 @@
       h("div", { class: "field" }, h("label", { for: "f-accountId" }, "Compte élève relié"), accountSelect));
     const consent = h("fieldset", { class: "form-section" }, h("legend", {}, "Autorisation des parents"),
       h("p", { class: "hint" }, "Ce joueur est mineur : l'accord écrit de son responsable légal est nécessaire pour le filmer, analyser ses vidéos et suivre ses résultats (droit à l'image et protection des données). Les vidéos ne sont jamais publiées."),
+      h("p", {}, h("a", { class: "btn btn--small btn--outline", href: "autorisation.html", target: "_blank", rel: "noopener" }, "Imprimer le formulaire d'autorisation à faire signer")),
       h("label", { class: "check" }, h("input", { type: "checkbox", checked: player.autorisation ? true : null, onchange: (e) => save(() => {
         comp.updatePlayer(id, { autorisation: e.target.checked ? new Date().toISOString() : null }); player = comp.player(id); rendered.videos = false;
         stamp.textContent = player.autorisation ? "Accord enregistré le " + CC.fmtDate(player.autorisation) + "." : "";
@@ -129,7 +130,7 @@
       const data = { exporte_le: new Date().toISOString(), fiche: player, objectifs: Object.keys(localStorage).filter((k) => k.indexOf("courtcoach.comp.goals." + id + ".") === 0).map((k) => ({ saison: k.split(".").pop(), objectifs: JSON.parse(localStorage.getItem(k) || "[]") })),
         evaluations: CC.read("comp.evals." + id, {}), matchs: comp.matches(id), analyses: comp.analyses(id), videos: comp.videosOf(id).map((v) => ({ titre: v.title, coup: v.shot, date: v.date })) };
       const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-      const a = h("a", { href: url, download: "dossier-" + (player.prenom || "joueur") + ".json" }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+      const a = h("a", { href: url, download: "dossier-" + String(player.prenom || "joueur").replace(/[^\p{L}\p{N}-]+/gu, "_").slice(0, 30) + ".json" }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
     } }, "Télécharger le dossier (copie des données)");
     const del = h("button", { type: "button", class: "btn btn--danger btn--small", onclick: async () => {
       if (!confirm("Supprimer définitivement le dossier de " + comp.fullName(player) + " (profil, objectifs, évaluations, vidéos, analyses) ?")) return;

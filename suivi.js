@@ -48,8 +48,33 @@
     }));
   }
 
+  // Dossiers sans aucune activité depuis plus de 12 mois (durée de conservation)
+  function renderInactive() {
+    const limit = Date.now() - 365 * 86400000;
+    const lastActivity = (p) => {
+      const dates = [p.created, ...comp.videosOf(p.id).map((v) => v.date), ...comp.analyses(p.id).map((a) => a.date), ...comp.matches(p.id).map((m) => m.date), p.lastSeen].filter(Boolean).map((d) => new Date(d).getTime()).filter((n) => !isNaN(n));
+      return Math.max(0, ...dates);
+    };
+    const stale = comp.players().filter((p) => lastActivity(p) < limit);
+    $("inactifs").hidden = !stale.length;
+    CC.fill($("liste-inactifs"), stale.map((p) => h("li", { class: "list__item list__item--wrap" },
+      h("div", { class: "list__main" }, h("strong", {}, comp.fullName(p)), h("small", {}, "Dernière activité : " + CC.fmtDate(new Date(lastActivity(p)).toISOString()))),
+      h("div", { class: "btn-row" },
+        h("a", { class: "btn btn--small btn--outline", href: "joueur.html?id=" + p.id + "#profil" }, "Ouvrir le dossier"),
+        h("button", { type: "button", class: "btn btn--small btn--danger", onclick: async () => {
+          if (!confirm("Supprimer définitivement le dossier de " + comp.fullName(p) + " ?")) return;
+          await comp.deletePlayer(p.id); render();
+        } }, "Supprimer")))));
+  }
+  $("btn-effacer-tout").addEventListener("click", async () => {
+    if (!confirm("Effacer TOUS les joueurs, objectifs, évaluations, vidéos et analyses du Centre sur cet appareil ? Cette action est définitive.")) return;
+    for (const p of comp.players()) await comp.deletePlayer(p.id);
+    render();
+  });
+
   function render() {
     renderPending();
+    renderInactive();
     const players = comp.players();
 
     // ----- Chiffres clés -----
