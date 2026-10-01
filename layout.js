@@ -45,7 +45,7 @@
     ? [
         ["espace", "espace.html", "Espace"],
         ["eleves", "eleves.html", "Élèves"],
-        ["suivi", "suivi.html", "Compétition"],
+        ["suivi", "suivi.html", "Centre de compétition jeunes", "Centre jeunes"],
         ["videos", "videos.html", "Vidéos"],
       ]
     : [
@@ -55,9 +55,9 @@
         ["profil", "profil.html", "Mon profil"],
       ];
 
-  const link = (key, href, label, cls) =>
+  const link = (key, href, label, cls, short) =>
     h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "suivi" && (page === "joueur" || page === "bulletin" || page === "mon-suivi")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
-      cls === "tabbar__link" ? icon(ICONS[key]) : null, h("span", {}, label));
+      cls === "tabbar__link" ? icon(ICONS[key]) : null, short ? (cls === "tabbar__link" ? h("span", {}, short) : [h("span", { class: "lbl-long" }, label), h("span", { class: "lbl-short" }, short)]) : h("span", {}, label));
 
   const switchRole = h("button", {
     type: "button",
@@ -80,12 +80,12 @@
         })(),
         h("span", { class: "brand__name" }, "Court", h("span", {}, "Coach"))),
       h("nav", { class: "topbar__nav", "aria-label": "Menu principal" },
-        items.map(([k, href, label]) => link(k, href, label, "topbar__link"))),
+        items.map(([k, href, label, short]) => link(k, href, label, "topbar__link", short))),
       switchRole,
       h("a", { class: "topbar__quit", href: "index.html", onclick: () => CC.setRole(null) }, "Quitter")));
 
   const tabbar = h("nav", { class: "tabbar", "aria-label": "Menu principal", style: "grid-template-columns: repeat(" + items.length + ", 1fr)" },
-    items.map(([k, href, label]) => link(k, href, label, "tabbar__link")));
+    items.map(([k, href, label, short]) => link(k, href, label, "tabbar__link", short)));
 
   const footer = h("footer", { class: "footer" },
     h("div", { class: "wrap footer__inner" },

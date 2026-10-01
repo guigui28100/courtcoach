@@ -1,4 +1,4 @@
-/* Composants visuels du pôle compétition (graphiques SVG faits maison, avatars, anneaux). */
+/* Composants visuels du Centre de compétition jeunes (graphiques SVG faits maison, avatars, anneaux). */
 CC.ui = (() => {
   const { h } = CC;
   const NS = "http://www.w3.org/2000/svg";

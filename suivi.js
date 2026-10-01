@@ -1,4 +1,4 @@
-// Pôle compétition : la liste des jeunes compétiteurs du coach.
+// Centre de compétition jeunes : la liste des jeunes compétiteurs du coach.
 (() => {
   const role = CC.role();
   if (!role) return;

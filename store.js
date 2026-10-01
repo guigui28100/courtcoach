@@ -294,7 +294,7 @@ const CC = (() => {
     };
     const p = read("comp.players", []).find((x) => x.accountId === id);
     if (p) {
-      // Suivi du pôle compétition : tout sauf les notes privées du coach
+      // Suivi du Centre de compétition jeunes : tout sauf les notes privées du coach
       const { notes, ...visible } = p;
       out.suivi_competition = {
         fiche: visible,
@@ -311,7 +311,7 @@ const CC = (() => {
     for (const v of videos().filter((x) => x.studentId === id)) await removeVideo(v.id);
     write("lessons", lessons().filter((l) => l.studentId !== id));
     remove("profile." + id);
-    // La fiche du pôle compétition reste au coach, mais n'est plus reliée au compte supprimé
+    // La fiche du Centre de compétition jeunes reste au coach, mais n'est plus reliée au compte supprimé
     const players = read("comp.players", []);
     if (players.some((p) => p.accountId === id)) write("comp.players", players.map((p) => (p.accountId === id ? { ...p, accountId: null } : p)));
     write("accounts", accounts().filter((a) => a.id !== id));
@@ -461,7 +461,7 @@ const CC = (() => {
 
   return {
     fill, PRIVACY_VERSION, exportStudentData, deleteStudent,
-    VERSION: "24",
+    VERSION: "25",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,
