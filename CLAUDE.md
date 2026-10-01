@@ -36,3 +36,4 @@
 - Pages `suivi` (liste), `joueur` (dossier : profil, objectifs de l'année, évaluations trimestrielles, vidéos/analyses, bulletins) et `bulletin` (version imprimable / PDF).
 - Les joueurs « Léo, Nina, Hugo Exemple » sont **fictifs** (bouton « Charger des joueurs d'exemple »). Ne saisis pas de vraies données d'enfants tant qu'un service en ligne sécurisé n'existe pas.
 - Tout est enregistré dans le navigateur du coach (rien n'est envoyé sur Internet).
+- Le coach peut relier un joueur à un compte élève (onglet Profil du dossier) : l'élève voit alors en lecture seule la page `mon-suivi` (objectifs, évaluations, analyses, bulletins). Jamais les notes privées, la santé ni les autres joueurs. Dans la démonstration, Léo Exemple est relié à Alex Exemple.

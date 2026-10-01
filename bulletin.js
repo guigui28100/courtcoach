@@ -2,14 +2,15 @@
 (() => {
   const role = CC.role();
   if (!role) return;
-  if (role !== "coach") { location.replace("espace.html"); return; }
   const { h } = CC;
   const comp = CC.comp, ui = CC.ui;
+  const isCoach = role === "coach";
   const $ = (id) => document.getElementById(id);
   const params = new URLSearchParams(location.search);
-  const p = comp.player(params.get("player"));
+  let p = comp.player(params.get("player"));
+  if (!isCoach && !(p && p.accountId && p.accountId === CC.me())) p = null; // un élève ne voit que son propre bulletin
   if (!p) {
-    CC.fill($("outils"), h("a", { class: "btn btn--clay", href: "suivi.html" }, "Retour à mes joueurs"));
+    CC.fill($("outils"), h("a", { class: "btn btn--clay", href: isCoach ? "suivi.html" : "espace.html" }, isCoach ? "Retour à mes joueurs" : "Retour à mon espace"));
     CC.fill($("bulletin"), h("p", { class: "empty" }, "Ce joueur est introuvable."));
     return;
   }
@@ -21,7 +22,7 @@
   const prev = comp.hasEval(p.id, prevP.season, prevP.t) ? comp.getEval(p.id, prevP.season, prevP.t) : null;
   const short = (s, n) => comp.periodLabel(s, n).replace("Trimestre ", "T").replace(" · ", " ");
   document.title = "Bulletin " + comp.fullName(p) + " – " + short(season, t);
-  $("retour").href = "joueur.html?id=" + p.id + "#bulletins";
+  $("retour").href = isCoach ? "joueur.html?id=" + p.id + "#bulletins" : "mon-suivi.html#bulletins";
 
   // ----- Outils (non imprimés) -----
   const copyBtn = h("button", { type: "button", class: "btn btn--outline", onclick: async () => {
@@ -31,7 +32,7 @@
   CC.fill($("outils"), 
     h("button", { type: "button", class: "btn btn--clay", onclick: () => window.print() }, "Imprimer / Enregistrer en PDF"),
     copyBtn,
-    h("a", { class: "btn btn--outline", href: "joueur.html?id=" + p.id + "#evaluations" }, "Modifier l'évaluation"),
+    isCoach ? h("a", { class: "btn btn--outline", href: "joueur.html?id=" + p.id + "#evaluations" }, "Modifier l'évaluation") : null,
     h("p", { class: "hint", style: "flex-basis:100%;margin:0" }, "Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour envoyer le bulletin par e-mail."));
 
   const paper = $("bulletin");

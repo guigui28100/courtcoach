@@ -110,6 +110,12 @@
           : h("input", { id: fid, type, value, oninput: (e) => onChange(e.target.value), autocomplete: "off" });
         return h("div", { class: "field" + (type === "textarea" ? " field--wide" : "") }, h("label", { for: fid }, label), control, hint ? h("small", {}, hint) : null);
       }))));
+    const accountSelect = h("select", { id: "f-accountId", onchange: (e) => save(() => { comp.updatePlayer(id, { accountId: e.target.value || null }); player = comp.player(id); }) },
+      h("option", { value: "" }, "Aucun accès pour l'élève"),
+      CC.students().map((a) => h("option", { value: a.id, selected: a.id === player.accountId ? true : null }, CC.studentName(a.id) + (a.example ? " (fictif)" : ""))));
+    const access = h("fieldset", { class: "form-section" }, h("legend", {}, "Accès de l'élève"),
+      h("p", { class: "hint" }, "Relie ce joueur à un compte élève : il verra alors, en lecture seule, ses objectifs, ses évaluations, ses bulletins et tes analyses (rubrique « Mon suivi »). Il ne voit jamais tes notes privées, ses informations de santé ni les fiches des autres joueurs."),
+      h("div", { class: "field" }, h("label", { for: "f-accountId" }, "Compte élève relié"), accountSelect));
     const del = h("button", { type: "button", class: "btn btn--danger btn--small", onclick: async () => {
       if (!confirm("Supprimer définitivement le dossier de " + comp.fullName(player) + " (profil, objectifs, évaluations, vidéos, analyses) ?")) return;
       await comp.deletePlayer(id);
@@ -117,7 +123,7 @@
     } }, "Supprimer ce joueur");
     CC.fill(panel, 
       h("p", { class: "hint" }, "Tout s'enregistre automatiquement. Seul toi vois ce dossier."),
-      ...sections, status,
+      access, ...sections, status,
       h("div", { class: "danger-zone" }, h("p", { class: "hint" }, "Zone sensible"), del));
   }
 

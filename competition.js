@@ -105,6 +105,8 @@ CC.comp = (() => {
     remove("comp.evals." + id); remove("comp.matches." + id); remove("comp.analyses." + id);
     Object.keys(localStorage).filter((k) => k.indexOf("courtcoach.comp.goals." + id + ".") === 0).forEach((k) => localStorage.removeItem(k));
   }
+  // Fiche du pôle compétition reliée à un compte élève (l'élève y a alors accès en lecture seule)
+  const playerOfAccount = (accountId) => (accountId ? players().find((p) => p.accountId === accountId) || null : null);
   const fullName = (p) => p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || "Joueur sans nom" : "Joueur";
   const initials = (p) => ((p && p.prenom ? p.prenom[0] : "") + (p && p.nom ? p.nom[0] : "")).toUpperCase() || "?";
   function avatarColor(id) {
@@ -283,7 +285,7 @@ CC.comp = (() => {
     let count = 0;
     for (const d of defs) {
       const { base, ...info } = d;
-      const p = addPlayer({ ...info, example: true });
+      const p = addPlayer({ ...info, example: true, ...(count === 0 ? { accountId: CC.exampleAccount().id } : {}) });
       count += 1;
       periods.forEach(({ p: per, bump, text }) => {
         const ev = emptyEval();
@@ -332,7 +334,7 @@ CC.comp = (() => {
   return {
     AXES, GOAL_AXES, SKILL_LABEL, RATING_LABELS, GOAL_IDEAS, TRIMESTER_MONTHS,
     seasonOf, trimesterOf, current, previousPeriod, nextPeriod, trimesterRange, inPeriod, periodLabel,
-    players, player, addPlayer, updatePlayer, deletePlayer, fullName, initials, avatarColor, category,
+    players, player, playerOfAccount, addPlayer, updatePlayer, deletePlayer, fullName, initials, avatarColor, category,
     goals, saveGoals, goalsProgress,
     getEval, saveEval, hasEval, completion, axisAverage, overallAverage, evaluatedPeriods, allSkillKeys,
     matches, saveMatches, matchesIn,

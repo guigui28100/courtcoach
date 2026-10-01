@@ -51,11 +51,12 @@
     : [
         ["espace", "espace.html", "Espace"],
         ["videos", "videos.html", "Mes vidéos"],
+        ...(CC.read("comp.players", []).some((p) => p.accountId === CC.ensureMe()) ? [["suivi", "mon-suivi.html", "Mon suivi"]] : []),
         ["profil", "profil.html", "Mon profil"],
       ];
 
   const link = (key, href, label, cls) =>
-    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "suivi" && (page === "joueur" || page === "bulletin")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
+    h("a", { href, class: cls, "aria-current": page === key || (key === "eleves" && (page === "analyse" || page === "discussion")) || (key === "suivi" && (page === "joueur" || page === "bulletin" || page === "mon-suivi")) || (key === "videos" && page === "discussion" && !isCoach) ? "page" : null },
       cls === "tabbar__link" ? icon(ICONS[key]) : null, h("span", {}, label));
 
   const switchRole = h("button", {
