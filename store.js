@@ -30,6 +30,12 @@ const CC = (() => {
     try { localStorage.removeItem(PREFIX + key); } catch (e) { /* rien */ }
   }
 
+  // Remplace le contenu d'un élément (les valeurs vides sont ignorées, contrairement à replaceChildren).
+  function fill(el, ...kids) {
+    el.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
+    return el;
+  }
+
   // Crée un élément HTML sans jamais interpréter le texte comme du code (plus sûr).
   function h(tag, attrs, ...kids) {
     const el = document.createElement(tag);
@@ -340,7 +346,10 @@ const CC = (() => {
     const v = videoById(id);
     if (!v) return;
     saveVideos(videos().filter((x) => x.id !== id));
-    try { await deleteFile(v.fileId); } catch (e) { /* rien */ }
+    // Le fichier n'est supprimé que si aucune autre vidéo ne l'utilise (les vidéos d'exemple partagent leurs fichiers)
+    if (!videos().some((x) => x.fileId === v.fileId)) {
+      try { await deleteFile(v.fileId); } catch (e) { /* rien */ }
+    }
     remove("msg." + id);
     remove("ann." + id);
     remove("draft." + id);
@@ -407,7 +416,8 @@ const CC = (() => {
   const saveLessons = (list) => write("lessons", list);
 
   return {
-    VERSION: "16",
+    fill,
+    VERSION: "18",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,

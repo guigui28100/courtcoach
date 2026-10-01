@@ -21,6 +21,7 @@
 
   const studio = $("studio");
   const isReference = video.status === "reference";
+  const compPlayer = video.playerId ? CC.comp.player(video.playerId) : null; // vidéo d'un joueur du pôle compétition
 
   // =====================================================
   // 1. Les deux « volets » vidéo (A = principale, B = comparaison)
@@ -532,11 +533,13 @@
   function fillSelectB() {
     const others = CC.videos().filter((v) => v.id !== video.id);
     const refs = others.filter((v) => v.status === "reference");
-    const mine = others.filter((v) => v.status !== "reference");
+    const players = others.filter((v) => v.playerId);
+    const mine = others.filter((v) => v.status !== "reference" && !v.playerId);
     selectB.replaceChildren(h("option", { value: "" }, "— Choisir une vidéo —"));
     const group = (label, list) => list.length && selectB.append(h("optgroup", { label },
-      list.map((v) => h("option", { value: v.id }, (v.studentId ? CC.studentName(v.studentId) + " — " : "") + v.title + " (" + (CC.SHOTS[v.shot] || "coup") + ", " + CC.fmtDate(v.date) + ")"))));
+      list.map((v) => h("option", { value: v.id }, (v.studentId ? CC.studentName(v.studentId) + " — " : v.playerId ? CC.comp.fullName(CC.comp.player(v.playerId)) + " — " : "") + v.title + " (" + (CC.SHOTS[v.shot] || "coup") + ", " + CC.fmtDate(v.date) + ")"))));
     group("Vidéos de référence", refs);
+    group("Vidéos des joueurs du pôle compétition", players);
     group("Vidéos des élèves", mine);
   }
 
@@ -953,6 +956,30 @@
 
   $("envoyer").addEventListener("click", async () => {
     const status = $("envoi-status");
+    if (compPlayer) {
+      saveDraft();
+      const ids = draft.captures.filter((id) => id.indexOf("mem:") !== 0);
+      const exercises = draft.exercises.filter((e) => e.title.trim());
+      if (!draft.observation.trim() && !draft.strengths.trim() && !draft.improve.trim() && !exercises.length && !ids.length) {
+        status.className = "status-line is-error";
+        status.textContent = "Ajoute au moins une observation, une image ou un exercice avant d'enregistrer.";
+        return;
+      }
+      CC.comp.addAnalysis(compPlayer.id, {
+        videoId: video.id, videoTitle: video.title, shot: video.shot,
+        observation: draft.observation.trim(), strengths: draft.strengths.trim(), improve: draft.improve.trim(),
+        exercises: exercises.map((e) => ({ title: e.title.trim(), detail: e.detail.trim(), reps: e.reps.trim() })),
+        captures: ids,
+        captureNotes: Object.fromEntries(ids.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
+      });
+      Object.assign(draft, { observation: "", strengths: "", improve: "", exercises: [], sent: [...draft.sent, ...ids], captures: [] });
+      saveDraft();
+      ["obs", "forts", "progres"].forEach((id) => { $(id).value = ""; });
+      renderExercises(); renderCaptures();
+      status.className = "status-line is-ok";
+      status.replaceChildren("Analyse enregistrée dans le dossier de " + compPlayer.prenom + " ✓ ", h("a", { href: "joueur.html?id=" + compPlayer.id + "#videos" }, "Voir le dossier"));
+      return;
+    }
     if (isReference) {
       // Le brouillon est déjà enregistré à chaque modification ; on le confirme simplement
       saveDraft();
@@ -998,7 +1025,14 @@
   // =====================================================
   // 8. Fiche de l'élève
   // =====================================================
+  function comp_name() { return CC.comp.fullName(compPlayer); }
   function renderProfile() {
+    if (compPlayer) {
+      const q = compPlayer;
+      const rows = [["Prénom", q.prenom], ["Catégorie", CC.comp.category(q)], ["Main", q.main], ["Revers", q.revers], ["Classement", q.classement], ["Style", q.style], ["Séances", q.seances], ["Santé", q.sante]];
+      $("profile-mini").replaceChildren(...rows.map(([k, v]) => h("div", {}, h("dt", {}, k), h("dd", {}, v && String(v).trim() ? v : "—"))));
+      return;
+    }
     const p = video.studentId ? CC.profile(video.studentId) : {};
     const age = (() => {
       if (!p.naissance) return "";
@@ -1020,7 +1054,17 @@
   // =====================================================
   // 9. Démarrage
   // =====================================================
-  if (video.studentId) {
+  if (compPlayer) {
+    $("lien-retour").href = "joueur.html?id=" + compPlayer.id + "#videos";
+    $("lien-retour").textContent = "← Dossier de " + comp_name();
+    $("meta-video").textContent += " · " + comp_name();
+    studio.classList.add("studio--reference");
+    $("fb-titre").textContent = "Mon analyse du joueur";
+    $("player-note").hidden = false;
+    $("player-note").textContent = "Cette analyse est enregistrée dans le dossier de " + compPlayer.prenom + " (et dans ses bulletins). Elle n'est envoyée à personne.";
+    $("envoyer").textContent = "Enregistrer dans le dossier de " + compPlayer.prenom;
+    $("lien-messages").hidden = true;
+  } else if (video.studentId) {
     $("lien-retour").href = "eleve.html?id=" + video.studentId + "&video=" + video.id;
     $("lien-retour").textContent = "← Dossier de " + CC.studentName(video.studentId);
     $("meta-video").textContent += " · " + CC.studentName(video.studentId);

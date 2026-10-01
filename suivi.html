@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pôle compétition – CourtCoach</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#B8471F">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="suivi.css">
+</head>
+<body data-page="suivi">
+  <main id="contenu">
+    <section class="app-head app-head--comp">
+      <div class="wrap">
+        <p class="eyebrow eyebrow--clay">Pôle compétition</p>
+        <h1>Mes jeunes compétiteurs</h1>
+        <p>Profil, objectifs de l'année, vidéos, analyses, évaluations et bulletins trimestriels : tout le suivi de tes joueurs au même endroit.</p>
+      </div>
+    </section>
+
+    <div class="wrap app-main">
+      <p class="demo-note">
+        <strong>Démonstration.</strong> Les données restent dans ce navigateur, rien n'est envoyé sur Internet.
+        Les joueurs d'exemple sont fictifs : <strong>ne saisis pas de vraies informations sur des enfants</strong>
+        tant qu'un service sécurisé n'est pas en place.
+      </p>
+
+      <div class="cards cards--3" id="stats"></div>
+
+      <section id="a-preparer" aria-labelledby="prep-titre" hidden>
+        <h2 id="prep-titre">Bulletins à préparer</h2>
+        <ul class="list" id="liste-prep"></ul>
+      </section>
+
+      <section aria-labelledby="joueurs-titre">
+        <div class="section-head">
+          <h2 id="joueurs-titre">Mes joueurs</h2>
+          <div class="btn-row">
+            <button class="btn btn--clay btn--small" type="button" id="btn-ajout" aria-expanded="false" aria-controls="form-ajout">+ Ajouter un joueur</button>
+            <button class="btn btn--outline btn--small" type="button" id="btn-exemples">Charger des joueurs d'exemple</button>
+          </div>
+        </div>
+        <p class="status-line" role="status" id="exemples-status"></p>
+
+        <form class="form-section" id="form-ajout" novalidate hidden>
+          <h3>Nouveau joueur</h3>
+          <p class="hint">Quelques informations suffisent : tu complèteras la fiche ensuite.</p>
+          <div class="fields-2">
+            <div class="field"><label for="a-prenom">Prénom</label><input id="a-prenom" name="prenom" type="text" autocomplete="off" required></div>
+            <div class="field"><label for="a-nom">Nom</label><input id="a-nom" name="nom" type="text" autocomplete="off"></div>
+            <div class="field"><label for="a-naissance">Date de naissance</label><input id="a-naissance" name="naissance" type="date"></div>
+            <div class="field"><label for="a-classement">Classement actuel</label>
+              <select id="a-classement" name="classement"></select></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn--clay" type="submit">Créer la fiche</button>
+            <button class="btn btn--outline" type="button" id="annuler-ajout">Annuler</button>
+          </div>
+          <p class="status-line" role="status" id="ajout-status"></p>
+        </form>
+
+        <div class="player-grid" id="joueurs"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="store.js"></script>
+  <script src="competition.js"></script>
+  <script src="suivi-ui.js"></script>
+  <script src="layout.js"></script>
+  <script src="suivi.js"></script>
+</body>
+</html>
