@@ -52,6 +52,23 @@
     setupLessonForm(me);
   }
 
+  // Réponses du coach pas encore vues : bandeau bien visible en haut de l'espace
+  function renderAnswers(me) {
+    let box = $("reponses-cours");
+    if (!box) { box = h("div", { id: "reponses-cours", class: "answers", role: "status", "aria-live": "polite" }); document.querySelector(".app-main").prepend(box); }
+    const fresh = CC.lessons().filter((l) => l.studentId === me && l.seenByStudent === false && l.status !== "attente");
+    box.replaceChildren(...fresh.map((l) => {
+      const ok = l.status === "accepte";
+      return h("div", { class: "answer " + (ok ? "answer--ok" : "answer--no") },
+        h("div", {}, h("strong", {}, ok ? "✅ Ton coach a accepté ta demande de cours" : "❌ Ton coach ne peut pas donner suite à ta demande"),
+          h("p", {}, (TYPES[l.type] || "Cours") + " · " + l.objectif + (l.coachReply ? " — « " + l.coachReply + " »" : ""))),
+        h("button", { type: "button", class: "btn btn--small btn--outline", onclick: () => {
+          CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, seenByStudent: true } : x)));
+          renderAnswers(me); document.dispatchEvent(new CustomEvent("cc:answers-seen"));
+        } }, "J'ai vu"));
+    }));
+  }
+
   function renderLessons(me) {
     const list = $("mes-cours");
     list.replaceChildren();
@@ -61,10 +78,12 @@
       list.append(h("li", { class: "list__item" },
         h("div", { class: "list__main" },
           h("strong", {}, (TYPES[l.type] || "Cours") + " · " + l.objectif),
-          h("small", {}, [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ") + " — demandé le " + CC.fmtDate(l.date))),
+          h("small", {}, [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ") + " — demandé le " + CC.fmtDate(l.date)),
+          l.coachReply ? h("small", { class: "reply" }, "💬 Réponse du coach : « " + l.coachReply + " »") : null),
         h("span", { class: "badge " + cls }, label)));
     });
     if (!mine.length) list.append(emptyBox("Aucune demande pour l'instant."));
+    renderAnswers(me);
   }
 
   // Le formulaire de cours n'apparaît que lorsqu'on clique sur « Demander un cours »
@@ -156,14 +175,28 @@
       h("div", { class: "btn-row" }, v.seen ? null : h("span", { class: "badge badge--new" }, "Nouveau"),
         h("a", { class: "btn btn--small btn--clay", href: "eleve.html?id=" + v.studentId + "&video=" + v.id }, "Analyser")))));
     pendingLessons.slice().reverse().forEach((l) => {
-      const reply = (status) => () => { CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status } : x))); location.reload(); };
-      todo.push(h("li", { class: "list__item" },
+      const answer = (status, note) => {
+        CC.saveLessons(CC.lessons().map((x) => (x.id === l.id ? { ...x, status, coachReply: note.trim(), answeredAt: new Date().toISOString(), seenByStudent: false } : x)));
+        location.reload();
+      };
+      const actions = h("div", { class: "btn-row" });
+      const askReply = (status) => {
+        const note = h("input", { type: "text", maxlength: "200", "aria-label": "Message pour l'élève (facultatif)", placeholder: status === "accepte" ? "Ex. : Samedi 10h, court 2" : "Ex. : Pas de créneau cette semaine, propose-moi une autre date", style: "flex:1 1 220px;min-height:44px" });
+        actions.replaceChildren(note,
+          h("button", { type: "button", class: "btn btn--small " + (status === "accepte" ? "btn--clay" : "btn--danger"), onclick: () => answer(status, note.value) }, status === "accepte" ? "Confirmer l'acceptation" : "Confirmer le refus"),
+          h("button", { type: "button", class: "btn btn--small btn--outline", onclick: () => { actions.replaceChildren(...buttons); } }, "Annuler"));
+        note.focus();
+      };
+      const buttons = [
+        h("button", { type: "button", class: "btn btn--small btn--clay", onclick: () => askReply("accepte") }, "Accepter"),
+        h("button", { type: "button", class: "btn btn--small btn--danger", onclick: () => askReply("refuse") }, "Refuser")];
+      actions.replaceChildren(...buttons);
+      todo.push(h("li", { class: "list__item list__item--wrap" },
         h("div", { class: "list__main" }, h("strong", {}, CC.studentName(l.studentId) + " — " + (TYPES[l.type] || "Cours") + " · " + l.objectif),
           h("small", {}, "📅 " + [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ")),
-          l.message ? h("small", {}, "« " + l.message + " »") : null),
-        h("div", { class: "btn-row" },
-          h("button", { type: "button", class: "btn btn--small btn--clay", onclick: reply("accepte") }, "Accepter"),
-          h("button", { type: "button", class: "btn btn--small btn--danger", onclick: reply("refuse") }, "Refuser"))));
+          l.message ? h("small", {}, "« " + l.message + " »") : null,
+          h("small", {}, "L'élève sera prévenu de ta réponse dès sa prochaine visite.")),
+        actions));
     });
     const centre = [];
     unanalysed.forEach((v) => {
