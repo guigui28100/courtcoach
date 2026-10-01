@@ -7,9 +7,8 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#B8471F">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/archivo-latin-400-900.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="app.css">
 </head>
@@ -120,7 +119,7 @@
           <div class="field">
             <label for="sante">Blessures, douleurs ou points d'attention</label>
             <textarea id="sante" name="sante" placeholder="Épaule, poignet, dos, genoux…"></textarea>
-            <small>Ces informations aident ton coach à adapter les exercices.</small>
+            <small>Facultatif. Indique seulement ce qui aide à adapter les exercices (pas de diagnostic médical). Seul ton coach le voit.</small>
           </div>
           <div class="field">
             <label for="objectifs">Mes objectifs</label>
@@ -152,6 +151,16 @@
         </div>
         <p class="status-line" role="status" id="profil-status"></p>
       </form>
+
+      <section class="form-section" id="mes-donnees" aria-labelledby="donnees-titre" style="margin-top: var(--s4)">
+        <h2 id="donnees-titre">Mes données</h2>
+        <p class="hint">Tes informations restent sur cet appareil (démonstration). Tu peux les récupérer ou tout effacer quand tu veux. <a href="confidentialite.html">Politique de confidentialité</a></p>
+        <div class="btn-row">
+          <button class="btn btn--outline" type="button" id="btn-export">Télécharger mes données</button>
+          <button class="btn btn--danger" type="button" id="btn-supprimer">Supprimer mon compte et mes données</button>
+        </div>
+        <p class="status-line" role="status" id="donnees-status"></p>
+      </section>
     </div>
   </main>
 

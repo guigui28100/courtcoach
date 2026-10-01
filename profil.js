@@ -77,4 +77,30 @@
   });
 
   refresh();
+
+  // ----- Droits : télécharger et supprimer ses données -----
+  const dstatus = document.getElementById("donnees-status");
+  document.getElementById("btn-export").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(CC.exportStudentData(CC.ensureMe()), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "mes-donnees-courtcoach.json";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    dstatus.className = "status-line is-ok";
+    dstatus.textContent = "Fichier téléchargé ✓ (il contient ton profil, tes vidéos, tes analyses et ton suivi).";
+  });
+  document.getElementById("btn-supprimer").addEventListener("click", async () => {
+    if (!confirm("Supprimer définitivement ton compte, ton profil, tes vidéos et tes analyses ? Cette action ne peut pas être annulée.")) return;
+    dstatus.className = "status-line";
+    dstatus.textContent = "Suppression en cours…";
+    try {
+      await CC.deleteStudent(CC.ensureMe());
+      CC.setRole(null);
+      location.href = "index.html";
+    } catch (e) {
+      dstatus.className = "status-line is-error";
+      dstatus.textContent = "La suppression n'a pas pu se terminer : " + CC.describeError(e);
+    }
+  });
 })();

@@ -296,7 +296,7 @@ CC.comp = (() => {
     let count = 0;
     for (const d of defs) {
       const { base, ...info } = d;
-      const p = addPlayer({ ...info, example: true, ...(count === 0 ? { accountId: CC.exampleAccount().id } : {}) });
+      const p = addPlayer({ ...info, example: true, autorisation: new Date().toISOString(), ...(count === 0 ? { accountId: CC.exampleAccount().id } : {}) });
       count += 1;
       periods.forEach(({ p: per, bump, text }) => {
         const ev = emptyEval();

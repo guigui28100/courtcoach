@@ -37,3 +37,10 @@
 - Les joueurs « Léo, Nina, Hugo Exemple » sont **fictifs** (bouton « Charger des joueurs d'exemple »). Ne saisis pas de vraies données d'enfants tant qu'un service en ligne sécurisé n'existe pas.
 - Tout est enregistré dans le navigateur du coach (rien n'est envoyé sur Internet).
 - Le coach peut relier un joueur à un compte élève (onglet Profil du dossier) : l'élève voit alors en lecture seule la page `mon-suivi` (objectifs, évaluations, analyses, bulletins). Jamais les notes privées, la santé ni les autres joueurs. Dans la démonstration, Léo Exemple est relié à Alex Exemple.
+
+## Vie privée et RGPD (comptes de mineurs)
+- Page `confidentialite.html` (politique en français), à garder à jour. Pied de page avec lien « Confidentialité » sur toutes les pages.
+- Aucun service extérieur : polices dans `fonts/`, pas de statistiques ni de cookies de suivi. Ne rien ajouter qui appelle un autre site (en-têtes de sécurité dans `vercel.json`, qui bloquent de toute façon).
+- Création de compte : case « politique lue » obligatoire + accord d'un parent pour les moins de 15 ans.
+- Droits : « Mon profil » permet de télécharger et de supprimer ses données ; le dossier d'un joueur peut être téléchargé / supprimé par le coach. Pas de vidéo d'un joueur sans autorisation des parents enregistrée.
+- La liste de ce qui reste à faire avant de vraies données est dans `RGPD-A-FAIRE.md`.
