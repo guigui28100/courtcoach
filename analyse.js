@@ -601,7 +601,7 @@
   // 6. Capture d'une image annotée
   // =====================================================
   const DRAFT_KEY = "draft." + video.id;
-  const draft = Object.assign({ observation: "", strengths: "", improve: "", exercises: [], captures: [], sent: [], captions: {} }, CC.read(DRAFT_KEY, {}));
+  const draft = Object.assign({ observation: "", strengths: "", improve: "", exercises: [], captures: [], sent: [], captions: {}, goalLinks: {} }, CC.read(DRAFT_KEY, {}));
   const saveDraft = () => CC.write(DRAFT_KEY, draft);
 
   function paintPane(ctx, p, x, y, w, hh) {
@@ -943,6 +943,30 @@
         h("input", { type: "text", value: ex.reps, "aria-label": "Nombre de séries de l'exercice " + (i + 1), placeholder: "Ex. : 3 × 10 balles", oninput: bind("reps") }));
     }));
   }
+  // Lien avec les objectifs de l'année du joueur
+  function renderGoalLinks() {
+    if (!compPlayer) return;
+    const season = CC.comp.current().season;
+    const goalList = CC.comp.goals(compPlayer.id, season);
+    $("goals-link").hidden = false;
+    if (!goalList.length) {
+      CC.fill($("goals-link-list"), h("p", { class: "empty" }, "Aucun objectif fixé pour cette saison. "), h("a", { href: "joueur.html?id=" + compPlayer.id + "#objectifs" }, "Fixer des objectifs dans le dossier"));
+      return;
+    }
+    CC.fill($("goals-link-list"), goalList.map((g) => {
+      const axis = CC.comp.GOAL_AXES.find((a) => a.key === g.axis) || { label: "", color: "#b8471f" };
+      const on = Object.prototype.hasOwnProperty.call(draft.goalLinks, g.id);
+      const out = h("output", {}, (on ? draft.goalLinks[g.id] : g.progress || 0) + " %");
+      const range = h("input", { type: "range", min: "0", max: "100", step: "5", value: String(on ? draft.goalLinks[g.id] : g.progress || 0), "aria-label": "Progression de l'objectif « " + g.title + " »", hidden: on ? null : true,
+        oninput: (e) => { draft.goalLinks[g.id] = Number(e.target.value); out.textContent = e.target.value + " %"; saveDraft(); } });
+      const check = h("input", { type: "checkbox", checked: on ? true : null, onchange: (e) => {
+        if (e.target.checked) draft.goalLinks[g.id] = g.progress || 0; else delete draft.goalLinks[g.id];
+        saveDraft(); renderGoalLinks();
+      } });
+      return h("div", { class: "goal-link", style: "--axis:" + axis.color }, h("label", {}, check, " ", h("strong", {}, axis.label + " : "), g.title || "(sans titre)"),
+        on ? h("div", { class: "goal-link__range" }, h("span", {}, "Où en est-il ? "), range, out) : null);
+    }));
+  }
   $("exo-ajout").addEventListener("click", () => {
     draft.exercises.push({ title: "", detail: "", reps: "" });
     saveDraft();
@@ -971,11 +995,16 @@
         exercises: exercises.map((e) => ({ title: e.title.trim(), detail: e.detail.trim(), reps: e.reps.trim() })),
         captures: ids,
         captureNotes: Object.fromEntries(ids.filter((id) => (draft.captions[id] || "").trim()).map((id) => [id, draft.captions[id].trim()])),
+        goalIds: Object.keys(draft.goalLinks),
       });
-      Object.assign(draft, { observation: "", strengths: "", improve: "", exercises: [], sent: [...draft.sent, ...ids], captures: [] });
+      // La progression indiquée met à jour les objectifs du joueur
+      const season = CC.comp.current().season;
+      const updated = CC.comp.goals(compPlayer.id, season).map((g) => (Object.prototype.hasOwnProperty.call(draft.goalLinks, g.id) ? { ...g, progress: draft.goalLinks[g.id] } : g));
+      CC.comp.saveGoals(compPlayer.id, season, updated);
+      Object.assign(draft, { observation: "", strengths: "", improve: "", exercises: [], sent: [...draft.sent, ...ids], captures: [], goalLinks: {} });
       saveDraft();
       ["obs", "forts", "progres"].forEach((id) => { $(id).value = ""; });
-      renderExercises(); renderCaptures();
+      renderExercises(); renderCaptures(); renderGoalLinks();
       status.className = "status-line is-ok";
       status.replaceChildren("Analyse enregistrée dans le dossier de " + compPlayer.prenom + " ✓ ", h("a", { href: "joueur.html?id=" + compPlayer.id + "#videos" }, "Voir le dossier"));
       return;
@@ -1083,6 +1112,7 @@
   renderProfile();
   renderLibrary();
   renderExercises();
+  renderGoalLinks();
   renderCaptures();
   setMode("single");
   setPlayingUi();
