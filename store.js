@@ -462,7 +462,7 @@ const CC = (() => {
 
   return {
     fill, PRIVACY_VERSION, exportStudentData, deleteStudent,
-    VERSION: "34",
+    VERSION: "35",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,

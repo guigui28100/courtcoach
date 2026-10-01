@@ -22,6 +22,7 @@
     const me = CC.ensureMe();
     const prenom = CC.profile(me).prenom;
     $("vue-eleve").hidden = false;
+    document.querySelectorAll(".demo-note, .example-box").forEach((el) => $("el-demo").append(el));
     const acc = CC.accounts().find((a) => a.id === me);
     if (acc && acc.kind === "jeune" && !CC.comp.playerOfAccount(me)) {
       $("vue-eleve").prepend(h("p", { class: "demo-note" }, h("strong", {}, "Inscription en attente."), " Ton coach doit valider ton inscription au Centre de compétition jeunes. Dès que c'est fait, l'onglet « Mon suivi » apparaît dans ton menu."));
@@ -80,9 +81,9 @@
           h("strong", {}, (TYPES[l.type] || "Cours") + " · " + l.objectif),
           h("small", {}, [l.days.length ? l.days.join(", ") : "Jours à définir", l.moment].join(" · ") + " — demandé le " + CC.fmtDate(l.date)),
           l.coachReply ? h("small", { class: "reply" }, "💬 Réponse du coach : « " + l.coachReply + " »") : null),
-        h("span", { class: "badge " + cls }, label)));
+        h("span", { class: "badge " + cls + " badge--big" }, label)));
     });
-    if (!mine.length) list.append(emptyBox("Aucune demande pour l'instant."));
+    $("mes-demandes").hidden = !mine.length;
     renderAnswers(me);
   }
 

@@ -607,3 +607,7 @@ body.app small, .hint { font-size: .875rem; }
 .tabbar__link { position: relative; }
 .tabbar__link .dot-new { position: absolute; top: 2px; left: calc(50% + 8px); margin: 0; }
 .list__main .reply { color: var(--ink); font-weight: 600; }
+
+.badge--big { font-size: .9375rem; padding: 6px 14px; }
+#mes-cours .list__item { flex-wrap: wrap; }
+#vue-eleve { display: grid; gap: var(--s3); align-content: start; } #vue-eleve > * { min-width: 0; margin: 0; }
