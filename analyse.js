@@ -21,7 +21,7 @@
 
   const studio = $("studio");
   const isReference = video.status === "reference";
-  const compPlayer = video.playerId ? CC.comp.player(video.playerId) : null; // vidéo d'un joueur du pôle compétition
+  const compPlayer = video.playerId ? CC.comp.player(video.playerId) : null; // vidéo d'un joueur du Centre de compétition jeunes
 
   // =====================================================
   // 1. Les deux « volets » vidéo (A = principale, B = comparaison)
@@ -539,7 +539,7 @@
     const group = (label, list) => list.length && selectB.append(h("optgroup", { label },
       list.map((v) => h("option", { value: v.id }, (v.studentId ? CC.studentName(v.studentId) + " — " : v.playerId ? CC.comp.fullName(CC.comp.player(v.playerId)) + " — " : "") + v.title + " (" + (CC.SHOTS[v.shot] || "coup") + ", " + CC.fmtDate(v.date) + ")"))));
     group("Vidéos de référence", refs);
-    group("Vidéos des joueurs du pôle compétition", players);
+    group("Vidéos des joueurs du Centre de compétition jeunes", players);
     group("Vidéos des élèves", mine);
   }
 

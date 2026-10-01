@@ -122,7 +122,7 @@
   // ----- Liste -----
   let filter = "toutes";
   const FILTERS = isCoach
-    ? [["toutes", "Toutes"], ["attente", "À analyser"], ["analysee", "Analysées"], ["reference", "Références"], ["joueurs", "Pôle compétition"]]
+    ? [["toutes", "Toutes"], ["attente", "À analyser"], ["analysee", "Analysées"], ["reference", "Références"], ["joueurs", "Centre de compétition jeunes"]]
     : [];
 
   function visibleVideos() {
@@ -137,7 +137,7 @@
     const thumb = h("video", { muted: true, playsinline: true, preload: "metadata", "aria-hidden": "true", tabindex: "-1" });
     CC.fileURL(v.fileId).then((url) => { if (url) thumb.src = url + "#t=0.3"; });
     const squad = v.playerId ? CC.comp.player(v.playerId) : null;
-    const badge = squad ? h("span", { class: "badge badge--new" }, "Pôle compétition")
+    const badge = squad ? h("span", { class: "badge badge--new" }, "Centre de compétition jeunes")
       : v.status === "reference" ? h("span", { class: "badge badge--ref" }, "Référence")
       : v.status === "analysee" ? h("span", { class: "badge badge--ok" }, "Analysée")
       : h("span", { class: "badge badge--wait" }, "En attente");

@@ -32,7 +32,7 @@
 - Le dossier `demo/` contient deux vidéos d'exemple **fictives** (un bonhomme qui fait un coup droit) pour tester ;
   l'élève « Alex Exemple » est lui aussi fictif. Aucune vraie personne n'y figure.
 
-## Pôle compétition (réservé au coach, démonstration)
+## Centre de compétition jeunes (réservé au coach, démonstration)
 - Pages `suivi` (liste), `joueur` (dossier : profil, objectifs de l'année, évaluations trimestrielles, vidéos/analyses, bulletins) et `bulletin` (version imprimable / PDF).
 - Les joueurs « Léo, Nina, Hugo Exemple » sont **fictifs** (bouton « Charger des joueurs d'exemple »). Ne saisis pas de vraies données d'enfants tant qu'un service en ligne sécurisé n'existe pas.
 - Tout est enregistré dans le navigateur du coach (rien n'est envoyé sur Internet).

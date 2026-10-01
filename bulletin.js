@@ -1,4 +1,4 @@
-// Bulletin trimestriel imprimable d'un joueur du pôle compétition.
+// Bulletin trimestriel imprimable d'un joueur du Centre de compétition jeunes.
 (() => {
   const role = CC.role();
   if (!role) return;

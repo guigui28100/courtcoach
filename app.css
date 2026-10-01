@@ -588,3 +588,8 @@ body.app small, .hint { font-size: .875rem; }
 .footer__inner { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; }
 .footer__inner p { margin: 0; }
 .footer__inner p:first-child { white-space: nowrap; }
+
+/* Menu : nom long du centre sur grand écran, version courte sinon */
+.topbar__link { white-space: nowrap; }
+.lbl-short { display: none; }
+@media (max-width: 1099px) { .topbar .lbl-long { display: none; } .topbar .lbl-short { display: inline; } }

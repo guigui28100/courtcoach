@@ -1,5 +1,5 @@
 /* =========================================================
-   CourtCoach – Pôle compétition : données des jeunes compétiteurs.
+   CourtCoach – Centre de compétition jeunes : données des jeunes compétiteurs.
    Tout reste dans le navigateur du coach (démonstration).
    Chargé après store.js ; utilise ses outils (CC.read, CC.write…).
    ========================================================= */
@@ -107,7 +107,7 @@ CC.comp = (() => {
     remove("comp.evals." + id); remove("comp.matches." + id); remove("comp.analyses." + id);
     Object.keys(localStorage).filter((k) => k.indexOf("courtcoach.comp.goals." + id + ".") === 0).forEach((k) => localStorage.removeItem(k));
   }
-  // Fiche du pôle compétition reliée à un compte élève (l'élève y a alors accès en lecture seule)
+  // Fiche du Centre de compétition jeunes reliée à un compte élève (l'élève y a alors accès en lecture seule)
   const playerOfAccount = (accountId) => (accountId ? players().find((p) => p.accountId === accountId) || null : null);
   const fullName = (p) => p ? [p.prenom, p.nom].filter(Boolean).join(" ").trim() || "Joueur sans nom" : "Joueur";
   const initials = (p) => ((p && p.prenom ? p.prenom[0] : "") + (p && p.nom ? p.nom[0] : "")).toUpperCase() || "?";

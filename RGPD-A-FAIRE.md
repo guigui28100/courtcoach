@@ -13,7 +13,7 @@
 - **Aucun service extérieur** : polices hébergées sur le site (plus de connexion à Google), pas de statistiques, pas de cookies de suivi, pas de publicité.
 - **Politique de confidentialité** claire en français (`confidentialite.html`), liée depuis le pied de page et la création de compte.
 - **Consentement** à la création du compte : politique lue, et **accord d'un parent pour les moins de 15 ans** (la date est enregistrée).
-- **Droit à l'image** : pour un jeune du pôle compétition, impossible d'ajouter une vidéo sans avoir enregistré l'autorisation écrite des parents.
+- **Droit à l'image** : pour un jeune du Centre de compétition jeunes, impossible d'ajouter une vidéo sans avoir enregistré l'autorisation écrite des parents.
 - **Droits des personnes** : l'élève peut **télécharger** ses données et **supprimer** son compte (page « Mon profil »). Le coach peut télécharger ou supprimer le dossier d'un joueur.
 - **Minimisation** : seules les informations utiles sont demandées ; la santé est facultative (« pas de diagnostic médical »).
 - **Cloisonnement** : un élève ne voit que son propre suivi, jamais les notes privées du coach ni les autres joueurs.

@@ -1,4 +1,4 @@
-// Dossier d'un joueur du pôle compétition : profil, objectifs, évaluations, vidéos & analyses, bulletins.
+// Dossier d'un joueur du Centre de compétition jeunes : profil, objectifs, évaluations, vidéos & analyses, bulletins.
 (() => {
   const role = CC.role();
   if (!role) return;
@@ -38,7 +38,7 @@
   // =====================================================
   function renderHeader() {
     player = comp.player(id);
-    document.title = comp.fullName(player) + " – Pôle compétition – CourtCoach";
+    document.title = comp.fullName(player) + " – Centre de compétition jeunes – CourtCoach";
     CC.fill($("avatar"), ui.avatar(player, 72));
     $("nom").textContent = comp.fullName(player);
     const facts = [comp.category(player), player.classement ? "Classement " + player.classement : null,
