@@ -62,7 +62,8 @@ body.app { padding-bottom: 76px; }
 
 .app-main { padding-block: var(--s4) var(--s8); }
 .app-main h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); font-stretch: 85%; max-width: none; margin-bottom: var(--s2); }
-.app-main section + section { margin-top: var(--s6); }
+.app-main section + section { margin-top: var(--s4); }
+.app-main > section + section, .bulletin-paper section + section, .tab-panel > section + section, .axis-grid > section + section, .axis-grid > .axis-card { margin-top: 0; }
 
 .demo-note {
   margin: 0 0 var(--s3); padding: 12px var(--s2);
@@ -568,3 +569,22 @@ button.strip__thumb { padding: 0; cursor: zoom-in; }
 @media (min-width: 1100px) {
   body.has-strip .studio-right { max-height: calc(100vh - 96px - 84px); }
 }
+
+
+/* =========================================================
+   Finition générale de l'application (tailles de texte et rythme)
+   ========================================================= */
+body.app { font-size: 1rem; line-height: 1.55; }
+body.app h2 { font-size: clamp(1.3rem, 2.4vw + .7rem, 1.7rem); font-stretch: 88%; max-width: none; letter-spacing: 0; margin-bottom: var(--s2); }
+body.app h3 { font-size: 1.1rem; line-height: 1.2; }
+body.app h4 { font-size: 1rem; margin: 0 0 4px; }
+body.app p, body.app li { text-wrap: pretty; }
+body.app .app-main { padding-block: var(--s3) var(--s6); display: grid; gap: var(--s3); align-content: start; }
+body.app .app-main > * { min-width: 0; }
+body.app small, .hint { font-size: .875rem; }
+@media (max-width: 600px) { body.app .app-main { gap: var(--s2); } }
+
+/* Pied de page */
+.footer__inner { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; }
+.footer__inner p { margin: 0; }
+.footer__inner p:first-child { white-space: nowrap; }

@@ -695,3 +695,22 @@ a { color: inherit; }
 .demo-box p { margin: 0 0 var(--s1); }
 .demo-box .btn-row { display: flex; flex-wrap: wrap; gap: var(--s1); }
 .jump { margin: 0 0 var(--s3); }
+
+/* ---------- Cases à cocher (consentements) ---------- */
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: .9375rem; line-height: 1.4; margin: 6px 0; cursor: pointer; }
+.check input { width: 22px; height: 22px; flex: none; margin-top: 1px; accent-color: var(--clay); }
+.check a { color: var(--clay-dark); font-weight: 700; }
+
+/* ---------- Page de politique de confidentialité ---------- */
+.legal { max-width: 46rem; padding-block: var(--s4) var(--s6); }
+.legal h2 { font-size: clamp(1.25rem, 2vw + .8rem, 1.6rem); font-stretch: 88%; max-width: none; margin: var(--s4) 0 var(--s1); }
+.legal p, .legal li { font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
+.legal ul { padding-left: 1.25rem; margin: 0 0 var(--s2); }
+.legal li { margin-bottom: 6px; }
+.legal mark { background: #fff3b0; padding: 1px 4px; border-radius: 4px; }
+.legal .box { background: #fff; border: 1px solid var(--line); border-left: 5px solid var(--clay); border-radius: 12px; padding: var(--s2); margin: var(--s2) 0; }
+.legal table { width: 100%; border-collapse: collapse; font-size: .9375rem; margin-bottom: var(--s2); }
+.legal th, .legal td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.legal th { background: var(--sand); }
+
+.form .check, .form .check span { font-weight: 400; }

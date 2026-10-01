@@ -30,6 +30,8 @@ const CC = (() => {
     try { localStorage.removeItem(PREFIX + key); } catch (e) { /* rien */ }
   }
 
+  const PRIVACY_VERSION = "2026-10";
+
   // Remplace le contenu d'un élément (les valeurs vides sont ignorées, contrairement à replaceChildren).
   function fill(el, ...kids) {
     el.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
@@ -261,7 +263,7 @@ const CC = (() => {
   }
 
   // Crée (ou retrouve, grâce à l'e-mail) un compte élève et en fait l'élève courant
-  function signUpStudent(email) {
+  function signUpStudent(email, consent) {
     const list = accounts();
     const clean = String(email || "").trim().toLowerCase();
     let account = clean ? list.find((a) => a.email === clean) : null;
@@ -270,8 +272,50 @@ const CC = (() => {
       if (!list.length) migrateLegacy(account.id);
       write("accounts", [...list, account]);
     }
+    // Trace du consentement (politique lue ; accord d'un parent pour les moins de 15 ans)
+    if (consent) {
+      write("accounts", accounts().map((a) => (a.id === account.id ? { ...a, consent: { ...consent, date: new Date().toISOString(), version: PRIVACY_VERSION } } : a)));
+    }
     write("me", account.id);
     return account;
+  }
+
+  // ----- Droits sur les données : télécharger (accès, portabilité) et supprimer (effacement) -----
+  function exportStudentData(id) {
+    const account = accounts().find((a) => a.id === id) || {};
+    const myVideos = videos().filter((v) => v.studentId === id);
+    const out = {
+      exporte_le: new Date().toISOString(),
+      compte: { email: account.email || "", cree_le: account.created || "", consentement: account.consent || null },
+      profil: read("profile." + id, {}),
+      videos: myVideos.map((v) => ({ titre: v.title, coup: v.shot, date: v.date, question: v.question || "", statut: v.status })),
+      messages: Object.fromEntries(myVideos.map((v) => [v.title, messages(v.id)])),
+      cours: lessons().filter((l) => l.studentId === id),
+    };
+    const p = read("comp.players", []).find((x) => x.accountId === id);
+    if (p) {
+      // Suivi du pôle compétition : tout sauf les notes privées du coach
+      const { notes, ...visible } = p;
+      out.suivi_competition = {
+        fiche: visible,
+        objectifs: Object.keys(localStorage).filter((k) => k.indexOf(PREFIX + "comp.goals." + p.id + ".") === 0).map((k) => ({ saison: k.split(".").pop(), objectifs: JSON.parse(localStorage.getItem(k) || "[]") })),
+        evaluations: read("comp.evals." + p.id, {}),
+        matchs: read("comp.matches." + p.id, []),
+        analyses: read("comp.analyses." + p.id, []),
+      };
+    }
+    return out;
+  }
+
+  async function deleteStudent(id) {
+    for (const v of videos().filter((x) => x.studentId === id)) await removeVideo(v.id);
+    write("lessons", lessons().filter((l) => l.studentId !== id));
+    remove("profile." + id);
+    // La fiche du pôle compétition reste au coach, mais n'est plus reliée au compte supprimé
+    const players = read("comp.players", []);
+    if (players.some((p) => p.accountId === id)) write("comp.players", players.map((p) => (p.accountId === id ? { ...p, accountId: null } : p)));
+    write("accounts", accounts().filter((a) => a.id !== id));
+    if (me() === id) remove("me");
   }
 
   // Élève courant ; en démonstration, on en crée un automatiquement si besoin
@@ -416,8 +460,8 @@ const CC = (() => {
   const saveLessons = (list) => write("lessons", list);
 
   return {
-    fill,
-    VERSION: "23",
+    fill, PRIVACY_VERSION, exportStudentData, deleteStudent,
+    VERSION: "24",
     uid, read, write, remove, h, fmtDate, fmtDateTime, fmtSize,
     putFile, putFileIDB, isSpareId, isImageId, memoryImage, forgetMemoryImage, cacheImage, persistImage, putTextIDB, lightbox,
     getFile, deleteFile, fileURL, storageInfo, describeError, withTimeout,

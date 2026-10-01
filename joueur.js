@@ -81,8 +81,8 @@
       ["style", "Style de jeu", "text", null, "Ex. : agressif, régulier, contre-attaquant…"],
       ["seances", "Entraînement et compétitions", "text", null, "Ex. : 3 entraînements + 1 match par semaine"],
       ["dispos", "Disponibilités", "text"]]],
-    ["Santé", [["sante", "Blessures et points d'attention", "textarea", null, "Épaule, genou, poignet… (ces informations aident à adapter les exercices)"]]],
-    ["Famille", [["parent_nom", "Responsable légal", "text"], ["parent_tel", "Téléphone", "tel"], ["parent_email", "E-mail", "email"]]],
+    ["Santé", [["sante", "Blessures et points d'attention", "textarea", null, "Facultatif. Seulement ce qui aide à adapter les exercices (pas de diagnostic médical)."]]],
+    ["Famille (facultatif : ne garde que le nécessaire)", [["parent_nom", "Responsable légal", "text"], ["parent_tel", "Téléphone", "tel"], ["parent_email", "E-mail", "email"]]],
     ["Mes notes", [["notes", "Notes privées du coach", "textarea", null, "Seul toi peux les lire."]]],
   ];
 
@@ -116,6 +116,21 @@
     const access = h("fieldset", { class: "form-section" }, h("legend", {}, "Accès de l'élève"),
       h("p", { class: "hint" }, "Relie ce joueur à un compte élève : il verra alors, en lecture seule, ses objectifs, ses évaluations, ses bulletins et tes analyses (rubrique « Mon suivi »). Il ne voit jamais tes notes privées, ses informations de santé ni les fiches des autres joueurs."),
       h("div", { class: "field" }, h("label", { for: "f-accountId" }, "Compte élève relié"), accountSelect));
+    const consent = h("fieldset", { class: "form-section" }, h("legend", {}, "Autorisation des parents"),
+      h("p", { class: "hint" }, "Ce joueur est mineur : l'accord écrit de son responsable légal est nécessaire pour le filmer, analyser ses vidéos et suivre ses résultats (droit à l'image et protection des données). Les vidéos ne sont jamais publiées."),
+      h("label", { class: "check" }, h("input", { type: "checkbox", checked: player.autorisation ? true : null, onchange: (e) => save(() => {
+        comp.updatePlayer(id, { autorisation: e.target.checked ? new Date().toISOString() : null }); player = comp.player(id); rendered.videos = false;
+        stamp.textContent = player.autorisation ? "Accord enregistré le " + CC.fmtDate(player.autorisation) + "." : "";
+      }) }), h("span", {}, "J'ai reçu l'autorisation écrite du responsable légal (filmer, analyser, suivre).")));
+    const stamp = h("p", { class: "hint" }, player.autorisation ? "Accord enregistré le " + CC.fmtDate(player.autorisation) + "." : "");
+    consent.append(stamp);
+    const exportBtn = h("button", { type: "button", class: "btn btn--outline btn--small", onclick: () => {
+      const { notes, ...visible } = player;
+      const data = { exporte_le: new Date().toISOString(), fiche: player, objectifs: Object.keys(localStorage).filter((k) => k.indexOf("courtcoach.comp.goals." + id + ".") === 0).map((k) => ({ saison: k.split(".").pop(), objectifs: JSON.parse(localStorage.getItem(k) || "[]") })),
+        evaluations: CC.read("comp.evals." + id, {}), matchs: comp.matches(id), analyses: comp.analyses(id), videos: comp.videosOf(id).map((v) => ({ titre: v.title, coup: v.shot, date: v.date })) };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const a = h("a", { href: url, download: "dossier-" + (player.prenom || "joueur") + ".json" }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } }, "Télécharger le dossier (copie des données)");
     const del = h("button", { type: "button", class: "btn btn--danger btn--small", onclick: async () => {
       if (!confirm("Supprimer définitivement le dossier de " + comp.fullName(player) + " (profil, objectifs, évaluations, vidéos, analyses) ?")) return;
       await comp.deletePlayer(id);
@@ -123,8 +138,8 @@
     } }, "Supprimer ce joueur");
     CC.fill(panel, 
       h("p", { class: "hint" }, "Tout s'enregistre automatiquement. Seul toi vois ce dossier."),
-      access, ...sections, status,
-      h("div", { class: "danger-zone" }, h("p", { class: "hint" }, "Zone sensible"), del));
+      consent, access, ...sections, status,
+      h("div", { class: "danger-zone" }, h("p", { class: "hint" }, "Données : le responsable légal peut demander une copie ou la suppression du dossier à tout moment."), h("div", { class: "btn-row" }, exportBtn, del)));
   }
 
   // =====================================================
@@ -450,7 +465,10 @@
           h("button", { type: "button", class: "btn btn--small btn--danger", onclick: () => { if (!confirm("Supprimer cette analyse du dossier ?")) return; comp.saveAnalyses(id, comp.analyses(id).filter((x) => x.id !== a.id)); renderVideos(); renderHeader(); } }, "Supprimer cette analyse")));
     });
 
-    CC.fill(panel, upload, compareBox,
+    const gate = h("div", { class: "form-section" }, h("h3", {}, "Autorisation des parents requise"),
+      h("p", {}, "Avant d'ajouter une vidéo de " + (player.prenom || "ce joueur") + ", enregistre l'accord écrit de son responsable légal (droit à l'image)."),
+      h("button", { type: "button", class: "btn btn--clay btn--small", onclick: () => showTab("profil", true) }, "Enregistrer l'autorisation"));
+    CC.fill(panel, player.autorisation ? upload : gate, compareBox,
       h("h2", {}, "Vidéos de " + (player.prenom || "ce joueur")),
       vids.length ? h("div", { class: "video-grid" }, cards) : h("p", { class: "empty" }, "Aucune vidéo pour l'instant. Ajoute la première avec le formulaire ci-dessus."),
       h("h2", { style: "margin-top: var(--s4)" }, "Analyses enregistrées"),

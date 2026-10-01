@@ -7,9 +7,8 @@
   <meta name="description" content="Crée ton compte CourtCoach ou connecte-toi à l'espace membre du Tennis Club Houdan.">
   <meta name="theme-color" content="#B8471F">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/archivo-latin-400-900.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -92,6 +91,14 @@
               <label for="in-mdp">Mot de passe</label>
               <input id="in-mdp" name="password" type="password" autocomplete="new-password" aria-describedby="in-mdp-aide" required>
               <p class="auth__hint" id="in-mdp-aide">8 caractères minimum.</p>
+
+              <fieldset class="roles" id="bloc-age">
+                <legend>Mon âge</legend>
+                <label><input type="radio" name="age" value="15plus" checked> 15 ans ou plus</label>
+                <label><input type="radio" name="age" value="moins15"> Moins de 15 ans</label>
+              </fieldset>
+              <label class="check" id="bloc-parent" hidden><input type="checkbox" name="parent"> <span>Mon parent ou mon responsable légal est d'accord, il a lu la politique de confidentialité et m'aide à créer ce compte.</span></label>
+              <label class="check"><input type="checkbox" name="politique"> <span>J'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a> : mes informations ne servent qu'au suivi au club.</span></label>
               <button class="btn btn--clay btn--block" type="submit">Créer mon compte</button>
               <p class="auth__status" role="status"></p>
             </form>
@@ -127,7 +134,7 @@
   <footer class="footer">
     <div class="wrap footer__inner">
       <p><strong>Tennis Club Houdan</strong> · Houdan (78)</p>
-      <p>Site en construction – aucune donnée personnelle n'est collectée.</p>
+      <p>Démonstration : aucune donnée n'est envoyée sur Internet. <a href="confidentialite.html">Confidentialité</a></p>
     </div>
   </footer>
 
