@@ -181,7 +181,7 @@ a { color: inherit; }
   font-stretch: 80%;
   font-size: 1.45rem;
   letter-spacing: -.01em;
-  color: var(--ink);
+  color: var(--clay);
 }
 .brand__name span { color: var(--clay); }
 
