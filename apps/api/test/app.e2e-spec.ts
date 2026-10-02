@@ -108,11 +108,30 @@ describe("CourtCoach API", () => {
     await coach.post(`/api/players/${playerId}/consents`).set(ORIGIN).send({ kind: "ACCOUNT", givenBy: "Parent Exemple", method: "paper" }).expect(201);
   });
 
-  it("un adulte ne peut ni lire ni modifier les fiches du Centre", async () => {
-    await adult.get("/api/players").expect(200).expect([]);
-    await adult.get(`/api/players/${playerId}`).expect(404);
-    await adult.post("/api/players").set(ORIGIN).send({ firstName: "X" }).expect(403);
-    await adult.get(`/api/players/${playerId}/goals`).expect(404);
+  it("un adulte (demande de coaching) n'a AUCUN accès au Centre de compétition jeunes", async () => {
+    const id = playerId;
+    const checks: [string, string, any?][] = [
+      ["get", "/api/players"], ["get", "/api/players/inactive"], ["get", `/api/players/${id}`], ["get", `/api/players/${id}/export`],
+      ["get", `/api/players/${id}/goals`], ["get", `/api/players/${id}/evaluations`], ["get", `/api/players/${id}/matches`], ["get", `/api/players/${id}/access`],
+      ["post", "/api/players", { firstName: "X" }], ["patch", `/api/players/${id}`, { firstName: "X" }], ["delete", `/api/players/${id}`],
+      ["post", `/api/players/${id}/goals`, { season: "2026-2027", axis: "MENTAL", title: "x" }],
+      ["put", `/api/players/${id}/evaluations/2026-2027/1`, { ratings: {} }],
+      ["post", `/api/players/${id}/matches`, { date: "2026-09-20", tournament: "T", result: "Victoire" }],
+      ["post", `/api/players/${id}/consents`, { kind: "IMAGE", givenBy: "x", method: "paper" }],
+      ["post", `/api/players/${id}/invitations`, { email: "z@exemple.fr", role: "GUARDIAN" }],
+      ["post", `/api/players/${id}/access`, { email: "z@exemple.fr", role: "GUARDIAN" }],
+    ];
+    for (const [method, url, body] of checks) {
+      const r = await (adult as any)[method](url).set(ORIGIN).send(body);
+      expect([url, method, r.status]).toEqual([url, method, 403]);
+    }
+    // et la fiche n'a pas bougé
+    expect((await prisma.player.findUniqueOrThrow({ where: { id } })).firstName).toBe("Léo");
+    // le moteur de demandes ne laisse voir que ses propres demandes, jamais celles des autres adhérents
+    const lessons = await adult.get("/api/lessons").expect(200);
+    expect(lessons.body.every((l: any) => l.memberId === (lessons.body[0]?.memberId))).toBe(true);
+    const me = await adult.get("/api/auth/me").expect(200);
+    expect(me.body.accesses).toEqual([]);
   });
 
   it("le parent invité voit la fiche en lecture seule, sans les notes privées du coach", async () => {
@@ -180,6 +199,7 @@ describe("CourtCoach API", () => {
     expect((await fam.get("/api/players").expect(200)).body).toHaveLength(2);
     // un adulte ne peut pas créer d'accès ; le coach retire l'accès
     await adult.post(`/api/players/${p4.body.id}/access`).set(ORIGIN).send({ email: "x@exemple.fr", role: "GUARDIAN" }).expect(403);
+    await agent().post("/api/auth/signup").set(ORIGIN).send({ email: "parent-zoe@exemple.fr", password: PASSWORD, acceptPolicy: true }).expect(409); // un compte adulte ne peut pas reprendre l'e-mail d'une famille
     const list = await coach.get(`/api/players/${p4.body.id}/access`).expect(200);
     await coach.delete(`/api/players/${p4.body.id}/access/${list.body[0].userId}`).set(ORIGIN).expect(204);
     await fam.get(`/api/players/${p4.body.id}`).expect(404);

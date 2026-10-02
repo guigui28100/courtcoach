@@ -52,3 +52,4 @@
 - Toutes les règles de vie privée et de sécurité continuent de s'appliquer (mineurs, RGPD, pas de service extérieur, cloisonnement, journal). Toute nouvelle route de l'API doit vérifier les droits et avoir un test dans `apps/api/test`.
 - Le coach crée les fiches des jeunes ; pas d'inscription libre pour les jeunes ni pour les coachs.
 - Explications au coach toujours simples, en français. Étapes livrées en pull requests séparées.
+- **Cloisonnement absolu** : un compte « demande de coaching » (adulte) n'a aucun accès au Centre de compétition jeunes (fiches, objectifs, évaluations, vidéos, accès). Le contrôleur des joueurs est réservé au coach et aux familles invitées ; le test « un adulte n'a AUCUN accès » doit rester vert et être étendu à chaque nouvelle route du Centre.

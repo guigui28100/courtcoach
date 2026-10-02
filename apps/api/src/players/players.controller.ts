@@ -1,9 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, ParseIntPipe } from "@nestjs/common";
 import { AuthUser } from "../common/auth.types";
-import { CurrentUser } from "../common/decorators";
+import { Role } from "@prisma/client";
+import { CurrentUser, Roles } from "../common/decorators";
 import { ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
+// Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
+@Roles(Role.COACH, Role.GUARDIAN, Role.YOUTH)
 @Controller()
 export class PlayersController {
   constructor(private readonly svc: PlayersService) {}
