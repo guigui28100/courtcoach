@@ -15,7 +15,7 @@ apps/
 |---|---|---|
 | 1 | Fondations : comptes sécurisés, rôles, base de données, Centre de compétition (fiches, accords des parents, invitations, objectifs), demandes de cours | ✅ fait |
 | 2 | Évaluations trimestrielles (21 compétences, toile d'araignée), matchs, bulletins imprimables / PDF, « Mon suivi » complet pour les familles | ✅ fait |
-| 3 | Vidéos (envoi, stockage privé) et analyses | à faire |
+| 3 | Vidéos (envoi, stockage privé, accord « droit à l'image » obligatoire, suppression après 12 mois), analyses liées aux objectifs, discussion avec le coach | ✅ fait |
 | 4 | Studio d'analyse (dessin sur la vidéo, comparaison) | à faire |
 | 5 | Reprise de toutes les protections (RGPD) et bascule du site | à faire |
 
@@ -51,6 +51,12 @@ Tests du serveur : `cd apps/api && npm test`.
 
 ⚠️ Tant que ces étapes ne sont pas faites, **ne saisis aucune vraie donnée d'enfant**.
 Avant l'ouverture : voir `RGPD-A-FAIRE.md` à la racine (registre, analyse d'impact, contrat avec l'hébergeur, relecture par la fédération/CNIL).
+
+## Vidéos (étape 3)
+- Le fichier est envoyé par morceaux de 2 Mo et gardé **dans la base de données** (Europe) : pas de service de stockage de plus. Maximum 80 Mo par vidéo (filmer 10 à 30 secondes) ; espace total limité par `VIDEO_QUOTA_MB` (350 par défaut, car la base gratuite fait 512 Mo).
+- Lecture par tranches, uniquement pour les personnes autorisées (coach ; l'adulte propriétaire ; la famille du joueur).
+- Suppression automatique après 12 mois : une tâche nocturne (`/api/cron/purge`) protégée par la variable `CRON_SECRET` à créer sur Vercel (voir `GUIDE-MISE-EN-LIGNE.md`).
+- Retirer l'accord « droit à l'image » supprime les vidéos du joueur ; supprimer son compte supprime celles d'un adulte.
 
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.

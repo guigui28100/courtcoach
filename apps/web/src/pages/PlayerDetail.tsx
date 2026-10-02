@@ -2,10 +2,11 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, patch, post } from "../api";
 import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { AXES, Consent, currentSeason, fmtDate, fullName, Goal, Player } from "../types";
 
-type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "matchs" | "bulletins";
+type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
@@ -229,6 +230,24 @@ function Objectifs({ p }: { p: Player }) {
   );
 }
 
+function PlayerVideosTab({ p }: { p: Player }) {
+  const [version, setVersion] = useState(0);
+  const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
+  const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
+  return (
+    <div className="grid gap-4">
+      {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
+      {imageOk && <VideoUpload playerId={p.id} onDone={() => setVersion((n) => n + 1)} />}
+      <ul className="m-0 grid list-none gap-3 p-0">
+        {videos.map((v) => (
+          <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? " · avec une question" : ""}</small></span><VideoBadge v={v} /></Link></li>
+        ))}
+        {!videos.length && <li><Empty>Aucune vidéo pour ce joueur.</Empty></li>}
+      </ul>
+    </div>
+  );
+}
+
 export default function PlayerDetail() {
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
@@ -238,7 +257,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
+  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)}>
@@ -255,6 +274,7 @@ export default function PlayerDetail() {
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "objectifs" && <Objectifs p={p} />}
           {tab === "evaluations" && <Evaluations p={p} />}
+          {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <Matchs p={p} />}
           {tab === "bulletins" && <Bulletins p={p} />}
         </div>
