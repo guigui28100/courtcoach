@@ -45,5 +45,17 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/apps/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/GUIDE-MISE-EN-LIGNE.md",
+      "destination": "/",
+      "permanent": false
+    }
   ]
 }

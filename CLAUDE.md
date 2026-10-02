@@ -48,7 +48,7 @@
 
 ## Migration vers React + Nest + Prisma + Tailwind (décidée avec le coach)
 - Les règles « aucun framework / pas de npm / pas de build » **ne valent plus pour le dossier `apps/`** : la nouvelle version y utilise React (Vite) + Tailwind (`apps/web`), NestJS + Prisma + PostgreSQL (`apps/api`), déployée sur Vercel (deux projets). Voir `apps/README.md`.
-- Le site actuel (racine) reste en ligne et intact tant que la nouvelle version n'est pas complète ; ne rien casser à la racine. `.vercelignore` exclut `apps/` du site actuel.
+- Le site actuel (racine) reste en ligne et intact tant que la nouvelle version n'est pas complète ; ne rien casser à la racine. `.vercelignore` (racine) s'applique à TOUS les projets Vercel du dépôt : n'y mets surtout pas `apps` (cela cacherait le code du serveur). Le site actuel redirige `/apps/*` vers l'accueil (`vercel.json` racine).
 - Toutes les règles de vie privée et de sécurité continuent de s'appliquer (mineurs, RGPD, pas de service extérieur, cloisonnement, journal). Toute nouvelle route de l'API doit vérifier les droits et avoir un test dans `apps/api/test`.
 - Le coach crée les fiches des jeunes ; pas d'inscription libre pour les jeunes ni pour les coachs.
 - Explications au coach toujours simples, en français. Étapes livrées en pull requests séparées.
