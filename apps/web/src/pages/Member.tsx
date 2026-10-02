@@ -2,7 +2,9 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { get, post, del } from "../api";
 import { useAuth } from "../auth";
-import { AXES, currentSeason, fmtDate, fullName, Goal, Lesson, Player } from "../types";
+import { Radar } from "../components/Radar";
+import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
+import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
 import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
@@ -103,6 +105,49 @@ export function AdultSpace() {
   );
 }
 
+// Dernière évaluation, matchs et bulletins d'un joueur (lecture seule)
+function FollowUp({ p }: { p: Player }) {
+  const { evals, matches } = useFollowUp(p.id);
+  if (!evals) return null;
+  const last = evals.find((e) => ratedCount(e) > 0);
+  const prevP = last ? previousPeriod(last.season, last.trimester) : null;
+  const prev = last && prevP ? evals.find((e) => e.season === prevP.season && e.trimester === prevP.t) : undefined;
+  const now: Record<string, number> = {}, before: Record<string, number> = {};
+  EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(last, a); before[a.key] = axisAverage(prev, a); });
+  return (
+    <>
+      <h3 className="m-0">Dernière évaluation</h3>
+      {!last ? <p className="m-0 text-muted">Pas encore d'évaluation trimestrielle.</p> : (
+        <div className="grid gap-4 md:grid-cols-[300px_1fr]">
+          <div className="grid justify-items-center gap-1">
+            <Radar series={[{ label: `T${last.trimester}`, values: now, color: "#b8471f" }, ...(prev && prevP ? [{ label: `T${prevP.t}`, values: before, color: "#10203a", dashed: true }] : [])]} />
+            <p className="m-0 text-center font-bold">{periodLabel(last.season, last.trimester)}<br />Moyenne {fmtAvg(overallAverage(last))} / 5 {trendCommon(last, prev)}</p>
+          </div>
+          <div className="grid content-start gap-3">
+            {last.appreciation && <p className="m-0 rounded-xl bg-sand p-3">« {last.appreciation} »<small className="hint block">Appréciation du coach</small></p>}
+            {EVAL_AXES.map((a) => ratedCount({ ratings: Object.fromEntries(a.skills.filter(([k]) => last.ratings[k]).map(([k]) => [k, last.ratings[k]])) }) ? (
+              <div key={a.key} className="grid gap-2 border-l-4 pl-3" style={{ borderLeftColor: a.color }}>
+                <h4 className="m-0 font-display font-bold" style={{ color: a.color }}>{a.label} · {fmtAvg(axisAverage(last, a))} / 5</h4>
+                <SkillBars axis={a} ev={last} prev={prev} />
+              </div>
+            ) : null)}
+            {last.strengths && <p className="m-0"><strong>Points forts : </strong>{last.strengths}</p>}
+            {last.improve && <p className="m-0"><strong>À travailler : </strong>{last.improve}</p>}
+            {last.next && <p className="m-0"><strong>Objectifs du trimestre suivant : </strong>{last.next}</p>}
+          </div>
+        </div>
+      )}
+      {evals.length > 0 && (
+        <>
+          <h3 className="m-0">Bulletins</h3>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.filter((e) => ratedCount(e) > 0).map((e) => <li key={e.id}><Link to={`/suivi/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-outline btn-sm no-underline">{periodLabel(e.season, e.trimester).replace("Trimestre ", "T")}</Link></li>)}</ul>
+        </>
+      )}
+      {matches.length > 0 && <><h3 className="m-0">Compétition</h3><MatchTable matches={matches} /></>}
+    </>
+  );
+}
+
 // Espace des parents (et des jeunes invités) : suivi du joueur, en lecture seule.
 export function FamilySpace() {
   const { me, eraseAccount } = useAuth();
@@ -118,7 +163,7 @@ export function FamilySpace() {
 
   return (
     <>
-      <PageHead eyebrow="Mon suivi" title={me?.firstName ? `Bonjour ${me.firstName}` : "Mon suivi"}>Les objectifs de la saison, en lecture seule. Les évaluations et les bulletins arriveront dans cet espace.</PageHead>
+      <PageHead eyebrow="Mon suivi" title={me?.firstName ? `Bonjour ${me.firstName}` : "Mon suivi"}>Objectifs, évaluations, matchs et bulletins, en lecture seule.</PageHead>
       <Page>
         {!players.length && <Empty>Ton coach n'a pas encore ouvert de suivi.</Empty>}
         {players.map((p) => {
@@ -140,6 +185,7 @@ export function FamilySpace() {
                   );
                 })}
               </div>
+              <FollowUp p={p} />
             </section>
           );
         })}
