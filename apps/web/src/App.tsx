@@ -5,6 +5,7 @@ import { Centre, CoachHome } from "./pages/Coach";
 import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
+import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
 import { AdultSpace, FamilySpace } from "./pages/Member";
 import PlayerDetail from "./pages/PlayerDetail";
@@ -15,6 +16,7 @@ export default function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/installation" element={<Installation />} />
         <Route path="/connexion" element={<Connexion />} />
         <Route path="/mot-de-passe" element={<ChangePassword />} />
         <Route path="/invitation/:token" element={<Invitation />} />
