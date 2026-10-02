@@ -4,9 +4,13 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
+import { resolveDatabaseUrl } from "./database-url";
 
 // Construit l'application (utilisée en local, en test et sur Vercel).
 export async function createApp(): Promise<NestExpressApplication> {
+  const dbUrl = resolveDatabaseUrl();
+  if (!dbUrl) throw new Error("Adresse de la base de données manquante (DATABASE_URL)");
+  process.env.DATABASE_URL = dbUrl;
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error("JWT_SECRET manquant ou trop court (32 caractères minimum)");
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: process.env.NODE_ENV === "test" ? false : ["error", "warn", "log"] });
   app.setGlobalPrefix("api");

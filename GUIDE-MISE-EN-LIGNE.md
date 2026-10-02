@@ -17,7 +17,8 @@ Sur GitHub, ouvre chaque pull request qui t'est donnée dans la conversation, pu
 2. Menu du haut : **Storage** → **Create Database**.
 3. Choisis **Neon** (Postgres) → **Continue**.
 4. Région : choisis **Frankfurt** (ou une autre région en **Europe**). Nom : `courtcoach-db`. Valide.
-5. Ouvre ta base, onglet **.env** (ou « Connection details »), clique sur l'œil pour afficher, puis **copie la ligne `DATABASE_URL`** (ou `POSTGRES_URL`). Garde-la dans un coin (par exemple dans les notes de ton téléphone, jamais dans un message).
+
+➡️ **Tu n'as rien à copier.** À l'étape D, on « branchera » la base au serveur d'un simple clic : Vercel donne alors tout seul l'adresse secrète au serveur. (Si tu vois un onglet « .env » vide, c'est normal tant que la base n'est branchée à aucun projet.)
 
 ## Étape C – Préparer 2 clés secrètes
 Ce sont deux longues suites de caractères au hasard. Le plus simple : utilise le **générateur de mot de passe** de ton téléphone ou de ton navigateur (« Suggérer un mot de passe fort », longueur **64**).
@@ -30,14 +31,16 @@ Ce sont deux longues suites de caractères au hasard. Le plus simple : utilise l
 3. **Root Directory** : clique **Edit** et choisis **`apps/api`**.
 4. **Framework Preset** : **Other**.
 5. Ouvre **Environment Variables** et ajoute (nom → valeur) :
-   - `DATABASE_URL` → la ligne copiée à l'étape B
    - `JWT_SECRET` → la clé 1
    - `SETUP_TOKEN` → la clé 2
    - `NODE_ENV` → `production`
    - `WEB_ORIGIN` → `https://courtcoach.vercel.app` (on la corrigera à l'étape F si l'adresse du site est différente)
-6. Clique **Deploy** et attends que ce soit vert.
-7. Dans **Settings → Functions**, choisis la région **Paris (cdg1)** si elle est proposée.
-8. Vérification : ouvre `https://courtcoach-api.vercel.app/api/setup/status` (avec **ton** adresse). Tu dois voir : `{"available":true}`.
+6. **Ne clique pas encore sur Deploy** : le serveur a d'abord besoin de la base. (Si Vercel a déjà lancé un déploiement et qu'il est rouge, c'est normal : on le relancera.)
+7. **Brancher la base** : va dans **Storage** (menu du haut de Vercel) → ouvre `courtcoach-db` → onglet **Projects** → **Connect Project** → choisis **courtcoach-api** → **Connect**. Vercel ajoute tout seul l'adresse secrète de la base au projet.
+8. Retourne dans le projet **courtcoach-api** → **Settings → Environment Variables** et vérifie qu'il y a bien une ligne **`DATABASE_URL`** (ou `POSTGRES_URL`). Tu n'as pas besoin de lire sa valeur.
+9. **Deployments** → les trois petits points du dernier déploiement → **Redeploy**. Attends que ce soit vert.
+10. Dans **Settings → Functions**, choisis la région **Paris (cdg1)** si elle est proposée.
+11. Vérification : ouvre `https://courtcoach-api.vercel.app/api/setup/status` (avec **ton** adresse). Tu dois voir : `{"available":true}`.
 
 ➡️ **Envoie-moi l'adresse du serveur** (juste l'adresse, par exemple `https://courtcoach-api.vercel.app`).
 Je règle alors le site pour qu'il parle à ce serveur.
