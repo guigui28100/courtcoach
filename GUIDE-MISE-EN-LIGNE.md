@@ -33,7 +33,7 @@ Ce sont deux longues suites de caractères au hasard. Le plus simple : utilise l
 5. Ouvre **Environment Variables** et ajoute (nom → valeur) :
    - `JWT_SECRET` → la clé 1
    - `SETUP_TOKEN` → la clé 2
-   - `NODE_ENV` → `production`
+   - `NODE_ENV` → `production` (le serveur installe de lui-même ses outils de construction : tu n'as rien à régler de plus)
    - `WEB_ORIGIN` → `https://courtcoach.vercel.app` (on la corrigera à l'étape F si l'adresse du site est différente)
 6. **Ne clique pas encore sur Deploy** : le serveur a d'abord besoin de la base. (Si Vercel a déjà lancé un déploiement et qu'il est rouge, c'est normal : on le relancera.)
 7. **Brancher la base** (une fenêtre « Configure courtcoach-api » s'ouvre : laisse **Production** et **Preview** cochés, ne coche pas « Create database branch », et dans « Custom Environment Variable Prefix », tu peux laisser `STORAGE` : le serveur le reconnaît) : va dans **Storage** (menu du haut de Vercel) → ouvre `courtcoach-db` → onglet **Projects** → **Connect Project** → choisis **courtcoach-api** → **Connect**. Vercel ajoute tout seul l'adresse secrète de la base au projet.
