@@ -2,7 +2,8 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { get, post } from "../api";
 import { Empty, Err, Field, Page, PageHead } from "../components/ui";
-import { fmtDate, fullName, Lesson, Player } from "../types";
+import { useVideos } from "../components/Videos";
+import { fmtDate, fmtMo, fullName, Lesson, Player, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 
@@ -41,10 +42,28 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
   );
 }
 
+function WaitingVideos({ videos, label }: { videos: VideoRow[]; label: (v: VideoRow) => string }) {
+  const waiting = videos.filter((v) => !v.analysis?.sentAt);
+  const answered = videos.filter((v) => v.analysis?.sentAt);
+  const row = (v: VideoRow) => (
+    <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{label(v)} · {v.shot} · {fmtDate(v.recordedAt)}{v.question ? " · avec une question" : ""}</small></span><span className="btn-clay btn-sm">{v.analysis?.sentAt ? "Ouvrir" : v.analysis ? "Terminer l'analyse" : "Analyser"}</span></Link></li>
+  );
+  return (
+    <div className="grid gap-2">
+      <h3 className="m-0">Vidéos à analyser ({waiting.length})</h3>
+      <ul className="m-0 grid list-none gap-2 p-0">{waiting.map(row)}{!waiting.length && <li className="hint">Aucune vidéo en attente.</li>}</ul>
+      {answered.length > 0 && <details><summary className="cursor-pointer font-bold text-muted">Déjà analysées ({answered.length})</summary><ul className="mt-2 grid list-none gap-2 p-0">{answered.map(row)}</ul></details>}
+    </div>
+  );
+}
+
 export function CoachHome() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const load = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons); get<Player[]>("/players").then(setPlayers); }, []);
+  const [version, setVersion] = useState(0);
+  const videos = useVideos(version);
+  const [storage, setStorage] = useState<{ usedBytes: number; quotaBytes: number } | null>(null);
+  const load = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons); get<Player[]>("/players").then(setPlayers); get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => undefined); setVersion((n) => n + 1); }, []);
   useEffect(load, [load]);
   const pending = lessons.filter((l) => l.status === "PENDING");
   const done = lessons.filter((l) => l.status !== "PENDING");
@@ -60,6 +79,7 @@ export function CoachHome() {
             {pending.map((l) => <LessonRow key={l.id} l={l} onDone={load} />)}
             {!pending.length && <li><Empty>Aucune demande de coaching en attente 🎾</Empty></li>}
           </ul>
+          <WaitingVideos videos={(videos ?? []).filter((v) => v.kind === "coaching")} label={(v) => v.owner?.firstName || v.owner?.email || "Adhérent"} />
           {done.length > 0 && (
             <details>
               <summary className="cursor-pointer font-bold text-muted">Historique ({done.length})</summary>
@@ -75,7 +95,16 @@ export function CoachHome() {
             <p className="m-0"><strong>{players.length} jeune{players.length > 1 ? "s" : ""} suivi{players.length > 1 ? "s" : ""}</strong></p>
             <Link to="/coach/centre" className="btn-clay btn-sm no-underline">Ouvrir le Centre</Link>
           </div>
+          <WaitingVideos videos={(videos ?? []).filter((v) => v.kind === "centre")} label={(v) => v.player?.firstName ?? "Joueur"} />
         </section>
+        {storage && (
+          <section className="card grid gap-2 border-dashed" aria-label="Espace de stockage des vidéos">
+            <h2 className="m-0 text-lg">Espace de stockage des vidéos</h2>
+            <p className="m-0">{fmtMo(storage.usedBytes)} utilisés sur {fmtMo(storage.quotaBytes)}</p>
+            <div className="h-2 overflow-hidden rounded-full bg-sand" role="progressbar" aria-valuenow={Math.round((storage.usedBytes / storage.quotaBytes) * 100)} aria-valuemin={0} aria-valuemax={100}><div className={"h-full " + (storage.usedBytes / storage.quotaBytes > 0.8 ? "bg-bad" : "bg-clay")} style={{ width: `${Math.min(100, (storage.usedBytes / storage.quotaBytes) * 100)}%` }} /></div>
+            <p className="hint m-0">Les vidéos sont supprimées automatiquement après 12 mois. Supprime celles qui ne servent plus pour garder de la place.</p>
+          </section>
+        )}
       </Page>
     </>
   );

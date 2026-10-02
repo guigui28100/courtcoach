@@ -209,10 +209,12 @@ model Video {
   shot        String      @default("autre")
   question    String      @default("")
   status      VideoStatus @default(WAITING)
-  storageKey  String      // emplacement du fichier dans le stockage privé
-  sizeBytes   Int         @default(0)
+  mimeType    String      @default("video/mp4")
+  sizeBytes   Int         @default(0)   // taille annoncée au début de l'envoi, vérifiée à la fin
+  chunkCount  Int         @default(0)
+  complete    Boolean     @default(false) // faux tant que l'envoi n'est pas terminé
   recordedAt  DateTime    @default(now())
-  seenAt      DateTime?
+  seenAt      DateTime?   // date à laquelle l'élève / la famille a vu l'analyse
   deleteAfter DateTime?   // suppression automatique prévue
   ownerId     String?     // adulte à l'origine de la vidéo
   owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
@@ -221,6 +223,21 @@ model Video {
 
   analyses Analysis[]
   messages Message[]
+  chunks   VideoChunk[]
+
+  @@index([ownerId])
+  @@index([playerId])
+}
+
+// Le fichier vidéo est gardé dans la base (région Europe), en morceaux de 2 Mo :
+// pas de service de stockage supplémentaire, et les mêmes contrôles d'accès que le reste.
+model VideoChunk {
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  index   Int
+  data    Bytes
+
+  @@id([videoId, index])
 }
 
 model Analysis {

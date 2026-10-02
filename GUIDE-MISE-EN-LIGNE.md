@@ -68,3 +68,9 @@ Crée un faux joueur, un faux parent, un compte adulte de test, une demande de c
 
 ## Étape I – Avant d'ouvrir aux vraies familles
 Voir `RGPD-A-FAIRE.md` : adresse e-mail du club, durée de conservation, relecture par la fédération.
+
+## Étape J – Activer les vidéos (après la fusion de l'étape 3)
+1. Invente une nouvelle clé (générateur de mot de passe, 32 caractères ou plus) et ajoute-la dans **courtcoach-api → Settings → Environment Variables** sous le nom **`CRON_SECRET`** (Production). Elle sert à la tâche de nettoyage de chaque nuit, qui supprime les vidéos de plus de 12 mois.
+2. Facultatif : **`VIDEO_QUOTA_MB`** (par défaut 350) = place maximale pour les vidéos. La base gratuite fait 512 Mo : ne dépasse pas 400.
+3. **Redeploy** de `courtcoach-api` (Deployments → ⋯ → Redeploy). La base se met à jour toute seule.
+4. Vérifie dans **Settings → Cron Jobs** qu'une tâche `/api/cron/purge` apparaît.

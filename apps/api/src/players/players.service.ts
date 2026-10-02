@@ -97,8 +97,11 @@ export class PlayersService {
   }
   async withdrawConsent(user: AuthUser, playerId: string, consentId: string) {
     this.assertCoach(user);
-    const r = await this.prisma.consent.updateMany({ where: { id: consentId, playerId, withdrawnAt: null }, data: { withdrawnAt: new Date() } });
-    if (!r.count) throw new NotFoundException("Accord introuvable");
+    const consent = await this.prisma.consent.findFirst({ where: { id: consentId, playerId, withdrawnAt: null } });
+    if (!consent) throw new NotFoundException("Accord introuvable");
+    await this.prisma.consent.update({ where: { id: consentId }, data: { withdrawnAt: new Date() } });
+    // Retrait du droit à l'image : les vidéos du joueur sont supprimées (les textes d'analyse restent).
+    if (consent.kind === ConsentKind.IMAGE) await this.prisma.video.deleteMany({ where: { playerId } });
     await this.audit.log(user.id, "consent-withdraw", "Player", playerId);
   }
 

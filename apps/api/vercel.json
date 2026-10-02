@@ -9,6 +9,7 @@
       "destination": "/api"
     }
   ],
+  "crons": [{ "path": "/api/cron/purge", "schedule": "30 2 * * *" }],
   "functions": {
     "api/index.js": {
       "maxDuration": 15,

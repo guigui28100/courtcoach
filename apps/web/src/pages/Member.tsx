@@ -6,10 +6,28 @@ import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
 import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const STATUS = { PENDING: ["En attente", "!border-[#c08a00] !text-[#7a5a00] !bg-[#fff3cd]"], ACCEPTED: ["Acceptée", "!border-ok !text-ok !bg-[#e6f5ec]"], REFUSED: ["Refusée", "!border-bad !text-bad !bg-[#fdf0ee]"] } as const;
+
+// Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
+function MyVideos() {
+  const [version, setVersion] = useState(0);
+  const videos = useVideos(version);
+  const refresh = useCallback(() => setVersion((n) => n + 1), []);
+  const fresh = (videos ?? []).filter((v) => v.analysis?.sentAt && !v.seenAt);
+  return (
+    <section aria-labelledby="t-vid" className="card grid gap-3">
+      <h2 id="t-vid" className="m-0">Mes vidéos</h2>
+      {fresh.length > 0 && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} de tes vidéos` : "une de tes vidéos"} : ouvre-la ci-dessous.</p>}
+      <p className="m-0 text-muted">Envoie une vidéo de quelques coups : le coach l'analyse et te répond ici.</p>
+      <VideoUpload onDone={refresh} />
+      <VideoList videos={videos ?? []} onChanged={refresh} empty="Tu n'as pas encore envoyé de vidéo." />
+    </section>
+  );
+}
 
 // Espace de l'adhérent adulte : demandes de cours et réponse du coach, visibles tout de suite.
 export function AdultSpace() {
@@ -91,6 +109,8 @@ export function AdultSpace() {
           )}
         </section>
 
+        <MyVideos />
+
         <section className="card grid gap-3 border-dashed">
           <h2 className="m-0 text-lg">Mes données</h2>
           <p className="hint m-0">Tu peux récupérer ou effacer tes données quand tu veux. <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link></p>
@@ -148,6 +168,23 @@ function FollowUp({ p }: { p: Player }) {
   );
 }
 
+// Vidéos d'un joueur du Centre : la famille peut en envoyer (si l'accord « droit à l'image » est enregistré) et lire les analyses.
+function PlayerVideos({ p }: { p: Player }) {
+  const [version, setVersion] = useState(0);
+  const videos = useVideos(version);
+  const refresh = useCallback(() => setVersion((n) => n + 1), []);
+  const mine = (videos ?? []).filter((v) => v.player?.id === p.id);
+  const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
+  return (
+    <>
+      <h3 className="m-0">Vidéos</h3>
+      {fresh.length > 0 && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
+      <VideoUpload playerId={p.id} onDone={refresh} />
+      <VideoList videos={mine} onChanged={refresh} empty="Aucune vidéo pour l'instant." />
+    </>
+  );
+}
+
 // Espace des parents (et des jeunes invités) : suivi du joueur, en lecture seule.
 export function FamilySpace() {
   const { me, eraseAccount } = useAuth();
@@ -186,6 +223,7 @@ export function FamilySpace() {
                 })}
               </div>
               <FollowUp p={p} />
+              <PlayerVideos p={p} />
             </section>
           );
         })}

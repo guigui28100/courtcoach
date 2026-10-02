@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
 import { AdultSpace, FamilySpace } from "./pages/Member";
+import VideoReview from "./pages/VideoReview";
 import PlayerDetail from "./pages/PlayerDetail";
 import { Authorization, Privacy } from "./pages/Static";
 
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
+        <Route path="/coach/videos/:id" element={<Guard roles={["COACH"]}><VideoReview /></Guard>} />
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><FamilySpace /></Guard>} />

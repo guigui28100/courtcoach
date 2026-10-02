@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
+import { raw } from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
@@ -17,6 +18,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.set("trust proxy", 1); // derrière Vercel : la vraie adresse du visiteur est dans l'en-tête transmis
   app.use(helmet());
   app.use(cookieParser());
+  app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
   app.enableCors({ origin: process.env.WEB_ORIGIN, credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   return app;

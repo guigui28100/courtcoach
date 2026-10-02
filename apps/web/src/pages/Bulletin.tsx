@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
+import { useVideos } from "../components/Videos";
 import { axisAverage, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, inPeriod, overallAverage, periodLabel, Player, previousPeriod, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const Block = ({ title, text }: { title: string; text?: string }) => (text?.trim() ? <section className="break-inside-avoid"><h2 className="mb-1 text-lg">{title}</h2><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null);
@@ -18,6 +19,7 @@ export default function Bulletin() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [missing, setMissing] = useState(false);
   const { evals, matches } = useFollowUp(id);
+  const allVideos = useVideos();
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
@@ -35,6 +37,7 @@ export default function Bulletin() {
   EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(ev, a); before[a.key] = axisAverage(prev, a); });
   const series = [{ label: short(season, t), values: now, color: "#b8471f" }, ...(prev ? [{ label: short(pp.season, pp.t), values: before, color: "#10203a", dashed: true }] : [])];
   const ms = matches.filter((m) => inPeriod(m.date, season, t));
+  const analysed = (allVideos ?? []).filter((v) => v.player?.id === id && v.analysis?.sentAt && inPeriod(v.analysis.sentAt, season, t));
   const progress = goals.length ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length) : null;
   const facts = [["Classement", p.ranking], ["Objectif de classement", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle], ["Entraînement", p.training]].filter(([, v]) => v);
 
@@ -89,6 +92,19 @@ export default function Bulletin() {
           </section>
         )}
         {ms.length > 0 && <section className="break-inside-avoid"><h2 className="mb-2 text-lg">Compétition du trimestre</h2><MatchTable matches={ms} /></section>}
+        {analysed.length > 0 && (
+          <section className="grid gap-3"><h2 className="m-0 text-lg">Analyses vidéo du trimestre</h2>
+            {analysed.map((v) => (
+              <div key={v.id} className="break-inside-avoid rounded-xl border border-line p-3">
+                <h3 className="m-0 text-base">{v.title} · {fmtDate(v.analysis!.sentAt!)}</h3>
+                {v.analysis!.goalIds.length > 0 && <p className="m-0 text-sm"><strong>Objectifs travaillés : </strong>{goals.filter((g) => v.analysis!.goalIds.includes(g.id)).map((g) => g.title).join(" ; ")}</p>}
+                {v.analysis!.observation && <p className="m-0 whitespace-pre-line">{v.analysis!.observation}</p>}
+                {v.analysis!.strengths && <p className="m-0"><strong>Points forts : </strong>{v.analysis!.strengths}</p>}
+                {v.analysis!.improve && <p className="m-0"><strong>À améliorer : </strong>{v.analysis!.improve}</p>}
+              </div>
+            ))}
+          </section>
+        )}
         {ev && <Block title="Objectifs du trimestre suivant" text={ev.next} />}
         <div className="mt-6 grid grid-cols-2 gap-6 break-inside-avoid text-sm text-muted"><div className="min-h-20 border-t border-ink pt-1">Signature du coach</div><div className="min-h-20 border-t border-ink pt-1">Signature des parents</div></div>
         <p className="hint m-0 text-center">Tennis Club Houdan · Bulletin généré avec CourtCoach le {fmtDate(new Date().toISOString())}</p>
