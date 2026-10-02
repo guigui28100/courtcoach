@@ -45,3 +45,10 @@
 - Droits : « Mon profil » permet de télécharger et de supprimer ses données ; le dossier d'un joueur peut être téléchargé / supprimé par le coach. Pas de vidéo d'un joueur sans autorisation des parents enregistrée.
 - La liste de ce qui reste à faire avant de vraies données est dans `RGPD-A-FAIRE.md`.
 - Sécurité : aucun `innerHTML` avec du texte saisi ; pas de script écrit dans les pages (`script-src 'self'`) ; déconnexion automatique après 30 min (`layout.js`) ; `autorisation.html` = formulaire parental imprimable. La « connexion » reste fictive en démonstration (voir `RGPD-A-FAIRE.md`).
+
+## Migration vers React + Nest + Prisma + Tailwind (décidée avec le coach)
+- Les règles « aucun framework / pas de npm / pas de build » **ne valent plus pour le dossier `apps/`** : la nouvelle version y utilise React (Vite) + Tailwind (`apps/web`), NestJS + Prisma + PostgreSQL (`apps/api`), déployée sur Vercel (deux projets). Voir `apps/README.md`.
+- Le site actuel (racine) reste en ligne et intact tant que la nouvelle version n'est pas complète ; ne rien casser à la racine. `.vercelignore` exclut `apps/` du site actuel.
+- Toutes les règles de vie privée et de sécurité continuent de s'appliquer (mineurs, RGPD, pas de service extérieur, cloisonnement, journal). Toute nouvelle route de l'API doit vérifier les droits et avoir un test dans `apps/api/test`.
+- Le coach crée les fiches des jeunes ; pas d'inscription libre pour les jeunes ni pour les coachs.
+- Explications au coach toujours simples, en français. Étapes livrées en pull requests séparées.

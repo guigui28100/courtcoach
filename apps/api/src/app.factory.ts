@@ -1,0 +1,21 @@
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import { AppModule } from "./app.module";
+
+// Construit l'application (utilisée en local, en test et sur Vercel).
+export async function createApp(): Promise<NestExpressApplication> {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error("JWT_SECRET manquant ou trop court (32 caractères minimum)");
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: process.env.NODE_ENV === "test" ? false : ["error", "warn", "log"] });
+  app.setGlobalPrefix("api");
+  app.set("trust proxy", 1); // derrière Vercel : la vraie adresse du visiteur est dans l'en-tête transmis
+  app.use(helmet());
+  app.use(cookieParser());
+  app.enableCors({ origin: process.env.WEB_ORIGIN, credentials: true });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  return app;
+}
+
+export type { INestApplication };

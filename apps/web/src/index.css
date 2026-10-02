@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+@theme {
+  --color-clay: #b8471f;
+  --color-clay-dark: #93371a;
+  --color-ink: #10203a;
+  --color-ball: #dcf247;
+  --color-chalk: #fbf7f1;
+  --color-sand: #f3e7d9;
+  --color-line: #e4d6c5;
+  --color-muted: #4b5566;
+  --color-ok: #2f8f5b;
+  --color-bad: #b3261e;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html { scroll-padding-top: 80px; }
+  body { @apply bg-chalk text-[#1a2233] font-body text-[1rem] leading-relaxed antialiased; }
+  h1, h2, h3 { @apply font-display text-ink leading-tight; text-wrap: balance; }
+  h1 { @apply text-3xl sm:text-4xl font-black; font-stretch: 85%; }
+  h2 { @apply text-xl sm:text-2xl font-extrabold; font-stretch: 88%; }
+  h3 { @apply text-lg font-bold; }
+  p, li { text-wrap: pretty; }
+  :focus-visible { @apply outline-3 outline-offset-2 outline-ink; }
+  [hidden] { display: none !important; }
+}
+
+@utility btn {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 py-2 font-display font-bold cursor-pointer transition-colors disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-white p-5;
+}
+
+@layer components {
+
+  .btn-clay { @apply btn bg-clay text-white hover:bg-clay-dark; }
+  .btn-ink { @apply btn bg-ink text-white hover:bg-[#1c3155]; }
+  .btn-outline { @apply btn border-2 border-ink text-ink bg-transparent hover:bg-ink hover:text-white; }
+  .btn-danger { @apply btn border-2 border-bad text-bad bg-transparent hover:bg-bad hover:text-white; }
+  .btn-sm { @apply min-h-10 px-4 text-sm; }
+
+  .field { @apply grid gap-1.5; }
+  .field label, .field legend { @apply font-bold; }
+  .input { @apply min-h-12 w-full rounded-xl border-2 border-line bg-chalk px-3.5 text-base focus:border-ink focus:bg-white focus:outline-none; }
+  textarea.input { @apply py-2.5 min-h-24; }
+  .hint { @apply text-sm text-muted; }
+  .badge { @apply inline-flex items-center rounded-full border border-line bg-white px-3 py-0.5 text-sm font-bold; }
+  .alert { @apply rounded-xl border-l-4 border-ball bg-[#fff8d6] px-4 py-3 text-sm; }
+  .alert-err { @apply rounded-xl border-l-4 border-bad bg-[#fdf0ee] px-4 py-3 text-sm text-bad font-semibold; }
+  .legal { @apply max-w-3xl mx-auto px-4 py-8; }
+  .legal h2 { @apply mt-8 mb-2 text-xl; }
+  .legal p, .legal li { @apply mb-2; }
+  .legal ul { @apply list-disc pl-5 mb-3; }
+  .legal table { @apply w-full text-sm border-collapse mb-4; }
+  .legal th, .legal td { @apply border-b border-line p-2 text-left align-top; }
+  .legal th { @apply bg-sand; }
+  .legal mark { @apply bg-[#fff3b0] px-1 rounded; }
+  .legal .box { @apply card border-l-4 border-l-clay my-4; }
+}

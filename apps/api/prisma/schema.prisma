@@ -1,0 +1,290 @@
+// Base de données CourtCoach – Tennis Club Houdan.
+// Règle d'or : on ne garde que le nécessaire, et tout peut être exporté ou supprimé (RGPD).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  COACH      // créé uniquement par le club (jamais en inscription libre)
+  ADULT      // adhérent adulte
+  GUARDIAN   // parent ou responsable légal d'un jeune du Centre
+  YOUTH      // compte d'un jeune, ouvert sur invitation du coach (facultatif)
+}
+
+enum Axis {
+  TECHNIQUE
+  TACTIQUE
+  PHYSIQUE
+  MENTAL
+}
+
+enum ConsentKind {
+  PRIVACY_POLICY   // politique de confidentialité lue
+  FOLLOW_UP        // suivi sportif (objectifs, évaluations, bulletins)
+  IMAGE            // droit à l'image (filmer pour analyser)
+  HEALTH           // informations de santé facultatives
+  ACCOUNT          // compte en ligne
+}
+
+enum LessonStatus {
+  PENDING
+  ACCEPTED
+  REFUSED
+}
+
+enum VideoStatus {
+  WAITING     // à analyser
+  ANALYSED
+  REFERENCE   // modèle du coach
+  FOLLOW_UP   // vidéo d'un jeune du Centre
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          Role
+  firstName     String?
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+  failedLogins  Int       @default(0)
+  lockedUntil   DateTime?
+  deletedAt     DateTime?
+
+  refreshTokens RefreshToken[]
+  accesses      PlayerAccess[]
+  lessons       LessonRequest[]
+  videos        Video[]
+  consents      Consent[]
+  invitations   Invitation[]   @relation("InvitedBy")
+  auditLogs     AuditLog[]
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Fiche d'un jeune du Centre de compétition jeunes (créée par le coach)
+model Player {
+  id               String    @id @default(cuid())
+  firstName        String
+  lastName         String    @default("")
+  birthDate        DateTime?
+  sex              String?
+  club             String?
+  licence          String?
+  heightCm         Int?
+  ranking          String?
+  targetRanking    String?
+  hand             String?
+  backhand         String?
+  playStyle        String?
+  training         String?
+  availability     String?
+  health           String?   // facultatif, sensible : jamais visible hors coach et responsables
+  coachNotes       String?   // notes privées du coach : jamais visibles par la famille
+  createdAt        DateTime  @default(now())
+  lastActivityAt   DateTime  @default(now())
+  archivedAt       DateTime?
+
+  accesses    PlayerAccess[]
+  consents    Consent[]
+  goals       Goal[]
+  evaluations Evaluation[]
+  matches     Match[]
+  videos      Video[]
+  analyses    Analysis[]
+  invitations Invitation[]
+}
+
+// Qui (parent, jeune) peut voir la fiche d'un joueur, en lecture seule
+model PlayerAccess {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playerId   String
+  player     Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  relation   String  // « parent », « jeune »
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, playerId])
+}
+
+// Invitation envoyée par le coach (lien à usage unique, durée limitée)
+model Invitation {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  email       String
+  role        Role
+  playerId    String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+// Preuve des accords (RGPD) : qui a accepté quoi, quand, et retrait éventuel
+model Consent {
+  id           String      @id @default(cuid())
+  kind         ConsentKind
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playerId     String?
+  player       Player?     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  givenBy      String      // nom du responsable légal ou de la personne
+  method       String      @default("online") // « online » ou « paper » (formulaire signé)
+  policyVersion String     @default("2026-10")
+  grantedAt    DateTime    @default(now())
+  withdrawnAt  DateTime?
+
+  @@index([playerId, kind])
+}
+
+model Goal {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season     String   // « 2026-2027 »
+  axis       Axis
+  title      String
+  indicator  String   @default("")
+  deadline   DateTime?
+  progress   Int      @default(0)
+  createdAt  DateTime @default(now())
+  analyses   AnalysisGoal[]
+
+  @@index([playerId, season])
+}
+
+model Evaluation {
+  id           String   @id @default(cuid())
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season       String
+  trimester    Int      // 1, 2 ou 3
+  ratings      Json     @default("{}") // { competence: 1..5 }
+  comments     Json     @default("{}") // { axe: texte }
+  strengths    String   @default("")
+  improve      String   @default("")
+  next         String   @default("")
+  appreciation String   @default("")
+  updatedAt    DateTime @updatedAt
+
+  @@unique([playerId, season, trimester])
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  date       DateTime
+  tournament String
+  round      String   @default("")
+  result     String   // « Victoire » ou « Défaite »
+  score      String   @default("")
+  remark     String   @default("")
+
+  @@index([playerId, date])
+}
+
+model Video {
+  id          String      @id @default(cuid())
+  title       String
+  shot        String      @default("autre")
+  question    String      @default("")
+  status      VideoStatus @default(WAITING)
+  storageKey  String      // emplacement du fichier dans le stockage privé
+  sizeBytes   Int         @default(0)
+  recordedAt  DateTime    @default(now())
+  seenAt      DateTime?
+  deleteAfter DateTime?   // suppression automatique prévue
+  ownerId     String?     // adulte à l'origine de la vidéo
+  owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  playerId    String?
+  player      Player?     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  analyses Analysis[]
+  messages Message[]
+}
+
+model Analysis {
+  id           String   @id @default(cuid())
+  videoId      String
+  video        Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  playerId     String?
+  player       Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  observation  String   @default("")
+  strengths    String   @default("")
+  improve      String   @default("")
+  exercises    Json     @default("[]")
+  captures     Json     @default("[]") // clés de stockage des images annotées
+  captureNotes Json     @default("{}")
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+  goals        AnalysisGoal[]
+}
+
+model AnalysisGoal {
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  goalId     String
+  goal       Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@id([analysisId, goalId])
+}
+
+// Discussion : seulement attachée à une vidéo déjà analysée (pas de messagerie libre)
+model Message {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model LessonRequest {
+  id            String       @id @default(cuid())
+  memberId      String
+  member        User         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  type          String       // individuel, duo, video
+  objective     String
+  days          String[]
+  moment        String       @default("Peu importe")
+  message       String       @default("")
+  status        LessonStatus @default(PENDING)
+  coachReply    String       @default("")
+  answeredAt    DateTime?
+  seenByMemberAt DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([memberId])
+}
+
+// Journal des actions sensibles (qui a fait quoi) : demandé par la protection des données
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
