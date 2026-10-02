@@ -11,7 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "create-coach": "ts-node scripts/create-coach.ts",
-    "vercel-build": "prisma generate && nest build && prisma migrate deploy"
+    "vercel-build": "node scripts/vercel-build.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",
