@@ -20,6 +20,11 @@ export class PlayersController {
   @Post("players/:id/consents/:consentId/withdraw") @HttpCode(204) withdraw(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("consentId") cid: string) { return this.svc.withdrawConsent(u, id, cid); }
   @Post("players/:id/invitations") invite(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: InvitationDto) { return this.svc.invite(u, id, dto); }
 
+  @Post("players/:id/access") createAccess(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: InvitationDto) { return this.svc.createAccess(u, id, dto); }
+
+  @Get("players/:id/access") listAccess(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.listAccess(u, id); }
+  @Delete("players/:id/access/:userId") @HttpCode(204) revokeAccess(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("userId") uid: string) { return this.svc.revokeAccess(u, id, uid); }
+
   @Get("players/:id/goals") goals(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("season") season?: string) { return this.svc.goals(u, id, season); }
   @Post("players/:id/goals") addGoal(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: GoalDto) { return this.svc.addGoal(u, id, dto); }
   @Patch("goals/:goalId") updateGoal(@CurrentUser() u: AuthUser, @Param("goalId") gid: string, @Body() dto: UpdateGoalDto) { return this.svc.updateGoal(u, gid, dto); }

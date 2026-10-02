@@ -1,6 +1,7 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { Player, Role } from "@prisma/client";
-import { randomBytes } from "crypto";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConsentKind, Player, Role } from "@prisma/client";
+import { randomBytes, randomInt } from "crypto";
+import { hash } from "@node-rs/argon2";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
@@ -109,6 +110,57 @@ export class PlayersService {
     await this.prisma.invitation.create({ data: { tokenHash: sha256(token), email: dto.email, role: dto.role, playerId, invitedById: user.id, expiresAt: new Date(Date.now() + INVITATION_TTL_MS) } });
     await this.audit.log(user.id, "invite", "Player", playerId);
     return { token, expiresInDays: 7 };
+  }
+
+  // ----- Accès créé directement par le coach : identifiant (e-mail) + mot de passe provisoire -----
+  // Le mot de passe provisoire est montré UNE seule fois et doit être changé à la première connexion :
+  // le coach ne connaît jamais le mot de passe définitif.
+  async createAccess(user: AuthUser, playerId: string, dto: InvitationDto) {
+    this.assertCoach(user);
+    if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
+    if (dto.role === Role.YOUTH) {
+      const ok = await this.prisma.consent.findFirst({ where: { playerId, kind: ConsentKind.ACCOUNT, withdrawnAt: null } });
+      if (!ok) throw new ForbiddenException("L'accord des parents pour un compte en ligne n'est pas encore enregistré.");
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) {
+      // Un parent qui a déjà un compte (ex. deux enfants au club) reçoit simplement l'accès à la nouvelle fiche.
+      if (existing.deletedAt || existing.role !== dto.role || dto.role !== Role.GUARDIAN) throw new ConflictException("Cet e-mail est déjà utilisé par un autre compte.");
+      await this.prisma.playerAccess.upsert({ where: { userId_playerId: { userId: existing.id, playerId } }, update: {}, create: { userId: existing.id, playerId, relation: "parent" } });
+      await this.audit.log(user.id, "grant-access", "Player", playerId);
+      return { email: dto.email, existingAccount: true as const };
+    }
+    const temporaryPassword = this.generatePassword();
+    const created = await this.prisma.user.create({ data: { email: dto.email, role: dto.role, passwordHash: await hash(temporaryPassword), mustChangePassword: true } });
+    await this.prisma.playerAccess.create({ data: { userId: created.id, playerId, relation: dto.role === Role.YOUTH ? "jeune" : "parent" } });
+    await this.audit.log(user.id, "create-access", "Player", playerId);
+    return { email: dto.email, existingAccount: false as const, temporaryPassword };
+  }
+  // Qui a accès à la fiche (pour que le coach puisse retirer un accès)
+  async listAccess(user: AuthUser, playerId: string) {
+    this.assertCoach(user);
+    const rows = await this.prisma.playerAccess.findMany({ where: { playerId }, include: { user: { select: { id: true, email: true, role: true, mustChangePassword: true, lastLoginAt: true } } } });
+    return rows.map((r) => ({ userId: r.user.id, email: r.user.email, role: r.user.role, relation: r.relation, mustChangePassword: r.user.mustChangePassword, lastLoginAt: r.user.lastLoginAt }));
+  }
+
+  // Retire l'accès d'une personne à la fiche ; si elle n'a plus aucun accès, son compte est supprimé et ses sessions fermées.
+  async revokeAccess(user: AuthUser, playerId: string, userId: string) {
+    this.assertCoach(user);
+    const r = await this.prisma.playerAccess.deleteMany({ where: { playerId, userId } });
+    if (!r.count) throw new NotFoundException("Accès introuvable");
+    const remaining = await this.prisma.playerAccess.count({ where: { userId } });
+    if (!remaining) {
+      await this.prisma.$transaction([
+        this.prisma.refreshToken.deleteMany({ where: { userId } }),
+        this.prisma.user.update({ where: { id: userId }, data: { email: `supprime-${userId}@invalid`, firstName: null, passwordHash: "-", deletedAt: new Date() } }),
+      ]);
+    }
+    await this.audit.log(user.id, "revoke-access", "Player", playerId);
+  }
+
+  private generatePassword() {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"; // sans caractères qu'on confond (0/O, 1/l/I)
+    return Array.from({ length: 14 }, () => alphabet[randomInt(alphabet.length)]).join("");
   }
 
   // ----- Objectifs -----

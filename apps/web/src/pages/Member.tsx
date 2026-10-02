@@ -93,6 +93,7 @@ export function AdultSpace() {
           <h2 className="m-0 text-lg">Mes données</h2>
           <p className="hint m-0">Tu peux récupérer ou effacer tes données quand tu veux. <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link></p>
           <div className="flex flex-wrap gap-2">
+            <Link to="/mot-de-passe" className="btn-outline btn-sm no-underline">Changer mon mot de passe</Link>
             <button className="btn-outline btn-sm" onClick={exportData}>Télécharger mes données</button>
             <button className="btn-danger btn-sm" onClick={async () => { if (confirm("Supprimer définitivement ton compte et tes données ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
           </div>
@@ -110,9 +111,9 @@ export function FamilySpace() {
   useEffect(() => {
     get<Player[]>("/players").then(async (ps) => {
       setPlayers(ps);
-      const entries = await Promise.all(ps.map(async (p) => [p.id, await get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason()}`)] as const));
+      const entries = await Promise.all(ps.map(async (p) => [p.id, await get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason()}`).catch(() => [] as Goal[])] as const));
       setGoals(Object.fromEntries(entries));
-    });
+    }).catch(() => setPlayers([]));
   }, []);
 
   return (
@@ -145,6 +146,7 @@ export function FamilySpace() {
         <section className="card grid gap-3 border-dashed">
           <h2 className="m-0 text-lg">Mes données</h2>
           <p className="hint m-0"><Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link> · Pour demander une copie ou la suppression du dossier de l'enfant, écris au club.</p>
+          <Link to="/mot-de-passe" className="btn-outline btn-sm self-start no-underline">Changer mon mot de passe</Link>
           <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement ton compte (le dossier du joueur reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
         </section>
       </Page>

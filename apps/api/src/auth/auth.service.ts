@@ -104,9 +104,24 @@ export class AuthService {
     return { user, tokens: await this.issueTokens(user.id, user.role) };
   }
 
+  // Changement de mot de passe (obligatoire à la première connexion avec un mot de passe provisoire).
+  async changePassword(userId: string, current: string, next: string, acceptPolicy?: boolean) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await verify(user.passwordHash, current).catch(() => false))) throw new UnauthorizedException("Mot de passe actuel incorrect.");
+    if (current === next) throw new BadRequestException("Choisis un mot de passe différent du provisoire.");
+    if (user.mustChangePassword && acceptPolicy !== true) throw new BadRequestException("Il faut accepter la politique de confidentialité.");
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hash(next), mustChangePassword: false } }),
+      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }), // toutes les autres sessions sont fermées
+      ...(user.mustChangePassword ? [this.prisma.consent.create({ data: { kind: ConsentKind.PRIVACY_POLICY, userId, givenBy: user.firstName || user.email, policyVersion: POLICY_VERSION } })] : []),
+    ]);
+    await this.audit.log(userId, "change-password", "User", userId);
+    return { user, tokens: await this.issueTokens(userId, user.role) };
+  }
+
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { accesses: { select: { playerId: true, relation: true } } } });
-    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, accesses: user.accesses };
+    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, mustChangePassword: user.mustChangePassword, accesses: user.accesses };
   }
 
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.

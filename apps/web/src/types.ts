@@ -1,5 +1,5 @@
 export type Role = "COACH" | "ADULT" | "GUARDIAN" | "YOUTH";
-export interface Me { id: string; email: string; role: Role; firstName: string | null; accesses: { playerId: string; relation: string }[]; }
+export interface Me { id: string; email: string; role: Role; firstName: string | null; mustChangePassword?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },

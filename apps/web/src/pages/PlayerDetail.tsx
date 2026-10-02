@@ -55,13 +55,18 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
   const nav = useNavigate();
   const [err, setErr] = useState("");
   const [invite, setInvite] = useState<{ url: string; days: number } | null>(null);
+  const [created, setCreated] = useState<{ email: string; password?: string; existing: boolean } | null>(null);
+  const [accesses, setAccesses] = useState<{ userId: string; email: string; role: string; mustChangePassword: boolean; lastLoginAt: string | null }[]>([]);
+  const loadAccess = useCallback(() => { get(`/players/${p.id}/access`).then(setAccesses); }, [p.id]);
+  useEffect(loadAccess, [loadAccess]);
   const active = (k: Consent["kind"]) => p.consents?.find((c) => c.kind === k && !c.withdrawnAt);
 
   async function addConsent(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    const form = e.currentTarget; // à garder avant le « await » : React vide l'événement ensuite
+    const f = new FormData(form);
     setErr("");
-    try { await post(`/players/${p.id}/consents`, { kind: f.get("kind"), givenBy: String(f.get("givenBy")), method: f.get("method") }); e.currentTarget.reset(); onChanged(); } catch (x) { setErr((x as Error).message); }
+    try { await post(`/players/${p.id}/consents`, { kind: f.get("kind"), givenBy: String(f.get("givenBy")), method: f.get("method") }); form.reset(); onChanged(); } catch (x) { setErr((x as Error).message); }
   }
   async function sendInvite(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,6 +75,17 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
     try {
       const r = await post<{ token: string; expiresInDays: number }>(`/players/${p.id}/invitations`, { email: String(f.get("email")), role: f.get("role") });
       setInvite({ url: `${window.location.origin}/invitation/${r.token}`, days: r.expiresInDays });
+    } catch (x) { setErr((x as Error).message); }
+  }
+  async function createAccess(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const f = new FormData(form);
+    setErr(""); setCreated(null);
+    try {
+      const r = await post<{ email: string; temporaryPassword?: string; existingAccount: boolean }>(`/players/${p.id}/access`, { email: String(f.get("email")), role: f.get("role") });
+      setCreated({ email: r.email, password: r.temporaryPassword, existing: r.existingAccount });
+      form.reset(); loadAccess();
     } catch (x) { setErr((x as Error).message); }
   }
   async function exportData() {
@@ -108,7 +124,41 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
       </section>
 
       <section className="card grid gap-3">
-        <h3 className="m-0">Accès de la famille (lecture seule)</h3>
+        <h3 className="m-0">Créer l'accès de la famille (identifiant + mot de passe)</h3>
+        <p className="hint m-0">L'identifiant est l'e-mail du parent. Un <strong>mot de passe provisoire</strong> est créé et affiché une seule fois : donne-le à la famille. À sa première connexion, elle choisit son propre mot de passe (tu ne le connaîtras jamais). Lecture seule : objectifs, évaluations, bulletins, jamais tes notes privées. Un parent qui a déjà un compte (plusieurs enfants) reçoit simplement l'accès à cette fiche.</p>
+        <form onSubmit={createAccess} className="grid gap-3 sm:grid-cols-3" noValidate>
+          <Field label="E-mail (identifiant)" id="a-mail"><input id="a-mail" name="email" type="email" required maxLength={254} className="input" /></Field>
+          <Field label="Pour" id="a-role"><select id="a-role" name="role" className="input"><option value="GUARDIAN">Un parent / responsable légal</option><option value="YOUTH">Le jeune lui-même (accord « compte en ligne » requis)</option></select></Field>
+          <div className="flex items-end"><button className="btn-clay w-full">Créer l'accès</button></div>
+        </form>
+        {created && (
+          <div className="alert" role="status">
+            {created.existing ? (
+              <p className="m-0 font-bold">✅ {created.email} a déjà un compte : l'accès à cette fiche vient d'être ajouté (même mot de passe qu'avant).</p>
+            ) : (
+              <>
+                <p className="m-0 font-bold">Accès créé. Note ces informations maintenant, elles ne seront plus affichées :</p>
+                <p className="m-0 mt-2">Identifiant : <strong>{created.email}</strong></p>
+                <p className="m-0">Mot de passe provisoire : <code className="rounded bg-white px-2 py-1 text-base font-bold">{created.password}</code></p>
+                <p className="hint m-0 mt-2">Transmets-les de vive voix ou par message à la famille, puis supprime le message. Le mot de passe provisoire est à changer à la première connexion.</p>
+              </>
+            )}
+          </div>
+        )}
+        {accesses.length > 0 && (
+          <ul className="m-0 grid list-none gap-2 p-0" aria-label="Personnes ayant accès à cette fiche">
+            {accesses.map((a) => (
+              <li key={a.userId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2">
+                <span><strong>{a.email}</strong> · {a.role === "YOUTH" ? "jeune" : "parent"}<small className="hint block">{a.mustChangePassword ? "Mot de passe provisoire pas encore changé" : a.lastLoginAt ? `Dernière connexion le ${fmtDate(a.lastLoginAt)}` : "Jamais connecté"}</small></span>
+                <button className="btn-danger btn-sm" onClick={async () => { if (confirm(`Retirer l'accès de ${a.email} ?`)) { await del(`/players/${p.id}/access/${a.userId}`); loadAccess(); } }}>Retirer l'accès</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card grid gap-3">
+        <h3 className="m-0">Autre méthode : lien d'invitation</h3>
         <p className="hint m-0">Invite un parent (ou le jeune, si l'accord « compte en ligne » est enregistré). Un lien personnel, valable 7 jours et à usage unique, t'est donné : envoie-le toi-même. Ils verront objectifs, évaluations et bulletins, jamais tes notes privées.</p>
         <form onSubmit={sendInvite} className="grid gap-3 sm:grid-cols-3" noValidate>
           <Field label="E-mail" id="i-mail"><input id="i-mail" name="email" type="email" required maxLength={254} className="input" /></Field>
