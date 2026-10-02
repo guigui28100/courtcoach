@@ -21,3 +21,39 @@ export const fullName = (p: Pick<Player, "firstName" | "lastName">) => [p.firstN
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 // Saison sportive : de septembre à août (ex. « 2026-2027 »)
 export function currentSeason(d = new Date()) { const y = d.getFullYear(); return d.getMonth() >= 8 ? `${y}-${y + 1}` : `${y - 1}-${y}`; }
+
+// ----- Évaluations trimestrielles : 5 axes, 21 compétences notées de 1 à 5 -----
+export interface EvalAxis { key: string; label: string; color: string; skills: [string, string][]; }
+export const EVAL_AXES: EvalAxis[] = [
+  { key: "technique", label: "Technique", color: "#b8471f", skills: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["retour", "Retour de service"], ["volee", "Volée et jeu au filet"], ["deplacements", "Jeu de jambes et placements"]] },
+  { key: "tactique", label: "Tactique", color: "#2a6fb0", skills: [["lecture", "Lecture du jeu"], ["construction", "Construction du point"], ["variations", "Variations (hauteur, effets, directions)"], ["choix", "Choix des schémas en match"]] },
+  { key: "physique", label: "Physique", color: "#2f8f5b", skills: [["vitesse", "Vitesse et explosivité"], ["endurance", "Endurance"], ["coordination", "Coordination et équilibre"], ["souplesse", "Souplesse et prévention des blessures"]] },
+  { key: "mental", label: "Mental", color: "#7a4cc2", skills: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["combativite", "Combativité"], ["confiance", "Confiance et autonomie"]] },
+  { key: "attitude", label: "Attitude", color: "#8a6200", skills: [["assiduite", "Assiduité et ponctualité"], ["etat_esprit", "État d'esprit à l'entraînement"], ["esprit_equipe", "Esprit d'équipe et fair-play"]] },
+];
+export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
+export interface Evaluation { id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
+export interface MatchRow { id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
+
+export const TRIMESTER_MONTHS = ["", "septembre – décembre", "janvier – mars", "avril – août"];
+export const periodLabel = (season: string, t: number) => `Trimestre ${t} · saison ${season.replace("-", "/")}`;
+export function trimesterOf(d = new Date()) { const m = d.getMonth(); return m >= 8 ? 1 : m <= 2 ? 2 : 3; }
+// Trimestre précédent (pour comparer)
+export function previousPeriod(season: string, t: number) { if (t > 1) return { season, t: t - 1 }; const y = Number(season.slice(0, 4)); return { season: `${y - 1}-${y}`, t: 3 }; }
+// Une date de match appartient à quel trimestre ?
+export const inPeriod = (iso: string, season: string, t: number) => { const d = new Date(iso); return currentSeason(d) === season && trimesterOf(d) === t; };
+
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+export const axisAverage = (ev: Pick<Evaluation, "ratings"> | undefined, axis: EvalAxis) => mean(axis.skills.map(([k]) => ev?.ratings?.[k]).filter((v): v is number => !!v));
+export const overallAverage = (ev: Pick<Evaluation, "ratings"> | undefined) => mean(Object.values(ev?.ratings ?? {}).filter((v) => v > 0));
+export const ratedCount = (ev: Pick<Evaluation, "ratings"> | undefined) => Object.values(ev?.ratings ?? {}).filter((v) => v > 0).length;
+export const TOTAL_SKILLS = EVAL_AXES.reduce((n, a) => n + a.skills.length, 0);
+export const fmtAvg = (v: number) => (v ? v.toFixed(1).replace(".", ",") : "–");
+export const trend = (now: number, before: number) => (!now || !before ? "" : now > before + 0.05 ? "▲" : now < before - 0.05 ? "▼" : "=");
+// Tendance honnête : on ne compare que les compétences notées aux DEUX trimestres (sinon une évaluation partielle fausse la flèche).
+export function trendCommon(ev: Pick<Evaluation, "ratings"> | undefined, prev: Pick<Evaluation, "ratings"> | undefined, axis?: EvalAxis) {
+  if (!ev || !prev) return "";
+  const keys = (axis ? axis.skills.map(([k]) => k) : Object.keys(ev.ratings)).filter((k) => ev.ratings[k] && prev.ratings[k]);
+  if (!keys.length) return "";
+  return trend(mean(keys.map((k) => ev.ratings[k])), mean(keys.map((k) => prev.ratings[k])));
+}

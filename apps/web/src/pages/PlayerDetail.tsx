@@ -2,9 +2,10 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, patch, post } from "../api";
 import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { AXES, Consent, currentSeason, fmtDate, fullName, Goal, Player } from "../types";
 
-type Tab = "profil" | "accords" | "objectifs";
+type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
@@ -237,7 +238,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"]];
+  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)}>
@@ -253,6 +254,9 @@ export default function PlayerDetail() {
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "objectifs" && <Objectifs p={p} />}
+          {tab === "evaluations" && <Evaluations p={p} />}
+          {tab === "matchs" && <Matchs p={p} />}
+          {tab === "bulletins" && <Bulletins p={p} />}
         </div>
       </Page>
     </>

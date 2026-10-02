@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
 import { Centre, CoachHome } from "./pages/Coach";
+import Bulletin from "./pages/Bulletin";
 import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
@@ -25,8 +26,10 @@ export default function App() {
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
+        <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><FamilySpace /></Guard>} />
+        <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />
         <Route path="*" element={<p className="p-10 text-center">Page introuvable.</p>} />
       </Routes>
     </Layout>

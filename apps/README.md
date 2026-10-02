@@ -14,7 +14,7 @@ apps/
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Fondations : comptes sécurisés, rôles, base de données, Centre de compétition (fiches, accords des parents, invitations, objectifs), demandes de cours | ✅ fait |
-| 2 | Évaluations trimestrielles, matchs, bulletins imprimables, « Mon suivi » complet pour les familles | à faire |
+| 2 | Évaluations trimestrielles (21 compétences, toile d'araignée), matchs, bulletins imprimables / PDF, « Mon suivi » complet pour les familles | ✅ fait |
 | 3 | Vidéos (envoi, stockage privé) et analyses | à faire |
 | 4 | Studio d'analyse (dessin sur la vidéo, comparaison) | à faire |
 | 5 | Reprise de toutes les protections (RGPD) et bascule du site | à faire |
