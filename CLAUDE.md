@@ -53,3 +53,4 @@
 - Le coach crée les fiches des jeunes ; pas d'inscription libre pour les jeunes ni pour les coachs.
 - Explications au coach toujours simples, en français. Étapes livrées en pull requests séparées.
 - **Cloisonnement absolu** : un compte « demande de coaching » (adulte) n'a aucun accès au Centre de compétition jeunes (fiches, objectifs, évaluations, vidéos, accès). Le contrôleur des joueurs est réservé au coach et aux familles invitées ; le test « un adulte n'a AUCUN accès » doit rester vert et être étendu à chaque nouvelle route du Centre.
+- Serveur Vercel : les paquets de `apps/api` doivent rester compatibles « CommonJS » (Nest 11, `@nestjs/jwt` 11). Nest 12 est ESM seulement : Vercel n'accepte pas `require()` d'un module ESM (erreur `ERR_REQUIRE_ESM`). Avant de monter de version, tester avec `node --no-experimental-require-module` que `dist/app.factory` se charge.
