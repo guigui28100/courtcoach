@@ -22,8 +22,8 @@ apps/
 ## Ce qui est nouveau côté sécurité et vie privée
 - **Vrais comptes** : mots de passe protégés (Argon2), blocage après 5 essais ratés, déconnexion automatique, connexion qui se renouvelle toute seule.
 - **Le coach n'est jamais une inscription libre** : son compte est créé par le club (`npm run create-coach`).
-- **Les jeunes n'ont pas d'inscription libre** : le coach crée la fiche, enregistre l'accord écrit des parents, puis envoie un **lien personnel à usage unique** (7 jours) au parent (ou au jeune, si l'accord « compte en ligne » est enregistré).
-- **Cloisonnement** : une famille ne voit que son enfant ; jamais les notes privées du coach. Testé automatiquement (17 tests).
+- **Les jeunes n'ont pas d'inscription libre** : le coach crée la fiche, enregistre l'accord écrit des parents, puis **crée l'accès** (identifiant = e-mail du parent, **mot de passe provisoire** affiché une seule fois, à changer à la première connexion : le coach ne connaît jamais le mot de passe définitif). Alternative : un **lien d'invitation** à usage unique (7 jours). Le coach peut retirer un accès à tout moment.
+- **Cloisonnement** : une famille ne voit que son enfant ; jamais les notes privées du coach. Testé automatiquement (18 tests).
 - **Journal** des actions sensibles, **export** et **suppression** des données, **conservation 12 mois** signalée.
 
 ## Lancer en local (pour tester)

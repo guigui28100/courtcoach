@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res } from "
 import { Throttle } from "@nestjs/throttler";
 import { Response } from "express";
 import { AuthService } from "./auth.service";
-import { AcceptInvitationDto, LoginDto, SignupDto } from "./dto";
+import { AcceptInvitationDto, ChangePasswordDto, LoginDto, SignupDto } from "./dto";
 import { COOKIE_ACCESS, COOKIE_REFRESH, AuthUser } from "../common/auth.types";
-import { CurrentUser, Public } from "../common/decorators";
+import { AllowMustChange, CurrentUser, Public } from "../common/decorators";
 
 const secure = () => process.env.NODE_ENV === "production";
 const baseCookie = () => ({ httpOnly: true, secure: secure(), sameSite: "lax" as const });
@@ -13,7 +13,7 @@ function setSession(res: Response, t: { access: string; refresh: string; accessM
   res.cookie(COOKIE_ACCESS, t.access, { ...baseCookie(), path: "/", maxAge: t.accessMaxAgeMs });
   res.cookie(COOKIE_REFRESH, t.refresh, { ...baseCookie(), path: "/api/auth", maxAge: t.refreshMaxAgeMs });
 }
-const publicUser = (u: { id: string; email: string; role: string; firstName: string | null }) => ({ id: u.id, email: u.email, role: u.role, firstName: u.firstName });
+const publicUser = (u: { id: string; email: string; role: string; firstName: string | null; mustChangePassword?: boolean }) => ({ id: u.id, email: u.email, role: u.role, firstName: u.firstName, mustChangePassword: !!u.mustChangePassword });
 
 @Controller("auth")
 export class AuthController {
@@ -33,21 +33,28 @@ export class AuthController {
     return publicUser(user);
   }
 
-  @Public() @HttpCode(200) @Post("refresh")
+  @AllowMustChange() @Public() @HttpCode(200) @Post("refresh")
   async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     const { user, tokens } = await this.auth.refresh(req.cookies?.[COOKIE_REFRESH]);
     setSession(res, tokens);
     return publicUser(user);
   }
 
-  @Public() @HttpCode(204) @Post("logout")
+  @AllowMustChange() @Public() @HttpCode(204) @Post("logout")
   async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
     await this.auth.logout(req.cookies?.[COOKIE_REFRESH]);
     res.clearCookie(COOKIE_ACCESS, { ...baseCookie(), path: "/" });
     res.clearCookie(COOKIE_REFRESH, { ...baseCookie(), path: "/api/auth" });
   }
 
-  @Get("me") me(@CurrentUser() u: AuthUser) { return this.auth.me(u.id); }
+  @AllowMustChange() @Get("me") me(@CurrentUser() u: AuthUser) { return this.auth.me(u.id); }
+
+  @AllowMustChange() @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("change-password")
+  async changePassword(@CurrentUser() u: AuthUser, @Body() dto: ChangePasswordDto, @Res({ passthrough: true }) res: Response) {
+    const { user, tokens } = await this.auth.changePassword(u.id, dto.currentPassword, dto.newPassword, dto.acceptPolicy);
+    setSession(res, tokens);
+    return publicUser({ ...user, mustChangePassword: false });
+  }
 
   @Public() @Throttle({ default: { limit: 20, ttl: 60_000 } }) @Get("invitations/:token")
   preview(@Param("token") token: string) { return this.auth.previewInvitation(token); }

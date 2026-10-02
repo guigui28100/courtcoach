@@ -22,3 +22,9 @@ export class AcceptInvitationDto {
   @IsOptional() @Transform(trim) @IsString() @MaxLength(60) firstName?: string;
   @IsBoolean() @Equals(true, { message: "Il faut accepter la politique de confidentialité." }) acceptPolicy: boolean;
 }
+
+export class ChangePasswordDto {
+  @IsString() @MaxLength(128) currentPassword: string;
+  @IsString() @MinLength(10, { message: "Le nouveau mot de passe doit faire au moins 10 caractères." }) @MaxLength(128) newPassword: string;
+  @IsOptional() @IsBoolean() acceptPolicy?: boolean;
+}

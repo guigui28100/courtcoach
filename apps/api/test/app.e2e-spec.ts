@@ -156,6 +156,36 @@ describe("CourtCoach API", () => {
     expect(view.body.coachNotes).toBeUndefined();
   });
 
+  it("le coach crée un accès (identifiant + mot de passe provisoire) que la famille doit changer", async () => {
+    const p4 = await coach.post("/api/players").set(ORIGIN).send({ firstName: "Zoé" }).expect(201);
+    await coach.post(`/api/players/${p4.body.id}/access`).set(ORIGIN).send({ email: "jeune-zoe@exemple.fr", role: "YOUTH" }).expect(403); // pas d'accord « compte » enregistré
+    const access = await coach.post(`/api/players/${p4.body.id}/access`).set(ORIGIN).send({ email: "parent-zoe@exemple.fr", role: "GUARDIAN" }).expect(201);
+    expect(access.body.temporaryPassword).toHaveLength(14);
+    const fam = agent();
+    await fam.post("/api/auth/login").set(ORIGIN).send({ email: "parent-zoe@exemple.fr", password: access.body.temporaryPassword }).expect(200);
+    const me = await fam.get("/api/auth/me").expect(200);
+    expect(me.body.mustChangePassword).toBe(true);
+    await fam.get(`/api/players/${p4.body.id}`).expect(403); // bloqué tant que le mot de passe n'est pas changé
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: access.body.temporaryPassword, acceptPolicy: true }).expect(400);
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: "nouveau-mot-de-passe-1", acceptPolicy: false }).expect(400);
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: "mauvais-mot-de-passe", newPassword: "nouveau-mot-de-passe-1", acceptPolicy: true }).expect(401);
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: "nouveau-mot-de-passe-1", acceptPolicy: true }).expect(200);
+    await fam.get(`/api/players/${p4.body.id}`).expect(200);
+    await agent().post("/api/auth/login").set(ORIGIN).send({ email: "parent-zoe@exemple.fr", password: access.body.temporaryPassword }).expect(401); // l'ancien mot de passe ne marche plus
+    // même e-mail pour un 2e enfant : accès ajouté, pas de nouveau mot de passe
+    const p5 = await coach.post("/api/players").set(ORIGIN).send({ firstName: "Tom" }).expect(201);
+    const again = await coach.post(`/api/players/${p5.body.id}/access`).set(ORIGIN).send({ email: "parent-zoe@exemple.fr", role: "GUARDIAN" }).expect(201);
+    expect(again.body).toMatchObject({ existingAccount: true });
+    expect(again.body.temporaryPassword).toBeUndefined();
+    expect((await fam.get("/api/players").expect(200)).body).toHaveLength(2);
+    // un adulte ne peut pas créer d'accès ; le coach retire l'accès
+    await adult.post(`/api/players/${p4.body.id}/access`).set(ORIGIN).send({ email: "x@exemple.fr", role: "GUARDIAN" }).expect(403);
+    const list = await coach.get(`/api/players/${p4.body.id}/access`).expect(200);
+    await coach.delete(`/api/players/${p4.body.id}/access/${list.body[0].userId}`).set(ORIGIN).expect(204);
+    await fam.get(`/api/players/${p4.body.id}`).expect(404);
+    await fam.get(`/api/players/${p5.body.id}`).expect(200); // il garde l'accès à son autre enfant
+  });
+
   it("le renouvellement de session change le jeton, et un ancien jeton réutilisé ferme la session", async () => {
     const s = agent();
     const login = await s.post("/api/auth/login").set(ORIGIN).send({ email: "coach@exemple.fr", password: PASSWORD }).expect(200);

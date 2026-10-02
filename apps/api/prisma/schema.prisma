@@ -53,6 +53,7 @@ model User {
   createdAt     DateTime  @default(now())
   lastLoginAt   DateTime?
   failedLogins  Int       @default(0)
+  mustChangePassword Boolean @default(false) // mot de passe provisoire donné par le coach : à changer à la première connexion
   lockedUntil   DateTime?
   deletedAt     DateTime?
 

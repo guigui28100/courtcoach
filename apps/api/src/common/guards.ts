@@ -16,11 +16,16 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException();
     try {
       const payload = await this.jwt.verifyAsync(token);
-      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, email: true, deletedAt: true } });
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, email: true, deletedAt: true, mustChangePassword: true } });
       if (!user || user.deletedAt) throw new UnauthorizedException();
       req.user = { id: user.id, role: user.role, email: user.email };
+      // Mot de passe provisoire : on ne peut rien faire d'autre que le changer.
+      if (user.mustChangePassword && !this.reflector.getAllAndOverride<boolean>("allowMustChange", [ctx.getHandler(), ctx.getClass()])) {
+        throw new ForbiddenException({ message: "Tu dois d'abord choisir ton mot de passe.", code: "PASSWORD_CHANGE_REQUIRED" });
+      }
       return true;
-    } catch {
+    } catch (e) {
+      if (e instanceof ForbiddenException) throw e;
       throw new UnauthorizedException();
     }
   }

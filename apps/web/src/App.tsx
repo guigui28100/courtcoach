@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
 import { Centre, CoachHome } from "./pages/Coach";
+import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
 import Invitation from "./pages/Invitation";
@@ -15,6 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/connexion" element={<Connexion />} />
+        <Route path="/mot-de-passe" element={<ChangePassword />} />
         <Route path="/invitation/:token" element={<Invitation />} />
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/autorisation" element={<Authorization />} />

@@ -11,6 +11,7 @@ export function Guard({ roles, children }: { roles: Role[]; children: ReactNode 
   const loc = useLocation();
   if (loading) return <p className="p-8 text-center text-muted">Chargement…</p>;
   if (!me) return <Navigate to="/connexion" state={{ from: loc.pathname }} replace />;
+  if (me.mustChangePassword) return <Navigate to="/mot-de-passe" replace />;
   if (!roles.includes(me.role)) return <Navigate to={homeFor(me.role)} replace />;
   return <>{children}</>;
 }
