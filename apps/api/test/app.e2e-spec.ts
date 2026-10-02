@@ -244,6 +244,12 @@ describe("CourtCoach API", () => {
     delete process.env.SETUP_TOKEN;
   });
 
+  it("la vérification de santé répond sans rien révéler", async () => {
+    const r = await http.get("/api/health").expect(200);
+    expect(r.body).toMatchObject({ ok: true, connexion: "ok", tables: "ok" });
+    expect(JSON.stringify(r.body)).not.toMatch(/postgres|password|localhost/i);
+  });
+
   it("le journal garde les actions sensibles", async () => {
     const logs = await prisma.auditLog.findMany();
     expect(logs.map((l) => l.action)).toEqual(expect.arrayContaining(["create", "erase", "invite", "consent"]));

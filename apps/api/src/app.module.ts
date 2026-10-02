@@ -7,6 +7,7 @@ import { JwtAuthGuard, OriginGuard, RolesGuard } from "./common/guards";
 import { LessonsModule } from "./lessons/lessons.module";
 import { PlayersModule } from "./players/players.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { HealthController } from "./health.controller";
 import { SetupController } from "./setup/setup.controller";
 
 @Module({
@@ -14,7 +15,7 @@ import { SetupController } from "./setup/setup.controller";
     ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 120 }], skipIf: () => process.env.NODE_ENV === "test" && !process.env.TEST_THROTTLE }), // 120 requêtes par minute et par adresse
     PrismaModule, CommonModule, AuthModule, PlayersModule, LessonsModule,
   ],
-  controllers: [SetupController],
+  controllers: [SetupController, HealthController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: OriginGuard },
