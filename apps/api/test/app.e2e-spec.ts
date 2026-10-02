@@ -227,6 +227,23 @@ describe("CourtCoach API", () => {
     await guardian.get(`/api/players/${playerId}`).expect(404);
   });
 
+  it("l'installation ne crée un coach qu'une seule fois, avec la clé secrète", async () => {
+    process.env.SETUP_TOKEN = "cle-d-installation-longue-et-secrete";
+    // un coach existe déjà dans ce test : l'installation est fermée
+    expect((await http.get("/api/setup/status").expect(200)).body.available).toBe(false);
+    await http.post("/api/setup/coach").set(ORIGIN).send({ token: process.env.SETUP_TOKEN, email: "pirate@exemple.fr", password: "un-mot-de-passe-de-12+" }).expect(404);
+    await prisma.invitation.deleteMany(); await prisma.user.deleteMany({ where: { role: Role.COACH } });
+    expect((await http.get("/api/setup/status").expect(200)).body.available).toBe(true);
+    await http.post("/api/setup/coach").set(ORIGIN).send({ token: "mauvaise-cle-mauvaise-cle", email: "pirate@exemple.fr", password: "un-mot-de-passe-de-12+" }).expect(400);
+    await http.post("/api/setup/coach").set(ORIGIN).send({ token: process.env.SETUP_TOKEN, email: "vrai-coach@exemple.fr", password: "court" }).expect(400);
+    await http.post("/api/setup/coach").set(ORIGIN).send({ token: process.env.SETUP_TOKEN, email: "vrai-coach@exemple.fr", password: "un-mot-de-passe-de-12+" }).expect(201);
+    expect((await http.get("/api/setup/status").expect(200)).body.available).toBe(false); // se referme tout seul
+    await http.post("/api/setup/coach").set(ORIGIN).send({ token: process.env.SETUP_TOKEN, email: "autre@exemple.fr", password: "un-mot-de-passe-de-12+" }).expect(404);
+    const login = await agent().post("/api/auth/login").set(ORIGIN).send({ email: "vrai-coach@exemple.fr", password: "un-mot-de-passe-de-12+" }).expect(200);
+    expect(login.body.role).toBe("COACH");
+    delete process.env.SETUP_TOKEN;
+  });
+
   it("le journal garde les actions sensibles", async () => {
     const logs = await prisma.auditLog.findMany();
     expect(logs.map((l) => l.action)).toEqual(expect.arrayContaining(["create", "erase", "invite", "consent"]));
