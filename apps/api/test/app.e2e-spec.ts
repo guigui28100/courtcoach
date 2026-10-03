@@ -4,6 +4,7 @@ import request from "supertest";
 import { Role } from "@prisma/client";
 import { createApp } from "../src/app.factory";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { sha256 } from "../src/auth/auth.service";
 
 process.env.NODE_ENV = "test";
 process.env.WEB_ORIGIN = "http://localhost:5173";
@@ -59,6 +60,7 @@ describe("CourtCoach API", () => {
     const cookies = (r.headers["set-cookie"] as unknown as string[]).join(";");
     expect(cookies).toMatch(/HttpOnly/i);
     expect(cookies).toMatch(/SameSite=Lax/i);
+    expect(cookies).toMatch(/cc_rt=[^;]*;[^,]*Max-Age=1800/i); // la session se ferme après 30 minutes sans activité (côté serveur aussi)
   });
 
   it("bloque les requêtes venant d'un autre site (CSRF)", async () => {
@@ -206,12 +208,20 @@ describe("CourtCoach API", () => {
     await fam.get(`/api/players/${p5.body.id}`).expect(200); // il garde l'accès à son autre enfant
   });
 
-  it("le renouvellement de session change le jeton, et un ancien jeton réutilisé ferme la session", async () => {
-    const s = agent();
-    const login = await s.post("/api/auth/login").set(ORIGIN).send({ email: "coach@exemple.fr", password: PASSWORD }).expect(200);
-    const rt = (login.headers["set-cookie"] as unknown as string[]).find((c) => c.startsWith("cc_rt="))!.split(";")[0];
-    await request(app.getHttpServer()).post("/api/auth/refresh").set(ORIGIN).set("Cookie", rt).expect(200);
-    await request(app.getHttpServer()).post("/api/auth/refresh").set(ORIGIN).set("Cookie", rt).expect(401);
+  it("renouvellement de session : deux demandes en même temps ne déconnectent pas ; un vieux jeton réutilisé plus tard ferme tout", async () => {
+    const cookieOf = (r: request.Response) => (r.headers["set-cookie"] as unknown as string[]).find((c) => c.startsWith("cc_rt="))!.split(";")[0];
+    const refresh = (rt: string) => request(app.getHttpServer()).post("/api/auth/refresh").set(ORIGIN).set("Cookie", rt);
+    const login = await agent().post("/api/auth/login").set(ORIGIN).send({ email: "coach@exemple.fr", password: PASSWORD }).expect(200);
+    const rt1 = cookieOf(login);
+    const r2 = await refresh(rt1).expect(200); const rt2 = cookieOf(r2);
+    expect(rt2).not.toBe(rt1); // le jeton change à chaque renouvellement
+    await refresh(rt1).expect(401); // deuxième onglet / requête simultanée : refusé…
+    const r3 = await refresh(rt2).expect(200); const rt3 = cookieOf(r3); // …mais la session du premier reste valable
+    // jeton réutilisé longtemps après son remplacement = vol possible : toutes les sessions sont fermées
+    const raw = decodeURIComponent(rt2.split("=")[1]);
+    await prisma.refreshToken.updateMany({ where: { tokenHash: sha256(raw) }, data: { revokedAt: new Date(Date.now() - 60_000) } });
+    await refresh(rt2).expect(401);
+    await refresh(rt3).expect(401);
   });
 
   it("droit à l'effacement et à l'export", async () => {

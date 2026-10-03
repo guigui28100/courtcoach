@@ -22,12 +22,21 @@ async function parse(res: Response) {
   return data;
 }
 
+// Une seule demande de renouvellement à la fois : si plusieurs requêtes échouent en même temps (connexion expirée),
+// elles attendent toutes le même renouvellement au lieu d'en lancer chacune un (ce qui fermerait la session).
+let refreshing: Promise<boolean> | null = null;
+function refreshOnce() {
+  refreshing ??= raw("/auth/refresh", { method: "POST" }).then((r) => r.ok).catch(() => false).finally(() => { refreshing = null; });
+  return refreshing;
+}
+
 export async function api<T = any>(path: string, init: RequestInit = {}): Promise<T> {
   let res = await raw(path, init);
-  // Connexion expirée : on tente un renouvellement discret, puis on rejoue la demande une fois.
-  if (res.status === 401 && !path.startsWith("/auth/")) {
-    const r = await raw("/auth/refresh", { method: "POST" });
-    if (r.ok) res = await raw(path, init);
+  // Connexion expirée : renouvellement discret, puis on rejoue la demande une fois. On la rejoue même si le renouvellement
+  // a échoué : un autre onglet a pu renouveler la session entre-temps (les cookies sont partagés).
+  if (res.status === 401 && (!path.startsWith("/auth/") || path === "/auth/me")) {
+    await refreshOnce();
+    res = await raw(path, init);
   }
   return parse(res) as Promise<T>;
 }

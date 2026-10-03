@@ -47,3 +47,7 @@
 11. **Sécurité du service en ligne** (à exiger de l'hébergeur ou du prestataire) : mots de passe protégés par un algorithme dédié (Argon2/bcrypt), double authentification pour le coach, limitation des tentatives de connexion, accès aux vidéos par liens privés à durée limitée, chaque famille ne voyant que ses propres données (cloisonnement strict), journal des accès, sauvegardes chiffrées, mises à jour régulières, test d'intrusion avant l'ouverture.
 12. **Comptes de coachs** : créés ou validés uniquement par le club ; limiter le nombre de personnes qui voient les dossiers de mineurs, avec un engagement de confidentialité signé.
 13. **Charte de bonne pratique avec les mineurs** : échanges uniquement via l'application, jamais en messagerie privée personnelle ; en cas de signalement, une personne référente au club.
+
+
+## Revue de sécurité de la nouvelle version
+Voir `apps/SECURITE.md` (contrôles faits, corrections, et liste de ce qui reste : supprimer `SETUP_TOKEN`, double authentification du coach, mot de passe oublié, sauvegardes).

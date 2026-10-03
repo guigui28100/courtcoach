@@ -7,9 +7,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 
 const ACCESS_TTL_S = 15 * 60;
-const REFRESH_TTL_MS = 30 * 24 * 3600 * 1000;
+const REFRESH_TTL_MS = 30 * 60 * 1000; // la session se ferme après 30 minutes sans activité (chaque renouvellement repart pour 30 minutes)
 const MAX_FAILS = 5;
 const LOCK_MS = 15 * 60 * 1000;
+const REUSE_GRACE_MS = 10_000;
 export const POLICY_VERSION = "2026-10";
 
 export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -61,8 +62,9 @@ export class AuthService {
     if (!raw) throw new UnauthorizedException();
     const row = await this.prisma.refreshToken.findUnique({ where: { tokenHash: sha256(raw) }, include: { user: true } });
     if (!row || row.revokedAt || row.expiresAt < new Date() || row.user.deletedAt) {
-      // Jeton déjà utilisé = vol possible : on ferme toutes les sessions de cette personne.
-      if (row && row.revokedAt) await this.prisma.refreshToken.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      // Jeton déjà utilisé il y a plus de 10 secondes = vol possible : on ferme toutes les sessions de cette personne.
+      // (Dans les 10 secondes, c'est presque sûrement un deuxième onglet ou une deuxième requête en même temps : on refuse sans tout fermer.)
+      if (row && row.revokedAt && Date.now() - row.revokedAt.getTime() > REUSE_GRACE_MS) await this.prisma.refreshToken.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } });
       throw new UnauthorizedException();
     }
     await this.prisma.refreshToken.update({ where: { id: row.id }, data: { revokedAt: new Date() } });
