@@ -11,6 +11,25 @@ const COLORS: [string, string][] = [["#e11d48", "Rouge"], ["#facc15", "Jaune"], 
 const TOOLS: [Tool, string][] = [["line", "Ligne"], ["arrow", "Flèche"], ["circle", "Cercle"], ["free", "Trait libre"], ["angle", "Angle (3 points)"]];
 const FPS = 30; // une « image » = 1/30 de seconde (la plupart des téléphones filment à 30 images par seconde)
 
+// Fabrique un JPEG à partir du dessin. Certains navigateurs (protection de la vie privée, Safari…) ne répondent pas à toBlob :
+// après 4 secondes, on passe par toDataURL.
+function jpeg(c: HTMLCanvasElement, q: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    let done = false;
+    const viaUrl = () => {
+      if (done) return; done = true;
+      try {
+        const b64 = c.toDataURL("image/jpeg", q).split(",")[1] ?? "";
+        const bin = atob(b64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        resolve(bytes.length ? new Blob([bytes], { type: "image/jpeg" }) : null);
+      } catch { resolve(null); }
+    };
+    const t = setTimeout(viaUrl, 4000);
+    try { c.toBlob((b) => { if (done) return; done = true; clearTimeout(t); resolve(b); }, "image/jpeg", q); } catch { clearTimeout(t); viaUrl(); }
+  });
+}
+
 const angleOf = (a: Pt, b: Pt, c: Pt) => {
   const v1: Pt = [a[0] - b[0], a[1] - b[1]], v2: Pt = [c[0] - b[0], c[1] - b[1]];
   const n = Math.hypot(...v1) * Math.hypot(...v2);
@@ -62,6 +81,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState("");
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => { box.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, []); // l'éditeur apparaît à l'écran dès la capture
   const W = base.width, H = base.height;
@@ -100,18 +120,19 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
 
   async function save() {
     if (busy) return;
-    setErr(""); setBusy(true);
+    setErr(""); setBusy(true); setStep("Création de l'image…");
     try {
       const out = document.createElement("canvas"); out.width = W; out.height = H; paint(out, shapes);
       let blob: Blob | null = null;
       for (const [scale, q] of [[1, 0.85], [1, 0.7], [0.75, 0.7], [0.55, 0.65]] as const) {
         const c = document.createElement("canvas"); c.width = Math.round(W * scale); c.height = Math.round(H * scale); c.getContext("2d")!.drawImage(out, 0, 0, c.width, c.height);
-        blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", q));
+        blob = await jpeg(c, q);
         if (blob && blob.size <= 650 * 1024) break;
       }
       if (!blob) throw new Error("Impossible de créer l'image. Essaie un autre navigateur (Chrome ou Safari à jour).");
-      await Promise.race([onSave(blob, note), new Promise((_, no) => setTimeout(() => no(new Error("L'enregistrement prend trop de temps. Vérifie ta connexion puis réessaie.")), 40000))]);
-    } catch (x) { setErr((x as Error).message || "L'enregistrement a échoué."); setBusy(false); }
+      setStep("Envoi au serveur…");
+      await onSave(blob, note);
+    } catch (x) { setErr(((x as Error).name === "AbortError" ? "Le serveur ne répond pas (30 secondes). Réessaie dans un instant." : (x as Error).message) || "L'enregistrement a échoué."); setBusy(false); }
   }
 
   const pending = draft?.tool === "angle" ? 3 - draft.pts.length : null;
@@ -130,7 +151,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDraft(null)} />
       <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
         <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" enterKeyHint="done" /></div>
-        {busy && <p role="status" className="m-0 font-bold">Enregistrement de l'image…</p>}
+        {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
         <Err msg={err} />
         <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
       </form>
@@ -199,7 +220,9 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
     setFrame(c);
   }
   async function save(blob: Blob, note: string) {
-    await api(`/videos/${v.id}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" } });
+    const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 30000);
+    try { await api(`/videos/${v.id}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
+    finally { clearTimeout(timer); }
     setFrame(null); setDone("Image enregistrée ✓ : elle est dans « Images de l'analyse » ci-dessous."); onChanged();
     setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   }
