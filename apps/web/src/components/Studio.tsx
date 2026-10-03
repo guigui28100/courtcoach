@@ -99,6 +99,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
   }
 
   async function save() {
+    if (busy) return;
     setErr(""); setBusy(true);
     try {
       const out = document.createElement("canvas"); out.width = W; out.height = H; paint(out, shapes);
@@ -108,9 +109,9 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
         blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", q));
         if (blob && blob.size <= 650 * 1024) break;
       }
-      if (!blob) throw new Error("Impossible de créer l'image.");
-      await onSave(blob, note);
-    } catch (x) { setErr((x as Error).message); setBusy(false); }
+      if (!blob) throw new Error("Impossible de créer l'image. Essaie un autre navigateur (Chrome ou Safari à jour).");
+      await Promise.race([onSave(blob, note), new Promise((_, no) => setTimeout(() => no(new Error("L'enregistrement prend trop de temps. Vérifie ta connexion puis réessaie.")), 40000))]);
+    } catch (x) { setErr((x as Error).message || "L'enregistrement a échoué."); setBusy(false); }
   }
 
   const pending = draft?.tool === "angle" ? 3 - draft.pts.length : null;
@@ -127,9 +128,12 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
       {tool === "angle" && <p className="hint m-0">{pending === null ? "Clique 3 points : le début d'un segment, le sommet de l'angle (l'articulation), puis la fin du second segment. L'angle s'affiche en degrés." : `Encore ${pending} point${pending > 1 ? "s" : ""} à cliquer.`}</p>}
       <canvas ref={cv} width={W} height={H} role="img" aria-label="Image de la vidéo à annoter, avec les tracés du coach" className="w-full touch-none rounded-xl bg-black" style={{ cursor: "crosshair", maxHeight: "70vh", objectFit: "contain" }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDraft(null)} />
-      <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" /></div>
-      <Err msg={err} />
-      <div className="flex flex-wrap gap-2"><button type="button" className="btn-clay" disabled={busy} onClick={save}>{busy ? "Enregistrement…" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel}>Annuler</button></div>
+      <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
+        <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" enterKeyHint="done" /></div>
+        {busy && <p role="status" className="m-0 font-bold">Enregistrement de l'image…</p>}
+        <Err msg={err} />
+        <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
+      </form>
     </div>
   );
 }
@@ -180,6 +184,8 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
   const [frame, setFrame] = useState<HTMLCanvasElement | null>(null);
   const [cmp, setCmp] = useState(false);
   const [err, setErr] = useState("");
+  const [done, setDone] = useState("");
+  const gallery = useRef<HTMLElement>(null);
   useEffect(() => { if (vid.current) vid.current.playbackRate = speed; }, [speed]);
   const seek = (d: number) => { const el = vid.current; if (!el) return; el.pause(); el.currentTime = Math.max(0, Math.min(el.duration || 1e9, el.currentTime + d)); };
 
@@ -194,7 +200,8 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
   }
   async function save(blob: Blob, note: string) {
     await api(`/videos/${v.id}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" } });
-    setFrame(null); onChanged();
+    setFrame(null); setDone("Image enregistrée ✓ : elle est dans « Images de l'analyse » ci-dessous."); onChanged();
+    setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   }
   const kb = useMemo(() => v.images.length, [v.images]);
 
@@ -209,14 +216,15 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
         {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
       </div>
       <div className="flex flex-wrap gap-2">
-        <button className="btn-clay btn-sm" onClick={capture} disabled={!!frame}>📸 Capturer l'image et annoter</button>
+        <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
         <button className="btn-outline btn-sm" aria-expanded={cmp} onClick={() => setCmp(!cmp)}>Comparer avec une autre vidéo</button>
       </div>
       <Err msg={err} />
       {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={save} />}
       {cmp && <Compare v={v} onClose={() => setCmp(false)} />}
-      <section className="grid gap-2" aria-label="Images de l'analyse">
+      <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
         <h3 className="m-0 text-base">Images de l'analyse ({kb}/8)</h3>
+        {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
         {v.images.length === 0 ? <p className="hint m-0">Fige une image de la vidéo, dessine dessus (ligne, flèche, angle…) puis enregistre-la : elle s'ajoute à l'analyse envoyée à l'élève.</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
