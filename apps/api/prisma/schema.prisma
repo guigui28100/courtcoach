@@ -224,9 +224,24 @@ model Video {
   analyses Analysis[]
   messages Message[]
   chunks   VideoChunk[]
+  images   VideoImage[]
 
   @@index([ownerId])
   @@index([playerId])
+}
+
+// Image annotée par le coach (studio d'analyse) : suit la vidéo, donc supprimée avec elle (12 mois, retrait de l'accord image…).
+model VideoImage {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  data      Bytes
+  mimeType  String
+  sizeBytes Int
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([videoId])
 }
 
 // Le fichier vidéo est gardé dans la base (région Europe), en morceaux de 2 Mo :

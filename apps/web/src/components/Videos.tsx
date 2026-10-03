@@ -111,6 +111,11 @@ export function Analysis({ v }: { v: VideoDetail }) {
       {a.strengths && <p className="m-0"><strong>Points forts : </strong>{a.strengths}</p>}
       {a.improve && <p className="m-0"><strong>À améliorer : </strong>{a.improve}</p>}
       {v.linkedGoals.length > 0 && <p className="m-0"><strong>Objectifs travaillés : </strong>{v.linkedGoals.map((g) => g.title).join(" ; ")}</p>}
+      {v.images.length > 0 && (
+        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2" aria-label="Images annotées par le coach">
+          {v.images.map((i) => <li key={i.id} className="grid gap-1"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée par le coach"} className="w-full rounded-lg" loading="lazy" />{i.note && <small>{i.note}</small>}</li>)}
+        </ul>
+      )}
       {a.exercises.length > 0 && <div><strong>Exercices proposés :</strong><ul className="m-0 mt-1 pl-5">{a.exercises.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
     </section>
   );

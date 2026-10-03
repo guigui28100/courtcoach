@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, post, put } from "../api";
 import { Empty, Err, Field, Page, PageHead } from "../components/ui";
+import { VideoStudio } from "../components/Studio";
 import { Thread } from "../components/Videos";
 import { AXES, fmtDate, fmtMo, VideoDetail } from "../types";
 
@@ -44,7 +45,7 @@ export default function VideoReview() {
         <Link to={centre && v.player ? `/coach/centre/${v.player.id}` : "/coach"} className="font-bold text-ink underline">← Retour</Link>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
-            <video controls playsInline preload="metadata" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
+            <VideoStudio v={v} onChanged={load} />
             {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
             <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
             <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}` : "/coach"); } }}>Supprimer la vidéo</button>

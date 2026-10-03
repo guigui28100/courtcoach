@@ -17,6 +17,14 @@ export function sniffVideo(head: Buffer): string | null {
   return null;
 }
 
+const MAX_IMAGES = 8;
+const MAX_IMAGE_BYTES = 700 * 1024;
+function sniffImage(b: Buffer): string | null {
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b.length > 8 && b.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
+  return null;
+}
+
 @Injectable()
 export class VideosService {
   constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
@@ -36,6 +44,11 @@ export class VideosService {
     return !!(await this.prisma.consent.findFirst({ where: { playerId, kind: ConsentKind.IMAGE, withdrawnAt: null } }));
   }
 
+  private async usedBytes() {
+    const [v, i] = await Promise.all([this.prisma.video.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoImage.aggregate({ _sum: { sizeBytes: true } })]);
+    return (v._sum.sizeBytes ?? 0) + (i._sum.sizeBytes ?? 0);
+  }
+
   // ----- Envoi en trois temps : annoncer, envoyer les morceaux, terminer -----
   async create(user: AuthUser, dto: CreateVideoDto) {
     let ownerId: string | null = null, playerId: string | null = null;
@@ -51,7 +64,7 @@ export class VideosService {
       if (!(await this.imageConsent(dto.playerId))) throw new ForbiddenException("L'accord des parents « droit à l'image » n'est pas enregistré : aucune vidéo ne peut être ajoutée.");
       playerId = dto.playerId;
     }
-    const used = (await this.prisma.video.aggregate({ _sum: { sizeBytes: true } }))._sum.sizeBytes ?? 0;
+    const used = await this.usedBytes();
     if (used + dto.sizeBytes > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein. Préviens le coach.", 507);
     const chunkCount = Math.ceil(dto.sizeBytes / CHUNK_SIZE);
     const v = await this.prisma.video.create({ data: { title: dto.title, shot: dto.shot, question: dto.question ?? "", sizeBytes: dto.sizeBytes, chunkCount, ownerId, playerId } });
@@ -103,7 +116,7 @@ export class VideosService {
   }
 
   // ----- Listes -----
-  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; _count?: { messages: number } }, user?: AuthUser) {
+  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
     const coach = user?.role === Role.COACH;
     const visible = a && (coach || a.sentAt);
@@ -114,13 +127,14 @@ export class VideosService {
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a) : null,
+      images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
       messageCount: v._count?.messages ?? 0,
     };
   }
   private analysisOut(a: any) {
     return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId) };
   }
-  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, _count: { select: { messages: true } } };
+  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, _count: { select: { messages: true } } };
 
   async list(user: AuthUser) {
     if (user.role === Role.COACH) await this.purgeExpired();
@@ -132,7 +146,7 @@ export class VideosService {
   }
 
   async storage() {
-    const used = (await this.prisma.video.aggregate({ _sum: { sizeBytes: true }, _count: true }))._sum.sizeBytes ?? 0;
+    const used = await this.usedBytes();
     return { usedBytes: used, quotaBytes: quotaBytes(), maxVideoBytes: MAX_VIDEO_BYTES };
   }
 
@@ -195,6 +209,39 @@ export class VideosService {
       this.prisma.video.update({ where: { id }, data: { status: VideoStatus.ANALYSED, ...(a.sentAt ? {} : { seenAt: null }) } }),
     ]);
     await this.audit.log(user.id, "analysis-send", "Video", id);
+  }
+
+  // ----- Images annotées (studio d'analyse) : ajoutées par le coach, visibles par la personne concernée une fois l'analyse envoyée -----
+  private async imageVisible(user: AuthUser, videoId: string) {
+    await this.load(user, videoId);
+    if (user.role === Role.COACH) return;
+    if (!(await this.prisma.analysis.findFirst({ where: { videoId, sentAt: { not: null } } }))) throw new NotFoundException("Image introuvable");
+  }
+  async addImage(user: AuthUser, id: string, body: unknown, note?: string) {
+    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    const v = await this.prisma.video.findUnique({ where: { id } });
+    if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Image invalide");
+    if (body.length > MAX_IMAGE_BYTES) throw new BadRequestException("Image trop lourde (700 Ko maximum).");
+    const mime = sniffImage(body);
+    if (!mime) throw new BadRequestException("Image invalide (JPEG ou PNG).");
+    if ((await this.prisma.videoImage.count({ where: { videoId: id } })) >= MAX_IMAGES) throw new BadRequestException(`${MAX_IMAGES} images au maximum par vidéo : supprime-en une.`);
+    const used = await this.usedBytes();
+    if (used + body.length > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein.", 507);
+    const img = await this.prisma.videoImage.create({ data: { videoId: id, data: Uint8Array.from(body), mimeType: mime, sizeBytes: body.length, note: (note ?? "").slice(0, 300) } });
+    await this.audit.log(user.id, "image-add", "Video", id);
+    return { id: img.id, note: img.note };
+  }
+  async imageFile(user: AuthUser, id: string, imageId: string) {
+    await this.imageVisible(user, id);
+    const img = await this.prisma.videoImage.findFirst({ where: { id: imageId, videoId: id } });
+    if (!img) throw new NotFoundException("Image introuvable");
+    return { data: Buffer.from(img.data), mime: img.mimeType };
+  }
+  async removeImage(user: AuthUser, id: string, imageId: string) {
+    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    const r = await this.prisma.videoImage.deleteMany({ where: { id: imageId, videoId: id } });
+    if (!r.count) throw new NotFoundException("Image introuvable");
   }
 
   // ----- Suppression -----
