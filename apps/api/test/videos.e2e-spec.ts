@@ -150,6 +150,45 @@ describe("Vidéos et analyses", () => {
     await A.coach.post(`/api/videos/${adultVideo}/analysis/send`).set(ORIGIN).expect(204);
   });
 
+  it("studio : seul le coach ajoute des images annotées ; la personne concernée les voit une fois l'analyse envoyée", async () => {
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(2000, 3)]);
+    const put = (who: any, id: string, body: Buffer, note = "Bras trop bas") => who.post(`/api/videos/${id}/images`).query({ note }).set(ORIGIN).set("Content-Type", "application/octet-stream").send(body);
+    // vidéo d'adulte dont l'analyse n'est PAS envoyée
+    const draft = await upload(A.adultB, {}, fakeMp4(5000)); const vid = (draft as any).vid as string;
+    await put(A.adultB, vid, jpeg).expect(403); // l'adhérent ne peut pas ajouter
+    await put(A.par1, vid, jpeg).expect(403);
+    await put(A.coach, vid, Buffer.alloc(500, 1)).expect(400); // pas une image
+    await put(A.coach, vid, Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(800 * 1024)])).expect(400); // trop lourde
+    const ok = await put(A.coach, vid, jpeg).expect(201);
+    expect((await A.coach.get(`/api/videos/${vid}`).expect(200)).body.images).toHaveLength(1); // le coach voit ses images même sans analyse
+    await A.adultB.get(`/api/videos/${vid}/images/${ok.body.id}`).expect(404); // brouillon : invisible
+    expect((await A.adultB.get(`/api/videos/${vid}`).expect(200)).body.images).toEqual([]);
+    await A.coach.put(`/api/videos/${vid}/analysis`).set(ORIGIN).send({ observation: "Voir les images" }).expect(200);
+    await A.coach.post(`/api/videos/${vid}/analysis/send`).set(ORIGIN).expect(204);
+    const img = await A.adultB.get(`/api/videos/${vid}/images/${ok.body.id}`).expect(200);
+    expect(img.headers["content-type"]).toBe("image/jpeg"); expect(img.headers["cache-control"]).toMatch(/no-store/);
+    expect((await A.adultB.get(`/api/videos/${vid}`).expect(200)).body.images).toEqual([{ id: ok.body.id, note: "Bras trop bas" }]);
+    // cloisonnement : ni un autre adulte, ni une famille
+    for (const who of ["adultA", "par1", "par2"]) await A[who].get(`/api/videos/${vid}/images/${ok.body.id}`).expect(404);
+    await A.adultB.delete(`/api/videos/${vid}/images/${ok.body.id}`).set(ORIGIN).expect(403);
+    // 8 images au maximum
+    for (let i = 0; i < 7; i++) await put(A.coach, vid, jpeg).expect(201);
+    await put(A.coach, vid, jpeg).expect(400);
+    await A.coach.delete(`/api/videos/${vid}/images/${ok.body.id}`).set(ORIGIN).expect(204);
+    await put(A.coach, vid, jpeg).expect(201);
+    // les images partent avec la vidéo
+    expect(await prisma.videoImage.count({ where: { videoId: vid } })).toBe(8);
+    await A.adultB.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
+    expect(await prisma.videoImage.count({ where: { videoId: vid } })).toBe(0);
+  });
+
+  it("studio : les images d'un jeune ne sont visibles que de sa famille, une fois l'analyse envoyée", async () => {
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(1000, 3)]);
+    const r = await A.coach.post(`/api/videos/${playerVideo}/images`).query({ note: "Extension" }).set(ORIGIN).set("Content-Type", "application/octet-stream").send(jpeg).expect(201);
+    await A.par1.get(`/api/videos/${playerVideo}/images/${r.body.id}`).expect(200);
+    for (const who of ["adultA", "adultB", "par2"]) await A[who].get(`/api/videos/${playerVideo}/images/${r.body.id}`).expect(404);
+  });
+
   it("envoyer une analyse vide est refusé", async () => {
     const r = await upload(A.adultB, {}, fakeMp4(5000)); expect(r.status).toBe(201);
     await A.coach.post(`/api/videos/${(r as any).vid}/analysis/send`).set(ORIGIN).expect(400);

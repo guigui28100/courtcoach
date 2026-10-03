@@ -63,7 +63,7 @@ export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "V
 export interface AnalysisOut { id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
-  kind: "coaching" | "centre"; player: { id: string; firstName: string } | null; owner: { id: string; firstName: string | null; email: string } | null; analysis: AnalysisOut | null; messageCount: number;
+  kind: "coaching" | "centre"; images: { id: string; note: string }[]; player: { id: string; firstName: string } | null; owner: { id: string; firstName: string | null; email: string } | null; analysis: AnalysisOut | null; messageCount: number;
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }

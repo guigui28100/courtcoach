@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseIntPipe, Post, Put, Req, Res, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseIntPipe, Post, Put, Query, Req, Res, UnauthorizedException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { timingSafeEqual } from "crypto";
 import type { Request, Response } from "express";
@@ -25,6 +25,14 @@ export class VideosController {
       "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline",
     }).end(r.data);
   }
+
+  @Roles(Role.COACH) @Post("videos/:id/images") addImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("note") note: string | undefined, @Req() req: Request) { return this.svc.addImage(u, id, req.body, note); }
+  @Get("videos/:id/images/:imageId")
+  async image(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Res() res: Response) {
+    const r = await this.svc.imageFile(u, id, imageId);
+    res.status(200).set({ "Content-Type": r.mime, "Content-Length": String(r.data.length), "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" }).end(r.data);
+  }
+  @Roles(Role.COACH) @Delete("videos/:id/images/:imageId") @HttpCode(204) removeImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.removeImage(u, id, imageId); }
 
   @Get("videos/:id") detail(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.detail(u, id); }
   @Delete("videos/:id") @HttpCode(204) remove(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.remove(u, id); }

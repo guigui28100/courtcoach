@@ -101,6 +101,7 @@ export default function Bulletin() {
                 {v.analysis!.observation && <p className="m-0 whitespace-pre-line">{v.analysis!.observation}</p>}
                 {v.analysis!.strengths && <p className="m-0"><strong>Points forts : </strong>{v.analysis!.strengths}</p>}
                 {v.analysis!.improve && <p className="m-0"><strong>À améliorer : </strong>{v.analysis!.improve}</p>}
+                {v.images.length > 0 && <div className="mt-2 grid grid-cols-2 gap-2">{v.images.slice(0, 4).map((i) => <figure key={i.id} className="m-0 break-inside-avoid"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée"} className="w-full rounded-md" />{i.note && <figcaption className="text-xs">{i.note}</figcaption>}</figure>)}</div>}
               </div>
             ))}
           </section>
