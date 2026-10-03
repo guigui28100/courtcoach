@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useParams } from "react-router-dom";
 import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
@@ -16,6 +16,7 @@ import PlayerDetail from "./pages/PlayerDetail";
 import { Authorization, Privacy } from "./pages/Static";
 
 // Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
+function Apercu() { const { id = "" } = useParams(); return <YouthSpace previewId={id} />; }
 function Suivi() { const { me } = useAuth(); return me?.role === "YOUTH" ? <YouthSpace /> : <FamilySpace />; }
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
+        <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH"]}><Apercu /></Guard>} />
         <Route path="/coach/videos/:id" element={<Guard roles={["COACH"]}><VideoReview /></Guard>} />
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
