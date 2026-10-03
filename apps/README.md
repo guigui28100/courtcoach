@@ -61,7 +61,8 @@ Avant l'ouverture : voir `RGPD-A-FAIRE.md` à la racine (registre, analyse d'imp
 ## Studio d'analyse (étape 4)
 - Réservé au coach, sur la page d'une vidéo. Les images annotées (JPEG, 700 Ko maximum, 8 par vidéo) sont gardées en base avec la vidéo : elles disparaissent avec elle (12 mois, retrait de l'accord image, suppression du compte) et comptent dans l'espace utilisé.
 - L'adhérent ou la famille ne voit les images qu'une fois l'analyse envoyée ; jamais un autre adulte ni une autre famille.
-- La comparaison de deux vidéos ne propose que des vidéos du même élève (même joueur, ou même adhérent) : aucun mélange adultes / Centre.
+- Outil **Texte** pour écrire sur une image (il reste toujours dans l'image).
+- **Comparaison de deux vidéos** du même élève (même joueur, ou même adhérent : aucun mélange adultes / Centre), la plus ancienne à gauche : pour chaque vidéo, le coach marque « le geste démarre ici », puis les deux vidéos se lisent calées sur ce départ (lecture, image par image, ralenti, curseur communs). Il peut figer la comparaison, l'annoter et l'enregistrer comme une image de l'analyse de la première vidéo.
 
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.
