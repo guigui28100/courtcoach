@@ -3,7 +3,10 @@ import { EVAL_AXES } from "../types";
 export interface RadarSeries { label: string; values: Record<string, number>; color: string; dashed?: boolean; }
 
 // Toile d'araignée des 5 axes (moyennes sur 5). Dessinée en SVG : aucun service extérieur.
-export function Radar({ series, size = 280 }: { series: RadarSeries[]; size?: number }) {
+const DARK: Record<string, string> = { technique: "#ff9b73", tactique: "#7dbbff", physique: "#6ee8aa", mental: "#d3b2ff", attitude: "#ffd84d" };
+
+export function Radar({ series, size = 280, dark = false }: { series: RadarSeries[]; size?: number; dark?: boolean }) {
+  const grid = dark ? "rgba(255,255,255,0.3)" : "#e4d6c5";
   const c = size / 2, r = size / 2 - 52, n = EVAL_AXES.length;
   const pt = (i: number, v: number): [number, number] => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [c + Math.cos(a) * r * (v / 5), c + Math.sin(a) * r * (v / 5)]; };
   const poly = (f: (i: number) => number) => EVAL_AXES.map((_, i) => pt(i, f(i)).join(",")).join(" ");
@@ -11,9 +14,9 @@ export function Radar({ series, size = 280 }: { series: RadarSeries[]; size?: nu
   return (
     <figure className="m-0 grid justify-items-center gap-2">
       <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size }} role="img" aria-label={`Graphique en toile d'araignée. ${summary}`}>
-        {[1, 2, 3, 4, 5].map((l) => <polygon key={l} points={poly(() => l)} fill="none" stroke="#e4d6c5" strokeWidth={l === 5 ? 1.5 : 1} />)}
+        {[1, 2, 3, 4, 5].map((l) => <polygon key={l} points={poly(() => l)} fill="none" stroke={grid} strokeWidth={l === 5 ? 1.5 : 1} />)}
         {EVAL_AXES.map((a, i) => { const [x, y] = pt(i, 5); const [lx, ly] = pt(i, 6.15); return (
-          <g key={a.key}><line x1={c} y1={c} x2={x} y2={y} stroke="#e4d6c5" /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={a.color}>{a.label}</text></g>
+          <g key={a.key}><line x1={c} y1={c} x2={x} y2={y} stroke={grid} /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={dark ? DARK[a.key] ?? a.color : a.color}>{a.label}</text></g>
         ); })}
         {series.map((s) => (
           <g key={s.label}>
@@ -23,7 +26,7 @@ export function Radar({ series, size = 280 }: { series: RadarSeries[]; size?: nu
         ))}
       </svg>
       {series.length > 1 && (
-        <figcaption className="flex flex-wrap justify-center gap-4 text-sm">
+        <figcaption className={"flex flex-wrap justify-center gap-4 text-sm " + (dark ? "text-white" : "")}>
           {series.map((s) => <span key={s.label} className="flex items-center gap-2"><span aria-hidden className="inline-block h-0 w-6 border-t-[3px]" style={{ borderColor: s.color, borderStyle: s.dashed ? "dashed" : "solid" }} />{s.label}</span>)}
         </figcaption>
       )}

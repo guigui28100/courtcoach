@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
 import { Centre, CoachHome } from "./pages/Coach";
@@ -10,8 +11,12 @@ import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
 import { AdultSpace, FamilySpace } from "./pages/Member";
 import VideoReview from "./pages/VideoReview";
+import YouthSpace from "./pages/Youth";
 import PlayerDetail from "./pages/PlayerDetail";
 import { Authorization, Privacy } from "./pages/Static";
+
+// Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
+function Suivi() { const { me } = useAuth(); return me?.role === "YOUTH" ? <YouthSpace /> : <FamilySpace />; }
 
 export default function App() {
   return (
@@ -30,7 +35,7 @@ export default function App() {
         <Route path="/coach/videos/:id" element={<Guard roles={["COACH"]}><VideoReview /></Guard>} />
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
-        <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><FamilySpace /></Guard>} />
+        <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />
         <Route path="*" element={<p className="p-10 text-center">Page introuvable.</p>} />
       </Routes>
