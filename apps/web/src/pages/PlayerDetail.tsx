@@ -261,7 +261,7 @@ export default function PlayerDetail() {
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)}>
-        <Link to="/coach/centre" className="font-bold text-ink underline">← Tous mes joueurs</Link>
+        <div className="flex flex-wrap items-center gap-3"><Link to="/coach/centre" className="font-bold text-ink underline">← Tous mes joueurs</Link><Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link></div>
       </PageHead>
       <Page>
         <div role="tablist" aria-label="Sections du dossier" className="flex gap-1 overflow-x-auto border-b-2 border-line">

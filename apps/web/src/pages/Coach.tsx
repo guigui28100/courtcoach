@@ -1,9 +1,9 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { get, post } from "../api";
+import { get, patch, post, put } from "../api";
 import { Empty, Err, Field, Page, PageHead } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { fmtDate, fmtMo, fullName, Lesson, Player, VideoRow } from "../types";
+import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, previousPeriod, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 
@@ -110,12 +110,30 @@ export function CoachHome() {
   );
 }
 
+// Crée un joueur FICTIF complet (objectifs, évaluations, matchs) pour découvrir l'espace du jeune, sans rien saisir.
+async function createExample(): Promise<string> {
+  const p = await post<Player>("/players", { firstName: "Léo", lastName: "Exemple", birthDate: "2014-03-14" });
+  const season = currentSeason(), t = trimesterOf(), prev = previousPeriod(season, t);
+  await patch(`/players/${p.id}`, { ranking: "30/2", targetRanking: "30/1", hand: "Droitier", playStyle: "Joueur offensif" });
+  for (const [axis, title, progress, indicator] of [
+    ["TECHNIQUE", "Fiabiliser la première balle", 100, "60 % de premières balles en match"], ["TECHNIQUE", "Coup droit plus profond", 55, ""],
+    ["TACTIQUE", "Varier les hauteurs et les effets", 30, "Au moins 3 variations par match"], ["PHYSIQUE", "Améliorer l'endurance", 70, ""], ["MENTAL", "Routine entre les points", 15, "Routine respectée 8 points sur 10"],
+  ] as const) await post(`/players/${p.id}/goals`, { season, axis, title, progress, indicator });
+  await put(`/players/${p.id}/evaluations/${prev.season}/${prev.t}`, { ratings: { coup_droit: 3, revers: 2, service: 3, lecture: 3, endurance: 4, concentration: 2, assiduite: 5, etat_esprit: 5 }, strengths: "Beaucoup d'énergie et de bonne humeur.", improve: "Plus de régularité sur le revers." });
+  await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, lecture: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
+  const day = (d: number) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
+  await post(`/players/${p.id}/matches`, { date: day(20), tournament: "Tournoi du club", round: "Demi-finale", result: "Victoire", score: "6/3 6/4" });
+  await post(`/players/${p.id}/matches`, { date: day(6), tournament: "Plateau de Dreux", result: "Défaite", score: "4/6 6/7", remark: "Très serré !" });
+  return p.id;
+}
+
 export function Centre() {
   const nav = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [inactive, setInactive] = useState<{ id: string; firstName: string; lastName: string; lastActivityAt: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
+  const [busyExample, setBusyExample] = useState(false);
   const load = useCallback(() => { get<Player[]>("/players").then(setPlayers); get("/players/inactive").then(setInactive); }, []);
   useEffect(load, [load]);
 
@@ -136,7 +154,10 @@ export function Centre() {
         <p className="alert m-0"><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0">Mes joueurs</h2>
-          <button className="btn-clay btn-sm" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (fictif)"}</button>
+            <button className="btn-clay btn-sm" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button>
+          </div>
         </div>
         {open && (
           <form onSubmit={add} className="card grid gap-4 sm:grid-cols-2" noValidate>
