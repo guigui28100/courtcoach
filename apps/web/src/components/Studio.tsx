@@ -1,14 +1,14 @@
-import { PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { api, del } from "../api";
 import { Err } from "./ui";
 import { useVideos } from "./Videos";
 import { VideoDetail } from "../types";
 
 type Pt = [number, number];
-type Tool = "line" | "arrow" | "circle" | "free" | "angle";
-interface Shape { tool: Tool; color: string; pts: Pt[]; }
+type Tool = "line" | "arrow" | "circle" | "free" | "angle" | "text";
+interface Shape { tool: Tool; color: string; pts: Pt[]; text?: string; }
 const COLORS: [string, string][] = [["#e11d48", "Rouge"], ["#facc15", "Jaune"], ["#38bdf8", "Bleu"], ["#ffffff", "Blanc"]];
-const TOOLS: [Tool, string][] = [["line", "Ligne"], ["arrow", "Flèche"], ["circle", "Cercle"], ["free", "Trait libre"], ["angle", "Angle (3 points)"]];
+const TOOLS: [Tool, string][] = [["line", "Ligne"], ["arrow", "Flèche"], ["circle", "Cercle"], ["free", "Trait libre"], ["angle", "Angle (3 points)"], ["text", "Texte"]];
 const FPS = 30; // une « image » = 1/30 de seconde (la plupart des téléphones filment à 30 images par seconde)
 
 // Fabrique un JPEG à partir du dessin. Certains navigateurs (protection de la vie privée, Safari…) ne répondent pas à toBlob :
@@ -37,10 +37,18 @@ const angleOf = (a: Pt, b: Pt, c: Pt) => {
   return (Math.acos(Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / n))) * 180) / Math.PI;
 };
 
-function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number) {
+function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number, h = w) {
   const lw = Math.max(3, w / 220);
   g.strokeStyle = s.color; g.fillStyle = s.color; g.lineWidth = lw; g.lineCap = "round"; g.lineJoin = "round";
   const [a, b, c] = s.pts;
+  if (s.tool === "text") {
+    const size = Math.max(16, Math.min(w / 26, h / 12));
+    g.font = `bold ${size}px sans-serif`; g.textAlign = "left"; g.textBaseline = "middle"; g.lineWidth = size / 5; g.strokeStyle = "#10203a"; g.fillStyle = s.color;
+    const x = Math.max(8, Math.min(a[0], w - 8 - g.measureText(s.text ?? "").width)); // le texte reste dans l'image
+    const y = Math.max(size / 2 + 4, Math.min(a[1], h - size / 2 - 4));
+    g.strokeText(s.text ?? "", x, y); g.fillText(s.text ?? "", x, y);
+    return;
+  }
   g.beginPath();
   if (s.tool === "free") { s.pts.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.stroke(); return; }
   if (s.tool === "line" && b) { g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
@@ -82,6 +90,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
+  const [typing, setTyping] = useState<{ p: Pt; left: number; top: number; text: string } | null>(null);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => { box.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, []); // l'éditeur apparaît à l'écran dès la capture
   const W = base.width, H = base.height;
@@ -89,14 +98,16 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
   const paint = useCallback((target: HTMLCanvasElement, list: Shape[]) => {
     const g = target.getContext("2d")!;
     g.clearRect(0, 0, W, H); g.drawImage(base, 0, 0);
-    list.forEach((s) => drawShape(g, s, W));
+    list.forEach((s) => drawShape(g, s, W, H));
   }, [base, W, H]);
   useEffect(() => { if (cv.current) paint(cv.current, draft ? [...shapes, draft] : shapes); }, [shapes, draft, paint]);
 
   const at = (e: PointerEvent<HTMLCanvasElement>): Pt => { const r = cv.current!.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H]; };
   function down(e: PointerEvent<HTMLCanvasElement>) {
-    e.preventDefault(); (e.target as Element).setPointerCapture(e.pointerId);
+    e.preventDefault();
     const p = at(e);
+    if (tool === "text") { const r = cv.current!.getBoundingClientRect(); setTyping({ p, left: e.clientX - r.left, top: e.clientY - r.top, text: "" }); return; }
+    (e.target as Element).setPointerCapture(e.pointerId);
     if (tool === "angle") {
       if (draft && draft.tool === "angle" && draft.pts.length < 3) { const next = { ...draft, pts: [...draft.pts, p] }; if (next.pts.length === 3) { setShapes((l) => [...l, next]); setDraft(null); } else setDraft(next); }
       else setDraft({ tool, color, pts: [p] });
@@ -116,6 +127,11 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
     const moved = draft.tool === "free" ? draft.pts.length > 2 : Math.hypot(draft.pts[1][0] - draft.pts[0][0], draft.pts[1][1] - draft.pts[0][1]) > 4;
     if (moved) setShapes((l) => [...l, draft]);
     setDraft(null);
+  }
+
+  function commitText() {
+    if (typing && typing.text.trim()) setShapes((l) => [...l, { tool: "text", color, pts: [typing.p], text: typing.text.trim().slice(0, 80) }]);
+    setTyping(null);
   }
 
   async function save() {
@@ -146,9 +162,17 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length} onClick={() => setShapes((l) => l.slice(0, -1))}>Annuler le dernier tracé</button>
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length && !draft} onClick={() => { setShapes([]); setDraft(null); }}>Tout effacer</button>
       </div>
+      {tool === "text" && <p className="hint m-0">Clique à l'endroit où le texte doit apparaître, écris, puis appuie sur Entrée. Choisis la couleur avant de cliquer.</p>}
       {tool === "angle" && <p className="hint m-0">{pending === null ? "Clique 3 points : le début d'un segment, le sommet de l'angle (l'articulation), puis la fin du second segment. L'angle s'affiche en degrés." : `Encore ${pending} point${pending > 1 ? "s" : ""} à cliquer.`}</p>}
-      <canvas ref={cv} width={W} height={H} role="img" aria-label="Image de la vidéo à annoter, avec les tracés du coach" className="w-full touch-none rounded-xl bg-black" style={{ cursor: "crosshair", maxHeight: "70vh", objectFit: "contain" }}
+      <div className="relative">
+        <canvas ref={cv} width={W} height={H} role="img" aria-label="Image de la vidéo à annoter, avec les tracés du coach" className="w-full touch-none rounded-xl bg-black" style={{ cursor: "crosshair", maxHeight: "70vh", objectFit: "contain" }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setDraft(null)} />
+        {typing && (
+          <input autoFocus aria-label="Texte à écrire sur l'image" maxLength={80} value={typing.text} onChange={(e) => setTyping({ ...typing, text: e.target.value })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitText(); } if (e.key === "Escape") setTyping(null); }} onBlur={commitText}
+            className="absolute z-10 w-56 max-w-[80%] -translate-y-1/2 rounded-lg border-2 border-ink bg-white px-2 py-1 text-base text-ink shadow-lg" style={{ left: Math.min(typing.left, 9999), top: typing.top }} placeholder="Écris ici, puis Entrée" />
+        )}
+      </div>
       <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
         <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" enterKeyHint="done" /></div>
         {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
@@ -160,50 +184,134 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
 }
 
 const SPEEDS = [0.25, 0.5, 1];
+const fmtS = (t: number) => `${t.toFixed(2).replace(".", ",")} s`;
+const frDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-// Comparaison côte à côte de deux vidéos (du même élève), avec des commandes communes.
-function Compare({ v, onClose }: { v: VideoDetail; onClose: () => void }) {
-  const all = useVideos() ?? [];
-  const options = all.filter((o) => o.id !== v.id && o.kind === v.kind && (v.kind === "centre" ? o.player?.id === v.player?.id : o.owner?.id === v.owner?.id));
-  const [otherId, setOtherId] = useState("");
-  const a = useRef<HTMLVideoElement>(null), b = useRef<HTMLVideoElement>(null);
-  const [pos, setPos] = useState(0), [speed, setSpeed] = useState(1), [playing, setPlaying] = useState(false);
-  const both = (f: (el: HTMLVideoElement) => void) => [a.current, b.current].forEach((el) => el && f(el));
-  const seekRatio = (r: number) => { both((el) => { if (el.duration && isFinite(el.duration)) el.currentTime = r * el.duration; }); setPos(r); };
-  const step = (n: number) => { both((el) => { el.pause(); el.currentTime = Math.max(0, el.currentTime + n / FPS); }); setPlaying(false); };
-  useEffect(() => { both((el) => { el.playbackRate = speed; }); }, [speed, otherId]); // eslint-disable-line react-hooks/exhaustive-deps
+// Enregistre une image annotée dans l'analyse d'une vidéo (30 secondes maximum d'attente).
+async function saveImage(videoId: string, blob: Blob, note: string) {
+  const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 30000);
+  try { await api(`/videos/${videoId}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
+  finally { clearTimeout(timer); }
+}
+
+// Un lecteur de la comparaison : image par image, curseur, et « le geste démarre ici ».
+function ComparePane({ label, src, vref, start, onStart, onTime }: { label: string; src: string; vref: React.RefObject<HTMLVideoElement | null>; start: number; onStart: (t: number) => void; onTime: () => void }) {
+  const [pos, setPos] = useState(0), [dur, setDur] = useState(0);
+  const el = () => vref.current;
+  const go = (t: number) => { const v = el(); if (!v) return; v.pause(); v.currentTime = Math.max(0, Math.min(Number.isFinite(v.duration) ? v.duration : t, t)); };
   return (
-    <section className="card grid gap-3" aria-label="Comparer deux vidéos">
-      <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="m-0">Comparer avec une autre vidéo</h3><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
-      {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer.</p> : (
-        <div className="field"><label htmlFor="cmp">Deuxième vidéo</label><select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); setPlaying(false); setPos(0); }}><option value="">Choisir…</option>{options.map((o) => <option key={o.id} value={o.id}>{o.title} ({o.shot})</option>)}</select></div>
+    <div className="grid content-start gap-2">
+      <p className="m-0 font-bold">{label}</p>
+      <video ref={vref} src={src} playsInline preload="auto" muted className="w-full rounded-xl bg-black" aria-label={label}
+        onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+        onDurationChange={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+        onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />
+      <label className="flex items-center gap-2 text-sm font-bold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
+      <div className="flex flex-wrap items-center gap-2">
+        <button className="btn-outline btn-sm" onClick={() => go(pos - 1 / FPS)} aria-label={`${label} : reculer d'une image`}>◀ 1 image</button>
+        <button className="btn-outline btn-sm" onClick={() => go(pos + 1 / FPS)} aria-label={`${label} : avancer d'une image`}>1 image ▶</button>
+        <button className="btn-clay btn-sm" onClick={() => onStart(el()?.currentTime ?? 0)}>🎯 Le geste démarre ici</button>
+      </div>
+      <p className="hint m-0">Départ du geste : <strong>{fmtS(start)}</strong></p>
+    </div>
+  );
+}
+
+// Comparaison côte à côte de deux vidéos du même élève, calées sur le départ du geste, avec capture et annotation.
+export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: () => void; onChanged: () => void }) {
+  const all = useVideos() ?? [];
+  const options = all.filter((o) => o.id !== v.id && o.kind === v.kind && (v.kind === "centre" ? o.player?.id === v.player?.id : o.owner?.id === v.owner?.id)).sort((x, y) => +new Date(x.recordedAt) - +new Date(y.recordedAt));
+  const [otherId, setOtherId] = useState("");
+  const other = options.find((o) => o.id === otherId);
+  // La vidéo la plus ancienne est toujours à gauche (1), la plus récente à droite (2) : on lit l'évolution dans le temps.
+  const pair = other ? [{ id: v.id, title: v.title, recordedAt: v.recordedAt }, { id: other.id, title: other.title, recordedAt: other.recordedAt }].sort((x, y) => +new Date(x.recordedAt) - +new Date(y.recordedAt)) : [];
+  const a = useRef<HTMLVideoElement>(null), b = useRef<HTMLVideoElement>(null);
+  const [startA, setStartA] = useState(0), [startB, setStartB] = useState(0);
+  const [speed, setSpeed] = useState(1), [playing, setPlaying] = useState(false);
+  const [t, setT] = useState(0);
+  const [frame, setFrame] = useState<HTMLCanvasElement | null>(null);
+  const [err, setErr] = useState(""), [done, setDone] = useState("");
+  const startRef = useRef({ a: 0, b: 0 }); startRef.current = { a: startA, b: startB };
+  const dur = (el: HTMLVideoElement | null) => (el && Number.isFinite(el.duration) ? el.duration : 1e9);
+  const clamp = (x: number, el: HTMLVideoElement | null) => Math.max(0, Math.min(dur(el), x));
+
+  // t = temps écoulé depuis le départ du geste (négatif avant le départ). Les deux vidéos sont toujours calées sur t.
+  const seekBoth = useCallback((time: number) => {
+    const { a: sa, b: sb } = startRef.current;
+    if (a.current) a.current.currentTime = clamp(sa + time, a.current);
+    if (b.current) b.current.currentTime = clamp(sb + time, b.current);
+    setT(time);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const pauseBoth = () => { a.current?.pause(); b.current?.pause(); setPlaying(false); };
+  const playBoth = () => { void a.current?.play(); void b.current?.play(); setPlaying(true); };
+  useEffect(() => { [a.current, b.current].forEach((el) => el && (el.playbackRate = speed)); }, [speed, otherId]);
+
+  // Pendant la lecture, la deuxième vidéo est recalée sur la première si elle dérive de plus de 0,06 s.
+  const follow = useCallback(() => {
+    const A = a.current, B = b.current; if (!A || !B) return;
+    const { a: sa, b: sb } = startRef.current;
+    setT(A.currentTime - sa);
+    if (!A.paused && !A.ended && !B.ended) { const want = clamp(sb + (A.currentTime - sa), B); if (Math.abs(B.currentTime - want) > 0.06) B.currentTime = want; }
+    if (A.ended && B.ended) setPlaying(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const tMin = -Math.max(startA, startB), tMax = Math.max(Number.isFinite(a.current?.duration ?? NaN) ? a.current!.duration - startA : 5, Number.isFinite(b.current?.duration ?? NaN) ? b.current!.duration - startB : 5);
+
+  function capture() {
+    setErr(""); setDone("");
+    const A = a.current, B = b.current;
+    if (!A || !B || !A.videoWidth || !B.videoWidth) return setErr("Les deux vidéos ne sont pas encore prêtes : attends qu'elles s'affichent, puis réessaie.");
+    pauseBoth();
+    const H = 540, wA = Math.round((A.videoWidth * H) / A.videoHeight), wB = Math.round((B.videoWidth * H) / B.videoHeight), gap = 12;
+    const c = document.createElement("canvas"); c.width = wA + wB + gap; c.height = H;
+    const g = c.getContext("2d")!; g.fillStyle = "#10203a"; g.fillRect(0, 0, c.width, H);
+    g.drawImage(A, 0, 0, wA, H); g.drawImage(B, wA + gap, 0, wB, H);
+    g.font = "bold 24px sans-serif"; g.textBaseline = "top"; g.lineWidth = 5; g.strokeStyle = "#10203a"; g.fillStyle = "#fff";
+    const lab = (txt: string, x: number) => { g.strokeText(txt, x + 12, 10); g.fillText(txt, x + 12, 10); };
+    lab(`${pair[0].title} · ${frDate(pair[0].recordedAt)}`, 0); lab(`${pair[1].title} · ${frDate(pair[1].recordedAt)}`, wA + gap);
+    setFrame(c);
+  }
+
+  return (
+    <section className="card grid gap-4" aria-label="Comparer deux vidéos">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-xl">Comparer deux vidéos</h2><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
+      {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer. Quand une deuxième vidéo aura été envoyée, tu pourras suivre l'évolution du geste ici.</p> : (
+        <div className="field"><label htmlFor="cmp">Vidéo à comparer (de la plus ancienne à la plus récente)</label>
+          <select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>
+            <option value="">Choisir…</option>{options.map((o) => <option key={o.id} value={o.id}>{o.title} · {frDate(o.recordedAt)} ({o.shot})</option>)}
+          </select></div>
       )}
-      {otherId && (
+      {other && (
         <>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <video ref={a} src={`/api/videos/${v.id}/file`} playsInline preload="metadata" muted className="w-full rounded-xl bg-black" aria-label={`Vidéo 1 : ${v.title}`} onTimeUpdate={(e) => { const el = e.currentTarget; if (el.duration) setPos(el.currentTime / el.duration); }} />
-            <video ref={b} src={`/api/videos/${otherId}/file`} playsInline preload="metadata" muted className="w-full rounded-xl bg-black" aria-label="Vidéo 2" />
+          <ol className="m-0 list-decimal pl-5 text-sm text-muted"><li>Pour chaque vidéo, avance jusqu'au <strong>début du geste</strong> (par exemple le lancer de balle) puis clique sur « 🎯 Le geste démarre ici ».</li><li>Utilise ensuite les commandes communes : les deux gestes démarrent <strong>en même temps</strong>.</li><li>Fige l'image voulue et annote-la (traits, cercles, angles, texte).</li></ol>
+          <div className="grid gap-4 md:grid-cols-2">
+            <ComparePane label={`1 · ${pair[0].title} (${frDate(pair[0].recordedAt)})`} src={`/api/videos/${pair[0].id}/file`} vref={a} start={startA} onStart={(x) => { setStartA(x); startRef.current.a = x; setT(0); }} onTime={follow} />
+            <ComparePane label={`2 · ${pair[1].title} (${frDate(pair[1].recordedAt)})`} src={`/api/videos/${pair[1].id}/file`} vref={b} start={startB} onStart={(x) => { setStartB(x); startRef.current.b = x; }} onTime={() => undefined} />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button className="btn-clay btn-sm" onClick={() => { if (playing) both((el) => el.pause()); else both((el) => { void el.play(); }); setPlaying(!playing); }}>{playing ? "Pause" : "Lecture"}</button>
-            <button className="btn-outline btn-sm" onClick={() => step(-1)} aria-label="Reculer d'une image">◀ 1 image</button>
-            <button className="btn-outline btn-sm" onClick={() => step(1)} aria-label="Avancer d'une image">1 image ▶</button>
-            {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
+          <div className="grid gap-2 rounded-xl bg-sand p-3" role="group" aria-label="Commandes communes aux deux vidéos">
+            <div className="flex flex-wrap items-center gap-2">
+              <button className="btn-clay btn-sm" onClick={() => (playing ? pauseBoth() : playBoth())}>{playing ? "Pause" : "Lecture synchronisée"}</button>
+              <button className="btn-outline btn-sm" onClick={() => { pauseBoth(); seekBoth(Math.max(-0.5, tMin)); }}>↺ Revenir juste avant le geste</button>
+              <button className="btn-outline btn-sm" onClick={() => { pauseBoth(); seekBoth(t - 1 / FPS); }} aria-label="Reculer les deux d'une image">◀ 1 image</button>
+              <button className="btn-outline btn-sm" onClick={() => { pauseBoth(); seekBoth(t + 1 / FPS); }} aria-label="Avancer les deux d'une image">1 image ▶</button>
+              {SPEEDS.map((x) => <button key={x} aria-pressed={speed === x} className={"btn btn-sm " + (speed === x ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(x)}>{x}×</button>)}
+            </div>
+            <label className="flex items-center gap-3 text-sm font-bold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
           </div>
-          <label className="flex items-center gap-3 text-sm font-bold">Position<input type="range" min={0} max={1000} value={Math.round(pos * 1000)} className="flex-1 accent-clay" onChange={(e) => seekRatio(Number(e.target.value) / 1000)} aria-label="Position dans les deux vidéos" /></label>
-          <p className="hint m-0">Les deux vidéos avancent ensemble, proportionnellement à leur durée. Les vidéos sont muettes dans la comparaison.</p>
+          <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>📸 Capturer la comparaison et annoter</button></div>
+          <Err msg={err} />
+          {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
+          {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note) => { await saveImage(v.id, blob, note); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
         </>
       )}
     </section>
   );
 }
 
-// Lecteur du coach : ralenti, image par image, capture + dessin, comparaison.
-export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () => void }) {
+// Lecteur du coach : ralenti, image par image, capture + dessin.
+export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: VideoDetail; onChanged: () => void; cmpOpen: boolean; onToggleCompare: () => void }) {
   const vid = useRef<HTMLVideoElement>(null);
   const [speed, setSpeed] = useState(1);
   const [frame, setFrame] = useState<HTMLCanvasElement | null>(null);
-  const [cmp, setCmp] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState("");
   const gallery = useRef<HTMLElement>(null);
@@ -220,13 +328,10 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
     setFrame(c);
   }
   async function save(blob: Blob, note: string) {
-    const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 30000);
-    try { await api(`/videos/${v.id}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
-    finally { clearTimeout(timer); }
+    await saveImage(v.id, blob, note);
     setFrame(null); setDone("Image enregistrée ✓ : elle est dans « Images de l'analyse » ci-dessous."); onChanged();
     setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   }
-  const kb = useMemo(() => v.images.length, [v.images]);
 
   return (
     <div className="grid content-start gap-3">
@@ -240,15 +345,14 @@ export function VideoStudio({ v, onChanged }: { v: VideoDetail; onChanged: () =>
       </div>
       <div className="flex flex-wrap gap-2">
         <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
-        <button className="btn-outline btn-sm" aria-expanded={cmp} onClick={() => setCmp(!cmp)}>Comparer avec une autre vidéo</button>
+        <button className="btn-outline btn-sm" aria-expanded={cmpOpen} onClick={onToggleCompare}>{cmpOpen ? "Fermer la comparaison" : "Comparer avec une autre vidéo"}</button>
       </div>
       <Err msg={err} />
       {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={save} />}
-      {cmp && <Compare v={v} onClose={() => setCmp(false)} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
-        <h3 className="m-0 text-base">Images de l'analyse ({kb}/8)</h3>
+        <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
         {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
-        {v.images.length === 0 ? <p className="hint m-0">Fige une image de la vidéo, dessine dessus (ligne, flèche, angle…) puis enregistre-la : elle s'ajoute à l'analyse envoyée à l'élève.</p> : (
+        {v.images.length === 0 ? <p className="hint m-0">Fige une image de la vidéo, dessine dessus (ligne, flèche, angle, texte…) puis enregistre-la : elle s'ajoute à l'analyse envoyée à l'élève.</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
               <li key={i.id} className="grid gap-1 rounded-xl border border-line bg-white p-2">
