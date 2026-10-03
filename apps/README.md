@@ -64,6 +64,9 @@ Avant l'ouverture : voir `RGPD-A-FAIRE.md` à la racine (registre, analyse d'imp
 - Outil **Texte** pour écrire sur une image (il reste toujours dans l'image).
 - **Comparaison de deux vidéos** du même élève (même joueur, ou même adhérent : aucun mélange adultes / Centre), la plus ancienne à gauche : pour chaque vidéo, le coach marque « le geste démarre ici », puis les deux vidéos se lisent calées sur ce départ (lecture, image par image, ralenti, curseur communs). Il peut figer la comparaison, l'annoter et l'enregistrer comme une image de l'analyse de la première vidéo.
 
+## Espace « galaxie » du jeune
+Quand un jeune se connecte, sa page « Mon suivi » devient « Ma galaxie tennis » : fond d'étoiles, une balle de tennis qui flotte, **missions** (ses objectifs) avec une fusée qui avance et une étoile à 100 %, **radar** de la dernière évaluation avec « le mot de ton coach », matchs, vidéos et bulletins. Les parents gardent la présentation sobre. Rien n'est chargé depuis un autre site.
+
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.
 - La limitation des essais de connexion tourne « par instance » sur Vercel ; le blocage du compte après 5 échecs, lui, est enregistré en base.
