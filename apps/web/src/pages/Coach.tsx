@@ -44,7 +44,7 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
 }
 
 function WaitingVideos({ videos, label }: { videos: VideoRow[]; label: (v: VideoRow) => string }) {
-  const waiting = videos.filter((v) => !v.analysis?.sentAt);
+  const waiting = videos.filter((v) => !v.analysis?.sentAt && !v.fromCoach); // une vidéo que le coach a envoyée n'a rien à analyser
   const answered = videos.filter((v) => v.analysis?.sentAt);
   const row = (v: VideoRow) => (
     <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{label(v)} · {v.shot} · {fmtDate(v.recordedAt)}{v.question ? " · avec une question" : ""}</small></span><span className="btn-clay btn-sm">{v.analysis?.sentAt ? "Ouvrir" : v.analysis ? "Terminer l'analyse" : "Analyser"}</span></Link></li>
@@ -77,7 +77,7 @@ export function CoachHome() {
         {!me?.twoFactor && <p role="note" className="alert m-0">🔐 <strong>Protège ton compte :</strong> active la <Link to="/coach/securite" className="font-bold underline">double authentification</Link> (2 minutes) avant d'enregistrer de vrais jeunes.</p>}
         <div className="grid gap-3 sm:grid-cols-3" aria-label="En un coup d'œil">
           <StatTile value={pending.length} label={pending.length > 1 ? "demandes à traiter" : "demande à traiter"} icon="📨" to="#t-coaching" />
-          <StatTile value={(videos ?? []).filter((v) => !v.analysis?.sentAt).length} label="vidéos à analyser" icon="🎬" to="#t-centre" tone="ink" />
+          <StatTile value={(videos ?? []).filter((v) => !v.analysis?.sentAt && !v.fromCoach).length} label="vidéos à analyser" icon="🎬" to="#t-centre" tone="ink" />
           <StatTile value={players.length} label={players.length > 1 ? "jeunes suivis" : "jeune suivi"} icon="🏆" to="/coach/centre" tone="ok" />
         </div>
         <section className="card grid gap-3" aria-labelledby="t-coaching">

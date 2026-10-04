@@ -64,10 +64,11 @@ export class VideosService {
       if (!(await this.imageConsent(dto.playerId))) throw new ForbiddenException("L'accord des parents « droit à l'image » n'est pas enregistré : aucune vidéo ne peut être ajoutée.");
       playerId = dto.playerId;
     }
+    const fromCoach = user.role === Role.COACH && !!playerId; // le coach envoie une vidéo au joueur
     const used = await this.usedBytes();
     if (used + dto.sizeBytes > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein. Préviens le coach.", 507);
     const chunkCount = Math.ceil(dto.sizeBytes / CHUNK_SIZE);
-    const v = await this.prisma.video.create({ data: { title: dto.title, shot: dto.shot, question: dto.question ?? "", sizeBytes: dto.sizeBytes, chunkCount, ownerId, playerId } });
+    const v = await this.prisma.video.create({ data: { title: dto.title, shot: dto.shot, question: dto.question ?? "", sizeBytes: dto.sizeBytes, chunkCount, ownerId, playerId, fromCoach } });
     if (playerId) await this.prisma.player.update({ where: { id: playerId }, data: { lastActivityAt: new Date() } });
     return { id: v.id, chunkSize: CHUNK_SIZE, chunkCount };
   }
@@ -124,6 +125,7 @@ export class VideosService {
       id: v.id, title: v.title, shot: v.shot, question: v.question, status: v.status, sizeBytes: v.sizeBytes, mimeType: v.mimeType, complete: v.complete,
       recordedAt: v.recordedAt, deleteAfter: v.deleteAfter, seenAt: v.seenAt,
       kind: v.playerId ? "centre" : "coaching",
+      fromCoach: v.fromCoach,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a) : null,
@@ -175,7 +177,7 @@ export class VideosService {
   async markSeen(user: AuthUser, id: string) {
     const v = await this.load(user, id);
     if (user.role === Role.COACH) return;
-    if (await this.prisma.analysis.findFirst({ where: { videoId: v.id, sentAt: { not: null } } })) await this.prisma.video.update({ where: { id }, data: { seenAt: new Date() } });
+    if (v.fromCoach || (await this.prisma.analysis.findFirst({ where: { videoId: v.id, sentAt: { not: null } } }))) await this.prisma.video.update({ where: { id }, data: { seenAt: new Date() } });
   }
 
   // ----- Analyse (coach) -----
@@ -247,7 +249,8 @@ export class VideosService {
 
   // ----- Suppression -----
   async remove(user: AuthUser, id: string) {
-    await this.load(user, id);
+    const v = await this.load(user, id);
+    if (user.role !== Role.COACH && v.fromCoach) throw new ForbiddenException("Cette vidéo vient de ton coach : lui seul peut la supprimer.");
     await this.prisma.video.delete({ where: { id } });
     await this.audit.log(user.id, "video-delete", "Video", id);
   }
