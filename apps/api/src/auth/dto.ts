@@ -14,6 +14,7 @@ export class SignupDto {
 export class LoginDto {
   @Transform(lower) @IsEmail() @MaxLength(254) email: string;
   @IsString() @MaxLength(128) password: string;
+  @IsOptional() @IsString() @MaxLength(20) code?: string;
 }
 
 export class AcceptInvitationDto {
@@ -28,3 +29,6 @@ export class ChangePasswordDto {
   @IsString() @MinLength(10, { message: "Le nouveau mot de passe doit faire au moins 10 caractères." }) @MaxLength(128) newPassword: string;
   @IsOptional() @IsBoolean() acceptPolicy?: boolean;
 }
+
+export class TotpCodeDto { @IsString() @Length(6, 6) code: string; }
+export class TotpDisableDto { @IsString() @MaxLength(128) password: string; @IsString() @Length(6, 6) code: string; }

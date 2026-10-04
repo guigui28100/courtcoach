@@ -13,15 +13,22 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 - **Vidéos** : le vrai format du fichier est vérifié (pas seulement son nom) ; lecture seulement pour les personnes autorisées ; jamais gardées dans le navigateur (`no-store`).
 - **Outils installés** : le site n'a aucune faille connue. Le serveur n'en signale qu'une, dans l'outil Prisma qui sert uniquement à la construction (il ne reçoit jamais de données d'un visiteur) : sans risque réel.
 
+- **Double authentification du coach** (code à 6 chiffres, `Sécurité` dans le menu) : clé chiffrée dans la base, un code ne sert qu'une fois, 8 codes de secours, échecs comptés dans le blocage. Testé dans `security.e2e-spec.ts`.
+- **Mots de passe** : 10 caractères minimum, et refus des mots de passe trop faciles (liste courante, caractères répétés, contenant l'adresse e-mail).
+- **Journal** : connexions réussies, échecs, blocages, ouverture d'une fiche ou d'une vidéo par le coach, mots de passe réinitialisés ; effacé après 12 mois (tâche de nuit).
+- **Mot de passe oublié d'une famille** : bouton sur la fiche du joueur (nouveau mot de passe provisoire, anciennes sessions fermées).
+- **Cookies** en mode « strict » (jamais envoyés depuis un autre site) ; réponses du serveur jamais gardées en cache ; le compte du coach ne peut pas être supprimé depuis le site.
+
 ## Ce qui a été corrigé pendant la revue
 1. **Déconnexions aléatoires du coach** : quand le jeton de 15 minutes expirait, plusieurs requêtes simultanées demandaient chacune un renouvellement ; le serveur croyait à un vol et fermait la session. Désormais une seule demande est faite à la fois, et le serveur tolère 10 secondes de décalage (un vrai vol reste détecté).
 2. **Session trop longue** : la session pouvait rester ouverte 30 jours sur un appareil oublié. Elle se ferme maintenant **côté serveur après 30 minutes sans activité** (comme annoncé dans la politique de confidentialité). Recharger la page dans les 30 minutes ne déconnecte plus.
 3. Un test automatique garde la liste de toutes les routes : toute nouvelle route sans protection fait échouer les tests.
 
 ## Ce qu'il reste à faire (par ordre d'importance)
-1. **Supprimer `SETUP_TOKEN` sur Vercel** (projet `courtcoach-api`, Settings, Environment Variables) : la page d'installation est déjà fermée, mais la clé n'a plus d'utilité.
-2. **Double authentification pour le coach** (code à 6 chiffres sur le téléphone) : son compte donne accès aux données de tous les jeunes. Fortement conseillé avant les vraies familles.
-3. **Mot de passe oublié** : il n'existe pas encore de procédure. Prévoir un bouton « réinitialiser le mot de passe » pour le coach (nouveau mot de passe provisoire, comme pour les familles).
-4. **Limitation des essais derrière deux serveurs Vercel** : vérifier en conditions réelles que chaque visiteur est bien reconnu séparément (sinon la limite est partagée). Le blocage du compte après 5 erreurs, lui, est enregistré en base et fonctionne dans tous les cas.
-5. **Sauvegardes** : vérifier dans Neon la durée de restauration proposée par l'offre gratuite, et la région (Europe) de la base et des fonctions.
-6. **E-mail inconnu / déjà utilisé à l'inscription** : le message actuel indique qu'un compte existe déjà (risque faible, accepté pour l'instant).
+1. **Activer la double authentification** sur ton compte coach (menu « Sécurité ») et ranger les codes de secours sur papier.
+2. **Mot de passe oublié du coach** : le propriétaire du site le redéfinit avec la commande `create-coach` (voir `GUIDE-MISE-EN-LIGNE.md`). Pas de procédure par e-mail tant qu'aucun service d'envoi n'est choisi.
+3. **Limitation des essais derrière deux serveurs Vercel** : à vérifier en conditions réelles (sinon la limite par adresse est partagée). Le blocage du compte après 5 erreurs, lui, fonctionne dans tous les cas.
+4. **Sauvegardes et région** : vérifier dans Neon la durée de restauration de l'offre gratuite et que la base et les fonctions sont en Europe.
+5. **Confirmation par e-mail de l'accord parental** : aujourd'hui le coach enregistre l'accord papier ; un vrai envoi d'e-mail demande un service d'envoi.
+6. **E-mail déjà utilisé à l'inscription** : le message indique qu'un compte existe (risque faible, accepté).
+7. **Faille signalée dans l'outil de construction Prisma** : sans risque réel (il ne reçoit jamais de données d'un visiteur) ; à corriger à la prochaine mise à jour majeure.

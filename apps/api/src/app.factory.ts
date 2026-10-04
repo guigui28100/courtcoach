@@ -17,6 +17,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.setGlobalPrefix("api");
   app.set("trust proxy", 1); // derrière Vercel : la vraie adresse du visiteur est dans l'en-tête transmis
   app.use(helmet());
+  app.use((_req: any, res: any, next: any) => { res.setHeader("Cache-Control", "no-store"); next(); }); // données personnelles : jamais gardées en cache
   app.use(cookieParser());
   app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
   app.enableCors({ origin: process.env.WEB_ORIGIN, credentials: true });

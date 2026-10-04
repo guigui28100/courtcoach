@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { get, patch, post, put } from "../api";
+import { useAuth } from "../auth";
 import { Empty, Err, Field, Page, PageHead } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, trimesterOf, VideoRow } from "../types";
@@ -58,6 +59,7 @@ function WaitingVideos({ videos, label }: { videos: VideoRow[]; label: (v: Video
 }
 
 export function CoachHome() {
+  const { me } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [version, setVersion] = useState(0);
@@ -72,6 +74,7 @@ export function CoachHome() {
     <>
       <PageHead eyebrow="Espace coach" title="Bonjour coach !">Deux espaces distincts : les demandes de coaching des adhérents, et le Centre de compétition jeunes.</PageHead>
       <Page>
+        {!me?.twoFactor && <p role="note" className="alert m-0">🔐 <strong>Protège ton compte :</strong> active la <Link to="/coach/securite" className="font-bold underline">double authentification</Link> (2 minutes) avant d'enregistrer de vrais jeunes.</p>}
         <section className="card grid gap-3" aria-labelledby="t-coaching">
           <h2 id="t-coaching" className="m-0">Demandes de coaching</h2>
           <p className="hint m-0">Adhérents adultes qui te contactent : demandes de cours.</p>

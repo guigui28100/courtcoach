@@ -208,7 +208,7 @@ describe("Vidéos et analyses", () => {
     const old = await prisma.video.create({ data: { title: "vieille", shot: "Service", sizeBytes: 10, complete: true, deleteAfter: new Date(Date.now() - 1000), ownerId: null } });
     const stale = await prisma.video.create({ data: { title: "abandon", shot: "Service", sizeBytes: 10, recordedAt: new Date(Date.now() - 48 * 3600 * 1000) } });
     const r = await http.get("/api/cron/purge").set("Authorization", `Bearer ${process.env.CRON_SECRET}`).expect(200);
-    expect(r.body).toEqual({ expired: 1, incomplete: 1 });
+    expect(r.body).toMatchObject({ expired: 1, incomplete: 1 });
     expect(await prisma.video.count({ where: { id: { in: [old.id, stale.id] } } })).toBe(0);
     delete process.env.CRON_SECRET;
     await http.get("/api/cron/purge").set("Authorization", "Bearer ").expect(401); // sans clé configurée : toujours fermé

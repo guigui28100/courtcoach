@@ -2,12 +2,13 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res } from "
 import { Throttle } from "@nestjs/throttler";
 import { Response } from "express";
 import { AuthService } from "./auth.service";
-import { AcceptInvitationDto, ChangePasswordDto, LoginDto, SignupDto } from "./dto";
+import { AcceptInvitationDto, ChangePasswordDto, LoginDto, SignupDto, TotpCodeDto, TotpDisableDto } from "./dto";
+import { Role } from "@prisma/client";
 import { COOKIE_ACCESS, COOKIE_REFRESH, AuthUser } from "../common/auth.types";
-import { AllowMustChange, CurrentUser, Public } from "../common/decorators";
+import { AllowMustChange, CurrentUser, Public, Roles } from "../common/decorators";
 
 const secure = () => process.env.NODE_ENV === "production";
-const baseCookie = () => ({ httpOnly: true, secure: secure(), sameSite: "lax" as const });
+const baseCookie = () => ({ httpOnly: true, secure: secure(), sameSite: "strict" as const });
 
 function setSession(res: Response, t: { access: string; refresh: string; accessMaxAgeMs: number; refreshMaxAgeMs: number }) {
   res.cookie(COOKIE_ACCESS, t.access, { ...baseCookie(), path: "/", maxAge: t.accessMaxAgeMs });
@@ -28,7 +29,7 @@ export class AuthController {
 
   @Public() @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("login")
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const { user, tokens } = await this.auth.login(dto.email, dto.password);
+    const { user, tokens } = await this.auth.login(dto.email, dto.password, dto.code);
     setSession(res, tokens);
     return publicUser(user);
   }
@@ -65,6 +66,10 @@ export class AuthController {
     setSession(res, tokens);
     return publicUser(user);
   }
+
+  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/setup") twoFactorSetup(@CurrentUser() u: AuthUser) { return this.auth.twoFactorSetup(u.id); }
+  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/enable") twoFactorEnable(@CurrentUser() u: AuthUser, @Body() dto: TotpCodeDto) { return this.auth.twoFactorEnable(u.id, dto.code); }
+  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(204) @Post("2fa/disable") twoFactorDisable(@CurrentUser() u: AuthUser, @Body() dto: TotpDisableDto) { return this.auth.twoFactorDisable(u.id, dto.password, dto.code); }
 
   @Get("me/export") exportMine(@CurrentUser() u: AuthUser) { return this.auth.exportAccount(u.id); }
 

@@ -4,7 +4,7 @@ import { Me } from "./types";
 
 interface AuthCtx {
   me: Me | null; loading: boolean;
-  login(email: string, password: string): Promise<void>;
+  login(email: string, password: string, code?: string): Promise<void>;
   signup(v: { email: string; password: string; firstName?: string; acceptPolicy: boolean }): Promise<void>;
   acceptInvitation(v: { token: string; password: string; firstName?: string; acceptPolicy: boolean }): Promise<void>;
   logout(): Promise<void>;
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthCtx = {
     me, loading, reload, logout,
-    login: async (email, password) => { await post("/auth/login", { email, password }); await reload(); },
+    login: async (email, password, code) => { await post("/auth/login", { email, password, ...(code ? { code } : {}) }); await reload(); },
     signup: async (v) => { await post("/auth/signup", v); await reload(); },
     acceptInvitation: async (v) => { await post("/auth/invitations/accept", v); await reload(); },
     eraseAccount: async () => { await del("/auth/me"); setMe(null); },

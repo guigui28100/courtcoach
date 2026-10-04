@@ -62,6 +62,10 @@ model User {
   mustChangePassword Boolean @default(false) // mot de passe provisoire donné par le coach : à changer à la première connexion
   lockedUntil   DateTime?
   deletedAt     DateTime?
+  totpSecret    String?   // clé de la double authentification (chiffrée)
+  totpEnabled   Boolean   @default(false)
+  totpLastStep  Int?      // dernier code utilisé (un code ne sert qu'une fois)
+  recoveryCodes String[]  // codes de secours (empreintes)
 
   refreshTokens RefreshToken[]
   accesses      PlayerAccess[]

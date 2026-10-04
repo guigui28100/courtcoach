@@ -7,6 +7,7 @@ const NAV: Record<Role, { to: string; label: string; short?: string }[]> = {
   COACH: [
     { to: "/coach", label: "Espace" },
     { to: "/coach/centre", label: "Centre de compétition jeunes", short: "Centre jeunes" },
+    { to: "/coach/securite", label: "Sécurité" },
   ],
   ADULT: [{ to: "/espace", label: "Mon espace" }],
   GUARDIAN: [{ to: "/suivi", label: "Mon suivi" }],
