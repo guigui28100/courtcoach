@@ -70,6 +70,18 @@ export default function Bulletin() {
   const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
 
+  // Carte d'un domaine de compétences (l'attitude est placée sous le radar, les autres domaines à côté)
+  const axisCard = (a: (typeof EVAL_AXES)[number]) => {
+    if (!ev || !(a.skills.some(([k]) => ev.ratings[k]) || ev.comments[a.key])) return null;
+    return (
+      <div key={a.key} className="grid content-start gap-2 break-inside-avoid rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }}>
+        <h3 className="m-0 flex items-baseline justify-between gap-2 text-base" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key]} </span>{a.label}</span><span className="whitespace-nowrap text-sm">{fmtAvg(axisAverage(ev, a))} / 5 {trendCommon(ev, prev, a)}</span></h3>
+        <SkillBars axis={a} ev={ev} prev={prev} start={start} />
+        {ev.comments[a.key] && <p className="m-0 text-sm text-muted">{ev.comments[a.key]}</p>}
+      </div>
+    );
+  };
+
   return (
     <div className="relative isolate overflow-hidden">
       <div className="print:hidden"><Stars /></div>
@@ -127,20 +139,14 @@ export default function Bulletin() {
             {rated ? (
                 <div className="grid gap-4">
                   <div className="grid gap-5 md:grid-cols-[minmax(0,290px)_1fr] print:grid-cols-[250px_1fr]">
-                    <div className="grid content-start justify-items-center gap-1 self-start break-inside-avoid rounded-2xl border border-line p-3">
-                      <Radar series={series} />
+                    <div className="grid content-start gap-3 self-start">
+                      <div className="grid content-start justify-items-center gap-1 break-inside-avoid rounded-2xl border border-line p-3">
+                        <Radar series={series} />
+                      </div>
+                      {EVAL_AXES.filter((a) => a.key === "attitude").map(axisCard)}
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
-                      {EVAL_AXES.map((a) => {
-                        if (!(a.skills.some(([k]) => ev!.ratings[k]) || ev!.comments[a.key])) return null;
-                        return (
-                          <div key={a.key} className="grid content-start gap-2 break-inside-avoid rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }}>
-                            <h3 className="m-0 flex items-baseline justify-between gap-2 text-base" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key]} </span>{a.label}</span><span className="whitespace-nowrap text-sm">{fmtAvg(axisAverage(ev, a))} / 5 {trendCommon(ev, prev, a)}</span></h3>
-                            <SkillBars axis={a} ev={ev!} prev={prev} start={start} />
-                            {ev!.comments[a.key] && <p className="m-0 text-sm text-muted">{ev!.comments[a.key]}</p>}
-                          </div>
-                        );
-                      })}
+                    <div className="grid content-start gap-3 sm:grid-cols-2 print:grid-cols-2">
+                      {EVAL_AXES.filter((a) => a.key !== "attitude").map(axisCard)}
                     </div>
                   </div>
                 </div>
