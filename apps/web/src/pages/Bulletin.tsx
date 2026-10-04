@@ -67,6 +67,7 @@ export default function Bulletin() {
   const analysed = (allVideos ?? []).filter((v) => v.player?.id === id && v.analysis?.sentAt && inPeriod(v.analysis.sentAt, season, t));
   // Objectifs « à travailler » ce trimestre, avec où ils en sont à la fin du trimestre (point de contrôle du coach)
   const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t)); // le bilan de départ n'a pas encore d'objectifs
+  const startGoals = t === 0 ? goals.filter((g) => goalApplies(g, 1)) : []; // le bilan de départ annonce ce qui sera à travailler au trimestre 1
   const at = (g: Goal) => progressAt(g, t);
   const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
@@ -122,6 +123,21 @@ export default function Bulletin() {
                       {v !== null && <div role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={`Où il en est : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${v}%`, background: `linear-gradient(90deg, ${a?.color ?? "#7c3aed"}, #dcf247)` }} /></div>}
                       {v !== null && before !== null && <span className="text-sm font-bold" style={{ color: v > before ? "#166534" : "#4b5566" }}>{v > before ? `▲ +${v - before} points depuis le trimestre précédent` : v < before ? `▼ ${v - before} points depuis le trimestre précédent` : "= stable depuis le trimestre précédent"}</span>}
                       {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
+                    </li>
+                  ); })}
+                </ul>
+              </section>
+            )}
+
+            {startGoals.length > 0 && (
+              <section className="grid gap-3" aria-labelledby="bul-t1">
+                <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 Objectifs à travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison.</p></div>
+                <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
+                  {startGoals.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); return (
+                    <li key={g.id} className="grid min-w-0 break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a?.color ?? "#7c3aed"}` }}>
+                      <strong>{g.title}</strong>
+                      <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
+                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
                     </li>
                   ); })}
                 </ul>
