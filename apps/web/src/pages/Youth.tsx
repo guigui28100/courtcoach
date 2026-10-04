@@ -127,6 +127,28 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
   );
 }
 
+// Aperçu coach : les vidéos de ce joueur et l'état de chaque analyse (le coach les ouvre dans son studio)
+function PreviewVideos({ p }: { p: Player }) {
+  const videos = useVideos();
+  const mine = (videos ?? []).filter((v) => v.player?.id === p.id);
+  return (
+    <section className="glass gal-pop grid gap-3" aria-labelledby="gal-videos-apercu">
+      <h2 id="gal-videos-apercu" className="m-0 text-2xl">🎬 Mes vidéos</h2>
+      <p className="m-0 text-white/80">Le jeune envoie ses vidéos ici et retrouve tes analyses une fois envoyées. L'envoi de vidéos n'est possible que depuis son compte.</p>
+      {mine.length === 0 ? <p className="m-0 text-white/80">Aucune vidéo pour l'instant.</p> : (
+        <ul className="m-0 grid list-none gap-2 p-0">
+          {mine.map((v) => (
+            <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/10 p-3">
+              <span><strong>{v.title}</strong><br /><small className="text-white/75">{v.shot} · {v.analysis?.sentAt ? (v.seenAt ? "analyse envoyée et vue ✅" : "analyse envoyée, pas encore vue") : "analyse pas encore envoyée"}</small></span>
+              <Link to={`/coach/videos/${v.id}`} className="gal-btn btn-sm no-underline">Ouvrir dans mon studio</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function Videos({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const videos = useVideos(version);
@@ -176,10 +198,10 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div key={p.id} className="grid gap-6">
             <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} />
             <Missions goals={goals[p.id] ?? []} />
-            {!previewId && <SelfEvalSection p={p} goals={goals[p.id] ?? []} />}
+            <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} />
             <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />
             {previewId ? (
-              <section className="glass gal-pop grid gap-2" aria-label="Mes vidéos"><h2 className="m-0 text-2xl">🎬 Mes vidéos</h2><p className="m-0 text-white/80">Ici, le jeune envoie ses vidéos et retrouve tes analyses.</p></section>
+              <PreviewVideos p={p} />
             ) : <Videos p={p} />}
           </div>
         ))}

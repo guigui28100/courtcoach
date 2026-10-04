@@ -51,7 +51,7 @@ function Faces({ value, onChange, label, faces }: { value: number | null | undef
   );
 }
 
-function Form({ p, goals, season, t, initial, onChanged }: { p: Player; goals: Goal[]; season: string; t: number; initial?: SelfEvaluation; onChanged: () => void }) {
+function Form({ p, goals, season, t, initial, onChanged, preview }: { preview?: boolean; p: Player; goals: Goal[]; season: string; t: number; initial?: SelfEvaluation; onChanged: () => void }) {
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
   const [ratings, setRatings] = useState<Record<string, number>>(initial?.ratings ?? {});
   const [gs, setGs] = useState<Record<string, GoalStatus>>(initial?.goals ?? {});
@@ -63,8 +63,9 @@ function Form({ p, goals, season, t, initial, onChanged }: { p: Player; goals: G
   const mine = goals.filter((g) => goalApplies(g, t));
   const base = `/players/${p.id}/self-evaluations/${season}/${t}`;
   const body = () => ({ mood: mood ?? undefined, ratings, goals: Object.fromEntries(Object.entries(gs).filter(([id]) => mine.some((g) => g.id === id))), proud, improve, wish, comment });
-  const save = async () => { setBusy(true); setMsg(""); try { await put(base, body()); setMsg("💾 Brouillon enregistré. Tu peux continuer plus tard."); onChanged(); return true; } catch (e: any) { setMsg("⚠️ " + (e.message || "Impossible d'enregistrer")); return false; } finally { setBusy(false); } };
+  const save = async () => { if (preview) { setMsg("👀 Aperçu : rien n'est enregistré (c'est le jeune qui remplit son bulletin)."); return false; } setBusy(true); setMsg(""); try { await put(base, body()); setMsg("💾 Brouillon enregistré. Tu peux continuer plus tard."); onChanged(); return true; } catch (e: any) { setMsg("⚠️ " + (e.message || "Impossible d'enregistrer")); return false; } finally { setBusy(false); } };
   const send = async () => {
+    if (preview) { setMsg("👀 Aperçu : rien n'est envoyé."); return; }
     if (!confirm("Envoyer ton bulletin à ton coach ? Après l'envoi, tu ne pourras plus le modifier.")) return;
     if (!(await save())) return; setBusy(true);
     try { await post(`${base}/send`); setMsg("🚀 Envoyé à ton coach !"); onChanged(); } catch (e: any) { setMsg("⚠️ " + (e.message || "Envoi impossible")); } finally { setBusy(false); }
@@ -106,7 +107,7 @@ function Form({ p, goals, season, t, initial, onChanged }: { p: Player; goals: G
 }
 
 // Section « Mon bulletin » de l'espace du jeune
-export function SelfEvalSection({ p, goals }: { p: Player; goals: Goal[] }) {
+export function SelfEvalSection({ p, goals, preview }: { p: Player; goals: Goal[]; preview?: boolean }) {
   const season = currentSeason();
   const [t, setT] = useState(trimesterOf());
   const [list, setList] = useState<SelfEvaluation[] | null>(null);
@@ -123,10 +124,10 @@ export function SelfEvalSection({ p, goals }: { p: Player; goals: Goal[] }) {
       </div>
       {list === null ? <p className="m-0 text-white/80">Chargement…</p> : cur?.sentAt ? (
         <div className="grid gap-3">
-          <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 font-bold text-ink">🚀 Envoyé à ton coach le {fmtDate(cur.sentAt)}{cur.readAt ? " · il l'a lu ✅" : " · il ne l'a pas encore lu"}</p>
+          <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 font-bold text-ink">🚀 Envoyé à ton coach le {fmtDate(cur.sentAt)}{preview ? "" : cur.readAt ? " · il l'a lu ✅" : " · il ne l'a pas encore lu"}</p>
           <SelfEvalView ev={cur} goals={goals} dark />
         </div>
-      ) : <Form key={`${season}-${t}`} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={load} />}
+      ) : <Form key={`${season}-${t}`} preview={preview} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={load} />}
     </section>
   );
 }
