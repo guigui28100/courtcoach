@@ -67,6 +67,9 @@ Avant l'ouverture : voir `RGPD-A-FAIRE.md` à la racine (registre, analyse d'imp
 ## Espace « galaxie » du jeune
 Quand un jeune se connecte, sa page « Mon suivi » devient « Ma galaxie tennis » : fond d'étoiles, une balle de tennis qui flotte, **missions** (ses objectifs) avec une fusée qui avance et une étoile à 100 %, **radar** de la dernière évaluation avec « le mot de ton coach », matchs, vidéos et bulletins. Les parents gardent la présentation sobre. Rien n'est chargé depuis un autre site.
 
+## Bulletin
+Le bulletin d'un trimestre reprend l'univers « galaxie » : bandeau d'en-tête coloré, trois chiffres clés (moyenne générale en anneau, missions accomplies, victoires), compétences par domaine en cartes de couleur avec le radar, « le mot du coach » en citation, points forts / à travailler / prochain trimestre, missions de la saison avec barres de progression, matchs, analyses vidéo avec images annotées, signatures. À l'impression ou en PDF, le fond étoilé disparaît (page blanche A4) mais les couleurs du bandeau et des cartes sont conservées ; les blocs ne sont jamais coupés en deux.
+
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.
 - La limitation des essais de connexion tourne « par instance » sur Vercel ; le blocage du compte après 5 échecs, lui, est enregistré en base.
