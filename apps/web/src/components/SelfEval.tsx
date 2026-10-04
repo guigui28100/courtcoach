@@ -107,7 +107,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview }: { preview?: 
 }
 
 // Section « Mon bulletin » de l'espace du jeune
-export function SelfEvalSection({ p, goals, preview }: { p: Player; goals: Goal[]; preview?: boolean }) {
+export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goals: Goal[]; preview?: boolean; onSaved?: () => void }) {
   const season = currentSeason();
   const [t, setT] = useState(trimesterOf());
   const [list, setList] = useState<SelfEvaluation[] | null>(null);
@@ -127,7 +127,7 @@ export function SelfEvalSection({ p, goals, preview }: { p: Player; goals: Goal[
           <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 font-bold text-ink">🚀 Envoyé à ton coach le {fmtDate(cur.sentAt)}{preview ? "" : cur.readAt ? " · il l'a lu ✅" : " · il ne l'a pas encore lu"}</p>
           <SelfEvalView ev={cur} goals={goals} dark />
         </div>
-      ) : <Form key={`${season}-${t}`} preview={preview} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={load} />}
+      ) : <Form key={`${season}-${t}`} preview={preview} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={() => { load(); onSaved?.(); }} />}
     </section>
   );
 }

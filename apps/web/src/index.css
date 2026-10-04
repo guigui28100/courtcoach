@@ -81,6 +81,9 @@
 .tabbar { min-width: 0; position: sticky; top: 61px; z-index: 30; margin-inline: -1rem; padding-inline: 1rem; background: rgba(251, 247, 241, 0.96); backdrop-filter: blur(8px); }
 .tabbar > div { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--color-line); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
 .tabbar > div::-webkit-scrollbar { display: none; }
+.gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 1.5rem; background: rgba(10, 13, 44, 0.78); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
+.gal-tabs > div { display: flex; gap: 0.5rem; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 24px), transparent); }
+.gal-tabs > div::-webkit-scrollbar { display: none; }
 .hero-court { color: rgba(255, 255, 255, 0.22); }
 
 /* ---------- Univers « galaxie » : espace des comptes jeunes (aucune image ni police extérieure) ---------- */
