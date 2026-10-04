@@ -3,7 +3,8 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { post } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
-import { Err, Field, PageHead } from "../components/ui";
+import { AuthShell, PasswordInput } from "../components/AuthShell";
+import { Err, Field } from "../components/ui";
 
 // Première connexion avec un mot de passe provisoire : on choisit son propre mot de passe.
 export default function ChangePassword() {
@@ -26,15 +27,11 @@ export default function ChangePassword() {
   }
 
   return (
-    <>
-      <PageHead title={forced ? "Choisis ton mot de passe" : "Changer mon mot de passe"}>
-        {forced ? "Le mot de passe que le club t'a donné est provisoire. Choisis-en un que toi seul connais : personne, pas même le coach, ne pourra le lire." : "Choisis un nouveau mot de passe."}
-      </PageHead>
-      <div className="mx-auto grid max-w-lg gap-4 px-4 py-8">
-        <form onSubmit={submit} className="card grid gap-4" noValidate>
-          <Field label={forced ? "Mot de passe provisoire" : "Mot de passe actuel"} id="current"><input id="current" name="current" type="password" required maxLength={128} className="input" autoComplete="current-password" /></Field>
-          <Field label="Nouveau mot de passe" id="next" hint="10 caractères minimum. Une phrase facile à retenir est idéale."><input id="next" name="next" type="password" required minLength={10} maxLength={128} className="input" autoComplete="new-password" /></Field>
-          <Field label="Nouveau mot de passe (encore une fois)" id="again"><input id="again" name="again" type="password" required maxLength={128} className="input" autoComplete="new-password" /></Field>
+    <AuthShell eyebrow={forced ? "Première connexion" : "Mon compte"} title={forced ? "Choisis ton mot de passe" : "Changer mon mot de passe"} subtitle={forced ? "Le mot de passe que le club t'a donné est provisoire. Choisis-en un que toi seul connais : personne, pas même le coach, ne pourra le lire." : "Choisis un nouveau mot de passe."}>
+        <form onSubmit={submit} className="card grid gap-4 !p-6 shadow-[0_10px_30px_rgba(16,32,58,0.08)]" noValidate>
+          <Field label={forced ? "Mot de passe provisoire" : "Mot de passe actuel"} id="current"><PasswordInput id="current" name="current" autoComplete="current-password" /></Field>
+          <Field label="Nouveau mot de passe" id="next" hint="10 caractères minimum. Une phrase facile à retenir est idéale."><PasswordInput id="next" name="next" minLength={10} autoComplete="new-password" /></Field>
+          <Field label="Nouveau mot de passe (encore une fois)" id="again"><PasswordInput id="again" name="again" autoComplete="new-password" /></Field>
           {forced && (
             <label className="flex items-start gap-3 text-sm">
               <input type="checkbox" name="policy" required className="mt-1 h-5 w-5 accent-clay" />
@@ -44,7 +41,6 @@ export default function ChangePassword() {
           <Err msg={error} />
           <button className="btn-clay w-full">Enregistrer mon mot de passe</button>
         </form>
-      </div>
-    </>
+    </AuthShell>
   );
 }
