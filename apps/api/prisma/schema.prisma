@@ -111,6 +111,7 @@ model Player {
   consents    Consent[]
   goals       Goal[]
   evaluations Evaluation[]
+  selfEvaluations SelfEvaluation[]
   matches     Match[]
   videos      Video[]
   analyses    Analysis[]
@@ -207,6 +208,28 @@ model Evaluation {
   next         String   @default("")
   appreciation String   @default("")
   updatedAt    DateTime @updatedAt
+
+  @@unique([playerId, season, trimester])
+}
+
+// Auto-évaluation du jeune en fin de trimestre : choix pré-enregistrés (identifiants) + un mot libre court.
+// Brouillon visible du jeune et de sa famille ; le coach ne la voit qu'une fois ENVOYÉE (sentAt).
+model SelfEvaluation {
+  id        String    @id @default(cuid())
+  playerId  String
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season    String
+  trimester Int       // 1, 2 ou 3
+  mood      Int?      // 1 à 5 (météo du trimestre)
+  ratings   Json      @default("{}") // { axe: 1..5 } ressenti par grand domaine
+  goals     Json      @default("{}") // { goalId: ACHIEVED | IN_PROGRESS | NOT_ACHIEVED }
+  proud     String[]  // identifiants de phrases (« ma fierté »)
+  improve   String[]  // identifiants de phrases (« je veux progresser en »)
+  wish      String[]  // identifiants de phrases (« j'aimerais »)
+  comment   String    @default("")
+  sentAt    DateTime?
+  readAt    DateTime? // lu par le coach
+  updatedAt DateTime  @updatedAt
 
   @@unique([playerId, season, trimester])
 }

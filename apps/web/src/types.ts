@@ -100,3 +100,15 @@ export const statusAt = (g: Pick<Goal, "checkpoints">, t: number): GoalStatus | 
 export const isCarriedOver = (g: Pick<Goal, "trimesters" | "checkpoints">, t: number) => t > 1 && goalApplies(g, t) && goalApplies(g, t - 1) && !!checkpointAt(g, t - 1) && statusAt(g, t - 1) !== "ACHIEVED";
 // Les trimestres où un objectif est à travailler, écrits en toutes lettres (vide = toute la saison = 1, 2 et 3)
 export const trimestersOf = (g: Pick<Goal, "trimesters">) => (g.trimesters?.length ? g.trimesters : [1, 2, 3]);
+
+// ----- Auto-évaluation du jeune (fin de trimestre) : surtout des choix pré-enregistrés -----
+export interface SelfEvaluation { id: string; playerId: string; season: string; trimester: number; mood: number | null; ratings: Record<string, number>; goals: Record<string, GoalStatus>; proud: string[]; improve: string[]; wish: string[]; comment: string; sentAt: string | null; readAt: string | null; updatedAt: string; }
+export const MOODS = [["😟", "Très dur"], ["😕", "Pas terrible"], ["🙂", "Plutôt bien"], ["😀", "Très bien"], ["🤩", "Génial"]] as const;
+export type Preset = [id: string, label: string];
+export const SELF_PRESETS: { proud: Preset[]; improve: Preset[]; wish: Preset[] } = {
+  proud: [["service", "Mon service est plus régulier"], ["coup-droit", "Mon coup droit progresse"], ["revers", "Mon revers progresse"], ["filet", "Je suis plus à l'aise au filet"], ["deplacements", "Je me déplace mieux"], ["match", "J'ai bien joué en match"], ["calme", "Je reste calme quand c'est difficile"], ["assidu", "Je suis venu à presque tous les entraînements"], ["equipe", "J'aide mes partenaires"], ["physique", "Je tiens mieux physiquement"]],
+  improve: [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["deplacements", "Mes déplacements"], ["tactique", "Mes choix pendant le match"], ["calme", "Rester calme quand je rate"], ["concentration", "Ma concentration"], ["endurance", "Mon endurance"], ["confiance", "Ma confiance en moi"]],
+  wish: [["match", "Jouer plus de matchs"], ["tournoi", "Faire un tournoi"], ["defis", "Faire plus de petits défis"], ["jeux", "Plus de jeux pour s'amuser"], ["video", "Que le coach regarde mes vidéos"], ["physique", "Un peu plus de physique"], ["service", "Travailler encore mon service"], ["copains", "Jouer avec des copains"], ["continuer", "Continuer comme ça"]],
+};
+export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂", "Ça va"], ["😀", "Bien"], ["🤩", "Super"]] as const;
+export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];

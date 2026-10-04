@@ -85,3 +85,15 @@ export class MatchDto {
   @IsOptional() @IsString() @MaxLength(40) score?: string;
   @IsOptional() @IsString() @MaxLength(300) remark?: string;
 }
+
+// Auto-évaluation du jeune : surtout des choix pré-enregistrés (identifiants), un mot libre court.
+const PRESET_ID = /^[a-z0-9-]{1,40}$/;
+export class SelfEvaluationDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(5) mood?: number;
+  @IsOptional() @IsObject() ratings?: Record<string, number>;
+  @IsOptional() @IsObject() goals?: Record<string, string>;
+  @IsOptional() @IsArray() @ArrayMaxSize(5) @Matches(PRESET_ID, { each: true }) proud?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(5) @Matches(PRESET_ID, { each: true }) improve?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(5) @Matches(PRESET_ID, { each: true }) wish?: string[];
+  @IsOptional() @IsString() @MaxLength(300) comment?: string;
+}

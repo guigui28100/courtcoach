@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, SelfEvaluationDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -36,6 +36,11 @@ export class PlayersController {
 
   @Get("players/:id/evaluations") evaluations(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.evaluations(u, id); }
   @Put("players/:id/evaluations/:season/:trimester") saveEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number, @Body() dto: EvaluationDto) { return this.svc.saveEvaluation(u, id, season, t, dto); }
+
+  @Get("players/:id/self-evaluations") selfEvaluations(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.selfEvaluations(u, id); }
+  @Roles(Role.GUARDIAN, Role.YOUTH) @Put("players/:id/self-evaluations/:season/:trimester") saveSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number, @Body() dto: SelfEvaluationDto) { return this.svc.saveSelfEvaluation(u, id, season, t, dto); }
+  @Roles(Role.GUARDIAN, Role.YOUTH) @Post("players/:id/self-evaluations/:season/:trimester/send") sendSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.sendSelfEvaluation(u, id, season, t); }
+  @Roles(Role.COACH) @Post("players/:id/self-evaluations/:season/:trimester/read") readSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.markSelfEvaluationRead(u, id, season, t); }
 
   @Get("players/:id/matches") matches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.matches(u, id); }
   @Post("players/:id/matches") addMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: MatchDto) { return this.svc.addMatch(u, id, dto); }
