@@ -41,6 +41,7 @@ export class PlayersService {
     await this.assertCanRead(user, id);
     const p = await this.prisma.player.findUnique({ where: { id }, include: { consents: { select: { id: true, kind: true, givenBy: true, method: true, grantedAt: true, withdrawnAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
+    if (user.role === Role.COACH) await this.audit.log(user.id, "read", "Player", id); // journal : le coach a ouvert cette fiche
     const { consents, ...player } = p;
     return { ...this.shape(player as Player, user), consents: user.role === Role.COACH ? consents : undefined };
   }
@@ -159,6 +160,20 @@ export class PlayersService {
       ]);
     }
     await this.audit.log(user.id, "revoke-access", "Player", playerId);
+  }
+
+  // Mot de passe oublié par un parent ou un jeune : le coach donne un nouveau mot de passe provisoire (à changer à la prochaine connexion).
+  async resetPassword(user: AuthUser, playerId: string, userId: string) {
+    this.assertCoach(user);
+    const access = await this.prisma.playerAccess.findUnique({ where: { userId_playerId: { userId, playerId } }, include: { user: true } });
+    if (!access || access.user.deletedAt || (access.user.role !== Role.GUARDIAN && access.user.role !== Role.YOUTH)) throw new NotFoundException("Accès introuvable");
+    const temporaryPassword = this.generatePassword();
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hash(temporaryPassword), mustChangePassword: true, failedLogins: 0, lockedUntil: null } }),
+      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }), // toutes ses sessions sont fermées
+    ]);
+    await this.audit.log(user.id, "reset-password", "Player", playerId);
+    return { email: access.user.email, temporaryPassword };
   }
 
   private generatePassword() {

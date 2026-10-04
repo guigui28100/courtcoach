@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
 import { AdultSpace, FamilySpace } from "./pages/Member";
+import Securite from "./pages/Securite";
 import VideoReview from "./pages/VideoReview";
 import YouthSpace from "./pages/Youth";
 import PlayerDetail from "./pages/PlayerDetail";
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/autorisation" element={<Authorization />} />
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
+        <Route path="/coach/securite" element={<Guard roles={["COACH"]}><Securite /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
         <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH"]}><Apercu /></Guard>} />

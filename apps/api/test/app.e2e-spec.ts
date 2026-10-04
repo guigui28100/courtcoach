@@ -59,7 +59,7 @@ describe("CourtCoach API", () => {
     const r = await agent().post("/api/auth/login").set(ORIGIN).send({ email: "coach@exemple.fr", password: PASSWORD }).expect(200);
     const cookies = (r.headers["set-cookie"] as unknown as string[]).join(";");
     expect(cookies).toMatch(/HttpOnly/i);
-    expect(cookies).toMatch(/SameSite=Lax/i);
+    expect(cookies).toMatch(/SameSite=Strict/i);
     expect(cookies).toMatch(/cc_rt=[^;]*;[^,]*Max-Age=1800/i); // la session se ferme après 30 minutes sans activité (côté serveur aussi)
   });
 

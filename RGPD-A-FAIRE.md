@@ -49,5 +49,12 @@
 13. **Charte de bonne pratique avec les mineurs** : échanges uniquement via l'application, jamais en messagerie privée personnelle ; en cas de signalement, une personne référente au club.
 
 
+## Documents prêts à relire (nouvelle version)
+- `REGISTRE-TRAITEMENTS.md` : registre des traitements (point 4 ci-dessus), à compléter aux endroits ⚠️.
+- `PROCEDURE-FUITE.md` : que faire en cas de fuite (point 9).
+- `CHARTE-MINEURS.md` : charte de bonne pratique avec les mineurs (point 13), à faire valider par le président.
+- Côté application, déjà en place : double authentification du coach, mots de passe chiffrés et contrôlés, blocage après 5 erreurs, journal 12 mois, cloisonnement testé, suppression automatique des vidéos, droits d'accès / effacement.
+- **Reste pour toi** : adresse e-mail du club dans la politique, nom du référent, hébergeur en Europe + contrat (DPA), AIPD avec le comité, accord papier des parents avant tout vrai jeune, supprimer les joueurs fictifs.
+
 ## Revue de sécurité de la nouvelle version
 Voir `apps/SECURITE.md` (contrôles faits, corrections, et liste de ce qui reste : supprimer `SETUP_TOKEN`, double authentification du coach, mot de passe oublié, sauvegardes).

@@ -53,7 +53,8 @@ export class OriginGuard implements CanActivate {
     const allowed = (process.env.WEB_ORIGIN || "").replace(/\/$/, "");
     const origin = req.headers.origin as string | undefined;
     const referer = req.headers.referer as string | undefined;
-    const from = origin || (referer ? new URL(referer).origin : undefined);
+    let from = origin;
+    if (!from && referer) { try { from = new URL(referer).origin; } catch { throw new ForbiddenException("Origine invalide"); } }
     if (!from) {
       if (process.env.NODE_ENV === "production") throw new ForbiddenException("Origine manquante");
       return true;

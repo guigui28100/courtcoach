@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { ApiError } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { Err, Field, PageHead } from "../components/ui";
@@ -10,6 +11,7 @@ export default function Connexion() {
   const [mode, setMode] = useState<"connexion" | "inscription">(params.get("mode") === "inscription" ? "inscription" : "connexion");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [needCode, setNeedCode] = useState(false); // le coach a la double authentification
   const from = (useLocation().state as { from?: string } | null)?.from;
   if (me) return <Navigate to={from && from !== "/connexion" ? from : homeFor(me.role)} replace />;
 
@@ -18,9 +20,9 @@ export default function Connexion() {
     const f = new FormData(e.currentTarget);
     setError(""); setBusy(true);
     try {
-      if (mode === "connexion") await login(String(f.get("email")), String(f.get("password")));
+      if (mode === "connexion") await login(String(f.get("email")), String(f.get("password")), String(f.get("code") || "") || undefined);
       else await signup({ email: String(f.get("email")), password: String(f.get("password")), firstName: String(f.get("firstName") || "") || undefined, acceptPolicy: f.get("policy") === "on" });
-    } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+    } catch (err) { if ((err as ApiError).code === "TOTP_REQUIRED") setNeedCode(true); setError((err as Error).message); } finally { setBusy(false); }
   }
 
   return (
@@ -47,6 +49,11 @@ export default function Connexion() {
           <Field label="Mot de passe" id="password" hint={mode === "inscription" ? "10 caractères minimum. Une phrase facile à retenir est idéale." : undefined}>
             <input id="password" name="password" type="password" required minLength={mode === "inscription" ? 10 : 1} className="input" autoComplete={mode === "inscription" ? "new-password" : "current-password"} maxLength={128} />
           </Field>
+          {mode === "connexion" && needCode && (
+            <Field label="Code à 6 chiffres (application d'authentification)" id="code" hint="Tu peux aussi utiliser un code de secours.">
+              <input id="code" name="code" required autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={20} className="input" />
+            </Field>
+          )}
           {mode === "inscription" && (
             <label className="flex items-start gap-3 text-sm">
               <input type="checkbox" name="policy" required className="mt-1 h-5 w-5 accent-clay" />

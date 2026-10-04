@@ -74,3 +74,6 @@ Voir `RGPD-A-FAIRE.md` : adresse e-mail du club, durée de conservation, relectu
 2. Facultatif : **`VIDEO_QUOTA_MB`** (par défaut 350) = place maximale pour les vidéos. La base gratuite fait 512 Mo : ne dépasse pas 400.
 3. **Redeploy** de `courtcoach-api` (Deployments → ⋯ → Redeploy). La base se met à jour toute seule.
 4. Vérifie dans **Settings → Cron Jobs** qu'une tâche `/api/cron/purge` apparaît.
+
+## Étape K – Mot de passe oublié du coach, ou téléphone perdu
+Le coach n'a pas de bouton « mot de passe oublié » (par sécurité, sans service d'e-mail). Si tu perds ton mot de passe, ou ton téléphone **et** tes codes de secours, demande-moi : je relance la commande `create-coach` avec un nouveau mot de passe (et `COACH_RESET_2FA=1` pour désactiver la double authentification, que tu réactives ensuite dans « Sécurité »). Pour une famille, c'est plus simple : sur la fiche du joueur, bouton **Mot de passe oublié**.

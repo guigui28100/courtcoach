@@ -1,6 +1,6 @@
 // Appels au serveur. Les cookies de connexion sont « httpOnly » : le JavaScript du site ne peut jamais les lire.
 export class ApiError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public code?: string) { super(message); }
 }
 
 async function raw(path: string, init: RequestInit = {}) {
@@ -17,7 +17,7 @@ async function parse(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const m = Array.isArray(data.message) ? data.message[0] : data.message;
-    throw new ApiError(res.status, m || "Une erreur est survenue.");
+    throw new ApiError(res.status, m || "Une erreur est survenue.", data.code);
   }
   return data;
 }

@@ -153,6 +153,7 @@ export class VideosService {
   // ----- Détail, discussion -----
   async detail(user: AuthUser, id: string) {
     await this.load(user, id);
+    if (user.role === Role.COACH) await this.audit.log(user.id, "view", "Video", id); // journal : le coach a ouvert cette vidéo
     const v = await this.prisma.video.findUniqueOrThrow({ where: { id }, include: this.include });
     const out = this.summary(v, user);
     const talk = user.role === Role.COACH || !!out.analysis?.sentAt;
@@ -256,6 +257,7 @@ export class VideosService {
     const now = new Date();
     const a = await this.prisma.video.deleteMany({ where: { deleteAfter: { lt: now } } });
     const b = await this.prisma.video.deleteMany({ where: { complete: false, recordedAt: { lt: new Date(now.getTime() - STALE_UPLOAD_MS) } } });
-    return { expired: a.count, incomplete: b.count };
+    const c = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } } }); // le journal est gardé 12 mois
+    return { expired: a.count, incomplete: b.count, journal: c.count };
   }
 }

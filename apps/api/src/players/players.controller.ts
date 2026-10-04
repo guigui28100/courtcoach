@@ -28,6 +28,8 @@ export class PlayersController {
   @Get("players/:id/access") listAccess(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.listAccess(u, id); }
   @Delete("players/:id/access/:userId") @HttpCode(204) revokeAccess(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("userId") uid: string) { return this.svc.revokeAccess(u, id, uid); }
 
+  @Post("players/:id/access/:userId/reset-password") @HttpCode(200) resetPassword(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("userId") uid: string) { return this.svc.resetPassword(u, id, uid); }
+
   @Get("players/:id/goals") goals(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("season") season?: string) { return this.svc.goals(u, id, season); }
   @Post("players/:id/goals") addGoal(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: GoalDto) { return this.svc.addGoal(u, id, dto); }
   @Patch("goals/:goalId") updateGoal(@CurrentUser() u: AuthUser, @Param("goalId") gid: string, @Body() dto: UpdateGoalDto) { return this.svc.updateGoal(u, gid, dto); }
