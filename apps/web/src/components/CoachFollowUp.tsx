@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { del, post, put } from "../api";
+import { del, get, post, put } from "../api";
+import { GoalEvalCard } from "./GoalEval";
 import { Radar } from "./Radar";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { Err, Field } from "./ui";
-import { axisAverage, currentSeason, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -26,8 +27,11 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  useEffect(() => { get<Goal[]>(`/players/${p.id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([])); }, [p.id, season]);
+  const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t));
   // On recharge le formulaire quand on change de trimestre ou quand les données arrivent.
-  useEffect(() => { setRatings(saved?.ratings ?? {}); setComments(saved?.comments ?? {}); setMsg(null); }, [saved, season, t]);
+  useEffect(() => { setRatings(saved?.ratings ?? {}); setComments(saved?.comments ?? {}); setMsg(null); }, [saved?.id, season, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const prevP = previousPeriod(season, t);
   const prev = evals?.find((e) => e.season === prevP.season && e.trimester === prevP.t);
   const count = Object.values(ratings).filter(Boolean).length;
@@ -47,16 +51,39 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
+  const axisOf = (g: Goal) => AXES.find((x) => x.key === g.axis);
   return (
-    <form onSubmit={save} className="grid gap-4" noValidate key={`${season}-${t}-${saved?.updatedAt ?? "new"}`}>
+    <div className="grid gap-4">
       {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
-        <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>
-        {saved && <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin</Link>}
+        {t === 0 && <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>}
+        {saved && <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">{t === 0 ? "Voir le bilan" : "Voir le bulletin"}</Link>}
       </div>
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="grid gap-4">
+
+      {t > 0 && (
+        <section className="card grid gap-3" aria-labelledby="ev-objectifs">
+          <div><h2 id="ev-objectifs" className="m-0 text-xl">🎯 Objectifs du trimestre {t}</h2><p className="hint m-0">Pour chaque objectif fixé, indique où il en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et repris dans le bulletin.</p></div>
+          {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} color={axisOf(g)?.color ?? "#7c3aed"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
+            </div>
+          )}
+        </section>
+      )}
+
+      <form onSubmit={save} className="grid gap-4" noValidate key={`${season}-${t}-${evals ? "ok" : "chargement"}`}>
+        <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "Synthèse du bilan de départ" : "Synthèse du trimestre"}</legend>
+          <Field label={t === 0 ? "Premier regard sur le joueur" : "Appréciation générale"} id="appreciation"><textarea id="appreciation" name="appreciation" className="input" maxLength={3000} defaultValue={saved?.appreciation ?? ""} /></Field>
+          <Field label="Points forts" id="strengths"><textarea id="strengths" name="strengths" className="input" maxLength={3000} defaultValue={saved?.strengths ?? ""} /></Field>
+          <Field label={t === 0 ? "Axes de progrès" : "À travailler"} id="improve"><textarea id="improve" name="improve" className="input" maxLength={3000} defaultValue={saved?.improve ?? ""} /></Field>
+          <Field label={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Objectifs du trimestre suivant"} id="next"><textarea id="next" name="next" className="input" maxLength={3000} defaultValue={saved?.next ?? ""} /></Field>
+        </fieldset>
+        <details className="card" open={t === 0}>
+          <summary className="cursor-pointer font-display text-lg font-bold">📊 Compétences {t === 0 ? "" : "(facultatif) "}· {count} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</summary>
+          <p className="hint mt-2">{t === 0 ? "Note les 21 compétences : c'est le point de départ de la saison." : "Tu peux aussi réévaluer les compétences pour que le radar du bulletin suive la progression ; sinon, laisse vide."}</p>
+          <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-4">
           {EVAL_AXES.map((a) => (
             <fieldset key={a.key} className="card grid gap-3 border-t-[6px]" style={{ borderTopColor: a.color }}>
               <legend className="px-2 font-display text-lg font-bold" style={{ color: a.color }}>{a.label} <small className="font-body text-muted">· moyenne {fmtAvg(axisAverage({ ratings }, a))}</small></legend>
@@ -76,17 +103,13 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
               <Field label={`Commentaire ${a.label.toLowerCase()} (facultatif)`} id={`c-${a.key}`}><textarea id={`c-${a.key}`} className="input" maxLength={500} value={comments[a.key] ?? ""} onChange={(e) => setComments((c) => ({ ...c, [a.key]: e.target.value }))} /></Field>
             </fieldset>
           ))}
-          <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "Synthèse du bilan de départ" : "Synthèse du trimestre"}</legend>
-            <Field label={t === 0 ? "Premier regard sur le joueur" : "Appréciation générale"} id="appreciation"><textarea id="appreciation" name="appreciation" className="input" maxLength={3000} defaultValue={saved?.appreciation ?? ""} /></Field>
-            <Field label="Points forts" id="strengths"><textarea id="strengths" name="strengths" className="input" maxLength={3000} defaultValue={saved?.strengths ?? ""} /></Field>
-            <Field label={t === 0 ? "Axes de progrès" : "À travailler"} id="improve"><textarea id="improve" name="improve" className="input" maxLength={3000} defaultValue={saved?.improve ?? ""} /></Field>
-            <Field label={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Objectifs du trimestre suivant"} id="next"><textarea id="next" name="next" className="input" maxLength={3000} defaultValue={saved?.next ?? ""} /></Field>
-          </fieldset>
-        </div>
+            </div>
         <aside className="card h-fit lg:sticky lg:top-24" aria-label="Aperçu en direct"><h3 className="mb-2 mt-0">Aperçu</h3><Radar series={series} /></aside>
-      </div>
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer l'évaluation</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
-    </form>
+          </div>
+        </details>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer la synthèse et les compétences"}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      </form>
+    </div>
   );
 }
 
@@ -138,7 +161,7 @@ export function Bulletins({ p }: { p: Player }) {
           const avg = overallAverage(e);
           return (
             <li key={e.id} className="card flex flex-wrap items-center justify-between gap-3">
-              <div><strong>{periodLabel(e.season, e.trimester)}</strong><p className="m-0 text-sm text-muted">{ratedCount(e)} compétences notées · moyenne {fmtAvg(avg)} / 5 {trendCommon(e, before)}</p></div>
+              <div><strong>{periodLabel(e.season, e.trimester)}</strong><p className="m-0 text-sm text-muted">{ratedCount(e) === 0 ? "objectifs évalués" : `${ratedCount(e)} compétences notées · moyenne ${fmtAvg(avg)} / 5`} {trendCommon(e, before)}</p></div>
               <Link to={`/coach/centre/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-clay btn-sm no-underline">{e.trimester === 0 ? "Ouvrir le bilan" : "Ouvrir le bulletin"}</Link>
             </li>
           );

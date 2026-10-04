@@ -160,7 +160,7 @@ function FollowUp({ p }: { p: Player }) {
       {evals.length > 0 && (
         <>
           <h3 className="m-0">Bulletins</h3>
-          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.filter((e) => ratedCount(e) > 0).map((e) => <li key={e.id}><Link to={`/suivi/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-outline btn-sm no-underline">{periodLabel(e.season, e.trimester).replace("Trimestre ", "T")}</Link></li>)}</ul>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.map((e) => <li key={e.id}><Link to={`/suivi/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-outline btn-sm no-underline">{periodLabel(e.season, e.trimester).replace("Trimestre ", "T")}</Link></li>)}</ul>
         </>
       )}
       {matches.length > 0 && <><h3 className="m-0">Compétition</h3><MatchTable matches={matches} /></>}

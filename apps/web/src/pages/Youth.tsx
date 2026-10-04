@@ -102,9 +102,9 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
             </div>
           </div>
         )}
-        {evals.some((e) => ratedCount(e) > 0) && (
+        {evals.length > 0 && (
           <div className="grid gap-2"><h3 className="m-0 text-lg">📄 Mes bulletins</h3>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.filter((e) => ratedCount(e) > 0).map((e) => <li key={e.id}><Link to={`${bulletinBase}/bulletin/${e.season}/${e.trimester}`} className="gal-btn btn-sm no-underline">Trimestre {e.trimester} · {e.season.replace("-", "/")}</Link></li>)}</ul>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.map((e) => <li key={e.id}><Link to={`${bulletinBase}/bulletin/${e.season}/${e.trimester}`} className="gal-btn btn-sm no-underline">{e.trimester === 0 ? "Bilan de départ" : `Trimestre ${e.trimester}`} · {e.season.replace("-", "/")}</Link></li>)}</ul>
           </div>
         )}
       </section>

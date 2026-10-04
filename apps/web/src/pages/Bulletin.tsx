@@ -97,7 +97,7 @@ export default function Bulletin() {
             <section className={"grid gap-3 " + (t === 0 ? "" : "sm:grid-cols-3")} aria-label="Chiffres clés">
               <div className="flex items-center gap-3 rounded-2xl bg-[#f3efff] p-4">
                 {rated ? <Gauge value={overallAverage(ev)} /> : <span className="text-3xl" aria-hidden="true">📊</span>}
-                <div><p className="m-0 font-display text-lg font-extrabold leading-tight">Moyenne générale</p><p className="m-0 text-sm text-muted">{rated ? (t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin") : "Pas encore évalué"}</p></div>
+                <div><p className="m-0 font-display text-lg font-extrabold leading-tight">{rated || t === 0 ? "Moyenne générale" : "Compétences"}</p><p className="m-0 text-sm text-muted">{!rated && t > 0 ? "non réévaluées ce trimestre" : rated ? (t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin") : "Pas encore évalué"}</p></div>
               </div>
               {t > 0 && <div className="flex items-center gap-3 rounded-2xl bg-[#fff6dc] p-4">
                 <span className="text-4xl" aria-hidden="true">⭐</span>
@@ -130,7 +130,7 @@ export default function Bulletin() {
                   </div>
                 </div>
               </section>
-            ) : <Empty>Aucune compétence n'est encore notée pour ce trimestre.</Empty>}
+            ) : t === 0 ? <Empty>Les compétences du bilan de départ ne sont pas encore notées.</Empty> : null}
 
             {ev?.appreciation?.trim() && (
               <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
