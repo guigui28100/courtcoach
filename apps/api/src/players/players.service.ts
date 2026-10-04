@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { ConsentKind, Player, Role } from "@prisma/client";
+import { ConsentKind, GoalStatus, Player, Role } from "@prisma/client";
 import { randomBytes, randomInt } from "crypto";
 import { hash } from "@node-rs/argon2";
 import { PrismaService } from "../prisma/prisma.service";
@@ -170,7 +170,7 @@ export class PlayersService {
   async goals(user: AuthUser, playerId: string, season?: string) {
     await this.assertCanRead(user, playerId);
     if (season && !SEASON.test(season)) throw new BadRequestException("Saison invalide");
-    return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, progress: true, comment: true }, orderBy: { trimester: "asc" } } } });
+    return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, status: true, progress: true, comment: true }, orderBy: { trimester: "asc" } } } });
   }
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
     this.assertCoach(user);
@@ -195,12 +195,12 @@ export class PlayersService {
     if (![1, 2, 3].includes(trimester)) throw new BadRequestException("Trimestre invalide");
     const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true } });
     if (!goal) throw new NotFoundException("Objectif introuvable");
-    const data = { progress: dto.progress, comment: dto.comment ?? "" };
+    const data = { progress: dto.progress, comment: dto.comment ?? "", status: dto.status ?? (dto.progress >= 100 ? GoalStatus.ACHIEVED : GoalStatus.IN_PROGRESS) };
     const cp = await this.prisma.goalCheckpoint.upsert({ where: { goalId_trimester: { goalId, trimester } }, update: data, create: { goalId, trimester, ...data } });
     const latest = await this.prisma.goalCheckpoint.findFirst({ where: { goalId }, orderBy: { trimester: "desc" } });
     await this.prisma.goal.update({ where: { id: goalId }, data: { progress: latest!.progress } });
     await this.touch(goal.playerId);
-    return { trimester: cp.trimester, progress: cp.progress, comment: cp.comment };
+    return { trimester: cp.trimester, status: cp.status, progress: cp.progress, comment: cp.comment };
   }
 
   async removeGoal(user: AuthUser, goalId: string) {
@@ -215,7 +215,7 @@ export class PlayersService {
   }
   async saveEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: EvaluationDto) {
     this.assertCoach(user);
-    if (!SEASON.test(season) || ![1, 2, 3].includes(trimester)) throw new BadRequestException("Période invalide");
+    if (!SEASON.test(season) || ![0, 1, 2, 3].includes(trimester)) throw new BadRequestException("Période invalide"); // 0 = bilan de début d'année
     for (const [k, v] of Object.entries(dto.ratings ?? {})) {
       if (!/^[a-z_]{1,40}$/.test(k) || !Number.isInteger(v) || v < 1 || v > 5) throw new BadRequestException("Notes invalides (1 à 5)");
     }

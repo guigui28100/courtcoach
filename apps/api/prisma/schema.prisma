@@ -37,6 +37,12 @@ enum LessonStatus {
   REFUSED
 }
 
+enum GoalStatus {
+  ACHIEVED      // atteint
+  IN_PROGRESS   // en progrès
+  NOT_ACHIEVED  // pas atteint
+}
+
 enum VideoStatus {
   WAITING     // à analyser
   ANALYSED
@@ -180,6 +186,7 @@ model GoalCheckpoint {
   goalId    String
   goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
   trimester Int      // 1, 2 ou 3
+  status    GoalStatus @default(IN_PROGRESS) // bilan de l'objectif à la fin du trimestre
   progress  Int      @default(0)
   comment   String   @default("")
   updatedAt DateTime @updatedAt
@@ -192,7 +199,7 @@ model Evaluation {
   playerId     String
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   season       String
-  trimester    Int      // 1, 2 ou 3
+  trimester    Int      // 0 = bilan de début d'année, 1, 2 ou 3 = bulletin du trimestre
   ratings      Json     @default("{}") // { competence: 1..5 }
   comments     Json     @default("{}") // { axe: texte }
   strengths    String   @default("")

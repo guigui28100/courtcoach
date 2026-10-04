@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { Empty, Err, Field, Page, PageHead } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, previousPeriod, trimesterOf, VideoRow } from "../types";
+import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 
@@ -113,17 +113,22 @@ export function CoachHome() {
 // Crée un joueur FICTIF complet (objectifs, évaluations, matchs) pour découvrir l'espace du jeune, sans rien saisir.
 async function createExample(): Promise<string> {
   const p = await post<Player>("/players", { firstName: "Léo", lastName: "Exemple", birthDate: "2014-03-14" });
-  const season = currentSeason(), t = trimesterOf(), prev = previousPeriod(season, t);
+  const season = currentSeason(), t = trimesterOf();
   await patch(`/players/${p.id}`, { ranking: "30/2", targetRanking: "30/1", hand: "Droitier", playStyle: "Joueur offensif" });
-  for (const [axis, title, progress, indicator] of [
-    ["TECHNIQUE", "Fiabiliser la première balle", 100, "60 % de premières balles en match"], ["TECHNIQUE", "Coup droit plus profond", 55, ""],
-    ["TACTIQUE", "Varier les hauteurs et les effets", 30, "Au moins 3 variations par match"], ["PHYSIQUE", "Améliorer l'endurance", 70, ""], ["MENTAL", "Routine entre les points", 15, "Routine respectée 8 points sur 10"],
+  // Bilan de début d'année (point de départ), puis le bulletin du trimestre en cours
+  await put(`/players/${p.id}/evaluations/${season}/0`, { ratings: { coup_droit: 3, revers: 2, service: 2, retour: 2, volee: 2, deplacements: 3, lecture: 2, construction: 2, endurance: 3, concentration: 2, assiduite: 4, etat_esprit: 4 }, appreciation: "Un joueur plein d'énergie, avec de bonnes bases au coup droit.", strengths: "Coup droit, endurance, bonne humeur.", improve: "Revers, service, régularité sous pression.", next: "Fiabiliser la première balle, gagner en profondeur au coup droit." });
+  await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, retour: 3, volee: 3, deplacements: 3, lecture: 3, construction: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
+  // Objectifs du trimestre en cours avec leur bilan : de quoi essayer « Préparer le trimestre suivant »
+  for (const [axis, title, progress, status, indicator, comment] of [
+    ["TECHNIQUE", "Fiabiliser la première balle", 100, "ACHIEVED", "60 % de premières balles en match", "Objectif atteint, bravo !"],
+    ["TECHNIQUE", "Coup droit plus profond", 55, "IN_PROGRESS", "", "Ça avance bien, on continue."],
+    ["TACTIQUE", "Varier les hauteurs et les effets", 30, "NOT_ACHIEVED", "Au moins 3 variations par match", "Pas encore assez travaillé : à reconduire."],
+    ["PHYSIQUE", "Améliorer l'endurance", 70, "IN_PROGRESS", "", "Bonne progression."],
+    ["MENTAL", "Routine entre les points", 15, "NOT_ACHIEVED", "Routine respectée 8 points sur 10", "À reprendre au prochain trimestre."],
   ] as const) {
-    const g = await post<{ id: string }>(`/players/${p.id}/goals`, { season, axis, title, progress: 0, indicator, trimesters: [] });
-    await put(`/goals/${g.id}/checkpoints/${t}`, { progress, comment: progress >= 100 ? "Objectif atteint, bravo !" : progress >= 50 ? "Ça avance bien, on continue." : "Bon début, à travailler encore." });
+    const g = await post<{ id: string }>(`/players/${p.id}/goals`, { season, axis, title, progress: 0, indicator, trimesters: [t] });
+    await put(`/goals/${g.id}/checkpoints/${t}`, { progress, status, comment });
   }
-  await put(`/players/${p.id}/evaluations/${prev.season}/${prev.t}`, { ratings: { coup_droit: 3, revers: 2, service: 3, lecture: 3, endurance: 4, concentration: 2, assiduite: 5, etat_esprit: 5 }, strengths: "Beaucoup d'énergie et de bonne humeur.", improve: "Plus de régularité sur le revers." });
-  await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, lecture: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
   const day = (d: number) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
   await post(`/players/${p.id}/matches`, { date: day(20), tournament: "Tournoi du club", round: "Demi-finale", result: "Victoire", score: "6/3 6/4" });
   await post(`/players/${p.id}/matches`, { date: day(6), tournament: "Plateau de Dreux", result: "Défaite", score: "4/6 6/7", remark: "Très serré !" });

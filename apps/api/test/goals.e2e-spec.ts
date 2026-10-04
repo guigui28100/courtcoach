@@ -44,7 +44,18 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 50, comment: "Bon début, corrigé" }).expect(200); // on corrige le T1 : l'actuel reste celui du T2
     expect((await prisma.goal.findUniqueOrThrow({ where: { id: goal } })).progress).toBe(70);
     const list = (await A.coach.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body;
-    expect(list[0].checkpoints).toEqual([{ trimester: 1, progress: 50, comment: "Bon début, corrigé" }, { trimester: 2, progress: 70, comment: "Très bien" }]);
+    expect(list[0].checkpoints).toEqual([{ trimester: 1, status: "IN_PROGRESS", progress: 50, comment: "Bon début, corrigé" }, { trimester: 2, status: "IN_PROGRESS", progress: 70, comment: "Très bien" }]);
+  });
+
+  it("chaque point de contrôle a un statut (atteint, en progrès, pas atteint) ; par défaut déduit de l'avancement", async () => {
+    const a = await A.coach.put(`/api/goals/${goal}/checkpoints/3`).set(ORIGIN).send({ progress: 100 }).expect(200);
+    expect(a.body.status).toBe("ACHIEVED");
+    const b = await A.coach.put(`/api/goals/${goal}/checkpoints/3`).set(ORIGIN).send({ progress: 60, status: "NOT_ACHIEVED", comment: "À reconduire" }).expect(200);
+    expect(b.body).toMatchObject({ status: "NOT_ACHIEVED", progress: 60, comment: "À reconduire" });
+    await A.coach.put(`/api/goals/${goal}/checkpoints/3`).set(ORIGIN).send({ progress: 60, status: "PEUT_ETRE" }).expect(400);
+    expect((await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 50, comment: "Bon début, corrigé" }).expect(200)).body.status).toBe("IN_PROGRESS");
+    await prisma.goalCheckpoint.delete({ where: { goalId_trimester: { goalId: goal, trimester: 3 } } });
+    await prisma.goal.update({ where: { id: goal }, data: { progress: 70 } });
   });
 
   it("valeurs invalides refusées", async () => {
@@ -65,6 +76,16 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     await A.par2.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 100 }).expect(403);
     await request(app.getHttpServer()).put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 100 }).expect(401);
     expect((await prisma.goalCheckpoint.findUniqueOrThrow({ where: { goalId_trimester: { goalId: goal, trimester: 1 } } })).progress).toBe(50);
+  });
+
+  it("bilan de début d'année : c'est une évaluation du « trimestre 0 », réservée au coach, lisible par la famille", async () => {
+    await A.coach.put(`/api/players/${p1}/evaluations/2026-2027/0`).set(ORIGIN).send({ ratings: { coup_droit: 3, volee: 2 }, appreciation: "Point de départ" }).expect(200);
+    await A.coach.put(`/api/players/${p1}/evaluations/2026-2027/4`).set(ORIGIN).send({ ratings: {} }).expect(400);
+    await A.coach.put(`/api/players/${p1}/evaluations/2026-2027/-1`).set(ORIGIN).send({ ratings: {} }).expect(400);
+    await A.par1.put(`/api/players/${p1}/evaluations/2026-2027/0`).set(ORIGIN).send({ ratings: { coup_droit: 5 } }).expect(403);
+    const evals = (await A.par1.get(`/api/players/${p1}/evaluations`).expect(200)).body;
+    expect(evals.map((e: any) => e.trimester)).toContain(0);
+    await A.par2.get(`/api/players/${p1}/evaluations`).expect(404);
   });
 
   it("l'export du dossier contient les points de contrôle ; supprimer l'objectif les supprime", async () => {

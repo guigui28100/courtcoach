@@ -70,8 +70,13 @@ Quand un jeune se connecte, sa page « Mon suivi » devient « Ma galaxie tennis
 ## Bulletin
 Le bulletin d'un trimestre reprend l'univers « galaxie » : bandeau d'en-tête coloré, trois chiffres clés (moyenne générale en anneau, missions accomplies, victoires), compétences par domaine en cartes de couleur avec le radar, « le mot du coach » en citation, points forts / à travailler / prochain trimestre, missions de la saison avec barres de progression, matchs, analyses vidéo avec images annotées, signatures. À l'impression ou en PDF, le fond étoilé disparaît (page blanche A4) mais les couleurs du bandeau et des cartes sont conservées ; les blocs ne sont jamais coupés en deux.
 
-## Objectifs par trimestre
-Chaque objectif peut être limité à certains trimestres (rien de coché = toute la saison). À la fin de chaque trimestre, le coach indique **où il en est** (en %) et ajoute **sa note** (onglet Objectifs du dossier, avec le choix du trimestre). Ces points de contrôle gardent l'historique : le bulletin d'un trimestre montre les objectifs à travailler à cette période, où ils en étaient à la fin, la progression depuis le trimestre précédent (▲ +20 points) et la note du coach. L'avancement « actuel » (espace du jeune, missions) suit le dernier trimestre renseigné. Seul le coach peut modifier ces points ; la famille les lit.
+## Le cycle de suivi de la saison
+1. **Bilan de début d'année** (septembre) : le coach note les mêmes 21 compétences que dans les bulletins (technique, tactique, physique, mental, attitude ; « Volée et jeu au filet » reste une seule compétence). C'est le point de départ de la saison (une évaluation « trimestre 0 »), imprimable comme un bulletin.
+2. **Objectifs par trimestre** : chaque objectif est limité à certains trimestres (rien de coché = toute la saison) et peut viser une compétence du bilan.
+3. **Bulletin de fin de trimestre** : le coach réévalue les compétences, puis donne pour chaque objectif un **statut** (✅ atteint, 🔄 en progrès, ❌ pas atteint), l'avancement en % et **son commentaire**. Le bulletin montre le radar (trimestre, trimestre précédent, départ de la saison), le détail « départ » par compétence, les objectifs avec statut, commentaire et « 🔁 reconduit depuis le T1 », le mot du coach et les matchs.
+4. **Préparer le trimestre suivant** (onglet Objectifs) : pour chaque objectif du trimestre, **clore** (atteint), **reconduire** (pas atteint) ou **remplacer** par un nouveau, plus de nouveaux objectifs libres. Seuls les trimestres suivants sont modifiés : les bulletins déjà faits ne bougent jamais.
+
+L'avancement « actuel » (espace du jeune) suit le dernier trimestre renseigné. L'espace du jeune montre ses missions du trimestre avec leur statut, ce qui est reconduit et son point de départ. Seul le coach modifie ; la famille lit.
 
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.

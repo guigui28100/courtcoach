@@ -6,7 +6,7 @@ import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { axisAverage, currentSeason, EVAL_AXES, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -35,25 +35,29 @@ function Hero({ p, done, wins }: { p: Player; done: number; wins: number }) {
 }
 
 function Missions({ goals }: { goals: Goal[] }) {
+  const t = trimesterOf();
+  const here = goals.filter((g) => goalApplies(g, t)); // les missions de CE trimestre
   return (
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-missions">
-      <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions de la saison</h2>
-      {goals.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes premières missions.</p> : (
+      <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions du trimestre {t}</h2>
+      {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
         <div className="grid gap-3 md:grid-cols-2">
           {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).map((axis) => {
-            const mine = goals.filter((g) => g.axis === axis);
+            const mine = here.filter((g) => g.axis === axis);
             if (!mine.length) return null;
             const m = MISSION[axis];
             return (
               <div key={axis} className="grid content-start gap-3 rounded-2xl bg-white/10 p-4" style={{ borderTop: `4px solid ${m.color}` }}>
                 <h3 className="m-0 text-lg" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</h3>
-                {mine.map((g) => (
+                {mine.map((g) => { const st = statusAt(g, t), note = checkpointAt(g, t)?.comment.trim(); return (
                   <div key={g.id} className="grid gap-1">
-                    <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0">{g.progress >= 100 ? "Réussie !" : `${g.progress} %`}</span></div>
+                    <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : `${g.progress} %`}</span></div>
+                    {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
                     {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
                     <MissionBar value={g.progress} color={m.color} label={`Mission : ${g.title}`} />
+                    {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
                   </div>
-                ))}
+                ); })}
               </div>
             );
           })}
@@ -70,15 +74,17 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
   const prevP = last ? previousPeriod(last.season, last.trimester) : null;
   const prev = last && prevP ? evals.find((e) => e.season === prevP.season && e.trimester === prevP.t) : undefined;
   const now: Record<string, number> = {}, before: Record<string, number> = {};
-  EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(last, a); before[a.key] = axisAverage(prev, a); });
+  const start = last && last.trimester >= 2 ? evals.find((e) => e.season === last.season && e.trimester === 0) : undefined;
+  const origin: Record<string, number> = {};
+  EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(last, a); before[a.key] = axisAverage(prev, a); origin[a.key] = axisAverage(start, a); });
   return (
     <>
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-radar">
-        <h2 id="gal-radar" className="m-0 text-2xl">📡 Mon radar</h2>
-        {!last ? <p className="m-0 text-white/80">Ton premier radar arrivera après ta première évaluation.</p> : (
+        <h2 id="gal-radar" className="m-0 text-2xl">📡 {last?.trimester === 0 ? "Mon point de départ" : "Mon radar"}</h2>
+        {!last ? <p className="m-0 text-white/80">Ton point de départ et ton premier radar arriveront après les premières évaluations de ton coach.</p> : (
           <div className="grid items-start gap-5 md:grid-cols-[300px_1fr]">
             <div className="grid justify-items-center gap-2">
-              <Radar dark series={[{ label: `T${last.trimester}`, values: now, color: "#dcf247" }, ...(prev && prevP ? [{ label: `T${prevP.t}`, values: before, color: "#ffffff", dashed: true }] : [])]} />
+              <Radar dark series={[{ label: periodShort(last.season, last.trimester), values: now, color: "#dcf247" }, ...(prev && prevP ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#ffffff", dashed: true }] : []), ...(start && ratedCount(start) && last.trimester >= 2 ? [{ label: "Départ", values: origin, color: "#ffb24d", dashed: true }] : [])]} />
               <p className="m-0 text-center font-bold">{periodLabel(last.season, last.trimester)}<br />Moyenne {fmtAvg(overallAverage(last))} / 5 {trendCommon(last, prev)}</p>
             </div>
             <div className="grid content-start gap-3">
@@ -167,7 +173,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
         {players?.map((p) => (
           <div key={p.id} className="grid gap-6">
-            <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.progress >= 100).length} wins={wins[p.id] ?? 0} />
+            <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} />
             <Missions goals={goals[p.id] ?? []} />
             <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />
             {previewId ? (
