@@ -15,17 +15,17 @@ export function useFollowUp(playerId: string, reloadKey = 0) {
 }
 
 // Barres de compétences d'un axe (valeur sur 5, avec flèche si on a la valeur du trimestre précédent)
-export function SkillBars({ axis, ev, prev }: { axis: EvalAxis; ev: Pick<Evaluation, "ratings">; prev?: Pick<Evaluation, "ratings"> }) {
+export function SkillBars({ axis, ev, prev, start }: { axis: EvalAxis; ev: Pick<Evaluation, "ratings">; prev?: Pick<Evaluation, "ratings">; start?: Pick<Evaluation, "ratings"> }) {
   const rows = axis.skills.filter(([k]) => ev.ratings[k]);
   if (!rows.length) return null;
   return (
     <div className="grid gap-2">
       {rows.map(([k, label]) => {
-        const v = ev.ratings[k], pv = prev?.ratings[k] ?? 0;
+        const v = ev.ratings[k], pv = prev?.ratings[k] ?? 0, sv = start?.ratings[k] ?? 0;
         return (
           <div key={k} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1">
             <span className="text-[0.95rem]">{label}</span>
-            <span className="text-right text-sm font-bold">{v}/5 {pv && v !== pv ? <small aria-label={v > pv ? "en progrès" : "en baisse"}>{v > pv ? "▲" : "▼"}</small> : null}</span>
+            <span className="text-right text-sm font-bold">{v}/5 {sv ? <small className="font-normal text-muted">(départ {sv}) </small> : null}{pv && v !== pv ? <small aria-label={v > pv ? "en progrès" : "en baisse"}>{v > pv ? "▲" : "▼"}</small> : null}</span>
             <span className="col-span-2 h-2 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${label} : ${v} sur 5, ${RATING_LABELS[v]}`}>
               <span className="block h-full rounded-full" style={{ width: `${(v / 5) * 100}%`, background: axis.color }} />
             </span>

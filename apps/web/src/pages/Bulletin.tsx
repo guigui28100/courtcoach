@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -31,7 +31,7 @@ const Tint = ({ emoji, title, text, bg, ink }: { emoji: string; title: string; t
 // Bulletin d'un trimestre : même page pour le coach et la famille, à imprimer ou à enregistrer en PDF.
 export default function Bulletin() {
   const { id = "", season = currentSeason(), t: tParam = "1" } = useParams();
-  const t = [1, 2, 3].includes(Number(tParam)) ? Number(tParam) : 1;
+  const t = [0, 1, 2, 3].includes(Number(tParam)) ? Number(tParam) : 1; // 0 = bilan de début d'année
   const { me } = useAuth();
   const [p, setP] = useState<Player | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -50,18 +50,22 @@ export default function Bulletin() {
   const ev = evals.find((e) => e.season === season && e.trimester === t);
   const pp = previousPeriod(season, t);
   const prev = evals.find((e) => e.season === pp.season && e.trimester === pp.t);
-  const short = (s: string, n: number) => `T${n} ${s.replace("-", "/")}`;
-  const brief = (s: string, n: number) => `T${n} ${s.slice(0, 4)}/${s.slice(7)}`; // « T3 2025/26 » : tient sur une ligne
+  const short = periodShort;
+  const brief = (s: string, n: number) => (n === 0 ? "le bilan de départ" : `T${n} ${s.slice(0, 4)}/${s.slice(7)}`); // « T3 2025/26 » : tient sur une ligne
   const now: Record<string, number> = {}, before: Record<string, number> = {};
   EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(ev, a); before[a.key] = axisAverage(prev, a); });
-  const series = [{ label: short(season, t), values: now, color: "#7c3aed" }, ...(prev ? [{ label: short(pp.season, pp.t), values: before, color: "#10203a", dashed: true }] : [])];
+  // Radar : maintenant, le trimestre précédent, et le point de départ de la saison (bilan de début d'année) quand il est différent
+  const start = t >= 2 ? evals.find((e) => e.season === season && e.trimester === 0) : undefined;
+  const origin: Record<string, number> = {};
+  EVAL_AXES.forEach((a) => { origin[a.key] = axisAverage(start, a); });
+  const series = [{ label: short(season, t), values: now, color: "#7c3aed" }, ...(prev ? [{ label: short(pp.season, pp.t), values: before, color: "#10203a", dashed: true }] : []), ...(start && ratedCount(start) ? [{ label: "Départ", values: origin, color: "#e08a00", dashed: true }] : [])];
   const ms = matches.filter((m) => inPeriod(m.date, season, t));
   const wins = ms.filter((m) => m.result === "Victoire").length;
   const analysed = (allVideos ?? []).filter((v) => v.player?.id === id && v.analysis?.sentAt && inPeriod(v.analysis.sentAt, season, t));
   // Objectifs « à travailler » ce trimestre, avec où ils en sont à la fin du trimestre (point de contrôle du coach)
-  const here = goals.filter((g) => goalApplies(g, t));
+  const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t)); // le bilan de départ n'a pas encore d'objectifs
   const at = (g: Goal) => progressAt(g, t);
-  const done = here.filter((g) => (at(g) ?? 0) >= 100).length;
+  const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
   const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
@@ -81,7 +85,7 @@ export default function Bulletin() {
           <header className="bulletin-hero grid items-center gap-4 p-6 sm:grid-cols-[1fr_150px] sm:p-8">
             <div className="stars" aria-hidden="true" />
             <div className="relative grid gap-2">
-              <p className="m-0 text-xs font-bold uppercase tracking-[0.2em] text-[#dcf247]">Bulletin · Tennis Club Houdan</p>
+              <p className="m-0 text-xs font-bold uppercase tracking-[0.2em] text-[#dcf247]">{t === 0 ? "Bilan de départ" : "Bulletin"} · Tennis Club Houdan</p>
               <h1 className="m-0 text-4xl font-black text-white sm:text-5xl">{fullName(p)}</h1>
               <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span></p>
               {facts.length > 0 && <ul className="m-0 mt-1 flex list-none flex-wrap gap-2 p-0">{facts.map(([k, v]) => <li key={k} className="gal-chip"><span className="text-white/70">{k}</span> {v}</li>)}</ul>}
@@ -90,19 +94,19 @@ export default function Bulletin() {
           </header>
 
           <div className="grid gap-6 p-6 sm:p-8">
-            <section className="grid gap-3 sm:grid-cols-3" aria-label="Chiffres clés">
+            <section className={"grid gap-3 " + (t === 0 ? "" : "sm:grid-cols-3")} aria-label="Chiffres clés">
               <div className="flex items-center gap-3 rounded-2xl bg-[#f3efff] p-4">
                 {rated ? <Gauge value={overallAverage(ev)} /> : <span className="text-3xl" aria-hidden="true">📊</span>}
-                <div><p className="m-0 font-display text-lg font-extrabold leading-tight">Moyenne générale</p><p className="m-0 text-sm text-muted">{rated ? (prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin") : "Pas encore évalué"}</p></div>
+                <div><p className="m-0 font-display text-lg font-extrabold leading-tight">Moyenne générale</p><p className="m-0 text-sm text-muted">{rated ? (t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin") : "Pas encore évalué"}</p></div>
               </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-[#fff6dc] p-4">
+              {t > 0 && <div className="flex items-center gap-3 rounded-2xl bg-[#fff6dc] p-4">
                 <span className="text-4xl" aria-hidden="true">⭐</span>
                 <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{done}<span className="text-xl text-muted"> / {here.length}</span></p><p className="m-0 text-sm text-muted">objectifs atteints{progress !== null ? ` · avancement ${progress} %` : ""}</p></div>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-[#e9f9f0] p-4">
+              </div>}
+              {t > 0 && <div className="flex items-center gap-3 rounded-2xl bg-[#e9f9f0] p-4">
                 <span className="text-4xl" aria-hidden="true">🏆</span>
                 <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{wins}<span className="text-xl text-muted"> / {ms.length}</span></p><p className="m-0 text-sm text-muted">{ms.length ? `victoire${wins > 1 ? "s" : ""} en ${ms.length} match${ms.length > 1 ? "s" : ""}` : "pas de match ce trimestre"}</p></div>
-              </div>
+              </div>}
             </section>
 
             {rated ? (
@@ -118,7 +122,7 @@ export default function Bulletin() {
                       return (
                         <div key={a.key} className="grid content-start gap-2 break-inside-avoid rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }}>
                           <h3 className="m-0 flex items-baseline justify-between gap-2 text-base" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key]} </span>{a.label}</span><span className="whitespace-nowrap text-sm">{fmtAvg(axisAverage(ev, a))} / 5 {trendCommon(ev, prev, a)}</span></h3>
-                          <SkillBars axis={a} ev={ev!} prev={prev} />
+                          <SkillBars axis={a} ev={ev!} prev={prev} start={start} />
                           {ev!.comments[a.key] && <p className="m-0 text-sm text-muted">{ev!.comments[a.key]}</p>}
                         </div>
                       );
@@ -137,18 +141,19 @@ export default function Bulletin() {
             {ev && (ev.strengths.trim() || ev.improve.trim() || ev.next.trim()) && (
               <div className="grid gap-3 sm:grid-cols-3 print:grid-cols-3">
                 <Tint emoji="⭐" title="Points forts" text={ev.strengths} bg="#e9f9f0" ink="#166534" />
-                <Tint emoji="🎯" title="À travailler" text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
-                <Tint emoji="🚀" title="Prochain trimestre" text={ev.next} bg="#f3efff" ink="#5b21b6" />
+                <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
+                <Tint emoji="🚀" title={t === 0 ? "Pistes pour le trimestre 1" : "Prochain trimestre"} text={ev.next} bg="#f3efff" ink="#5b21b6" />
               </div>
             )}
 
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler, et où il en est à la fin du trimestre.</p></div>
+                <div><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler et le bilan de chaque objectif à la fin du trimestre.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
+                  {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
-                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: v !== null && v >= 100 ? "#dcf247" : "#f3efff" }}>{v === null ? "Pas encore suivi" : v >= 100 ? "⭐ Atteint" : `${v} %`}</span></div>
+                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : "Pas encore évalué"}</span></div>
+                      {carried && <span className="text-sm font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
                       <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
                       {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
                       {v !== null && <div role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={`Où il en est : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${v}%`, background: `linear-gradient(90deg, ${a?.color ?? "#7c3aed"}, #dcf247)` }} /></div>}

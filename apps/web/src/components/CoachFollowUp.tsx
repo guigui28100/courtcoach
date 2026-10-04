@@ -4,7 +4,7 @@ import { del, post, put } from "../api";
 import { Radar } from "./Radar";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { Err, Field } from "./ui";
-import { axisAverage, currentSeason, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { axisAverage, currentSeason, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -12,7 +12,7 @@ function PeriodPicker({ season, t, onChange }: { season: string; t: number; onCh
   return (
     <div className="flex flex-wrap gap-3">
       <div className="field"><label htmlFor="pp-season" className="sr-only">Saison</label><select id="pp-season" className="input !w-auto" value={season} onChange={(e) => onChange(e.target.value, t)}>{seasonsAround().map((s) => <option key={s} value={s}>Saison {s.replace("-", "/")}</option>)}</select></div>
-      <div className="field"><label htmlFor="pp-t" className="sr-only">Trimestre</label><select id="pp-t" className="input !w-auto" value={t} onChange={(e) => onChange(season, Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>Trimestre {n}</option>)}</select></div>
+      <div className="field"><label htmlFor="pp-t" className="sr-only">Trimestre</label><select id="pp-t" className="input !w-auto" value={t} onChange={(e) => onChange(season, Number(e.target.value))}>{[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n === 0 ? "Bilan de début d'année" : `Trimestre ${n}`}</option>)}</select></div>
     </div>
   );
 }
@@ -34,7 +34,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   const series = useMemo(() => {
     const now: Record<string, number> = {}, before: Record<string, number> = {};
     EVAL_AXES.forEach((a) => { now[a.key] = axisAverage({ ratings }, a); before[a.key] = axisAverage(prev, a); });
-    return [{ label: `T${t} ${season.replace("-", "/")}`, values: now, color: "#b8471f" }, ...(prev ? [{ label: `T${prevP.t} ${prevP.season.replace("-", "/")}`, values: before, color: "#10203a", dashed: true }] : [])];
+    return [{ label: periodShort(season, t), values: now, color: "#b8471f" }, ...(prev ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#10203a", dashed: true }] : [])];
   }, [ratings, prev, season, t, prevP.t, prevP.season]);
 
   async function save(e: FormEvent<HTMLFormElement>) {
@@ -49,6 +49,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
 
   return (
     <form onSubmit={save} className="grid gap-4" noValidate key={`${season}-${t}-${saved?.updatedAt ?? "new"}`}>
+      {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
         <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>
@@ -75,11 +76,11 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
               <Field label={`Commentaire ${a.label.toLowerCase()} (facultatif)`} id={`c-${a.key}`}><textarea id={`c-${a.key}`} className="input" maxLength={500} value={comments[a.key] ?? ""} onChange={(e) => setComments((c) => ({ ...c, [a.key]: e.target.value }))} /></Field>
             </fieldset>
           ))}
-          <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">Synthèse du trimestre</legend>
-            <Field label="Appréciation générale" id="appreciation"><textarea id="appreciation" name="appreciation" className="input" maxLength={3000} defaultValue={saved?.appreciation ?? ""} /></Field>
+          <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "Synthèse du bilan de départ" : "Synthèse du trimestre"}</legend>
+            <Field label={t === 0 ? "Premier regard sur le joueur" : "Appréciation générale"} id="appreciation"><textarea id="appreciation" name="appreciation" className="input" maxLength={3000} defaultValue={saved?.appreciation ?? ""} /></Field>
             <Field label="Points forts" id="strengths"><textarea id="strengths" name="strengths" className="input" maxLength={3000} defaultValue={saved?.strengths ?? ""} /></Field>
-            <Field label="À travailler" id="improve"><textarea id="improve" name="improve" className="input" maxLength={3000} defaultValue={saved?.improve ?? ""} /></Field>
-            <Field label="Objectifs du trimestre suivant" id="next"><textarea id="next" name="next" className="input" maxLength={3000} defaultValue={saved?.next ?? ""} /></Field>
+            <Field label={t === 0 ? "Axes de progrès" : "À travailler"} id="improve"><textarea id="improve" name="improve" className="input" maxLength={3000} defaultValue={saved?.improve ?? ""} /></Field>
+            <Field label={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Objectifs du trimestre suivant"} id="next"><textarea id="next" name="next" className="input" maxLength={3000} defaultValue={saved?.next ?? ""} /></Field>
           </fieldset>
         </div>
         <aside className="card h-fit lg:sticky lg:top-24" aria-label="Aperçu en direct"><h3 className="mb-2 mt-0">Aperçu</h3><Radar series={series} /></aside>
@@ -138,7 +139,7 @@ export function Bulletins({ p }: { p: Player }) {
           return (
             <li key={e.id} className="card flex flex-wrap items-center justify-between gap-3">
               <div><strong>{periodLabel(e.season, e.trimester)}</strong><p className="m-0 text-sm text-muted">{ratedCount(e)} compétences notées · moyenne {fmtAvg(avg)} / 5 {trendCommon(e, before)}</p></div>
-              <Link to={`/coach/centre/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-clay btn-sm no-underline">Ouvrir le bulletin</Link>
+              <Link to={`/coach/centre/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-clay btn-sm no-underline">{e.trimester === 0 ? "Ouvrir le bilan" : "Ouvrir le bulletin"}</Link>
             </li>
           );
         })}

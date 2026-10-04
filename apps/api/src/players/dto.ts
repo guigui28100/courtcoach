@@ -1,4 +1,4 @@
-import { Axis, ConsentKind, Role } from "@prisma/client";
+import { Axis, ConsentKind, GoalStatus, Role } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
 import { ArrayMaxSize, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
 
@@ -64,6 +64,7 @@ export class UpdateGoalDto {
 // Où en est l'objectif à la fin d'un trimestre, et la note du coach
 export class CheckpointDto {
   @Type(() => Number) @IsInt() @Min(0) @Max(100) progress: number;
+  @IsOptional() @IsEnum(GoalStatus) status?: GoalStatus;
   @IsOptional() @IsString() @MaxLength(500) comment?: string;
 }
 

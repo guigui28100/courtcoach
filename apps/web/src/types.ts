@@ -14,7 +14,13 @@ export interface Player {
   lastActivityAt: string; consents?: Consent[];
 }
 export interface Consent { id: string; kind: "PRIVACY_POLICY" | "FOLLOW_UP" | "IMAGE" | "HEALTH" | "ACCOUNT"; givenBy: string; method: string; grantedAt: string; withdrawnAt: string | null; }
-export interface GoalCheckpoint { trimester: number; progress: number; comment: string; }
+export type GoalStatus = "ACHIEVED" | "IN_PROGRESS" | "NOT_ACHIEVED";
+export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: string; ink: string }> = {
+  ACHIEVED: { label: "Atteint", emoji: "✅", bg: "#dcf247", ink: "#10203a" },
+  IN_PROGRESS: { label: "En progrès", emoji: "🔄", bg: "#e7e0ff", ink: "#4c1d95" },
+  NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
+};
+export interface GoalCheckpoint { trimester: number; status: GoalStatus; progress: number; comment: string; }
 export interface Goal { id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
@@ -36,11 +42,14 @@ export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Sol
 export interface Evaluation { id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
 export interface MatchRow { id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
 
-export const TRIMESTER_MONTHS = ["", "septembre – décembre", "janvier – mars", "avril – août"];
-export const periodLabel = (season: string, t: number) => `Trimestre ${t} · saison ${season.replace("-", "/")}`;
+export const TRIMESTER_MONTHS = ["début de saison", "septembre – décembre", "janvier – mars", "avril – août"];
+// t = 0 : bilan de début d'année (point de départ de la saison) ; 1 à 3 : bulletin du trimestre
+export const periodLabel = (season: string, t: number) => `${t === 0 ? "Bilan de début d'année" : `Trimestre ${t}`} · saison ${season.replace("-", "/")}`;
+export const periodShort = (season: string, t: number) => (t === 0 ? "Départ" : `T${t} ${season.replace("-", "/")}`);
 export function trimesterOf(d = new Date()) { const m = d.getMonth(); return m >= 8 ? 1 : m <= 2 ? 2 : 3; }
 // Trimestre précédent (pour comparer)
-export function previousPeriod(season: string, t: number) { if (t > 1) return { season, t: t - 1 }; const y = Number(season.slice(0, 4)); return { season: `${y - 1}-${y}`, t: 3 }; }
+// Période précédente : T3 → T2 → T1 → bilan de départ (0) de la même saison ; le bilan de départ se compare au dernier trimestre de la saison d'avant.
+export function previousPeriod(season: string, t: number) { if (t >= 1) return { season, t: t - 1 }; const y = Number(season.slice(0, 4)); return { season: `${y - 1}-${y}`, t: 3 }; }
 // Une date de match appartient à quel trimestre ?
 export const inPeriod = (iso: string, season: string, t: number) => { const d = new Date(iso); return currentSeason(d) === season && trimesterOf(d) === t; };
 
@@ -84,3 +93,10 @@ export function progressAt(g: Pick<Goal, "checkpoints" | "progress">, t: number)
 export function progressBefore(g: Pick<Goal, "checkpoints" | "progress">, t: number): number | null {
   return (g.checkpoints ?? []).length ? progressAt(g, t - 1) : null;
 }
+
+// Bilan de l'objectif au trimestre t (atteint / en progrès / pas atteint) ; null = pas encore évalué
+export const statusAt = (g: Pick<Goal, "checkpoints">, t: number): GoalStatus | null => checkpointAt(g, t)?.status ?? null;
+// Objectif reconduit : déjà à travailler au trimestre d'avant, où il n'avait pas été atteint
+export const isCarriedOver = (g: Pick<Goal, "trimesters" | "checkpoints">, t: number) => t > 1 && goalApplies(g, t) && goalApplies(g, t - 1) && !!checkpointAt(g, t - 1) && statusAt(g, t - 1) !== "ACHIEVED";
+// Les trimestres où un objectif est à travailler, écrits en toutes lettres (vide = toute la saison = 1, 2 et 3)
+export const trimestersOf = (g: Pick<Goal, "trimesters">) => (g.trimesters?.length ? g.trimesters : [1, 2, 3]);
