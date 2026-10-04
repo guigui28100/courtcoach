@@ -165,11 +165,26 @@ model Goal {
   title      String
   indicator  String   @default("")
   deadline   DateTime?
-  progress   Int      @default(0)
+  progress   Int      @default(0)   // où il en est aujourd'hui (= dernier point de contrôle)
+  trimesters Int[]    @default([])  // trimestres où l'objectif est à travailler (vide = toute la saison)
   createdAt  DateTime @default(now())
   analyses   AnalysisGoal[]
+  checkpoints GoalCheckpoint[]
 
   @@index([playerId, season])
+}
+
+// Point de contrôle d'un objectif à la fin d'un trimestre : où le jeune en est, et la note du coach (garde l'historique pour le bulletin)
+model GoalCheckpoint {
+  id        String   @id @default(cuid())
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  trimester Int      // 1, 2 ou 3
+  progress  Int      @default(0)
+  comment   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@unique([goalId, trimester])
 }
 
 model Evaluation {

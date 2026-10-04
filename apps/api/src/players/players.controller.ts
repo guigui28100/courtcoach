@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -31,6 +31,7 @@ export class PlayersController {
   @Get("players/:id/goals") goals(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("season") season?: string) { return this.svc.goals(u, id, season); }
   @Post("players/:id/goals") addGoal(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: GoalDto) { return this.svc.addGoal(u, id, dto); }
   @Patch("goals/:goalId") updateGoal(@CurrentUser() u: AuthUser, @Param("goalId") gid: string, @Body() dto: UpdateGoalDto) { return this.svc.updateGoal(u, gid, dto); }
+  @Put("goals/:goalId/checkpoints/:trimester") saveCheckpoint(@CurrentUser() u: AuthUser, @Param("goalId") gid: string, @Param("trimester", ParseIntPipe) t: number, @Body() dto: CheckpointDto) { return this.svc.saveCheckpoint(u, gid, t, dto); }
   @Delete("goals/:goalId") @HttpCode(204) removeGoal(@CurrentUser() u: AuthUser, @Param("goalId") gid: string) { return this.svc.removeGoal(u, gid); }
 
   @Get("players/:id/evaluations") evaluations(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.evaluations(u, id); }

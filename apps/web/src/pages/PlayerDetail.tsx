@@ -1,10 +1,10 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { del, get, patch, post } from "../api";
+import { del, get, patch, post, put } from "../api";
 import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { AXES, Consent, currentSeason, fmtDate, fullName, Goal, Player } from "../types";
+import { AXES, checkpointAt, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, Player, progressAt, trimesterOf } from "../types";
 
 type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -187,23 +187,36 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
 
 function Objectifs({ p }: { p: Player }) {
   const [season, setSeason] = useState(currentSeason());
+  const [t, setT] = useState(trimesterOf());
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [drag, setDrag] = useState<Record<string, number>>({});
   const load = useCallback(() => { get<Goal[]>(`/players/${p.id}/goals?season=${season}`).then(setGoals); }, [p.id, season]);
   useEffect(load, [load]);
   const y = Number(currentSeason().slice(0, 4));
   const seasons = [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`];
-  const total = goals.length ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length) : null;
+  const valueOf = (g: Goal) => drag[g.id] ?? progressAt(g, t) ?? 0;
+  const here = goals.filter((g) => goalApplies(g, t));
+  const total = here.length ? Math.round(here.reduce((s, g) => s + valueOf(g), 0) / here.length) : null;
 
-  async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif" }); load(); }
+  async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif", trimesters: [t] }); load(); }
   async function upd(g: Goal, body: Partial<Goal>) { setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, ...body } : x))); await patch(`/goals/${g.id}`, body); }
+  // Où il en est à la fin du trimestre choisi + la note du coach (garde l'historique pour le bulletin)
+  async function checkpoint(g: Goal, progress: number, comment: string) {
+    const cp = await put<GoalCheckpoint>(`/goals/${g.id}/checkpoints/${t}`, { progress, comment });
+    setGoals((l) => l.map((x) => { if (x.id !== g.id) return x; const cps = [...(x.checkpoints ?? []).filter((c) => c.trimester !== t), cp].sort((u, v) => u.trimester - v.trimester); return { ...x, checkpoints: cps, progress: cps[cps.length - 1].progress }; }));
+    setDrag((d) => { const n = { ...d }; delete n[g.id]; return n; });
+  }
 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <label className="sr-only" htmlFor="season">Saison</label>
         <select id="season" className="input !w-auto" value={season} onChange={(e) => setSeason(e.target.value)}>{seasons.map((s) => <option key={s} value={s}>Saison {s.replace("-", "/")}</option>)}</select>
-        <p className="m-0 font-bold">{total === null ? "Aucun objectif fixé" : `Objectifs atteints à ${total} %`}</p>
+        <label className="sr-only" htmlFor="obj-t">Trimestre</label>
+        <select id="obj-t" className="input !w-auto" value={t} onChange={(e) => setT(Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>Trimestre {n}</option>)}</select>
+        <p className="m-0 font-bold">{total === null ? "Aucun objectif à travailler ce trimestre" : `Objectifs du trimestre atteints à ${total} %`}</p>
       </div>
+      <p className="hint m-0">Pour chaque objectif, indique <strong>où il en est à la fin du trimestre choisi</strong> et ajoute ta note : le bulletin de ce trimestre les reprend. Coche les trimestres où l'objectif est à travailler (rien de coché = toute la saison).</p>
       <div className="grid gap-4 lg:grid-cols-2">
         {AXES.map((a) => {
           const mine = goals.filter((g) => g.axis === a.key);
@@ -211,13 +224,28 @@ function Objectifs({ p }: { p: Player }) {
             <section key={a.key} className="card grid gap-3 border-t-[6px]" style={{ borderTopColor: a.color }} aria-label={a.label}>
               <h3 className="m-0" style={{ color: a.color }}>{a.label}</h3>
               {mine.map((g) => (
-                <article key={g.id} className="grid gap-2 rounded-xl border border-line bg-chalk p-3">
+                <article key={g.id} className={"grid gap-2 rounded-xl border border-line bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")}>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
                   <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={g.indicator} maxLength={200} onBlur={(e) => e.target.value !== g.indicator && upd(g, { indicator: e.target.value })} />
-                  <label className="flex items-center gap-3 text-sm font-bold">Progression <output>{g.progress} %</output>
-                    <input type="range" min={0} max={100} step={5} value={g.progress} className="flex-1 accent-clay" onChange={(e) => setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, progress: Number(e.target.value) } : x)))} onPointerUp={(e) => upd(g, { progress: Number((e.target as HTMLInputElement).value) })} onKeyUp={(e) => upd(g, { progress: Number((e.target as HTMLInputElement).value) })} />
-                  </label>
-                  <ProgressBar value={g.progress} color={a.color} />
+                  <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"><legend className="mb-1 text-sm font-bold">À travailler au</legend>
+                    {[1, 2, 3].map((n) => (
+                      <label key={n} className="flex min-h-10 items-center gap-2 rounded-full border-2 border-line bg-white px-3 text-sm font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
+                        <input type="checkbox" className="accent-clay" checked={g.trimesters?.includes(n) ?? false} onChange={(e) => upd(g, { trimesters: e.target.checked ? [...(g.trimesters ?? []), n].sort() : (g.trimesters ?? []).filter((x) => x !== n) })} />T{n}
+                      </label>
+                    ))}
+                    {!g.trimesters?.length && <span className="hint">Toute la saison</span>}
+                  </fieldset>
+                  {goalApplies(g, t) ? (
+                    <>
+                      <label className="flex items-center gap-3 text-sm font-bold">Où il en est (fin du T{t}) <output>{valueOf(g)} %</output>
+                        <input type="range" min={0} max={100} step={5} value={valueOf(g)} className="flex-1 accent-clay" onChange={(e) => setDrag((d) => ({ ...d, [g.id]: Number(e.target.value) }))} onPointerUp={(e) => checkpoint(g, Number((e.target as HTMLInputElement).value), checkpointAt(g, t)?.comment ?? "")} onKeyUp={(e) => checkpoint(g, Number((e.target as HTMLInputElement).value), checkpointAt(g, t)?.comment ?? "")} />
+                      </label>
+                      <ProgressBar value={valueOf(g)} color={a.color} />
+                      <label className="grid gap-1 text-sm font-bold">Ta note pour le trimestre {t} (facultatif)
+                        <textarea key={`${g.id}-${t}`} className="input !min-h-16 font-normal" maxLength={500} defaultValue={checkpointAt(g, t)?.comment ?? ""} placeholder="Ex. : la première balle passe mieux, à consolider sous pression" onBlur={(e) => e.target.value !== (checkpointAt(g, t)?.comment ?? "") && checkpoint(g, valueOf(g), e.target.value)} />
+                      </label>
+                    </>
+                  ) : <p className="hint m-0">Cet objectif n'est pas prévu au trimestre {t}.</p>}
                   <button className="btn-danger btn-sm self-start" onClick={async () => { await del(`/goals/${g.id}`); load(); }}>Supprimer</button>
                 </article>
               ))}

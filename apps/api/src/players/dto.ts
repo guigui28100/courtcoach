@@ -1,6 +1,6 @@
 import { Axis, ConsentKind, Role } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
-import { IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
+import { ArrayMaxSize, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 const lower = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim().toLowerCase() : value);
@@ -50,6 +50,7 @@ export class GoalDto {
   @IsOptional() @IsString() @MaxLength(200) indicator?: string;
   @IsOptional() @IsDateString() deadline?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) progress?: number;
+  @IsOptional() @IsArray() @ArrayMaxSize(3) @IsInt({ each: true }) @Min(1, { each: true }) @Max(3, { each: true }) trimesters?: number[];
 }
 
 export class UpdateGoalDto {
@@ -57,6 +58,13 @@ export class UpdateGoalDto {
   @IsOptional() @IsString() @MaxLength(200) indicator?: string;
   @IsOptional() @IsDateString() deadline?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) progress?: number;
+  @IsOptional() @IsArray() @ArrayMaxSize(3) @IsInt({ each: true }) @Min(1, { each: true }) @Max(3, { each: true }) trimesters?: number[];
+}
+
+// Où en est l'objectif à la fin d'un trimestre, et la note du coach
+export class CheckpointDto {
+  @Type(() => Number) @IsInt() @Min(0) @Max(100) progress: number;
+  @IsOptional() @IsString() @MaxLength(500) comment?: string;
 }
 
 export class EvaluationDto {

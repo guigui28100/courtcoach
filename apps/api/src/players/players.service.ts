@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -73,7 +73,7 @@ export class PlayersService {
   // Droit d'accès / portabilité : copie complète d'une fiche.
   async export(user: AuthUser, id: string) {
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: true, evaluations: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
     const { coachNotes, ...visible } = p;
@@ -170,21 +170,39 @@ export class PlayersService {
   async goals(user: AuthUser, playerId: string, season?: string) {
     await this.assertCanRead(user, playerId);
     if (season && !SEASON.test(season)) throw new BadRequestException("Saison invalide");
-    return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" } });
+    return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, progress: true, comment: true }, orderBy: { trimester: "asc" } } } });
   }
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
     this.assertCoach(user);
-    const g = await this.prisma.goal.create({ data: { playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0 } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    const g = await this.prisma.goal.create({ data: { playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return g;
   }
   async updateGoal(user: AuthUser, goalId: string, dto: UpdateGoalDto) {
     this.assertCoach(user);
-    const { deadline, ...rest } = dto;
-    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
+    const { deadline, trimesters, ...rest } = dto;
+    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
     await this.touch(g.playerId);
     return g;
   }
+  // Trimestres où l'objectif est à travailler : sans doublon, triés ; vide = toute la saison
+  private trimesters(t?: number[]) { return [...new Set(t ?? [])].sort(); }
+
+  // Point de contrôle : où en est l'objectif à la fin d'un trimestre + la note du coach.
+  // L'avancement « actuel » de l'objectif suit le point de contrôle du dernier trimestre renseigné.
+  async saveCheckpoint(user: AuthUser, goalId: string, trimester: number, dto: CheckpointDto) {
+    this.assertCoach(user);
+    if (![1, 2, 3].includes(trimester)) throw new BadRequestException("Trimestre invalide");
+    const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true } });
+    if (!goal) throw new NotFoundException("Objectif introuvable");
+    const data = { progress: dto.progress, comment: dto.comment ?? "" };
+    const cp = await this.prisma.goalCheckpoint.upsert({ where: { goalId_trimester: { goalId, trimester } }, update: data, create: { goalId, trimester, ...data } });
+    const latest = await this.prisma.goalCheckpoint.findFirst({ where: { goalId }, orderBy: { trimester: "desc" } });
+    await this.prisma.goal.update({ where: { id: goalId }, data: { progress: latest!.progress } });
+    await this.touch(goal.playerId);
+    return { trimester: cp.trimester, progress: cp.progress, comment: cp.comment };
+  }
+
   async removeGoal(user: AuthUser, goalId: string) {
     this.assertCoach(user);
     await this.prisma.goal.delete({ where: { id: goalId } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });

@@ -14,7 +14,8 @@ export interface Player {
   lastActivityAt: string; consents?: Consent[];
 }
 export interface Consent { id: string; kind: "PRIVACY_POLICY" | "FOLLOW_UP" | "IMAGE" | "HEALTH" | "ACCOUNT"; givenBy: string; method: string; grantedAt: string; withdrawnAt: string | null; }
-export interface Goal { id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; }
+export interface GoalCheckpoint { trimester: number; progress: number; comment: string; }
+export interface Goal { id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
 export const fullName = (p: Pick<Player, "firstName" | "lastName">) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Joueur";
@@ -69,3 +70,17 @@ export interface VideoMessage { id: string; text: string; createdAt: string; fro
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
 export const fmtMo = (b: number) => `${(b / 1024 / 1024).toFixed(b < 10 * 1024 * 1024 ? 1 : 0).replace(".", ",")} Mo`;
+
+// ----- Objectifs par trimestre -----
+// Un objectif est « à travailler » au trimestre t s'il n'est pas limité à d'autres trimestres (vide = toute la saison).
+export const goalApplies = (g: Pick<Goal, "trimesters">, t: number) => !g.trimesters?.length || g.trimesters.includes(t);
+export const checkpointAt = (g: Pick<Goal, "checkpoints">, t: number) => g.checkpoints?.find((c) => c.trimester === t);
+// Où en est l'objectif à la fin du trimestre t : le point de contrôle de ce trimestre, sinon le dernier avant (rien n'a bougé depuis) ; null = pas encore suivi.
+export function progressAt(g: Pick<Goal, "checkpoints" | "progress">, t: number): number | null {
+  const cps = g.checkpoints ?? [];
+  if (!cps.length) return g.progress; // objectif créé avant l'historique par trimestre
+  return [...cps].filter((c) => c.trimester <= t).sort((a, b) => b.trimester - a.trimester)[0]?.progress ?? null;
+}
+export function progressBefore(g: Pick<Goal, "checkpoints" | "progress">, t: number): number | null {
+  return (g.checkpoints ?? []).length ? progressAt(g, t - 1) : null;
+}
