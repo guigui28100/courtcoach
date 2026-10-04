@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, SelfEvaluationDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -73,7 +73,7 @@ export class PlayersService {
   // Droit d'accès / portabilité : copie complète d'une fiche.
   async export(user: AuthUser, id: string) {
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
     const { coachNotes, ...visible } = p;
@@ -225,6 +225,53 @@ export class PlayersService {
     const e = await this.prisma.evaluation.upsert({ where: { playerId_season_trimester: { playerId, season, trimester } }, update: data, create: { playerId, season, trimester, ...data } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return e;
+  }
+
+  // ----- Auto-évaluation du jeune (fin de trimestre) -----
+  // Écrit par le jeune (ou son parent) seulement ; le coach ne voit que ce qui a été ENVOYÉ.
+  async selfEvaluations(user: AuthUser, playerId: string) {
+    await this.assertCanRead(user, playerId);
+    return this.prisma.selfEvaluation.findMany({ where: { playerId, ...(user.role === Role.COACH ? { sentAt: { not: null } } : {}) }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+  }
+  private assertWriter(user: AuthUser) { if (user.role !== Role.YOUTH && user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé au jeune et à sa famille"); }
+  private checkPeriod(season: string, trimester: number) { if (!SEASON.test(season) || ![1, 2, 3].includes(trimester)) throw new BadRequestException("Période invalide"); }
+  async saveSelfEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: SelfEvaluationDto) {
+    this.assertWriter(user);
+    await this.assertCanRead(user, playerId);
+    this.checkPeriod(season, trimester);
+    for (const [k, v] of Object.entries(dto.ratings ?? {})) {
+      if (!/^[a-z_]{1,40}$/.test(k) || !Number.isInteger(v) || v < 1 || v > 5) throw new BadRequestException("Notes invalides (1 à 5)");
+    }
+    const statuses = Object.values(GoalStatus) as string[];
+    const goalIds = Object.keys(dto.goals ?? {});
+    for (const v of Object.values(dto.goals ?? {})) if (!statuses.includes(v)) throw new BadRequestException("Statut invalide");
+    if (goalIds.length) {
+      const n = await this.prisma.goal.count({ where: { id: { in: goalIds }, playerId } });
+      if (n !== goalIds.length) throw new BadRequestException("Objectif inconnu");
+    }
+    const existing = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
+    if (existing?.sentAt) throw new ConflictException("Ce bulletin est déjà envoyé au coach");
+    const data = { mood: dto.mood ?? null, ratings: dto.ratings ?? {}, goals: dto.goals ?? {}, proud: dto.proud ?? [], improve: dto.improve ?? [], wish: dto.wish ?? [], comment: (dto.comment ?? "").trim() };
+    return this.prisma.selfEvaluation.upsert({ where: { playerId_season_trimester: { playerId, season, trimester } }, update: data, create: { playerId, season, trimester, ...data } });
+  }
+  async sendSelfEvaluation(user: AuthUser, playerId: string, season: string, trimester: number) {
+    this.assertWriter(user);
+    await this.assertCanRead(user, playerId);
+    this.checkPeriod(season, trimester);
+    const e = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
+    if (!e) throw new NotFoundException("Rien à envoyer : remplis d'abord ton bulletin");
+    if (e.sentAt) throw new ConflictException("Ce bulletin est déjà envoyé au coach");
+    const sent = await this.prisma.selfEvaluation.update({ where: { id: e.id }, data: { sentAt: new Date() } });
+    await this.touch(playerId);
+    await this.audit.log(user.id, "self-evaluation-sent", "Player", playerId);
+    return sent;
+  }
+  async markSelfEvaluationRead(user: AuthUser, playerId: string, season: string, trimester: number) {
+    this.assertCoach(user);
+    this.checkPeriod(season, trimester);
+    const e = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
+    if (!e?.sentAt) throw new NotFoundException("Bulletin introuvable");
+    return this.prisma.selfEvaluation.update({ where: { id: e.id }, data: { readAt: new Date() } });
   }
 
   // ----- Matchs -----

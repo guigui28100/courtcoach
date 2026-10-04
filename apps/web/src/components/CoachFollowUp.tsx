@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, post, put } from "../api";
 import { GoalEvalCard } from "./GoalEval";
+import { CoachSelfEval } from "./SelfEval";
 import { Radar } from "./Radar";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { Err, Field } from "./ui";
@@ -55,6 +56,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   return (
     <div className="grid gap-4">
       {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
+      {t > 0 && <CoachSelfEval p={p} season={season} t={t} goals={here} onPick={(s, n) => { setSeason(s); setT(n); }} />}
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
         {t === 0 && <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>}

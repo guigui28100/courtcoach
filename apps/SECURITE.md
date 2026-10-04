@@ -4,6 +4,7 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 
 ## Ce qui a été contrôlé
 - **Toutes les routes du serveur** (une liste automatique, vérifiée à chaque test) : sans connexion, tout est refusé sauf la connexion, l'inscription adulte, l'installation (fermée après le premier coach), l'invitation et le test de santé. Les routes réservées au coach refusent adultes, parents et jeunes. Toutes les routes du Centre refusent les adultes.
+- **Auto-évaluation du jeune** : écriture réservée au jeune et à sa famille (le coach et les adultes reçoivent 403), identifiants de phrases validés par un motif strict (pas de texte libre sauf 300 caractères, jamais affiché en HTML brut), verrouillée après envoi, effacée avec la fiche, incluse dans l'export. Testé dans `selfeval.e2e-spec.ts`.
 - **Cloisonnement** (adulte / famille / autre famille) pour les fiches, objectifs, évaluations, vidéos, images annotées et discussions : testé dans les deux sens.
 - **Mots de passe** : protégés par Argon2 ; blocage 15 minutes après 5 erreurs ; message identique que le compte existe ou non ; mot de passe provisoire à changer à la première connexion.
 - **Cookies de connexion** : invisibles du JavaScript, envoyés seulement en HTTPS, limités au site.

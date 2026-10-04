@@ -4,6 +4,7 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
+import { SelfEvalSection } from "../components/SelfEval";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
@@ -175,6 +176,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div key={p.id} className="grid gap-6">
             <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} />
             <Missions goals={goals[p.id] ?? []} />
+            {!previewId && <SelfEvalSection p={p} goals={goals[p.id] ?? []} />}
             <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />
             {previewId ? (
               <section className="glass gal-pop grid gap-2" aria-label="Mes vidéos"><h2 className="m-0 text-2xl">🎬 Mes vidéos</h2><p className="m-0 text-white/80">Ici, le jeune envoie ses vidéos et retrouve tes analyses.</p></section>

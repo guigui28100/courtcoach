@@ -6,8 +6,9 @@ import { Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
 import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
+import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -36,11 +37,13 @@ export default function Bulletin() {
   const [p, setP] = useState<Player | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [missing, setMissing] = useState(false);
+  const [selfEvals, setSelfEvals] = useState<SelfEvaluation[]>([]);
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
+    get<SelfEvaluation[]>(`/players/${id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
   }, [id, season]);
 
   const back = me?.role === "COACH" ? `/coach/centre/${id}` : "/suivi";
@@ -126,6 +129,13 @@ export default function Bulletin() {
             )}
 
             {ev?.next?.trim() && <Tint emoji="🚀" title={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Pour le trimestre suivant"} text={ev.next} bg="#f3efff" ink="#5b21b6" />}
+
+            {(() => { const se = t > 0 ? selfEvals.find((e) => e.season === season && e.trimester === t && e.sentAt) : undefined; return se ? (
+              <section className="grid min-w-0 gap-2 break-inside-avoid rounded-2xl border-2 border-[#d9ccff] p-4" aria-labelledby="bul-regard">
+                <h2 id="bul-regard" className="m-0 text-xl">💬 Le regard de {p.firstName} sur son trimestre</h2>
+                <SelfEvalView ev={se} goals={here} />
+              </section>
+            ) : null; })()}
 
             {(rated || t === 0 || !!ev?.strengths?.trim() || !!ev?.improve?.trim() || !!ev?.appreciation?.trim()) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
