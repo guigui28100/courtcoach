@@ -30,7 +30,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const nav = useNavigate();
   const items = me ? NAV[me.role] : [];
   const { pathname } = useLocation();
-  const galaxy = (me?.role === "YOUTH" && pathname === "/suivi") || (me?.role === "COACH" && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)); // univers « galaxie » de l'espace jeune
+  const galaxy = (me?.role === "YOUTH" && pathname === "/suivi") || (me?.role === "COACH" && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)) || pathname.includes("/bulletin/"); // univers « galaxie » de l'espace jeune
   const link = ({ isActive }: { isActive: boolean }) =>
     "px-1 py-2.5 font-bold border-b-[3px] no-underline " + (galaxy ? (isActive ? "text-white border-[#dcf247]" : "text-white/80 border-transparent hover:text-white") : (isActive ? "text-ink border-clay" : "text-muted border-transparent hover:text-ink"));
 

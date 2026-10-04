@@ -98,3 +98,17 @@
   .gal-chip { @apply inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white; }
   .gal-btn { @apply btn bg-[#dcf247] text-ink hover:bg-[#eaff6a]; }
 }
+
+/* ---------- Bulletin « galaxie » : écran en couleurs, impression / PDF propre ---------- */
+.bulletin-hero {
+  position: relative; overflow: hidden; color: #fff;
+  background:
+    radial-gradient(520px 230px at 8% -10%, rgba(124, 58, 237, 0.75), transparent 65%),
+    radial-gradient(420px 260px at 100% 110%, rgba(37, 99, 235, 0.6), transparent 60%),
+    #0a0d2c;
+}
+.print-exact, .print-exact * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body, .galaxy-sky { background: #fff !important; }
+}
