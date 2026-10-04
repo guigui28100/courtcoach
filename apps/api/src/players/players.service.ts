@@ -249,11 +249,17 @@ export class PlayersService {
     return this.prisma.selfEvaluation.findMany({ where: { playerId, ...(user.role === Role.COACH ? { sentAt: { not: null } } : {}) }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
   }
   private assertWriter(user: AuthUser) { if (user.role !== Role.YOUTH && user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé au jeune et à sa famille"); }
+  // L'auto-évaluation s'ouvre à la fin de chaque trimestre : 1er décembre (T1), 1er mars (T2), 1er juin (T3). Les périodes passées restent ouvertes.
+  private checkOpen(season: string, trimester: number) {
+    const start = Number(season.slice(0, 4)); const [yearOffset, month, label] = ({ 1: [0, 11, "décembre"], 2: [1, 2, "mars"], 3: [1, 5, "juin"] } as Record<number, [number, number, string]>)[trimester];
+    if (new Date() < new Date(Date.UTC(start + yearOffset, month, 1))) throw new ConflictException(`Ce bulletin s'ouvrira le 1er ${label} ${start + yearOffset}. Reviens à ce moment-là !`);
+  }
   private checkPeriod(season: string, trimester: number) { if (!SEASON.test(season) || ![1, 2, 3].includes(trimester)) throw new BadRequestException("Période invalide"); }
   async saveSelfEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: SelfEvaluationDto) {
     this.assertWriter(user);
     await this.assertCanRead(user, playerId);
     this.checkPeriod(season, trimester);
+    this.checkOpen(season, trimester);
     for (const [k, v] of Object.entries(dto.ratings ?? {})) {
       if (!/^[a-z_]{1,40}$/.test(k) || !Number.isInteger(v) || v < 1 || v > 5) throw new BadRequestException("Notes invalides (1 à 5)");
     }
@@ -273,6 +279,7 @@ export class PlayersService {
     this.assertWriter(user);
     await this.assertCanRead(user, playerId);
     this.checkPeriod(season, trimester);
+    this.checkOpen(season, trimester);
     const e = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
     if (!e) throw new NotFoundException("Rien à envoyer : remplis d'abord ton bulletin");
     if (e.sentAt) throw new ConflictException("Ce bulletin est déjà envoyé au coach");

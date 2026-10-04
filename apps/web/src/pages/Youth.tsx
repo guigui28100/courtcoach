@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { SelfEvalSection } from "../components/SelfEval";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, isTrimesterEnd, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -173,7 +173,7 @@ function Todo({ icon, title, text, onClick, hot = false, children }: { icon: str
   );
 }
 
-function HomeTab({ p, goals, done, wins, fresh, selfEval, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; selfEval?: SelfEvaluation; go: (t: Tab) => void }) {
+function HomeTab({ p, goals, done, wins, fresh, pending, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; pending: number | null; go: (t: Tab) => void }) {
   const { evals } = useFollowUp(p.id);
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
@@ -185,7 +185,7 @@ function HomeTab({ p, goals, done, wins, fresh, selfEval, go }: { p: Player; goa
       <Hero p={p} done={done} wins={wins} />
       <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
         {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
-        <Todo hot={!selfEval?.sentAt && isTrimesterEnd()} icon={selfEval?.sentAt ? "✅" : "✍️"} title={selfEval?.sentAt ? `Bulletin du trimestre ${t} envoyé` : isTrimesterEnd() ? `Remplis ton bulletin du trimestre ${t}` : "Mon bulletin du trimestre"} text={selfEval?.sentAt ? "Ton coach l'a reçu. Merci !" : isTrimesterEnd() ? "C'est bientôt la fin du trimestre : réponds avec des boutons, c'est rapide." : "À remplir à la fin du trimestre. Tu peux déjà le commencer."} onClick={() => go("bulletin")} />
+        <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletin")} />
         <Todo icon="🚀" title={here.length ? (evaluated ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} mission${here.length > 1 ? "s" : ""} à travailler`) : "Tes missions"} text={here.length ? (evaluated ? `Trimestre ${t}` : `Trimestre ${t} : ton coach fera le point à la fin du trimestre.`) : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
           {here.length > 0 && evaluated && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
         </Todo>
@@ -226,8 +226,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
   const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
-  const cur = selfEvals.find((e) => e.season === currentSeason() && e.trimester === trimesterOf());
-  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && !cur?.sentAt && isTrimesterEnd());
+  const pending = pendingSelfEval(selfEvals, currentSeason());
+  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && pending !== null);
 
   return (
     <div className="relative isolate overflow-clip">
@@ -255,7 +255,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
-              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length} selfEval={cur} go={go} />}
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length} pending={pending} go={go} />}
               {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
               {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
