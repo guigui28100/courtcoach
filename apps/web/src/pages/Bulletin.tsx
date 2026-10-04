@@ -94,61 +94,9 @@ export default function Bulletin() {
           </header>
 
           <div className="grid gap-6 p-6 sm:p-8">
-            <section className={"grid gap-3 " + (t === 0 ? "" : "sm:grid-cols-3")} aria-label="Chiffres clés">
-              <div className="flex items-center gap-3 rounded-2xl bg-[#f3efff] p-4">
-                {rated ? <Gauge value={overallAverage(ev)} /> : <span className="text-3xl" aria-hidden="true">📊</span>}
-                <div><p className="m-0 font-display text-lg font-extrabold leading-tight">{rated || t === 0 ? "Moyenne générale" : "Compétences"}</p><p className="m-0 text-sm text-muted">{!rated && t > 0 ? "non réévaluées ce trimestre" : rated ? (t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin") : "Pas encore évalué"}</p></div>
-              </div>
-              {t > 0 && <div className="flex items-center gap-3 rounded-2xl bg-[#fff6dc] p-4">
-                <span className="text-4xl" aria-hidden="true">⭐</span>
-                <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{done}<span className="text-xl text-muted"> / {here.length}</span></p><p className="m-0 text-sm text-muted">objectifs atteints{progress !== null ? ` · avancement ${progress} %` : ""}</p></div>
-              </div>}
-              {t > 0 && <div className="flex items-center gap-3 rounded-2xl bg-[#e9f9f0] p-4">
-                <span className="text-4xl" aria-hidden="true">🏆</span>
-                <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{wins}<span className="text-xl text-muted"> / {ms.length}</span></p><p className="m-0 text-sm text-muted">{ms.length ? `victoire${wins > 1 ? "s" : ""} en ${ms.length} match${ms.length > 1 ? "s" : ""}` : "pas de match ce trimestre"}</p></div>
-              </div>}
-            </section>
-
-            {rated ? (
-              <section className="grid gap-4" aria-labelledby="bul-comp">
-                <h2 id="bul-comp" className="m-0 text-2xl">📊 Compétences</h2>
-                <div className="grid gap-5 md:grid-cols-[minmax(0,290px)_1fr] print:grid-cols-[250px_1fr]">
-                  <div className="grid content-start justify-items-center gap-1 self-start break-inside-avoid rounded-2xl border border-line p-3">
-                    <Radar series={series} />
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
-                    {EVAL_AXES.map((a) => {
-                      if (!(a.skills.some(([k]) => ev!.ratings[k]) || ev!.comments[a.key])) return null;
-                      return (
-                        <div key={a.key} className="grid content-start gap-2 break-inside-avoid rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }}>
-                          <h3 className="m-0 flex items-baseline justify-between gap-2 text-base" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key]} </span>{a.label}</span><span className="whitespace-nowrap text-sm">{fmtAvg(axisAverage(ev, a))} / 5 {trendCommon(ev, prev, a)}</span></h3>
-                          <SkillBars axis={a} ev={ev!} prev={prev} start={start} />
-                          {ev!.comments[a.key] && <p className="m-0 text-sm text-muted">{ev!.comments[a.key]}</p>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-            ) : t === 0 ? <Empty>Les compétences du bilan de départ ne sont pas encore notées.</Empty> : null}
-
-            {ev?.appreciation?.trim() && (
-              <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
-                <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
-                <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
-              </blockquote>
-            )}
-            {ev && (ev.strengths.trim() || ev.improve.trim() || ev.next.trim()) && (
-              <div className="grid gap-3 sm:grid-cols-3 print:grid-cols-3">
-                <Tint emoji="⭐" title="Points forts" text={ev.strengths} bg="#e9f9f0" ink="#166534" />
-                <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
-                <Tint emoji="🚀" title={t === 0 ? "Pistes pour le trimestre 1" : "Prochain trimestre"} text={ev.next} bg="#f3efff" ink="#5b21b6" />
-              </div>
-            )}
-
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler et le bilan de chaque objectif à la fin du trimestre.</p></div>
+                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {STATUS[k].label.toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler et le bilan de chaque objectif à la fin du trimestre.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
@@ -165,9 +113,57 @@ export default function Bulletin() {
               </section>
             )}
 
+            {ev?.next?.trim() && <Tint emoji="🚀" title={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Pour le trimestre suivant"} text={ev.next} bg="#f3efff" ink="#5b21b6" />}
+
+            {(rated || t === 0 || !!ev?.strengths?.trim() || !!ev?.improve?.trim() || !!ev?.appreciation?.trim()) && (
+              <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
+                <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
+              {rated && (
+                <div className="flex items-center gap-3 rounded-2xl bg-[#f3efff] p-4 sm:max-w-sm">
+                  <Gauge value={overallAverage(ev)} />
+                  <div><p className="m-0 font-display text-lg font-extrabold leading-tight">Moyenne générale</p><p className="m-0 text-sm text-muted">{t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin"}</p></div>
+                </div>
+              )}
+            {rated ? (
+                <div className="grid gap-4">
+                  <div className="grid gap-5 md:grid-cols-[minmax(0,290px)_1fr] print:grid-cols-[250px_1fr]">
+                    <div className="grid content-start justify-items-center gap-1 self-start break-inside-avoid rounded-2xl border border-line p-3">
+                      <Radar series={series} />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+                      {EVAL_AXES.map((a) => {
+                        if (!(a.skills.some(([k]) => ev!.ratings[k]) || ev!.comments[a.key])) return null;
+                        return (
+                          <div key={a.key} className="grid content-start gap-2 break-inside-avoid rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }}>
+                            <h3 className="m-0 flex items-baseline justify-between gap-2 text-base" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key]} </span>{a.label}</span><span className="whitespace-nowrap text-sm">{fmtAvg(axisAverage(ev, a))} / 5 {trendCommon(ev, prev, a)}</span></h3>
+                            <SkillBars axis={a} ev={ev!} prev={prev} start={start} />
+                            {ev!.comments[a.key] && <p className="m-0 text-sm text-muted">{ev!.comments[a.key]}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : t === 0 ? <Empty>Les compétences du bilan de départ ne sont pas encore notées.</Empty> : null}
+
+              {ev && (ev.strengths.trim() || ev.improve.trim()) && (
+                <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+                  <Tint emoji="⭐" title="Points forts" text={ev.strengths} bg="#e9f9f0" ink="#166534" />
+                  <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
+                </div>
+              )}
+            {ev?.appreciation?.trim() && (
+                <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
+                  <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
+                  <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
+                </blockquote>
+              )}
+              </section>
+            )}
+
             {ms.length > 0 && (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-matchs">
-                <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre</h2>
+                <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre{ms.length > 0 && <span className="ml-2 text-base font-bold text-[#166534]">· 🏆 {wins} victoire{wins > 1 ? "s" : ""} en {ms.length} match{ms.length > 1 ? "s" : ""}</span>}</h2>
                 <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {ms.map((m) => (
                     <li key={m.id} className="grid gap-0.5 rounded-2xl bg-[#f6f4fb] p-3">
