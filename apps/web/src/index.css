@@ -18,6 +18,8 @@
 
 @layer base {
   html { scroll-padding-top: 80px; }
+  /* Un mot très long (ou collé sans espace) passe à la ligne au lieu de sortir de sa case. Hérité par tout le site. */
+  body, input, textarea, select, button { overflow-wrap: anywhere; }
   body { @apply bg-chalk text-[#1a2233] font-body text-[1rem] leading-relaxed antialiased; }
   h1, h2, h3 { @apply font-display text-ink leading-tight; text-wrap: balance; }
   h1 { @apply text-3xl sm:text-4xl font-black; font-stretch: 85%; }

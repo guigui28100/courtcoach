@@ -26,7 +26,7 @@ function Gauge({ value }: { value: number }) {
 }
 
 const Tint = ({ emoji, title, text, bg, ink }: { emoji: string; title: string; text?: string; bg: string; ink: string }) =>
-  text?.trim() ? <section className="break-inside-avoid rounded-2xl p-4" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null;
+  text?.trim() ? <section className="min-w-0 break-inside-avoid rounded-2xl p-4" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null;
 
 // Bulletin d'un trimestre : même page pour le coach et la famille, à imprimer ou à enregistrer en PDF.
 export default function Bulletin() {
