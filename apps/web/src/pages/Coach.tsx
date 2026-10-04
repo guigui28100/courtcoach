@@ -118,7 +118,10 @@ async function createExample(): Promise<string> {
   for (const [axis, title, progress, indicator] of [
     ["TECHNIQUE", "Fiabiliser la première balle", 100, "60 % de premières balles en match"], ["TECHNIQUE", "Coup droit plus profond", 55, ""],
     ["TACTIQUE", "Varier les hauteurs et les effets", 30, "Au moins 3 variations par match"], ["PHYSIQUE", "Améliorer l'endurance", 70, ""], ["MENTAL", "Routine entre les points", 15, "Routine respectée 8 points sur 10"],
-  ] as const) await post(`/players/${p.id}/goals`, { season, axis, title, progress, indicator });
+  ] as const) {
+    const g = await post<{ id: string }>(`/players/${p.id}/goals`, { season, axis, title, progress: 0, indicator, trimesters: [] });
+    await put(`/goals/${g.id}/checkpoints/${t}`, { progress, comment: progress >= 100 ? "Objectif atteint, bravo !" : progress >= 50 ? "Ça avance bien, on continue." : "Bon début, à travailler encore." });
+  }
   await put(`/players/${p.id}/evaluations/${prev.season}/${prev.t}`, { ratings: { coup_droit: 3, revers: 2, service: 3, lecture: 3, endurance: 4, concentration: 2, assiduite: 5, etat_esprit: 5 }, strengths: "Beaucoup d'énergie et de bonne humeur.", improve: "Plus de régularité sur le revers." });
   await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, lecture: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
   const day = (d: number) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);

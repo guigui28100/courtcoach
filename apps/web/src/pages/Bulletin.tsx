@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { axisAverage, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, inPeriod, overallAverage, periodLabel, Player, previousPeriod, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -58,8 +58,11 @@ export default function Bulletin() {
   const ms = matches.filter((m) => inPeriod(m.date, season, t));
   const wins = ms.filter((m) => m.result === "Victoire").length;
   const analysed = (allVideos ?? []).filter((v) => v.player?.id === id && v.analysis?.sentAt && inPeriod(v.analysis.sentAt, season, t));
-  const done = goals.filter((g) => g.progress >= 100).length;
-  const progress = goals.length ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length) : null;
+  // Objectifs « à travailler » ce trimestre, avec où ils en sont à la fin du trimestre (point de contrôle du coach)
+  const here = goals.filter((g) => goalApplies(g, t));
+  const at = (g: Goal) => progressAt(g, t);
+  const done = here.filter((g) => (at(g) ?? 0) >= 100).length;
+  const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
   const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
 
@@ -94,7 +97,7 @@ export default function Bulletin() {
               </div>
               <div className="flex items-center gap-3 rounded-2xl bg-[#fff6dc] p-4">
                 <span className="text-4xl" aria-hidden="true">⭐</span>
-                <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{done}<span className="text-xl text-muted"> / {goals.length}</span></p><p className="m-0 text-sm text-muted">missions accomplies{progress !== null ? ` · saison à ${progress} %` : ""}</p></div>
+                <div><p className="m-0 font-display text-3xl font-black leading-none whitespace-nowrap">{done}<span className="text-xl text-muted"> / {here.length}</span></p><p className="m-0 text-sm text-muted">objectifs atteints{progress !== null ? ` · avancement ${progress} %` : ""}</p></div>
               </div>
               <div className="flex items-center gap-3 rounded-2xl bg-[#e9f9f0] p-4">
                 <span className="text-4xl" aria-hidden="true">🏆</span>
@@ -139,16 +142,18 @@ export default function Bulletin() {
               </div>
             )}
 
-            {goals.length > 0 && (
+            {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <h2 id="bul-missions" className="m-0 text-2xl">🚀 Missions de la saison</h2>
+                <div><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler, et où il en est à la fin du trimestre.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {goals.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); return (
+                  {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
-                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: g.progress >= 100 ? "#dcf247" : "#f3efff" }}>{g.progress >= 100 ? "⭐ Réussie" : `${g.progress} %`}</span></div>
+                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: v !== null && v >= 100 ? "#dcf247" : "#f3efff" }}>{v === null ? "Pas encore suivi" : v >= 100 ? "⭐ Atteint" : `${v} %`}</span></div>
                       <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
-                      {g.indicator && <span className="text-sm text-muted">{g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
-                      <div role="progressbar" aria-valuenow={g.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progression : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${g.progress}%`, background: `linear-gradient(90deg, ${a?.color ?? "#7c3aed"}, #dcf247)` }} /></div>
+                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
+                      {v !== null && <div role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={`Où il en est : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${v}%`, background: `linear-gradient(90deg, ${a?.color ?? "#7c3aed"}, #dcf247)` }} /></div>}
+                      {v !== null && before !== null && <span className="text-sm font-bold" style={{ color: v > before ? "#166534" : "#4b5566" }}>{v > before ? `▲ +${v - before} points depuis le trimestre précédent` : v < before ? `▼ ${v - before} points depuis le trimestre précédent` : "= stable depuis le trimestre précédent"}</span>}
+                      {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
                     </li>
                   ); })}
                 </ul>

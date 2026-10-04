@@ -70,6 +70,9 @@ Quand un jeune se connecte, sa page « Mon suivi » devient « Ma galaxie tennis
 ## Bulletin
 Le bulletin d'un trimestre reprend l'univers « galaxie » : bandeau d'en-tête coloré, trois chiffres clés (moyenne générale en anneau, missions accomplies, victoires), compétences par domaine en cartes de couleur avec le radar, « le mot du coach » en citation, points forts / à travailler / prochain trimestre, missions de la saison avec barres de progression, matchs, analyses vidéo avec images annotées, signatures. À l'impression ou en PDF, le fond étoilé disparaît (page blanche A4) mais les couleurs du bandeau et des cartes sont conservées ; les blocs ne sont jamais coupés en deux.
 
+## Objectifs par trimestre
+Chaque objectif peut être limité à certains trimestres (rien de coché = toute la saison). À la fin de chaque trimestre, le coach indique **où il en est** (en %) et ajoute **sa note** (onglet Objectifs du dossier, avec le choix du trimestre). Ces points de contrôle gardent l'historique : le bulletin d'un trimestre montre les objectifs à travailler à cette période, où ils en étaient à la fin, la progression depuis le trimestre précédent (▲ +20 points) et la note du coach. L'avancement « actuel » (espace du jeune, missions) suit le dernier trimestre renseigné. Seul le coach peut modifier ces points ; la famille les lit.
+
 ## Limites connues (honnêteté)
 - Aucun e-mail n'est envoyé par l'application : le coach copie le lien d'invitation et l'envoie lui-même.
 - La limitation des essais de connexion tourne « par instance » sur Vercel ; le blocage du compte après 5 échecs, lui, est enregistré en base.
