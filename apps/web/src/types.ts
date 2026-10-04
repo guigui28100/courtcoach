@@ -119,3 +119,20 @@ export const SELF_PRESETS: { proud: Preset[]; improve: Preset[]; wish: Preset[] 
 };
 export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂", "Ça va"], ["😀", "Bien"], ["🤩", "Super"]] as const;
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
+
+// ----- Étoiles de fin de cours (données par le coach, toujours positives) -----
+export interface CourseStar { id: string; day: string; stars: number; reason: string; comment: string; }
+export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
+  { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
+  { id: "ecoute", emoji: "👂", label: "Écoute", hint: "A bien écouté et appliqué les consignes" },
+  { id: "progres", emoji: "📈", label: "Progrès", hint: "Un beau progrès pendant le cours" },
+  { id: "fairplay", emoji: "🤝", label: "Fair-play", hint: "Beau comportement avec les autres" },
+  { id: "equipe", emoji: "👥", label: "Esprit d'équipe", hint: "A aidé ou encouragé ses partenaires" },
+  { id: "courage", emoji: "🦁", label: "Courage", hint: "N'a pas lâché malgré la difficulté" },
+  { id: "concentration", emoji: "🎯", label: "Concentration", hint: "Très concentré" },
+  { id: "bonne-humeur", emoji: "😄", label: "Bonne humeur", hint: "A mis de la joie dans le groupe" },
+];
+export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id);
+export const totalStars = (list: Pick<CourseStar, "stars">[]) => list.reduce((n, s) => n + s.stars, 0);
+export const todayIso = () => new Date().toISOString().slice(0, 10);
+export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });

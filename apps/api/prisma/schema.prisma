@@ -116,6 +116,7 @@ model Player {
   goals       Goal[]
   evaluations Evaluation[]
   selfEvaluations SelfEvaluation[]
+  courseStars CourseStar[]
   matches     Match[]
   videos      Video[]
   analyses    Analysis[]
@@ -214,6 +215,20 @@ model Evaluation {
   updatedAt    DateTime @updatedAt
 
   @@unique([playerId, season, trimester])
+}
+
+// Étoiles données par le coach à la fin d'un cours : toujours positives (1 à 3), pour l'effort, l'attitude, un progrès…
+model CourseStar {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  day       String   // jour du cours « AAAA-MM-JJ » (une seule fiche d'étoiles par joueur et par jour)
+  stars     Int      // 1, 2 ou 3
+  reason    String   // identifiant d'une raison proposée (effort, ecoute, progres…)
+  comment   String   @default("") // petit mot du coach (140 caractères maximum)
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, day])
 }
 
 // Auto-évaluation du jeune en fin de trimestre : choix pré-enregistrés (identifiants) + un mot libre court.

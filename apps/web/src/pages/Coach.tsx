@@ -175,6 +175,7 @@ export function Centre() {
           <div className="flex flex-wrap gap-2">
             <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
             <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
+            <Link to="/coach/centre/fin-de-cours" className="btn bg-[#fff3b0] text-ink btn-sm no-underline hover:bg-[#ffe978]">⭐ Fin de cours</Link>
             <button className="btn-clay btn-sm" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button>
           </div>
         </div>
