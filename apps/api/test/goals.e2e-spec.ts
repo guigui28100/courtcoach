@@ -58,6 +58,16 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     await prisma.goal.update({ where: { id: goal }, data: { progress: 70 } });
   });
 
+  it("évaluer un objectif crée le bulletin du trimestre (sans compétences) sans écraser un bulletin existant", async () => {
+    expect(await prisma.evaluation.count({ where: { playerId: p1, season: "2026-2027", trimester: 1 } })).toBe(1); // créé par les points de contrôle du T1
+    expect(await prisma.evaluation.count({ where: { playerId: p1, season: "2026-2027", trimester: 2 } })).toBe(1);
+    await A.coach.put(`/api/players/${p1}/evaluations/2026-2027/1`).set(ORIGIN).send({ ratings: { coup_droit: 4 }, appreciation: "Mon appréciation" }).expect(200);
+    await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 55 }).expect(200); // ne doit pas effacer l'appréciation ni les notes
+    const e = await prisma.evaluation.findFirstOrThrow({ where: { playerId: p1, season: "2026-2027", trimester: 1 } });
+    expect(e.appreciation).toBe("Mon appréciation"); expect(e.ratings).toEqual({ coup_droit: 4 });
+    await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 50, comment: "Bon début, corrigé" }).expect(200);
+  });
+
   it("valeurs invalides refusées", async () => {
     await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 101 }).expect(400);
     await A.coach.put(`/api/goals/${goal}/checkpoints/4`).set(ORIGIN).send({ progress: 10 }).expect(400);

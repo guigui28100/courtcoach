@@ -226,7 +226,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
     <details className="card" open={false}>
       <summary className="cursor-pointer font-display text-lg font-bold">➡️ Préparer le trimestre {next}</summary>
       <div className="mt-3 grid gap-3">
-        <p className="hint m-0">Pour chaque objectif du trimestre {t} : <strong>clore</strong> s'il est atteint, <strong>reconduire</strong> s'il ne l'est pas encore, ou le <strong>remplacer</strong> par un nouveau. Le bulletin du trimestre {t} ne change pas. Pense à noter d'abord le statut de chaque objectif ci-dessous.</p>
+        <p className="hint m-0">Pour chaque objectif du trimestre {t} : <strong>clore</strong> s'il est atteint, <strong>reconduire</strong> s'il ne l'est pas encore, ou le <strong>remplacer</strong> par un nouveau. Le bulletin du trimestre {t} ne change pas. Pense à évaluer d'abord chaque objectif dans l'onglet Évaluations.</p>
         {mine.length === 0 && <p className="m-0 text-muted">Aucun objectif à travailler ce trimestre.</p>}
         <ul className="m-0 grid list-none gap-2 p-0">
           {mine.map((g) => { const c = pick(g), st = statusAt(g, t); return (
@@ -259,27 +259,14 @@ function Objectifs({ p }: { p: Player }) {
   const [season, setSeason] = useState(currentSeason());
   const [t, setT] = useState(trimesterOf());
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [drag, setDrag] = useState<Record<string, number>>({});
   const load = useCallback(() => { get<Goal[]>(`/players/${p.id}/goals?season=${season}`).then(setGoals); }, [p.id, season]);
   useEffect(load, [load]);
   const y = Number(currentSeason().slice(0, 4));
   const seasons = [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`];
-  const valueOf = (g: Goal) => drag[g.id] ?? progressAt(g, t) ?? 0;
   const here = goals.filter((g) => goalApplies(g, t));
-  const total = here.length ? Math.round(here.reduce((s, g) => s + valueOf(g), 0) / here.length) : null;
 
   async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif", trimesters: [t] }); load(); }
   async function upd(g: Goal, body: Partial<Goal>) { setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, ...body } : x))); await patch(`/goals/${g.id}`, body); }
-  // Bilan de l'objectif à la fin du trimestre choisi : statut, où il en est, note du coach (l'historique sert au bulletin)
-  async function checkpoint(g: Goal, change: { progress?: number; comment?: string; status?: GoalStatus }) {
-    const cur = checkpointAt(g, t);
-    const progress = change.progress ?? valueOf(g);
-    const status: GoalStatus = change.status ?? (progress >= 100 ? "ACHIEVED" : cur?.status === "ACHIEVED" ? "IN_PROGRESS" : cur?.status ?? "IN_PROGRESS");
-    const cp = await put<GoalCheckpoint>(`/goals/${g.id}/checkpoints/${t}`, { progress: status === "ACHIEVED" ? 100 : progress, status, comment: change.comment ?? cur?.comment ?? "" });
-    setGoals((l) => l.map((x) => { if (x.id !== g.id) return x; const cps = [...(x.checkpoints ?? []).filter((c) => c.trimester !== t), cp].sort((u, v) => u.trimester - v.trimester); return { ...x, checkpoints: cps, progress: cps[cps.length - 1].progress }; }));
-    setDrag((d) => { const n = { ...d }; delete n[g.id]; return n; });
-  }
-
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -287,9 +274,9 @@ function Objectifs({ p }: { p: Player }) {
         <select id="season" className="input !w-auto" value={season} onChange={(e) => setSeason(e.target.value)}>{seasons.map((s) => <option key={s} value={s}>Saison {s.replace("-", "/")}</option>)}</select>
         <label className="sr-only" htmlFor="obj-t">Trimestre</label>
         <select id="obj-t" className="input !w-auto" value={t} onChange={(e) => setT(Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>Trimestre {n}</option>)}</select>
-        <p className="m-0 font-bold">{here.length === 0 ? "Aucun objectif à travailler ce trimestre" : `${here.filter((g) => statusAt(g, t) === "ACHIEVED").length} / ${here.length} objectif${here.length > 1 ? "s" : ""} atteint${here.length > 1 ? "s" : ""}${total !== null ? ` · avancement ${total} %` : ""}`}</p>
+        <p className="m-0 font-bold">{here.length === 0 ? "Aucun objectif à travailler ce trimestre" : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}`}</p>
       </div>
-      <p className="hint m-0">Choisis le trimestre, puis pour chaque objectif indique son <strong>statut</strong> (atteint, en progrès, pas atteint) et ajoute ta <strong>note</strong> : le bulletin de ce trimestre les reprend. Coche les trimestres où l'objectif est à travailler (rien de coché = toute la saison).</p>
+      <p className="hint m-0">Ici, tu <strong>fixes</strong> les objectifs du joueur et tu choisis les trimestres où ils sont à travailler (rien de coché = toute la saison). Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, va dans l'onglet <strong>Évaluations</strong>.</p>
       {t < 3 && <PrepareNext key={`${season}-${t}`} p={p} season={season} t={t} goals={goals} onDone={load} onNext={() => setT(t + 1)} />}
       <div className="grid gap-4 lg:grid-cols-2">
         {AXES.map((a) => {
@@ -310,22 +297,10 @@ function Objectifs({ p }: { p: Player }) {
                     {!g.trimesters?.length && <span className="hint">Toute la saison</span>}
                   </fieldset>
                   {goalApplies(g, t) ? (
-                    <>
-                      {isCarriedOver(g, t) && <p className="m-0 text-sm font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</p>}
-                      <div role="radiogroup" aria-label={`Statut de l'objectif au trimestre ${t}`} className="flex flex-wrap gap-2">
-                        {(Object.keys(STATUS) as GoalStatus[]).map((k) => { const on = statusAt(g, t) === k; return (
-                          <button key={k} type="button" role="radio" aria-checked={on} onClick={() => checkpoint(g, { status: k })} className={"btn btn-sm " + (on ? "" : "border-2 border-line bg-white text-ink")} style={on ? { background: STATUS[k].bg, color: STATUS[k].ink, border: `2px solid ${STATUS[k].ink}` } : undefined}>{STATUS[k].emoji} {STATUS[k].label}</button>
-                        ); })}
-                      </div>
-                      {!statusAt(g, t) && <p className="hint m-0">Pas encore évalué ce trimestre.</p>}
-                      <label className="flex items-center gap-3 text-sm font-bold">Avancement <output>{valueOf(g)} %</output>
-                        <input type="range" min={0} max={100} step={5} value={valueOf(g)} className="flex-1 accent-clay" onChange={(e) => setDrag((d) => ({ ...d, [g.id]: Number(e.target.value) }))} onPointerUp={(e) => checkpoint(g, { progress: Number((e.target as HTMLInputElement).value) })} onKeyUp={(e) => checkpoint(g, { progress: Number((e.target as HTMLInputElement).value) })} />
-                      </label>
-                      <ProgressBar value={valueOf(g)} color={a.color} />
-                      <label className="grid gap-1 text-sm font-bold">Ton commentaire pour le trimestre {t} (facultatif)
-                        <textarea key={`${g.id}-${t}`} className="input !min-h-16 font-normal" maxLength={500} defaultValue={checkpointAt(g, t)?.comment ?? ""} placeholder="Ex. : la première balle passe mieux, à consolider sous pression" onBlur={(e) => e.target.value !== (checkpointAt(g, t)?.comment ?? "") && checkpoint(g, { comment: e.target.value })} />
-                      </label>
-                    </>
+                    <p className="m-0 flex flex-wrap items-center gap-2 text-sm">
+                      {isCarriedOver(g, t) && <span className="font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
+                      <span className="badge" style={statusAt(g, t) ? { background: STATUS[statusAt(g, t)!].bg, color: STATUS[statusAt(g, t)!].ink } : undefined}>{statusAt(g, t) ? `${STATUS[statusAt(g, t)!].emoji} ${STATUS[statusAt(g, t)!].label} au T${t}` : `Pas encore évalué au T${t}`}</span>
+                    </p>
                   ) : <p className="hint m-0">Cet objectif n'est pas prévu au trimestre {t}.</p>}
                   <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer cet objectif et son historique ?")) { await del(`/goals/${g.id}`); load(); } }}>Supprimer</button>
                 </article>

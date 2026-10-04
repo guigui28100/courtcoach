@@ -193,12 +193,14 @@ export class PlayersService {
   async saveCheckpoint(user: AuthUser, goalId: string, trimester: number, dto: CheckpointDto) {
     this.assertCoach(user);
     if (![1, 2, 3].includes(trimester)) throw new BadRequestException("Trimestre invalide");
-    const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true } });
+    const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true, season: true } });
     if (!goal) throw new NotFoundException("Objectif introuvable");
     const data = { progress: dto.progress, comment: dto.comment ?? "", status: dto.status ?? (dto.progress >= 100 ? GoalStatus.ACHIEVED : GoalStatus.IN_PROGRESS) };
     const cp = await this.prisma.goalCheckpoint.upsert({ where: { goalId_trimester: { goalId, trimester } }, update: data, create: { goalId, trimester, ...data } });
     const latest = await this.prisma.goalCheckpoint.findFirst({ where: { goalId }, orderBy: { trimester: "desc" } });
     await this.prisma.goal.update({ where: { id: goalId }, data: { progress: latest!.progress } });
+    // Évaluer un objectif crée le bulletin du trimestre s'il n'existe pas encore (les compétences restent facultatives)
+    await this.prisma.evaluation.upsert({ where: { playerId_season_trimester: { playerId: goal.playerId, season: goal.season, trimester } }, update: {}, create: { playerId: goal.playerId, season: goal.season, trimester } });
     await this.touch(goal.playerId);
     return { trimester: cp.trimester, status: cp.status, progress: cp.progress, comment: cp.comment };
   }
