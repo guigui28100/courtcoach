@@ -173,10 +173,16 @@ export function Centre() {
         )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {players.map((p) => (
-            <Link key={p.id} to={`/coach/centre/${p.id}`} className="card no-underline transition-shadow hover:shadow-md">
-              <h3 className="m-0">{fullName(p)}</h3>
-              <p className="hint m-0">{[p.ranking && `Classement ${p.ranking}`, p.hand].filter(Boolean).join(" · ") || "Fiche à compléter"}</p>
-            </Link>
+            <div key={p.id} className="card grid content-between gap-3 transition-shadow hover:shadow-md">
+              <Link to={`/coach/centre/${p.id}`} className="no-underline">
+                <h3 className="m-0">{fullName(p)}</h3>
+                <p className="hint m-0">{[p.ranking && `Classement ${p.ranking}`, p.hand].filter(Boolean).join(" · ") || "Fiche à compléter"}</p>
+              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/coach/centre/${p.id}`} className="btn-outline btn-sm no-underline">Ouvrir le dossier</Link>
+                <Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link>
+              </div>
+            </div>
           ))}
           {!players.length && <div className="sm:col-span-2 lg:col-span-3"><Empty>Aucun joueur pour l'instant. Ajoute le premier avec le bouton ci-dessus.</Empty></div>}
         </div>

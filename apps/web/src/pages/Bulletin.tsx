@@ -70,6 +70,7 @@ export default function Bulletin() {
         <div className="print:hidden mb-4 flex flex-wrap items-center gap-3">
           <Link to={back} className="font-bold text-white underline">← Retour</Link>
           <button className="gal-btn" onClick={() => window.print()}>🖨️ Imprimer / Enregistrer en PDF</button>
+          {me?.role === "COACH" && <Link to={`/coach/centre/${id}/apercu`} className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme le jeune</Link>}
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>
         </div>
 
