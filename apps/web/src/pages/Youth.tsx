@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { SelfEvalSection } from "../components/SelfEval";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -128,9 +128,7 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
 }
 
 // Aperçu coach : les vidéos de ce joueur et l'état de chaque analyse (le coach les ouvre dans son studio)
-function PreviewVideos({ p }: { p: Player }) {
-  const videos = useVideos();
-  const mine = (videos ?? []).filter((v) => v.player?.id === p.id);
+function PreviewVideos({ mine }: { mine: VideoRow[] }) {
   return (
     <section className="glass gal-pop grid gap-3" aria-labelledby="gal-videos-apercu">
       <h2 id="gal-videos-apercu" className="m-0 text-2xl">🎬 Mes vidéos</h2>
@@ -149,12 +147,7 @@ function PreviewVideos({ p }: { p: Player }) {
   );
 }
 
-function Videos({ p }: { p: Player }) {
-  const [version, setVersion] = useState(0);
-  const videos = useVideos(version);
-  const refresh = useCallback(() => setVersion((n) => n + 1), []);
-  const mine = (videos ?? []).filter((v) => v.player?.id === p.id);
-  const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
+function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fresh: VideoRow[]; refresh: () => void }) {
   return (
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
@@ -165,13 +158,57 @@ function Videos({ p }: { p: Player }) {
   );
 }
 
-// Espace du jeune : l'univers « galaxie » (même contenu que celui des parents, présenté pour lui)
-// previewId : le coach regarde ce que voit un jeune (sans vidéos ni compte), sans avoir besoin de son accès.
+type Tab = "accueil" | "missions" | "bulletin" | "videos" | "progres" | "compte";
+
+// Carte cliquable de l'accueil (« à faire » ou « nouveau »)
+function Todo({ icon, title, text, onClick, hot = false, children }: { icon: string; title: string; text?: string; onClick: () => void; hot?: boolean; children?: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} className={"lift grid content-start gap-1 rounded-3xl border p-4 text-left text-white backdrop-blur-md transition-colors " + (hot ? "border-[#dcf247] bg-[#dcf247]/15" : "border-white/20 bg-white/10 hover:bg-white/15")}>
+      <span className="text-3xl" aria-hidden="true">{icon}</span>
+      <strong className="text-lg">{title}</strong>
+      {text && <span className="text-sm text-white/85">{text}</span>}
+      {children}
+      <span className="mt-1 text-sm font-bold text-[#dcf247]">Ouvrir →</span>
+    </button>
+  );
+}
+
+function HomeTab({ p, goals, done, wins, fresh, selfEval, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; selfEval?: SelfEvaluation; go: (t: Tab) => void }) {
+  const { evals } = useFollowUp(p.id);
+  const t = trimesterOf();
+  const here = goals.filter((g) => goalApplies(g, t));
+  const achieved = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
+  const word = evals?.find((e) => e.appreciation)?.appreciation;
+  return (
+    <>
+      <Hero p={p} done={done} wins={wins} />
+      <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
+        {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
+        <Todo hot={!selfEval?.sentAt} icon={selfEval?.sentAt ? "✅" : "✍️"} title={selfEval?.sentAt ? `Bulletin du trimestre ${t} envoyé` : `Remplis ton bulletin du trimestre ${t}`} text={selfEval?.sentAt ? "Ton coach l'a reçu. Merci !" : "Réponds avec des boutons, c'est rapide. Ton coach le lira."} onClick={() => go("bulletin")} />
+        <Todo icon="🚀" title={here.length ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : "Tes missions"} text={here.length ? `Trimestre ${t}` : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
+          {here.length > 0 && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
+        </Todo>
+        {fresh === 0 && <Todo icon="🎬" title="Envoyer une vidéo" text="Filme quelques coups et envoie-les à ton coach." onClick={() => go("videos")} />}
+        {word && <Todo icon="💬" title="Le mot de ton coach" text={`« ${word.length > 120 ? word.slice(0, 117) + "…" : word} »`} onClick={() => go("progres")} />}
+      </section>
+    </>
+  );
+}
+
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["missions", "🚀", "Missions"], ["bulletin", "✍️", "Mon bulletin"], ["videos", "🎬", "Vidéos"], ["progres", "📡", "Progrès"], ["compte", "🔒", "Compte"]];
+
+// Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
+// previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
 export default function YouthSpace({ previewId }: { previewId?: string }) {
   const { me, eraseAccount } = useAuth();
+  const [params, setParams] = useSearchParams();
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [goals, setGoals] = useState<Record<string, Goal[]>>({});
   const [wins, setWins] = useState<Record<string, number>>({});
+  const [version, setVersion] = useState(0);
+  const [selfEvals, setSelfEvals] = useState<SelfEvaluation[]>([]);
+  const videos = useVideos(version);
+  const refresh = useCallback(() => setVersion((n) => n + 1), []);
   useEffect(() => {
     (previewId ? get<Player>(`/players/${previewId}`).then((p) => [p]) : get<Player[]>("/players")).then(async (ps) => {
       setPlayers(ps);
@@ -179,40 +216,63 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
       setGoals(Object.fromEntries(g));
       const w = await Promise.all(ps.map(async (p) => [p.id, (await get<{ result: string }[]>(`/players/${p.id}/matches`).catch(() => [])).filter((m) => m.result === "Victoire").length] as const));
       setWins(Object.fromEntries(w));
+      if (ps[0]) get<SelfEvaluation[]>(`/players/${ps[0].id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
     }).catch(() => setPlayers([]));
-  }, [previewId]);
+  }, [previewId, version]);
+
+  const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
+  const tab: Tab = (TABS.find(([k]) => k === params.get("onglet"))?.[0]) ?? "accueil";
+  const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
+  const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
+  const cur = selfEvals.find((e) => e.season === currentSeason() && e.trimester === trimesterOf());
+  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && !cur?.sentAt);
 
   return (
-    <div className="relative isolate overflow-hidden">
+    <div className="relative isolate overflow-clip">
       <Stars />
-      <div className="relative z-10 mx-auto grid max-w-5xl gap-6 px-4 py-8">
+      <div className="relative z-10 mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
         {previewId && (
           <p className="glass m-0 flex flex-wrap items-center justify-between gap-2 !p-3 text-sm" role="note">
-            <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {players?.[0]?.firstName ?? "le jeune"} (sans ses vidéos ni son compte).</span>
+            <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {p?.firstName ?? "le jeune"} (sans pouvoir envoyer de vidéo).</span>
             <Link to={`/coach/centre/${previewId}`} className="gal-btn btn-sm no-underline">← Retour au dossier</Link>
           </p>
         )}
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
-        {players?.map((p) => (
-          <div key={p.id} className="grid gap-6">
-            <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} />
-            <Missions goals={goals[p.id] ?? []} />
-            <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} />
-            <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />
-            {previewId ? (
-              <PreviewVideos p={p} />
-            ) : <Videos p={p} />}
-          </div>
-        ))}
-        {!previewId && <section className="glass grid gap-3" aria-labelledby="gal-donnees">
-          <h2 id="gal-donnees" className="m-0 text-lg">🔒 Mon compte et mes données</h2>
-          <p className="m-0 text-sm text-white/80">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link> · Pour demander une copie ou la suppression de ton dossier, parles-en à un parent ou écris au club.</p>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>
-            <button className="btn btn-sm border-2 border-[#ff9b9b] text-[#ffb4b4] hover:bg-[#b3261e] hover:text-white" onClick={async () => { if (confirm("Supprimer définitivement ton compte (ton dossier reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
-          </div>
-        </section>}
+        {p && (
+          <>
+            <nav className="gal-tabs" aria-label="Mon espace">
+              <div role="tablist">
+                {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
+                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
+                    <span aria-hidden="true">{icon} </span>{label}
+                    {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#0a0d2c] bg-[#ff5d8f]" aria-label="Nouveau" />}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length} selfEval={cur} go={go} />}
+              {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
+              {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
+              {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
+              {tab === "progres" && <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
+              {tab === "compte" && !previewId && (
+                <section className="glass grid gap-3" aria-labelledby="gal-donnees">
+                  <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
+                  <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link></p>
+                  <p className="m-0 text-sm text-white/80">Pour demander une copie ou la suppression de ton dossier, parles-en à un parent ou écris au club.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>
+                    <button className="btn btn-sm border-2 border-[#ff9b9b] text-[#ffb4b4] hover:bg-[#b3261e] hover:text-white" onClick={async () => { if (confirm("Supprimer définitivement ton compte (ton dossier reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
+                  </div>
+                </section>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
