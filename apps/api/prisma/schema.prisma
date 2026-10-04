@@ -265,6 +265,7 @@ model Video {
   recordedAt  DateTime    @default(now())
   seenAt      DateTime?   // date à laquelle l'élève / la famille a vu l'analyse
   deleteAfter DateTime?   // suppression automatique prévue
+  fromCoach   Boolean     @default(false) // vidéo envoyée PAR le coach au joueur (démonstration, vidéo de son jeu…)
   ownerId     String?     // adulte à l'origine de la vidéo
   owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   playerId    String?

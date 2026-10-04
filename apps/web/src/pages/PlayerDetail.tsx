@@ -324,10 +324,10 @@ function PlayerVideosTab({ p }: { p: Player }) {
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
-      {imageOk && <VideoUpload playerId={p.id} onDone={() => setVersion((n) => n + 1)} />}
+      {imageOk && <><p className="hint m-0">Tu peux envoyer une vidéo à {p.firstName} (exemple à imiter, son match…) : il la verra dans son onglet « Vidéos », marquée « De ton coach ». Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={() => setVersion((n) => n + 1)} /></>}
       <ul className="m-0 grid list-none gap-3 p-0">
         {videos.map((v) => (
-          <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? " · avec une question" : ""}</small></span><VideoBadge v={v} /></Link></li>
+          <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? (v.fromCoach ? " · avec ton message" : " · avec une question") : ""}</small></span><VideoBadge v={v} forCoach /></Link></li>
         ))}
         {!videos.length && <li><Empty>Aucune vidéo pour ce joueur.</Empty></li>}
       </ul>

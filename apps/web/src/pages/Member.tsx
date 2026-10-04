@@ -210,7 +210,9 @@ function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]
   return (
     <div className="card grid gap-3">
       <h3 className="m-0">Vidéos</h3>
-      {fresh.length > 0 && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
+      <p className="m-0 text-sm text-muted">Vous pouvez envoyer une vidéo au coach pour qu'il l'analyse. Le coach peut aussi vous en envoyer (exemple à imiter, vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
+      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Le coach a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous.</p>}
+      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine} onChanged={refresh} empty="Aucune vidéo pour l'instant." />
     </div>
@@ -251,7 +253,7 @@ export function FamilySpace() {
   const tab: FTab = FTABS.find(([k]) => k === params.get("onglet"))?.[0] ?? "accueil";
   const go = (t: FTab) => { setParams(t === "accueil" ? {} : { onglet: t }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
-  const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
+  const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt);
   const list = p ? goals[p.id] ?? [] : [];
   const t = trimesterOf();
   const here = list.filter((g) => goalApplies(g, t));
@@ -291,7 +293,7 @@ export function FamilySpace() {
                     <div className="min-w-0"><h2 className="m-0">{fullName(p)}</h2><p className="m-0 text-muted">{[p.ranking && `Classement ${p.ranking}`, p.targetRanking && `objectif ${p.targetRanking}`].filter(Boolean).join(" · ") || "Suivi de la saison"}</p></div>
                   </section>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {fresh.length > 0 && <Shortcut hot icon="🎬" title={`Le coach a analysé ${fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"}`} text="Lire ses conseils et les images annotées." onClick={() => go("videos")} />}
+                    {fresh.length > 0 && <Shortcut hot icon="🎬" title={fresh.every((v) => v.fromCoach) ? `Le coach a envoyé ${fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"}` : `Du nouveau dans les vidéos (${fresh.length})`} text="Regarder la vidéo du coach, lire ses conseils et les images annotées." onClick={() => go("videos")} />}
                     <Shortcut icon="🎯" title={here.length ? (evaluated ? `${achieved} objectif${achieved > 1 ? "s" : ""} atteint${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler`) : "Objectifs"} text={here.length ? (evaluated ? `Bilan du trimestre ${t}` : `Trimestre ${t} : le coach fera le point à la fin.`) : "Le coach n'a pas encore fixé d'objectifs pour ce trimestre."} onClick={() => go("objectifs")} />
                     <Shortcut icon="📊" title="Évaluations et bulletins" text={word ? `« ${word.length > 110 ? word.slice(0, 107) + "…" : word} »` : "Radar des compétences, bulletins à imprimer."} onClick={() => go("evaluations")} />
                     <Shortcut icon="🏟️" title="Matchs" text="Résultats des compétitions." onClick={() => go("matchs")} />

@@ -137,7 +137,7 @@ function PreviewVideos({ mine }: { mine: VideoRow[] }) {
         <ul className="m-0 grid list-none gap-2 p-0">
           {mine.map((v) => (
             <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/10 p-3">
-              <span><strong>{v.title}</strong><br /><small className="text-white/75">{v.shot} · {v.analysis?.sentAt ? (v.seenAt ? "analyse envoyée et vue ✅" : "analyse envoyée, pas encore vue") : "analyse pas encore envoyée"}</small></span>
+              <span><strong>{v.title}</strong><br /><small className="text-white/75">{v.shot} · {v.fromCoach ? (v.seenAt ? "envoyée par toi, vue par le joueur ✅" : "envoyée par toi, pas encore vue") : v.analysis?.sentAt ? (v.seenAt ? "analyse envoyée et vue ✅" : "analyse envoyée, pas encore vue") : "analyse pas encore envoyée"}</small></span>
               <Link to={`/coach/videos/${v.id}`} className="gal-btn btn-sm no-underline">Ouvrir dans mon studio</Link>
             </li>
           ))}
@@ -151,7 +151,9 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
   return (
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
-      {fresh.length > 0 && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
+      <p className="m-0 text-sm text-muted">Ici tu envoies tes vidéos à ton coach pour qu'il les analyse. Ton coach peut aussi t'en envoyer (un exemple à imiter, ta vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
+      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
+      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine} onChanged={refresh} empty="Pas encore de vidéo. Filme quelques coups et envoie-les à ton coach !" />
     </section>
@@ -173,7 +175,7 @@ function Todo({ icon, title, text, onClick, hot = false, children }: { icon: str
   );
 }
 
-function HomeTab({ p, goals, done, wins, fresh, pending, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; pending: number | null; go: (t: Tab) => void }) {
+function HomeTab({ p, goals, done, wins, fresh, sent, pending, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; go: (t: Tab) => void }) {
   const { evals } = useFollowUp(p.id);
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
@@ -184,12 +186,13 @@ function HomeTab({ p, goals, done, wins, fresh, pending, go }: { p: Player; goal
     <>
       <Hero p={p} done={done} wins={wins} />
       <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
+        {sent > 0 && <Todo hot icon="🎓" title={`Ton coach t'a envoyé ${sent > 1 ? `${sent} vidéos` : "une vidéo"} !`} text="Regarde-la, elle est faite pour toi." onClick={() => go("videos")} />}
         {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
         <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletin")} />
         <Todo icon="🚀" title={here.length ? (evaluated ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} mission${here.length > 1 ? "s" : ""} à travailler`) : "Tes missions"} text={here.length ? (evaluated ? `Trimestre ${t}` : `Trimestre ${t} : ton coach fera le point à la fin du trimestre.`) : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
           {here.length > 0 && evaluated && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
         </Todo>
-        {fresh === 0 && <Todo icon="🎬" title="Envoyer une vidéo" text="Filme quelques coups et envoie-les à ton coach." onClick={() => go("videos")} />}
+        {fresh + sent === 0 && <Todo icon="🎬" title="Mes vidéos" text="Envoie tes vidéos à ton coach. Il peut aussi t'en envoyer." onClick={() => go("videos")} />}
         {word && <Todo icon="💬" title="Le mot de ton coach" text={`« ${word.length > 120 ? word.slice(0, 117) + "…" : word} »`} onClick={() => go("progres")} />}
       </section>
     </>
@@ -225,7 +228,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   const tab: Tab = (TABS.find(([k]) => k === params.get("onglet"))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
-  const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
+  const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt); // nouvelle analyse ou nouvelle vidéo du coach
+  const freshSent = fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length;
   const pending = pendingSelfEval(selfEvals, currentSeason());
   const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && pending !== null);
 
@@ -255,7 +259,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
-              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length} pending={pending} go={go} />}
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} go={go} />}
               {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
               {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}

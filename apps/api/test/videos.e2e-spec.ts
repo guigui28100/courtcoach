@@ -228,4 +228,24 @@ describe("Vidéos et analyses", () => {
     expect(await prisma.video.count({ where: { id: adultVideo } })).toBe(0);
     expect(await prisma.videoChunk.count({ where: { videoId: adultVideo } })).toBe(0);
   });
+
+  it("le coach envoie une vidéo à un joueur : la famille la voit « de ton coach », peut la lire, ne peut pas la supprimer ; un adulte ne la voit jamais", async () => {
+    await A.coach.post(`/api/players/${p1}/consents`).set(ORIGIN).send({ kind: "IMAGE", givenBy: "Parent 1", method: "paper" }).expect(201); // (retiré plus haut dans ce fichier)
+    const r = await upload(A.coach, { playerId: p1, title: "Modèle de service", question: "Regarde bien le lancer de balle" }, data);
+    expect(r.status).toBe(201); const vid = (r as any).vid;
+    expect((await prisma.video.findUniqueOrThrow({ where: { id: vid } })).fromCoach).toBe(true);
+    const mine = (await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid);
+    expect(mine).toMatchObject({ fromCoach: true, seenAt: null, question: "Regarde bien le lancer de balle", analysis: null });
+    await A.par1.get(`/api/videos/${vid}/file`).set("Range", "bytes=0-99").expect(206);
+    await A.par1.post(`/api/videos/${vid}/seen`).set(ORIGIN).expect(204); // vue sans analyse : c'est déjà un message du coach
+    expect((await A.par1.get(`/api/videos/${vid}`).expect(200)).body.seenAt).toBeTruthy();
+    await A.par1.delete(`/api/videos/${vid}`).set(ORIGIN).expect(403);
+    await login("autreFamille", "autre-famille@exemple.fr", Role.GUARDIAN); await login("adulteX", "adulte-x@exemple.fr", Role.ADULT); // comptes neufs (des tests précédents ont fermé d'autres sessions)
+    await A.autreFamille.get(`/api/videos/${vid}`).expect(404);
+    await A.adulteX.get(`/api/videos/${vid}`).expect(404);
+    expect((await A.adulteX.get("/api/videos").expect(200)).body.some((v: any) => v.id === vid)).toBe(false);
+    // une vidéo envoyée par la famille n'est PAS « de ton coach »
+    const fam = await upload(A.par1, { playerId: p1 }, data); expect((await prisma.video.findUniqueOrThrow({ where: { id: (fam as any).vid } })).fromCoach).toBe(false);
+    await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
+  });
 });
