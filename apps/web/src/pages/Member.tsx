@@ -6,7 +6,7 @@ import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
-import { useVideos, VideoList, VideoUpload } from "../components/Videos";
+import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -210,7 +210,7 @@ function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]
   return (
     <div className="card grid gap-3">
       <h3 className="m-0">Vidéos</h3>
-      <p className="m-0 text-sm text-muted">Vous pouvez envoyer une vidéo au coach pour qu'il l'analyse. Le coach peut aussi vous en envoyer (exemple à imiter, vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
+      <VideosIntro who="famille" />
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Le coach a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous.</p>}
       {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />

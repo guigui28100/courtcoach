@@ -67,6 +67,23 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
   );
 }
 
+// Encadré d'explication des deux sens : le jeune envoie à son coach, et le coach peut lui envoyer
+const INTRO = {
+  jeune: { up: ["📤 Tu envoies tes vidéos", "Filme quelques coups et envoie-les à ton coach : il les analyse et te répond avec ses conseils."], down: ["🎓 Ton coach t'envoie des vidéos", "Une vidéo de toi à l'entraînement ou en match, ou un exemple à imiter : elle apparaît ici, marquée « 🎓 De ton coach », avec son message. Une pastille te prévient quand il y en a une nouvelle."] },
+  famille: { up: ["📤 Vous envoyez des vidéos", "Filmez quelques coups et envoyez-les au coach : il les analyse et répond avec ses conseils."], down: ["🎓 Le coach vous envoie des vidéos", "Une vidéo de votre enfant à l'entraînement ou en match, ou un exemple à imiter : elle apparaît ici, marquée « 🎓 De ton coach », avec son message. Une pastille prévient quand il y en a une nouvelle."] },
+  apercu: { up: ["📤 Le jeune t'envoie ses vidéos", "Il filme quelques coups : tu les analyses dans ton studio, puis il reçoit tes conseils."], down: ["🎓 Tu peux lui envoyer des vidéos", "Une vidéo de lui à l'entraînement ou en match, ou un exemple à imiter : elle apparaît ici marquée « 🎓 De ton coach », avec ton message. Tu l'envoies depuis sa fiche, onglet « Vidéos »."] },
+} as const;
+export function VideosIntro({ who = "jeune", dark = false }: { who?: keyof typeof INTRO; dark?: boolean }) {
+  const t = INTRO[who];
+  const box = dark ? "bg-white/10 text-white" : "bg-sand/70 text-ink";
+  return (
+    <div className="grid gap-2 sm:grid-cols-2" aria-label="Comment ça marche">
+      <div className={"grid content-start gap-1 rounded-2xl p-3 " + box}><strong>{t.up[0]}</strong><span className="text-sm opacity-90">{t.up[1]}</span></div>
+      <div className={"grid content-start gap-1 rounded-2xl p-3 ring-2 ring-[#dcf247] " + box}><strong>{t.down[0]}</strong><span className="text-sm opacity-90">{t.down[1]}</span></div>
+    </div>
+  );
+}
+
 export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: boolean }) => v.fromCoach
   ? <span className={"badge " + (!forCoach && !v.seenAt ? "!border-ok !bg-[#e6f5ec] !text-ok" : "")}>{forCoach ? "🎬 Envoyée par toi" : v.seenAt ? "🎓 De ton coach" : "🎓 De ton coach · nouveau"}</span>
   : v.analysis?.sentAt
