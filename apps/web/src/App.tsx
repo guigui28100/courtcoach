@@ -4,6 +4,7 @@ import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
 import { Centre, CoachHome } from "./pages/Coach";
 import Bulletin from "./pages/Bulletin";
+import FinDeCours from "./pages/FinDeCours";
 import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/securite" element={<Guard roles={["COACH"]}><Securite /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
+        <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH"]}><FinDeCours /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
         <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH"]}><Apercu /></Guard>} />
         <Route path="/coach/videos/:id" element={<Guard roles={["COACH"]}><VideoReview /></Guard>} />

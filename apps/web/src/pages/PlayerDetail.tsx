@@ -1,12 +1,13 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
+import { ReasonPicker, StarPicker, StarsLine, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { AXES, checkpointAt, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
-type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "videos" | "matchs" | "bulletins";
+type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
@@ -317,6 +318,45 @@ function Objectifs({ p }: { p: Player }) {
   );
 }
 
+// Étoiles de fin de cours d'un joueur : historique + ajout (la même chose en une fois pour tout le groupe : « ⭐ Fin de cours » dans le Centre)
+function StarsTab({ p }: { p: Player }) {
+  const [version, setVersion] = useState(0);
+  const stars = useStars(p.id, version);
+  const [day, setDay] = useState(todayIso());
+  const [n, setN] = useState(0), [reason, setReason] = useState("effort"), [comment, setComment] = useState("");
+  const [err, setErr] = useState("");
+  async function save() { setErr(""); try { await put(`/players/${p.id}/stars/${day}`, { stars: n, reason, comment: comment.trim() || undefined }); setN(0); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); } }
+  return (
+    <div className="grid gap-4">
+      <section className="card grid gap-3">
+        <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
+        <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
+          <StarPicker value={n} onChange={setN} label={`Étoiles pour ${p.firstName}`} />
+        </div>
+        {n > 0 && <>
+          <ReasonPicker value={reason} onChange={setReason} />
+          <input className="input" aria-label="Petit mot (facultatif)" maxLength={140} placeholder="Un petit mot (facultatif)" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <div><button className="btn-clay" onClick={save}>Enregistrer</button></div>
+        </>}
+        <Err msg={err} />
+      </section>
+      <section className="card grid gap-2">
+        <h3 className="m-0">Historique {stars && stars.length > 0 && <small className="font-normal text-muted">· ⭐ {totalStars(stars)} en tout</small>}</h3>
+        {!stars ? <div className="skeleton h-16" /> : !stars.length ? <p className="hint m-0">Aucune étoile pour l'instant.</p> : (
+          <ul className="m-0 grid list-none gap-2 p-0">{stars.map((s) => (
+            <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2">
+              <span><strong><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}</strong><small className="hint block">{fmtDay(s.day)}{s.comment ? ` · ${s.comment}` : ""}</small></span>
+              <button className="btn-danger btn-sm" onClick={async () => { if (confirm("Retirer ces étoiles ?")) { await del(`/players/${p.id}/stars/${s.day}`); setVersion((v) => v + 1); } }}>Retirer</button>
+            </li>
+          ))}</ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function PlayerVideosTab({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
@@ -344,7 +384,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
+  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["etoiles", "⭐ Étoiles"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
@@ -365,6 +405,7 @@ export default function PlayerDetail() {
           {tab === "evaluations" && <Evaluations p={p} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <Matchs p={p} />}
+          {tab === "etoiles" && <StarsTab p={p} />}
           {tab === "bulletins" && <Bulletins p={p} />}
         </div>
       </Page>

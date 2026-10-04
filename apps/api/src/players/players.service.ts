@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, SelfEvaluationDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, SelfEvaluationDto, StarDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -74,7 +74,7 @@ export class PlayersService {
   // Droit d'accès / portabilité : copie complète d'une fiche.
   async export(user: AuthUser, id: string) {
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
     const { coachNotes, ...visible } = p;
@@ -294,6 +294,32 @@ export class PlayersService {
     const e = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
     if (!e?.sentAt) throw new NotFoundException("Bulletin introuvable");
     return this.prisma.selfEvaluation.update({ where: { id: e.id }, data: { readAt: new Date() } });
+  }
+
+  // ----- Étoiles de fin de cours (données par le coach, lues par le joueur et sa famille) -----
+  private checkDay(day: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(day))) throw new BadRequestException("Date invalide");
+    const t = Date.parse(day), now = Date.now();
+    if (t > now + 24 * 3600 * 1000) throw new BadRequestException("Impossible de donner des étoiles pour un cours à venir");
+    if (t < now - 366 * 24 * 3600 * 1000) throw new BadRequestException("Cette date est trop ancienne");
+  }
+  async stars(user: AuthUser, playerId: string) {
+    await this.assertCanRead(user, playerId);
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: { day: "desc" }, select: { id: true, day: true, stars: true, reason: true, comment: true } });
+  }
+  async saveStar(user: AuthUser, playerId: string, day: string, dto: StarDto) {
+    this.assertCoach(user);
+    this.checkDay(day);
+    const data = { stars: dto.stars, reason: dto.reason, comment: (dto.comment ?? "").trim() };
+    const s = await this.prisma.courseStar.upsert({ where: { playerId_day: { playerId, day } }, update: data, create: { playerId, day, ...data } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    await this.touch(playerId);
+    return { id: s.id, day: s.day, stars: s.stars, reason: s.reason, comment: s.comment };
+  }
+  async removeStar(user: AuthUser, playerId: string, day: string) {
+    this.assertCoach(user);
+    this.checkDay(day);
+    const r = await this.prisma.courseStar.deleteMany({ where: { playerId, day } });
+    if (!r.count) throw new NotFoundException("Aucune étoile ce jour-là");
   }
 
   // ----- Matchs -----

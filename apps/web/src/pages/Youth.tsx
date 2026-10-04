@@ -5,9 +5,10 @@ import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
 import { SelfEvalSection } from "../components/SelfEval";
+import { StarsCard, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -17,15 +18,16 @@ const MISSION: Record<string, { label: string; emoji: string; color: string }> =
   MENTAL: { label: "Mental", emoji: "🔥", color: "#d3b2ff" },
 };
 
-function Hero({ p, done, wins }: { p: Player; done: number; wins: number }) {
+function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: number; starsTotal: number }) {
   return (
     <section className="gal-pop grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
         <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">Ma galaxie tennis</p>
         <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Salut {p.firstName} !</h1>
-        <p className="m-0 max-w-xl text-lg text-white/85">Voici tes missions, tes progrès et le mot de ton coach. Chaque entraînement te fait avancer d'une étoile.</p>
+        <p className="m-0 max-w-xl text-lg text-white/85">Voici tes missions, tes progrès et le mot de ton coach. À la fin des cours, ton coach peut te donner jusqu'à 3 étoiles ⭐ pour ton effort, ton attitude ou un progrès.</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
-          {done > 0 && <li className="gal-chip">⭐ {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
+          {starsTotal > 0 && <li className="gal-chip">⭐ {starsTotal} étoile{starsTotal > 1 ? "s" : ""}</li>}
+          {done > 0 && <li className="gal-chip">🎯 {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
           {wins > 0 && <li className="gal-chip">🏆 {wins} victoire{wins > 1 ? "s" : ""}</li>}
           {p.ranking && <li className="gal-chip">🎾 Classement {p.ranking}{p.targetRanking ? ` → objectif ${p.targetRanking}` : ""}</li>}
         </ul>
@@ -175,7 +177,7 @@ function Todo({ icon, title, text, onClick, hot = false, children }: { icon: str
   );
 }
 
-function HomeTab({ p, goals, done, wins, fresh, sent, pending, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; go: (t: Tab) => void }) {
+function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; stars: CourseStar[]; go: (t: Tab) => void }) {
   const { evals } = useFollowUp(p.id);
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
@@ -184,8 +186,9 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, go }: { p: Player
   const word = evals?.find((e) => e.appreciation)?.appreciation;
   return (
     <>
-      <Hero p={p} done={done} wins={wins} />
+      <Hero p={p} done={done} wins={wins} starsTotal={totalStars(stars)} />
       <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
+        {stars.length > 0 && <Todo icon="⭐" title={`${totalStars(stars)} étoile${totalStars(stars) > 1 ? "s" : ""}`} text={`Dernier cours : +${stars[0].stars} ⭐ ${starReason(stars[0].reason)?.label ?? ""}${stars[0].comment ? ` · « ${stars[0].comment} »` : ""}`} onClick={() => go("progres")} />}
         {sent > 0 && <Todo hot icon="🎓" title={`Ton coach t'a envoyé ${sent > 1 ? `${sent} vidéos` : "une vidéo"} !`} text="Regarde-la, elle est faite pour toi." onClick={() => go("videos")} />}
         {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
         <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletin")} />
@@ -227,6 +230,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
   const tab: Tab = (TABS.find(([k]) => k === params.get("onglet"))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const stars = useStars(p?.id, version);
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
   const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt); // nouvelle analyse ou nouvelle vidéo du coach
   const freshSent = fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length;
@@ -259,11 +263,11 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
-              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} go={go} />}
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
               {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
               {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
-              {tab === "progres" && <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
+              {tab === "progres" && <><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
               {tab === "compte" && !previewId && (
                 <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                   <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>

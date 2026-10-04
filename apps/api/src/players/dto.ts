@@ -77,6 +77,14 @@ export class EvaluationDto {
   @IsOptional() @IsString() @MaxLength(3000) appreciation?: string;
 }
 
+// Étoiles de fin de cours (jamais négatives)
+export const STAR_REASONS = ["effort", "ecoute", "progres", "fairplay", "equipe", "courage", "concentration", "bonne-humeur"];
+export class StarDto {
+  @Type(() => Number) @IsInt() @Min(1) @Max(3) stars: number;
+  @IsIn(STAR_REASONS) reason: string;
+  @IsOptional() @IsString() @MaxLength(140) comment?: string;
+}
+
 export class MatchDto {
   @IsDateString() date: string;
   @Transform(trim) @IsString() @MaxLength(120) tournament: string;

@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { StarsCard, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
@@ -219,8 +220,8 @@ function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]
   );
 }
 
-type FTab = "accueil" | "objectifs" | "evaluations" | "matchs" | "videos" | "compte";
-const FTABS: [FTab, string][] = [["accueil", "🏠 Accueil"], ["objectifs", "🎯 Objectifs"], ["evaluations", "📊 Évaluations"], ["matchs", "🏟️ Matchs"], ["videos", "🎬 Vidéos"], ["compte", "🔒 Compte"]];
+type FTab = "accueil" | "objectifs" | "evaluations" | "etoiles" | "matchs" | "videos" | "compte";
+const FTABS: [FTab, string][] = [["accueil", "🏠 Accueil"], ["objectifs", "🎯 Objectifs"], ["evaluations", "📊 Évaluations"], ["etoiles", "⭐ Étoiles"], ["matchs", "🏟️ Matchs"], ["videos", "🎬 Vidéos"], ["compte", "🔒 Compte"]];
 
 // Carte cliquable de l'accueil
 function Shortcut({ icon, title, text, hot = false, onClick }: { icon: string; title: string; text: string; hot?: boolean; onClick: () => void }) {
@@ -259,6 +260,7 @@ export function FamilySpace() {
   const here = list.filter((g) => goalApplies(g, t));
   const achieved = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const evaluated = here.some((g) => statusAt(g, t));
+  const stars = useStars(p?.id, version);
   const { evals } = useFollowUp(p?.id ?? "");
   const word = evals?.find((e) => e.appreciation)?.appreciation;
 
@@ -296,6 +298,7 @@ export function FamilySpace() {
                     {fresh.length > 0 && <Shortcut hot icon="🎬" title={fresh.every((v) => v.fromCoach) ? `Le coach a envoyé ${fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"}` : `Du nouveau dans les vidéos (${fresh.length})`} text="Regarder la vidéo du coach, lire ses conseils et les images annotées." onClick={() => go("videos")} />}
                     <Shortcut icon="🎯" title={here.length ? (evaluated ? `${achieved} objectif${achieved > 1 ? "s" : ""} atteint${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler`) : "Objectifs"} text={here.length ? (evaluated ? `Bilan du trimestre ${t}` : `Trimestre ${t} : le coach fera le point à la fin.`) : "Le coach n'a pas encore fixé d'objectifs pour ce trimestre."} onClick={() => go("objectifs")} />
                     <Shortcut icon="📊" title="Évaluations et bulletins" text={word ? `« ${word.length > 110 ? word.slice(0, 107) + "…" : word} »` : "Radar des compétences, bulletins à imprimer."} onClick={() => go("evaluations")} />
+                    <Shortcut icon="⭐" title={stars && stars.length ? `${stars.reduce((n, s) => n + s.stars, 0)} étoile${stars.reduce((n, s) => n + s.stars, 0) > 1 ? "s" : ""}` : "Étoiles de fin de cours"} text={stars && stars.length ? `Dernier cours : +${stars[0].stars} ⭐` : "Le coach en donne à la fin des cours, pour l'effort et l'attitude."} onClick={() => go("etoiles")} />
                     <Shortcut icon="🏟️" title="Matchs" text="Résultats des compétitions." onClick={() => go("matchs")} />
                     {!fresh.length && <Shortcut icon="🎬" title="Vidéos" text="Envoyer une vidéo ou lire une analyse." onClick={() => go("videos")} />}
                   </div>
@@ -303,6 +306,7 @@ export function FamilySpace() {
               )}
               {tab === "objectifs" && <GoalsTab goals={list} />}
               {tab === "evaluations" && <EvalTab p={p} />}
+              {tab === "etoiles" && <StarsCard stars={stars} who="famille" />}
               {tab === "matchs" && <MatchesTab p={p} />}
               {tab === "videos" && <PlayerVideos p={p} mine={mine} fresh={fresh} refresh={refresh} />}
               {tab === "compte" && (
