@@ -46,6 +46,8 @@ export const TRIMESTER_MONTHS = ["début de saison", "septembre – décembre", 
 // t = 0 : bilan de début d'année (point de départ de la saison) ; 1 à 3 : bulletin du trimestre
 export const periodLabel = (season: string, t: number) => `${t === 0 ? "Bilan de début d'année" : `Trimestre ${t}`} · saison ${season.replace("-", "/")}`;
 export const periodShort = (season: string, t: number) => (t === 0 ? "Départ" : `T${t} ${season.replace("-", "/")}`);
+// Dernier mois d'un trimestre (décembre, mars, juin à août) : c'est le moment de l'auto-évaluation
+export const isTrimesterEnd = (d = new Date()) => [11, 2, 5, 6, 7].includes(d.getMonth());
 export function trimesterOf(d = new Date()) { const m = d.getMonth(); return m >= 8 ? 1 : m <= 2 ? 2 : 3; }
 // Trimestre précédent (pour comparer)
 // Période précédente : T3 → T2 → T1 → bilan de départ (0) de la même saison ; le bilan de départ se compare au dernier trimestre de la saison d'avant.

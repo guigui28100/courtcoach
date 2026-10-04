@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { SelfEvalSection } from "../components/SelfEval";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
+import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, isTrimesterEnd, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -25,8 +25,8 @@ function Hero({ p, done, wins }: { p: Player; done: number; wins: number }) {
         <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Salut {p.firstName} !</h1>
         <p className="m-0 max-w-xl text-lg text-white/85">Voici tes missions, tes progrès et le mot de ton coach. Chaque entraînement te fait avancer d'une étoile.</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
-          <li className="gal-chip">⭐ {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>
-          <li className="gal-chip">🏆 {wins} victoire{wins > 1 ? "s" : ""}</li>
+          {done > 0 && <li className="gal-chip">⭐ {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
+          {wins > 0 && <li className="gal-chip">🏆 {wins} victoire{wins > 1 ? "s" : ""}</li>}
           {p.ranking && <li className="gal-chip">🎾 Classement {p.ranking}{p.targetRanking ? ` → objectif ${p.targetRanking}` : ""}</li>}
         </ul>
       </div>
@@ -52,7 +52,7 @@ function Missions({ goals }: { goals: Goal[] }) {
                 <h3 className="m-0 text-lg" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</h3>
                 {mine.map((g) => { const st = statusAt(g, t), note = checkpointAt(g, t)?.comment.trim(); return (
                   <div key={g.id} className="grid gap-1">
-                    <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : `${g.progress} %`}</span></div>
+                    <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : g.progress > 0 ? `${g.progress} %` : "🎯 À travailler"}</span></div>
                     {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
                     {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
                     <MissionBar value={g.progress} color={m.color} label={`Mission : ${g.title}`} />
@@ -178,15 +178,16 @@ function HomeTab({ p, goals, done, wins, fresh, selfEval, go }: { p: Player; goa
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
   const achieved = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
+  const evaluated = here.some((g) => statusAt(g, t)); // le coach fait le point à la fin du trimestre
   const word = evals?.find((e) => e.appreciation)?.appreciation;
   return (
     <>
       <Hero p={p} done={done} wins={wins} />
       <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
         {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
-        <Todo hot={!selfEval?.sentAt} icon={selfEval?.sentAt ? "✅" : "✍️"} title={selfEval?.sentAt ? `Bulletin du trimestre ${t} envoyé` : `Remplis ton bulletin du trimestre ${t}`} text={selfEval?.sentAt ? "Ton coach l'a reçu. Merci !" : "Réponds avec des boutons, c'est rapide. Ton coach le lira."} onClick={() => go("bulletin")} />
-        <Todo icon="🚀" title={here.length ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : "Tes missions"} text={here.length ? `Trimestre ${t}` : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
-          {here.length > 0 && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
+        <Todo hot={!selfEval?.sentAt && isTrimesterEnd()} icon={selfEval?.sentAt ? "✅" : "✍️"} title={selfEval?.sentAt ? `Bulletin du trimestre ${t} envoyé` : isTrimesterEnd() ? `Remplis ton bulletin du trimestre ${t}` : "Mon bulletin du trimestre"} text={selfEval?.sentAt ? "Ton coach l'a reçu. Merci !" : isTrimesterEnd() ? "C'est bientôt la fin du trimestre : réponds avec des boutons, c'est rapide." : "À remplir à la fin du trimestre. Tu peux déjà le commencer."} onClick={() => go("bulletin")} />
+        <Todo icon="🚀" title={here.length ? (evaluated ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} mission${here.length > 1 ? "s" : ""} à travailler`) : "Tes missions"} text={here.length ? (evaluated ? `Trimestre ${t}` : `Trimestre ${t} : ton coach fera le point à la fin du trimestre.`) : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
+          {here.length > 0 && evaluated && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
         </Todo>
         {fresh === 0 && <Todo icon="🎬" title="Envoyer une vidéo" text="Filme quelques coups et envoie-les à ton coach." onClick={() => go("videos")} />}
         {word && <Todo icon="💬" title="Le mot de ton coach" text={`« ${word.length > 120 ? word.slice(0, 117) + "…" : word} »`} onClick={() => go("progres")} />}
@@ -226,7 +227,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
   const fresh = mine.filter((v) => v.analysis?.sentAt && !v.seenAt);
   const cur = selfEvals.find((e) => e.season === currentSeason() && e.trimester === trimesterOf());
-  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && !cur?.sentAt);
+  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && !cur?.sentAt && isTrimesterEnd());
 
   return (
     <div className="relative isolate overflow-clip">

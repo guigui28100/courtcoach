@@ -118,15 +118,16 @@ export function CoachHome() {
   );
 }
 
-// Crée un joueur FICTIF complet (objectifs, évaluations, matchs) pour découvrir l'espace du jeune, sans rien saisir.
-async function createExample(): Promise<string> {
+// Crée un joueur FICTIF pour découvrir l'espace du jeune, sans rien saisir.
+// « debut » : début de saison (bilan de départ + objectifs à travailler, rien d'évalué) ; « fin » : fin de trimestre (objectifs évalués, bulletin, matchs).
+async function createExample(stage: "debut" | "fin" = "debut"): Promise<string> {
   const p = await post<Player>("/players", { firstName: "Léo", lastName: "Exemple", birthDate: "2014-03-14" });
   const season = currentSeason(), t = trimesterOf();
   await patch(`/players/${p.id}`, { ranking: "30/2", targetRanking: "30/1", hand: "Droitier", playStyle: "Joueur offensif" });
   // Bilan de début d'année (point de départ), puis le bulletin du trimestre en cours
   await put(`/players/${p.id}/evaluations/${season}/0`, { ratings: { coup_droit: 3, revers: 2, service: 2, retour: 2, volee: 2, deplacements: 3, lecture: 2, construction: 2, endurance: 3, concentration: 2, assiduite: 4, etat_esprit: 4 }, appreciation: "Un joueur plein d'énergie, avec de bonnes bases au coup droit.", strengths: "Coup droit, endurance, bonne humeur.", improve: "Revers, service, régularité sous pression.", next: "Fiabiliser la première balle, gagner en profondeur au coup droit." });
-  await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, retour: 3, volee: 3, deplacements: 3, lecture: 3, construction: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
-  // Objectifs du trimestre en cours avec leur bilan : de quoi essayer « Préparer le trimestre suivant »
+  if (stage === "fin") await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { coup_droit: 4, revers: 3, service: 4, retour: 3, volee: 3, deplacements: 3, lecture: 3, construction: 3, endurance: 4, concentration: 3, assiduite: 5, etat_esprit: 5 }, appreciation: "Tu progresses vite, bravo ! Continue comme ça.", strengths: "Un service qui devient une vraie arme.", improve: "Rester calme après une faute.", next: "Gagner un match en tournoi." });
+  // Objectifs du trimestre en cours (avec leur bilan en fin de trimestre : de quoi essayer « Préparer le trimestre suivant »)
   for (const [axis, title, progress, status, indicator, comment] of [
     ["TECHNIQUE", "Fiabiliser la première balle", 100, "ACHIEVED", "60 % de premières balles en match", "Objectif atteint, bravo !"],
     ["TECHNIQUE", "Coup droit plus profond", 55, "IN_PROGRESS", "", "Ça avance bien, on continue."],
@@ -135,8 +136,9 @@ async function createExample(): Promise<string> {
     ["MENTAL", "Routine entre les points", 15, "NOT_ACHIEVED", "Routine respectée 8 points sur 10", "À reprendre au prochain trimestre."],
   ] as const) {
     const g = await post<{ id: string }>(`/players/${p.id}/goals`, { season, axis, title, progress: 0, indicator, trimesters: [t] });
-    await put(`/goals/${g.id}/checkpoints/${t}`, { progress, status, comment });
+    if (stage === "fin") await put(`/goals/${g.id}/checkpoints/${t}`, { progress, status, comment }); // en début de saison, rien n'est encore évalué
   }
+  if (stage === "debut") return p.id;
   const day = (d: number) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
   await post(`/players/${p.id}/matches`, { date: day(20), tournament: "Tournoi du club", round: "Demi-finale", result: "Victoire", score: "6/3 6/4" });
   await post(`/players/${p.id}/matches`, { date: day(6), tournament: "Plateau de Dreux", result: "Défaite", score: "4/6 6/7", remark: "Très serré !" });
@@ -171,7 +173,8 @@ export function Centre() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="m-0">Mes joueurs</h2>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (fictif)"}</button>
+            <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
+            <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
             <button className="btn-clay btn-sm" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button>
           </div>
         </div>
