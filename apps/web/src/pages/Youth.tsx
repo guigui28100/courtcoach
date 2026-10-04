@@ -6,7 +6,7 @@ import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
 import { SelfEvalSection } from "../components/SelfEval";
 import { useFollowUp } from "../components/Suivi";
-import { useVideos, VideoList, VideoUpload } from "../components/Videos";
+import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
@@ -132,7 +132,7 @@ function PreviewVideos({ mine }: { mine: VideoRow[] }) {
   return (
     <section className="glass gal-pop grid gap-3" aria-labelledby="gal-videos-apercu">
       <h2 id="gal-videos-apercu" className="m-0 text-2xl">🎬 Mes vidéos</h2>
-      <p className="m-0 text-white/80">Le jeune envoie ses vidéos ici et retrouve tes analyses une fois envoyées. L'envoi de vidéos n'est possible que depuis son compte.</p>
+      <VideosIntro who="apercu" dark />
       {mine.length === 0 ? <p className="m-0 text-white/80">Aucune vidéo pour l'instant.</p> : (
         <ul className="m-0 grid list-none gap-2 p-0">
           {mine.map((v) => (
@@ -151,11 +151,11 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
   return (
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
-      <p className="m-0 text-sm text-muted">Ici tu envoies tes vidéos à ton coach pour qu'il les analyse. Ton coach peut aussi t'en envoyer (un exemple à imiter, ta vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
+      <VideosIntro who="jeune" />
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
       {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
-      <VideoList videos={mine} onChanged={refresh} empty="Pas encore de vidéo. Filme quelques coups et envoie-les à ton coach !" />
+      <VideoList videos={mine} onChanged={refresh} empty="Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !" />
     </section>
   );
 }
