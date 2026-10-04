@@ -63,7 +63,7 @@ function Missions({ goals }: { goals: Goal[] }) {
   );
 }
 
-function Radarlike({ p }: { p: Player }) {
+function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
   const { evals, matches } = useFollowUp(p.id);
   if (!evals) return null;
   const last = evals.find((e) => ratedCount(e) > 0);
@@ -98,7 +98,7 @@ function Radarlike({ p }: { p: Player }) {
         )}
         {evals.some((e) => ratedCount(e) > 0) && (
           <div className="grid gap-2"><h3 className="m-0 text-lg">📄 Mes bulletins</h3>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.filter((e) => ratedCount(e) > 0).map((e) => <li key={e.id}><Link to={`/suivi/${p.id}/bulletin/${e.season}/${e.trimester}`} className="gal-btn btn-sm no-underline">Trimestre {e.trimester} · {e.season.replace("-", "/")}</Link></li>)}</ul>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.filter((e) => ratedCount(e) > 0).map((e) => <li key={e.id}><Link to={`${bulletinBase}/bulletin/${e.season}/${e.trimester}`} className="gal-btn btn-sm no-underline">Trimestre {e.trimester} · {e.season.replace("-", "/")}</Link></li>)}</ul>
           </div>
         )}
       </section>
@@ -169,7 +169,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div key={p.id} className="grid gap-6">
             <Hero p={p} done={(goals[p.id] ?? []).filter((g) => g.progress >= 100).length} wins={wins[p.id] ?? 0} />
             <Missions goals={goals[p.id] ?? []} />
-            <Radarlike p={p} />
+            <Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />
             {previewId ? (
               <section className="glass gal-pop grid gap-2" aria-label="Mes vidéos"><h2 className="m-0 text-2xl">🎬 Mes vidéos</h2><p className="m-0 text-white/80">Ici, le jeune envoie ses vidéos et retrouve tes analyses.</p></section>
             ) : <Videos p={p} />}
