@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
-import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { AXES, checkpointAt, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
@@ -48,7 +48,7 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
       <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Notes privées</legend>
         <Field label="Notes du coach" id="coachNotes" hint="Seul toi peux les lire : jamais visibles par les familles."><textarea id="coachNotes" name="coachNotes" className="input" defaultValue={p.coachNotes ?? ""} maxLength={3000} /></Field>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
 }
@@ -285,7 +285,7 @@ function Objectifs({ p }: { p: Player }) {
         {AXES.map((a) => {
           const mine = goals.filter((g) => g.axis === a.key);
           return (
-            <section key={a.key} className="card grid gap-3 border-t-[6px]" style={{ borderTopColor: a.color }} aria-label={a.label}>
+            <section key={a.key} className="card grid content-start gap-3 border-t-[6px]" style={{ borderTopColor: a.color }} aria-label={a.label}>
               <h3 className="m-0" style={{ color: a.color }}>{a.label}</h3>
               {mine.map((g) => (
                 <article key={g.id} className={"grid gap-2 rounded-xl border border-line bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")}>
@@ -347,14 +347,16 @@ export default function PlayerDetail() {
   const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
   return (
     <>
-      <PageHead eyebrow="Dossier du joueur" title={fullName(p)}>
+      <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
         <div className="flex flex-wrap items-center gap-3"><Link to="/coach/centre" className="font-bold text-ink underline">← Tous mes joueurs</Link><Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link></div>
       </PageHead>
       <Page>
-        <div role="tablist" aria-label="Sections du dossier" className="flex gap-1 overflow-x-auto border-b-2 border-line">
-          {tabs.map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted")}>{label}</button>
-          ))}
+        <div className="tabbar">
+          <div role="tablist" aria-label="Sections du dossier">
+            {tabs.map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>{label}</button>
+            ))}
+          </div>
         </div>
         <div role="tabpanel">
           {tab === "profil" && <Profil p={p} onSaved={load} />}

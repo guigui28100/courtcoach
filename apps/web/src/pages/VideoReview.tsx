@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, post, put } from "../api";
-import { Empty, Err, Field, Page, PageHead } from "../components/ui";
+import { Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
 import { Compare, VideoStudio } from "../components/Studio";
 import { Thread } from "../components/Videos";
 import { AXES, fmtDate, fmtMo, VideoDetail } from "../types";
@@ -23,7 +23,7 @@ export default function VideoReview() {
   }, [id]);
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Cette vidéo est introuvable (elle a peut-être été supprimée).</Empty><Link to="/coach" className="btn-clay no-underline">Retour</Link></Page>;
-  if (!v) return <p className="p-8 text-center text-muted">Chargement…</p>;
+  if (!v) return <Skeleton lines={2} />;
   const centre = v.kind === "centre";
   const sent = !!v.analysis?.sentAt;
 

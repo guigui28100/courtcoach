@@ -151,7 +151,7 @@ export function Matchs({ p }: { p: Player }) {
 
 export function Bulletins({ p }: { p: Player }) {
   const { evals } = useFollowUp(p.id);
-  if (!evals) return <p className="text-muted">Chargement…</p>;
+  if (!evals) return <div className="grid gap-3" role="status" aria-label="Chargement en cours"><div className="skeleton h-20" /><div className="skeleton h-20" /></div>;
   if (!evals.length) return <p className="rounded-2xl border-2 border-dashed border-line bg-white p-6 text-center text-muted">Aucune évaluation pour l'instant : remplis l'onglet « Évaluations » pour créer un bulletin.</p>;
   return (
     <div className="grid gap-3">

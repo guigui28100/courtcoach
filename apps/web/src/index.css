@@ -65,6 +65,24 @@
   .legal .box { @apply card border-l-4 border-l-clay my-4; }
 }
 
+/* ---------- Fluidité : transitions douces, chargement, onglets (respecte « réduire les animations ») ---------- */
+@keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.skeleton { border-radius: 0.75rem; background: linear-gradient(90deg, #efe5d8 25%, #f9f3ea 37%, #efe5d8 63%); background-size: 400% 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+  .page-in { animation: pageIn 0.35s ease-out backwards; }
+  .skeleton { animation: shimmer 1.4s ease-in-out infinite; }
+  .btn, .lift { transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.15s ease, color 0.15s ease; }
+  .btn:active { transform: scale(0.97); }
+  .lift:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(16, 32, 58, 0.12); }
+}
+/* Barre d'onglets collée sous l'en-tête, qui défile sur téléphone avec un fondu sur les bords */
+.tabbar { min-width: 0; position: sticky; top: 61px; z-index: 30; margin-inline: -1rem; padding-inline: 1rem; background: rgba(251, 247, 241, 0.96); backdrop-filter: blur(8px); }
+.tabbar > div { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--color-line); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
+.tabbar > div::-webkit-scrollbar { display: none; }
+.hero-court { color: rgba(255, 255, 255, 0.22); }
+
 /* ---------- Univers « galaxie » : espace des comptes jeunes (aucune image ni police extérieure) ---------- */
 .galaxy-sky {
   position: relative;

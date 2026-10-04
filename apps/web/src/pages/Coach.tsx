@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { Empty, Err, Field, Page, PageHead } from "../components/ui";
+import { Avatar, Empty, Err, Field, Page, PageHead, StatTile } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, trimesterOf, VideoRow } from "../types";
 
@@ -75,6 +75,11 @@ export function CoachHome() {
       <PageHead eyebrow="Espace coach" title="Bonjour coach !">Deux espaces distincts : les demandes de coaching des adhérents, et le Centre de compétition jeunes.</PageHead>
       <Page>
         {!me?.twoFactor && <p role="note" className="alert m-0">🔐 <strong>Protège ton compte :</strong> active la <Link to="/coach/securite" className="font-bold underline">double authentification</Link> (2 minutes) avant d'enregistrer de vrais jeunes.</p>}
+        <div className="grid gap-3 sm:grid-cols-3" aria-label="En un coup d'œil">
+          <StatTile value={pending.length} label={pending.length > 1 ? "demandes à traiter" : "demande à traiter"} icon="📨" to="#t-coaching" />
+          <StatTile value={(videos ?? []).filter((v) => !v.analysis?.sentAt).length} label="vidéos à analyser" icon="🎬" to="#t-centre" tone="ink" />
+          <StatTile value={players.length} label={players.length > 1 ? "jeunes suivis" : "jeune suivi"} icon="🏆" to="/coach/centre" tone="ok" />
+        </div>
         <section className="card grid gap-3" aria-labelledby="t-coaching">
           <h2 id="t-coaching" className="m-0">Demandes de coaching</h2>
           <p className="hint m-0">Adhérents adultes qui te contactent : demandes de cours.</p>
@@ -184,10 +189,16 @@ export function Centre() {
         )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {players.map((p) => (
-            <div key={p.id} className="card grid content-between gap-3 transition-shadow hover:shadow-md">
-              <Link to={`/coach/centre/${p.id}`} className="no-underline">
-                <h3 className="m-0">{fullName(p)}</h3>
-                <p className="hint m-0">{[p.ranking && `Classement ${p.ranking}`, p.hand].filter(Boolean).join(" · ") || "Fiche à compléter"}</p>
+            <div key={p.id} className="card lift grid content-between gap-4">
+              <Link to={`/coach/centre/${p.id}`} className="flex items-center gap-3 no-underline">
+                <Avatar name={fullName(p)} size={52} />
+                <span className="min-w-0">
+                  <h3 className="m-0">{fullName(p)}</h3>
+                  <span className="mt-1 flex flex-wrap gap-1.5">
+                    {p.ranking ? <span className="badge">🎾 {p.ranking}{p.targetRanking ? ` → ${p.targetRanking}` : ""}</span> : <span className="badge text-muted">Fiche à compléter</span>}
+                    {p.hand && <span className="badge">{p.hand}</span>}
+                  </span>
+                </span>
               </Link>
               <div className="flex flex-wrap gap-2">
                 <Link to={`/coach/centre/${p.id}`} className="btn-outline btn-sm no-underline">Ouvrir le dossier</Link>
