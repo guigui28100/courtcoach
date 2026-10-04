@@ -20,7 +20,7 @@ describe("Auto-évaluation du jeune", () => {
     return (await prisma.user.findUniqueOrThrow({ where: { email } })).id;
   }
   async function clean() { await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.player.deleteMany(); await prisma.consent.deleteMany(); await prisma.playerAccess.deleteMany(); await prisma.user.deleteMany(); }
-  const url = (id: string, t = 1) => `/api/players/${id}/self-evaluations/2026-2027/${t}`;
+  const url = (id: string, t = 1) => `/api/players/${id}/self-evaluations/2025-2026/${t}`;
 
   beforeAll(async () => {
     app = await createApp(); await app.init(); prisma = app.get(PrismaService); await clean();
@@ -32,6 +32,13 @@ describe("Auto-évaluation du jeune", () => {
     goal = (await A.coach.post(`/api/players/${p1}/goals`).set(ORIGIN).send({ season: "2026-2027", axis: "TECHNIQUE", title: "Service" }).expect(201)).body.id;
   });
   afterAll(async () => { await clean(); await app.close(); });
+
+  it("le bulletin s'ouvre seulement en décembre (T1), mars (T2) et juin (T3) : avant, impossible d'écrire ou d'envoyer", async () => {
+    const future = (t: number) => `/api/players/${p1}/self-evaluations/2099-2100/${t}`;
+    for (const t of [1, 2, 3]) { await A.jeune1.put(future(t)).set(ORIGIN).send({ mood: 3 }).expect(409); await A.jeune1.post(`${future(t)}/send`).set(ORIGIN).expect(409); }
+    const r = await A.jeune1.put(future(1)).set(ORIGIN).send({ mood: 3 }); expect(r.body.message).toContain("1er décembre 2099");
+    expect(await prisma.selfEvaluation.count({ where: { playerId: p1, season: "2099-2100" } })).toBe(0);
+  });
 
   it("le jeune remplit son bulletin (brouillon) ; le coach ne le voit pas avant l'envoi", async () => {
     const body = { mood: 4, ratings: { technique: 3, mental: 5 }, goals: { [goal]: "IN_PROGRESS" }, proud: ["service-regulier"], improve: ["deplacements"], wish: ["match"], comment: "Merci coach" };

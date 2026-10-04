@@ -46,8 +46,13 @@ export const TRIMESTER_MONTHS = ["début de saison", "septembre – décembre", 
 // t = 0 : bilan de début d'année (point de départ de la saison) ; 1 à 3 : bulletin du trimestre
 export const periodLabel = (season: string, t: number) => `${t === 0 ? "Bilan de début d'année" : `Trimestre ${t}`} · saison ${season.replace("-", "/")}`;
 export const periodShort = (season: string, t: number) => (t === 0 ? "Départ" : `T${t} ${season.replace("-", "/")}`);
-// Dernier mois d'un trimestre (décembre, mars, juin à août) : c'est le moment de l'auto-évaluation
-export const isTrimesterEnd = (d = new Date()) => [11, 2, 5, 6, 7].includes(d.getMonth());
+// L'auto-évaluation du jeune s'ouvre à la fin de chaque trimestre : 1er décembre (T1), 1er mars (T2), 1er juin (T3). Les périodes passées restent ouvertes.
+export const SELF_EVAL_MONTH: Record<number, string> = { 1: "décembre", 2: "mars", 3: "juin" };
+export function selfEvalOpensOn(season: string, t: number) { const y = Number(season.slice(0, 4)); return new Date(Date.UTC(t === 1 ? y : y + 1, t === 1 ? 11 : t === 2 ? 2 : 5, 1)); }
+export const selfEvalIsOpen = (season: string, t: number, now = new Date()) => now >= selfEvalOpensOn(season, t);
+// Premier bulletin ouvert et pas encore envoyé (celui qu'il faut remplir maintenant), sinon null
+export const pendingSelfEval = (list: { season: string; trimester: number; sentAt: string | null }[], season: string, now = new Date()) =>
+  [1, 2, 3].find((t) => selfEvalIsOpen(season, t, now) && !list.some((e) => e.season === season && e.trimester === t && e.sentAt)) ?? null;
 export function trimesterOf(d = new Date()) { const m = d.getMonth(); return m >= 8 ? 1 : m <= 2 ? 2 : 3; }
 // Trimestre précédent (pour comparer)
 // Période précédente : T3 → T2 → T1 → bilan de départ (0) de la même saison ; le bilan de départ se compare au dernier trimestre de la saison d'avant.
