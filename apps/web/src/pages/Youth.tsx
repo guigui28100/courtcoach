@@ -24,7 +24,11 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
       <div className="grid gap-3">
         <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">Ma galaxie tennis</p>
         <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Salut {p.firstName} !</h1>
-        <p className="m-0 max-w-xl text-lg text-white/85">Voici tes missions, tes progrès et le mot de ton coach. À la fin des cours, ton coach peut te donner jusqu'à 3 étoiles ⭐ pour ton effort, ton attitude ou un progrès.</p>
+        <p className="m-0 max-w-xl text-lg text-white/85">Voici tes missions, tes progrès, tes vidéos et le mot de ton coach.</p>
+        <ul className="m-0 grid max-w-xl list-none gap-1.5 p-0 text-white/90">
+          <li><span aria-hidden="true">🎬 </span>Envoie des vidéos de ton jeu à ton coach : il les analyse. <strong>Il peut aussi t'en envoyer</strong> (un exemple, une vidéo de toi).</li>
+          <li><span aria-hidden="true">⭐ </span>À la fin des cours, il peut te donner jusqu'à 3 étoiles pour ton effort, ton attitude ou un progrès.</li>
+        </ul>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
           {starsTotal > 0 && <li className="gal-chip">⭐ {starsTotal} étoile{starsTotal > 1 ? "s" : ""}</li>}
           {done > 0 && <li className="gal-chip">🎯 {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
