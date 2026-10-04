@@ -77,3 +77,6 @@ Voir `RGPD-A-FAIRE.md` : adresse e-mail du club, durée de conservation, relectu
 
 ## Étape K – Mot de passe oublié du coach, ou téléphone perdu
 Le coach n'a pas de bouton « mot de passe oublié » (par sécurité, sans service d'e-mail). Si tu perds ton mot de passe, ou ton téléphone **et** tes codes de secours, demande-moi : je relance la commande `create-coach` avec un nouveau mot de passe (et `COACH_RESET_2FA=1` pour désactiver la double authentification, que tu réactives ensuite dans « Sécurité »). Pour une famille, c'est plus simple : sur la fiche du joueur, bouton **Mot de passe oublié**.
+
+## Étape L – « Deployment rate limited » (limite de publications de Vercel)
+Vercel gratuit limite le nombre de publications par jour (environ 100). Chaque fusion en déclenchait trois (ancien site, nouveau site, serveur). Depuis octobre 2026, chaque projet ne se republie que si **ses propres fichiers** ont changé (réglage `ignoreCommand` dans les `vercel.json`). Si le message « Deployment rate limited — retry in 24 hours » apparaît : attendre le lendemain, puis dans Vercel ouvrir le projet concerné → **Deployments** → le dernier → **⋯** → **Redeploy**.
