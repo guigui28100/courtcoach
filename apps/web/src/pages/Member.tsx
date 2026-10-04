@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, trendCommon } from "../types";
-import { Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
@@ -139,7 +139,7 @@ function FollowUp({ p }: { p: Player }) {
       <h3 className="m-0">Dernière évaluation</h3>
       {!last ? <p className="m-0 text-muted">Pas encore d'évaluation trimestrielle.</p> : (
         <div className="grid gap-4 md:grid-cols-[300px_1fr]">
-          <div className="grid justify-items-center gap-1">
+          <div className="grid content-start justify-items-center gap-1">
             <Radar series={[{ label: `T${last.trimester}`, values: now, color: "#b8471f" }, ...(prev && prevP ? [{ label: `T${prevP.t}`, values: before, color: "#10203a", dashed: true }] : [])]} />
             <p className="m-0 text-center font-bold">{periodLabel(last.season, last.trimester)}<br />Moyenne {fmtAvg(overallAverage(last))} / 5 {trendCommon(last, prev)}</p>
           </div>
@@ -207,15 +207,16 @@ export function FamilySpace() {
           const list = goals[p.id] ?? [];
           const total = list.length ? Math.round(list.reduce((s, g) => s + g.progress, 0) / list.length) : null;
           return (
-            <section key={p.id} className="card grid gap-4" aria-label={`Suivi de ${p.firstName}`}>
-              <h2 className="m-0">{fullName(p)}</h2>
-              <p className="m-0 font-bold">{total === null ? "Aucun objectif fixé pour cette saison" : `Objectifs de la saison atteints à ${total} %`}</p>
+            <section key={p.id} className="card grid gap-4 !p-4 sm:!p-6" aria-label={`Suivi de ${p.firstName}`}>
+              <div className="flex items-center gap-3"><Avatar name={fullName(p)} size={52} /><div className="min-w-0 grow"><h2 className="m-0">{fullName(p)}</h2>
+                <p className="m-0 text-sm font-bold text-muted">{total === null ? "Aucun objectif fixé pour cette saison" : `Objectifs de la saison atteints à ${total} %`}</p>
+                {total !== null && <div className="mt-1.5"><ProgressBar value={total} /></div>}</div></div>
               <div className="grid gap-3 md:grid-cols-2">
                 {AXES.map((a) => {
                   const mine = list.filter((g) => g.axis === a.key);
                   if (!mine.length) return null;
                   return (
-                    <div key={a.key} className="grid gap-2 rounded-xl border-t-[6px] border border-line p-3" style={{ borderTopColor: a.color }}>
+                    <div key={a.key} className="grid content-start gap-2 rounded-xl border-t-[6px] border border-line p-3" style={{ borderTopColor: a.color }}>
                       <h3 className="m-0" style={{ color: a.color }}>{a.label}</h3>
                       {mine.map((g) => <div key={g.id} className="grid gap-1"><strong>{g.title}</strong>{g.indicator && <small className="hint">{g.indicator}</small>}<ProgressBar value={g.progress} color={a.color} /><small className="font-bold">{g.progress} %</small></div>)}
                     </div>
