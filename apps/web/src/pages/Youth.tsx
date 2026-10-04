@@ -152,8 +152,8 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
       <p className="m-0 text-sm text-muted">Ici tu envoies tes vidéos à ton coach pour qu'il les analyse. Ton coach peut aussi t'en envoyer (un exemple à imiter, ta vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
-      {fresh.some((v) => v.fromCoach) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach).length > 1 ? "les" : "la"} ci-dessous !</p>}
-      {fresh.some((v) => !v.fromCoach) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !v.fromCoach).length > 1 ? `${fresh.filter((v) => !v.fromCoach).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
+      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
+      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine} onChanged={refresh} empty="Pas encore de vidéo. Filme quelques coups et envoie-les à ton coach !" />
     </section>
@@ -229,7 +229,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
   const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt); // nouvelle analyse ou nouvelle vidéo du coach
-  const freshSent = fresh.filter((v) => v.fromCoach).length;
+  const freshSent = fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length;
   const pending = pendingSelfEval(selfEvals, currentSeason());
   const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && pending !== null);
 

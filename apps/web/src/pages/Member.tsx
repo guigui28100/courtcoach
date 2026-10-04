@@ -211,8 +211,8 @@ function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]
     <div className="card grid gap-3">
       <h3 className="m-0">Vidéos</h3>
       <p className="m-0 text-sm text-muted">Vous pouvez envoyer une vidéo au coach pour qu'il l'analyse. Le coach peut aussi vous en envoyer (exemple à imiter, vidéo de match…) : elles sont marquées « 🎓 De ton coach ».</p>
-      {fresh.some((v) => v.fromCoach) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Le coach a envoyé {fresh.filter((v) => v.fromCoach).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach).length > 1 ? "les" : "la"} ci-dessous.</p>}
-      {fresh.some((v) => !v.fromCoach) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.filter((v) => !v.fromCoach).length > 1 ? `${fresh.filter((v) => !v.fromCoach).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
+      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Le coach a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous.</p>}
+      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine} onChanged={refresh} empty="Aucune vidéo pour l'instant." />
     </div>

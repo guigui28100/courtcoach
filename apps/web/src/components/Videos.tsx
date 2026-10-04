@@ -48,7 +48,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
-            <p className="alert m-0"><strong>Une vidéo de toi pour {toPlayer}</strong> : un exemple à imiter, un geste de pro, sa propre vidéo de match… Elle apparaît dans l'onglet « Vidéos » de {toPlayer} et de sa famille, marquée <strong>« De ton coach »</strong>, avec ton message. Ils peuvent la regarder mais pas la supprimer. Pas de nom ni de téléphone dans le titre. Elle est supprimée automatiquement après 12 mois.</p>
+            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. Elle apparaît dans l'onglet « Vidéos » de {toPlayer} et de sa famille, marquée <strong>« De ton coach »</strong>, avec ton message. Ils peuvent la regarder mais pas la supprimer. Pour la commenter avec des dessins (traits, cercles…), ouvre-la ensuite dans ton studio et envoie une analyse : {toPlayer} la recevra avec tes images annotées. Pas de nom ni de téléphone dans le titre. Elle est supprimée automatiquement après 12 mois.</p>
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}
