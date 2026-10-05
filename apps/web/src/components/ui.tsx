@@ -89,9 +89,10 @@ export function BallArt({ className = "" }: { className?: string }) {
 }
 
 // Bandeau d'accueil du coach : fond bleu nuit, balle, salutation, chiffres et boutons d'action
-export function CoachHero({ eyebrow, title, subtitle, chips, actions }: { eyebrow: string; title: string; subtitle?: ReactNode; chips?: ReactNode; actions?: ReactNode }) {
+export function CoachHero({ eyebrow, title, subtitle, chips, actions, tone = "default" }: { eyebrow: string; title: string; subtitle?: ReactNode; chips?: ReactNode; actions?: ReactNode; tone?: "default" | "adultes" | "jeunes" }) {
+  const base = { default: "linear-gradient(120deg,#0e1c33 0%,#1b3760 100%)", adultes: "linear-gradient(120deg,#16355f 0%,#2a6fb0 100%)", jeunes: "linear-gradient(120deg,#0e1c33 0%,#1b3760 60%,#93371a 130%)" }[tone];
   return (
-    <section className="relative isolate overflow-hidden text-white" style={{ background: "radial-gradient(700px 320px at 88% 10%, rgba(220,242,71,0.22), transparent 62%), radial-gradient(520px 260px at 0% 120%, rgba(184,71,31,0.55), transparent 65%), linear-gradient(120deg,#0e1c33 0%,#1b3760 100%)" }}>
+    <section className="relative isolate overflow-hidden text-white" style={{ background: `radial-gradient(700px 320px at 88% 10%, rgba(220,242,71,0.22), transparent 62%), radial-gradient(520px 260px at 0% 120%, rgba(184,71,31,0.45), transparent 65%), ${base}` }}>
       <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-[0.07]" aria-hidden="true"><defs><pattern id="hero-lines" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M0 63.5h64M63.5 0v64" stroke="#fff" strokeWidth="1" fill="none" /></pattern></defs><rect width="100%" height="100%" fill="url(#hero-lines)" /></svg>
       <div className="mx-auto grid max-w-6xl items-center gap-4 px-4 py-8 sm:py-10 md:grid-cols-[1fr_auto]">
         <div className="grid gap-3">
@@ -122,4 +123,19 @@ export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: str
     </>
   );
   return to.startsWith("#") ? <a href={to} className={cls} style={{ background: bg }}>{inner}</a> : <Link to={to} className={cls} style={{ background: bg }}>{inner}</Link>;
+}
+
+// Barre d'onglets collée sous l'en-tête (avec pastille de nombre)
+export function TabsBar({ tabs, active, onChange, label }: { tabs: [string, string, number?][]; active: string; onChange: (k: string) => void; label: string }) {
+  return (
+    <div className="tabbar">
+      <div role="tablist" aria-label={label}>
+        {tabs.map(([k, l, n]) => (
+          <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (active === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
+            {l}{!!n && <b className="ml-1.5 rounded-full bg-clay px-2 py-0.5 text-xs text-white">{n}</b>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

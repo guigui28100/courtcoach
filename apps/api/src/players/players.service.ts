@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, MatchDto, SelfEvaluationDto, StarDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -74,11 +74,13 @@ export class PlayersService {
   // Droit d'accès / portabilité : copie complète d'une fiche.
   async export(user: AuthUser, id: string) {
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
-    const { coachNotes, ...visible } = p;
-    return { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : visible) };
+    const { coachNotes, declaredMatches, ...visible } = p;
+    // Les matchs déclarés par le jeune ne sont jamais montrés aux parents (même dans leur copie des données)
+    const forYouth = user.role === Role.YOUTH ? { ...visible, declaredMatches } : visible;
+    return { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : forYouth) };
   }
 
   // Dossiers sans activité depuis plus de 12 mois (durée de conservation)
@@ -320,6 +322,55 @@ export class PlayersService {
     this.checkDay(day);
     const r = await this.prisma.courseStar.deleteMany({ where: { playerId, day } });
     if (!r.count) throw new NotFoundException("Aucune étoile ce jour-là");
+  }
+
+  // ----- Matchs déclarés par le jeune (visibles du jeune et du coach, jamais des parents) -----
+  private assertYouth(user: AuthUser) { if (user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune"); }
+  private async ownMatch(user: AuthUser, playerId: string, matchId: string) {
+    const m = await this.prisma.declaredMatch.findFirst({ where: { id: matchId, playerId } });
+    if (!m) throw new NotFoundException("Match introuvable");
+    return m;
+  }
+  private editable(m: { createdAt: Date }) { return Date.now() - m.createdAt.getTime() < 7 * 24 * 3600 * 1000; }
+  private matchOut(m: { id: string; day: string; kind: string; event: string; result: string; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; coachComment: string; createdAt: Date }) {
+    return { id: m.id, day: m.day, kind: m.kind, event: m.event, result: m.result, score: m.score, opponent: m.opponent, feeling: m.feeling, wellDone: m.wellDone, toImprove: m.toImprove, coachComment: m.coachComment, editableUntil: new Date(m.createdAt.getTime() + 7 * 24 * 3600 * 1000).toISOString(), editable: this.editable(m) };
+  }
+  async declaredMatches(user: AuthUser, playerId: string) {
+    if (user.role !== Role.COACH && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    await this.assertCanRead(user, playerId);
+    const rows = await this.prisma.declaredMatch.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "desc" }] });
+    return rows.map((m) => this.matchOut(m));
+  }
+  async addDeclaredMatch(user: AuthUser, playerId: string, dto: DeclaredMatchDto) {
+    this.assertYouth(user);
+    await this.assertCanRead(user, playerId);
+    this.checkDay(dto.day.slice(0, 10));
+    if ((await this.prisma.declaredMatch.count({ where: { playerId } })) >= 300) throw new BadRequestException("Trop de matchs enregistrés : parles-en à ton coach.");
+    const m = await this.prisma.declaredMatch.create({ data: { playerId, day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null } });
+    await this.touch(playerId);
+    return this.matchOut(m);
+  }
+  async updateDeclaredMatch(user: AuthUser, playerId: string, matchId: string, dto: DeclaredMatchDto) {
+    this.assertYouth(user);
+    await this.assertCanRead(user, playerId);
+    const m = await this.ownMatch(user, playerId, matchId);
+    if (!this.editable(m)) throw new ConflictException("Ce match ne peut plus être modifié (au-delà de 7 jours).");
+    this.checkDay(dto.day.slice(0, 10));
+    const u = await this.prisma.declaredMatch.update({ where: { id: matchId }, data: { day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null } });
+    return this.matchOut(u);
+  }
+  async removeDeclaredMatch(user: AuthUser, playerId: string, matchId: string) {
+    if (user.role !== Role.COACH && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    await this.assertCanRead(user, playerId);
+    const m = await this.ownMatch(user, playerId, matchId);
+    if (user.role === Role.YOUTH && !this.editable(m)) throw new ConflictException("Ce match ne peut plus être supprimé (au-delà de 7 jours) : demande à ton coach.");
+    await this.prisma.declaredMatch.delete({ where: { id: matchId } });
+  }
+  async commentDeclaredMatch(user: AuthUser, playerId: string, matchId: string, dto: MatchCommentDto) {
+    this.assertCoach(user);
+    await this.ownMatch(user, playerId, matchId);
+    const u = await this.prisma.declaredMatch.update({ where: { id: matchId }, data: { coachComment: dto.comment.trim() } });
+    return this.matchOut(u);
   }
 
   // ----- Matchs -----

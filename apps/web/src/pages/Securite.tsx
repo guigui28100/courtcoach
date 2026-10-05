@@ -1,8 +1,9 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { post } from "../api";
+import { get, post } from "../api";
 import { useAuth } from "../auth";
-import { Err, Field, Page, PageHead } from "../components/ui";
+import { Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { fmtMo } from "../types";
 
 // Sécurité du compte du coach : double authentification (code à 6 chiffres sur le téléphone).
 export default function Securite() {
@@ -11,6 +12,8 @@ export default function Securite() {
   const [codes, setCodes] = useState<string[] | null>(null);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const on = !!me?.twoFactor;
+  const [storage, setStorage] = useState<{ usedBytes: number; quotaBytes: number } | null>(null);
+  useEffect(() => { get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => setStorage(null)); }, []);
 
   async function start() { setErr(""); setBusy(true); try { setSetup(await post("/auth/2fa/setup")); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); } }
   async function enable(e: FormEvent<HTMLFormElement>) {
@@ -26,6 +29,14 @@ export default function Securite() {
     <>
       <PageHead eyebrow="Espace coach" title="Sécurité de mon compte">Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection.</PageHead>
       <Page>
+        {storage && (
+          <section className="card grid gap-2" aria-labelledby="s-place">
+            <h2 id="s-place" className="m-0">Place utilisée par les vidéos</h2>
+            <p className="m-0">{fmtMo(storage.usedBytes)} utilisés sur {fmtMo(storage.quotaBytes)}.</p>
+            <ProgressBar value={Math.min(100, Math.round((storage.usedBytes / storage.quotaBytes) * 100))} />
+            <p className="hint m-0">Les vidéos sont supprimées automatiquement après 12 mois. Tu peux aussi en supprimer à la main.</p>
+          </section>
+        )}
         <section className="card grid gap-3" aria-labelledby="s-2fa">
           <h2 id="s-2fa" className="m-0">Double authentification {on ? "✅ activée" : "⚠️ pas encore activée"}</h2>
           <p className="m-0">À chaque connexion, en plus de ton mot de passe, tu entres un code à 6 chiffres qui change toutes les 30 secondes et qui s'affiche sur ton téléphone. Même si quelqu'un devine ton mot de passe, il ne peut pas entrer.</p>

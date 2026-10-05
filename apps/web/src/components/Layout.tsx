@@ -6,8 +6,9 @@ import { Role } from "../types";
 type NavItem = { to: string; label: string; short?: string; icon: string };
 const NAV: Record<Role, NavItem[]> = {
   COACH: [
-    { to: "/coach", label: "Espace", icon: "home" },
-    { to: "/coach/centre", label: "Centre de compétition jeunes", short: "Centre jeunes", icon: "users" },
+    { to: "/coach", label: "Accueil", icon: "home" },
+    { to: "/coach/adultes", label: "Adultes · Coaching", short: "Adultes", icon: "star" },
+    { to: "/coach/centre", label: "Jeunes · Centre", short: "Jeunes", icon: "users" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   ADULT: [{ to: "/espace", label: "Mon espace", icon: "home" }],

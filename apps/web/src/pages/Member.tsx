@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { BulletinShelf } from "../components/BulletinShelf";
 import { StarsCard, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
@@ -191,12 +192,7 @@ function EvalTab({ p }: { p: Player }) {
           </div>
         </div>
       )}
-      {evals.length > 0 && (
-        <>
-          <h3 className="m-0">Bulletins</h3>
-          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.map((e) => <li key={e.id}><Link to={`/suivi/${p.id}/bulletin/${e.season}/${e.trimester}`} className="btn-outline btn-sm no-underline">{periodLabel(e.season, e.trimester).replace("Trimestre ", "T")}</Link></li>)}</ul>
-        </>
-      )}
+      {evals.length > 0 && <><h3 className="m-0">Bulletins</h3><BulletinShelf evals={evals} base={`/suivi/${p.id}`} famille /></>}
     </div>
   );
 }

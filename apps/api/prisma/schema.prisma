@@ -117,6 +117,7 @@ model Player {
   evaluations Evaluation[]
   selfEvaluations SelfEvaluation[]
   courseStars CourseStar[]
+  declaredMatches DeclaredMatch[]
   matches     Match[]
   videos      Video[]
   analyses    Analysis[]
@@ -215,6 +216,28 @@ model Evaluation {
   updatedAt    DateTime @updatedAt
 
   @@unique([playerId, season, trimester])
+}
+
+// Match déclaré PAR le jeune (avec des choix proposés). Visible du jeune et du coach seulement, jamais des parents.
+// Le jeune peut le corriger ou le supprimer pendant 7 jours, ensuite il est figé. Sans nom d'adversaire (vie privée).
+model DeclaredMatch {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  day        String   // « AAAA-MM-JJ »
+  kind       String   // tournoi, plateau, equipes, amical, entrainement
+  event      String   @default("") // nom du tournoi ou du lieu (60 caractères maximum)
+  result     String   // Victoire | Défaite
+  score      String   @default("")
+  opponent   String   // plus-fort, pareil, moins-fort
+  feeling    Int      // 1 à 5
+  wellDone   String[] // jusqu'à 2 points forts (identifiants proposés)
+  toImprove  String?  // 1 point à améliorer (identifiant proposé)
+  coachComment String @default("") // réponse du coach (300 caractères maximum)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([playerId, day])
 }
 
 // Étoiles données par le coach à la fin d'un cours : toujours positives (1 à 3), pour l'effort, l'attitude, un progrès…

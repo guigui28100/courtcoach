@@ -2,7 +2,7 @@ import { Route, Routes, useParams } from "react-router-dom";
 import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
-import { Centre, CoachHome } from "./pages/Coach";
+import { AdultsPage, Centre, CoachHome } from "./pages/Coach";
 import Bulletin from "./pages/Bulletin";
 import FinDeCours from "./pages/FinDeCours";
 import ChangePassword from "./pages/ChangePassword";
@@ -33,6 +33,7 @@ export default function App() {
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/autorisation" element={<Authorization />} />
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
+        <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
         <Route path="/coach/securite" element={<Guard roles={["COACH"]}><Securite /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
         <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH"]}><FinDeCours /></Guard>} />

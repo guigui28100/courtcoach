@@ -4,6 +4,8 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
+import { BulletinShelf } from "../components/BulletinShelf";
+import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
@@ -71,7 +73,7 @@ function Missions({ goals }: { goals: Goal[] }) {
 }
 
 function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
-  const { evals, matches } = useFollowUp(p.id);
+  const { evals } = useFollowUp(p.id);
   if (!evals) return null;
   const last = evals.find((e) => ratedCount(e) > 0);
   const prevP = last ? previousPeriod(last.season, last.trimester) : null;
@@ -105,15 +107,20 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
             </div>
           </div>
         )}
-        {evals.length > 0 && (
-          <div className="grid gap-2"><h3 className="m-0 text-lg">📄 Mes bulletins</h3>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{evals.map((e) => <li key={e.id}><Link to={`${bulletinBase}/bulletin/${e.season}/${e.trimester}`} className="gal-btn btn-sm no-underline">{e.trimester === 0 ? "Bilan de départ" : `Trimestre ${e.trimester}`} · {e.season.replace("-", "/")}</Link></li>)}</ul>
-          </div>
-        )}
       </section>
+    </>
+  );
+}
+
+// Onglet « Matchs » : ceux que le jeune déclare + ceux que son coach a enregistrés
+function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
+  const { matches } = useFollowUp(p.id);
+  return (
+    <>
+      <DeclaredMatchesSection p={p} preview={preview} />
       {matches.length > 0 && (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-matchs">
-          <h2 id="gal-matchs" className="m-0 text-2xl">🏟️ Mes matchs</h2>
+          <h2 id="gal-matchs" className="m-0 text-2xl">📋 Matchs enregistrés par ton coach</h2>
           <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
             {matches.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-2xl bg-white/10 p-3">
@@ -126,6 +133,18 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
         </section>
       )}
     </>
+  );
+}
+
+// Onglet « Mes bulletins » : bilan de départ + trimestres, toujours consultables
+function BulletinsTab({ p, base, selfEvals, preview }: { p: Player; base: string; selfEvals: SelfEvaluation[]; preview: boolean }) {
+  const { evals } = useFollowUp(p.id);
+  return (
+    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins">
+      <h2 id="gal-bulletins" className="m-0 text-2xl">📄 Mes bulletins</h2>
+      <p className="m-0 text-white/85">Ton <strong>bilan de début d'année</strong> et tes <strong>bulletins de chaque trimestre</strong> sont enregistrés ici. Tu peux les ouvrir quand tu veux, pour voir tes progrès.</p>
+      {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
+    </section>
   );
 }
 
@@ -162,7 +181,7 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
   );
 }
 
-type Tab = "accueil" | "missions" | "bulletin" | "videos" | "progres" | "compte";
+type Tab = "accueil" | "missions" | "bulletin" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
 
 // Carte cliquable de l'accueil (« à faire » ou « nouveau »)
 function Todo({ icon, title, text, onClick, hot = false, children }: { icon: string; title: string; text?: string; onClick: () => void; hot?: boolean; children?: React.ReactNode }) {
@@ -202,7 +221,7 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p:
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["missions", "🚀", "Missions"], ["bulletin", "✍️", "Mon bulletin"], ["videos", "🎬", "Vidéos"], ["progres", "📡", "Progrès"], ["compte", "🔒", "Compte"]];
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["missions", "🚀", "Missions"], ["bulletin", "✍️", "Mon bulletin"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
@@ -268,6 +287,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
               {tab === "progres" && <><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
+              {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
+              {tab === "bulletins" && <BulletinsTab p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} preview={!!previewId} />}
               {tab === "compte" && !previewId && (
                 <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                   <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
