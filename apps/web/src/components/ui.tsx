@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
   return (
     <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-sand to-[#f6e3d1]">
-      <svg viewBox="0 0 200 120" className="pointer-events-none absolute right-6 top-1/2 h-28 w-44 -translate-y-1/2 text-clay/15 max-md:hidden" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3"><rect x="10" y="10" width="180" height="100" rx="4" /><path d="M100 10v100M10 60h180M45 10v100M155 10v100" /></svg>
+      <BallArt className="pointer-events-none absolute -right-2 top-1/2 h-32 w-32 -translate-y-1/2 opacity-90 max-md:hidden" />
       <div className="relative mx-auto flex max-w-6xl items-center gap-4 px-4 py-7">
         {icon}
         <div className="min-w-0">
@@ -17,6 +18,7 @@ export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string;
 }
 
 const HUES = ["#b8471f", "#2a6fb0", "#2f8f5b", "#7a4cc2", "#c47b00", "#c0306a"];
+export const hueOf = (name: string) => HUES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % HUES.length];
 // Pastille ronde avec les initiales (couleur stable pour une même personne) : aucun nom de famille ni photo
 export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
   const ini = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
@@ -68,4 +70,56 @@ export function ProgressBar({ value, color = "#b8471f" }: { value: number; color
       <div className="h-full rounded-full transition-[width]" style={{ width: `${value}%`, background: color }} />
     </div>
   );
+}
+
+// Balle de tennis dessinée en SVG (aucune image extérieure) : dégradé, coutures, reflet, ombre et traits de vitesse
+export function BallArt({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 180 160" className={className} aria-hidden="true">
+      <defs>
+        <radialGradient id="ballg" cx="34%" cy="28%" r="78%"><stop offset="0" stopColor="#f6ff9a" /><stop offset="0.5" stopColor="#dcf247" /><stop offset="1" stopColor="#a3bb16" /></radialGradient>
+      </defs>
+      <ellipse cx="108" cy="150" rx="44" ry="7" fill="#10203a" opacity="0.16" />
+      <g stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity="0.55"><path d="M6 62h30M0 80h38M10 98h28" /></g>
+      <circle cx="108" cy="76" r="60" fill="url(#ballg)" />
+      <path d="M70 28c32 28 32 66 0 96M146 28c-32 28-32 66 0 96" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" opacity="0.95" />
+      <ellipse cx="86" cy="44" rx="16" ry="9" fill="#fff" opacity="0.35" transform="rotate(-30 86 44)" />
+    </svg>
+  );
+}
+
+// Bandeau d'accueil du coach : fond bleu nuit, balle, salutation, chiffres et boutons d'action
+export function CoachHero({ eyebrow, title, subtitle, chips, actions }: { eyebrow: string; title: string; subtitle?: ReactNode; chips?: ReactNode; actions?: ReactNode }) {
+  return (
+    <section className="relative isolate overflow-hidden text-white" style={{ background: "radial-gradient(700px 320px at 88% 10%, rgba(220,242,71,0.22), transparent 62%), radial-gradient(520px 260px at 0% 120%, rgba(184,71,31,0.55), transparent 65%), linear-gradient(120deg,#0e1c33 0%,#1b3760 100%)" }}>
+      <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-[0.07]" aria-hidden="true"><defs><pattern id="hero-lines" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M0 63.5h64M63.5 0v64" stroke="#fff" strokeWidth="1" fill="none" /></pattern></defs><rect width="100%" height="100%" fill="url(#hero-lines)" /></svg>
+      <div className="mx-auto grid max-w-6xl items-center gap-4 px-4 py-8 sm:py-10 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-3">
+          <p className="m-0 text-xs font-bold uppercase tracking-[0.18em] text-[#dcf247]">{eyebrow}</p>
+          <h1 className="m-0 !text-white">{title}</h1>
+          {subtitle && <p className="m-0 max-w-xl text-lg text-white/85">{subtitle}</p>}
+          {chips && <div className="flex flex-wrap gap-2">{chips}</div>}
+          {actions && <div className="mt-1 flex flex-wrap gap-2">{actions}</div>}
+        </div>
+        <BallArt className="coach-ball h-40 w-44 justify-self-center max-md:hidden lg:h-48 lg:w-52" />
+      </div>
+    </section>
+  );
+}
+
+export const HeroChip = ({ children }: { children: ReactNode }) => <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-bold backdrop-blur">{children}</span>;
+
+// Grande tuile de raccourci (couleur, icône, titre, texte, pastille de nombre)
+export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: string; title: string; text: string; to: string; tone: "yellow" | "clay" | "blue" | "ink"; badge?: number }) {
+  const bg = { yellow: "linear-gradient(135deg,#fff3b0,#ffe56a)", clay: "linear-gradient(135deg,#fde3d6,#f6b79a)", blue: "linear-gradient(135deg,#dbe9fb,#a9c8f2)", ink: "linear-gradient(135deg,#dfe5ef,#b8c4d8)" }[tone];
+  const cls = "lift relative grid content-start gap-1 rounded-3xl p-4 text-ink no-underline";
+  const inner = (
+    <>
+      <span className="text-4xl" aria-hidden="true">{icon}</span>
+      <strong className="font-display text-lg leading-tight">{title}</strong>
+      <span className="text-sm text-ink/75">{text}</span>
+      {!!badge && <span className="absolute right-3 top-3 grid h-8 min-w-8 place-items-center rounded-full bg-clay px-2 font-display text-sm font-black text-white shadow" aria-label={`${badge} à traiter`}>{badge}</span>}
+    </>
+  );
+  return to.startsWith("#") ? <a href={to} className={cls} style={{ background: bg }}>{inner}</a> : <Link to={to} className={cls} style={{ background: bg }}>{inner}</Link>;
 }
