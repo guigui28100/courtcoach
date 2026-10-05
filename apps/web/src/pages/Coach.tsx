@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { Avatar, Empty, Err, Field, Page, PageHead, StatTile } from "../components/ui";
+import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, ShortcutTile } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, trimesterOf, VideoRow } from "../types";
 
@@ -69,19 +69,28 @@ export function CoachHome() {
   useEffect(load, [load]);
   const pending = lessons.filter((l) => l.status === "PENDING");
   const done = lessons.filter((l) => l.status !== "PENDING");
+  const waiting = (videos ?? []).filter((v) => !v.analysis?.sentAt && !v.fromCoach).length;
+  const toDo = pending.length + waiting;
 
   return (
     <>
-      <PageHead eyebrow="Espace coach" title="Bonjour coach !">Deux espaces distincts : les demandes de coaching des adhérents, et le Centre de compétition jeunes.</PageHead>
+      <CoachHero
+        eyebrow={`Espace coach · ${new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}`}
+        title={`${new Date().getHours() < 12 ? "Bonjour" : new Date().getHours() < 18 ? "Bon après-midi" : "Bonsoir"} coach !`}
+        subtitle={toDo === 0 ? "Rien d'urgent : tout est à jour. Belle séance !" : `Il y a ${toDo} chose${toDo > 1 ? "s" : ""} à regarder aujourd'hui.`}
+        chips={<><HeroChip>📨 {pending.length} demande{pending.length > 1 ? "s" : ""}</HeroChip><HeroChip>🎬 {waiting} vidéo{waiting > 1 ? "s" : ""} à analyser</HeroChip><HeroChip>🏆 {players.length} jeune{players.length > 1 ? "s" : ""} suivi{players.length > 1 ? "s" : ""}</HeroChip></>}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link><Link to="/coach/centre" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">🏆 Mes jeunes</Link></>}
+      />
       <Page>
         {!me?.twoFactor && <p role="note" className="alert m-0">🔐 <strong>Protège ton compte :</strong> active la <Link to="/coach/securite" className="font-bold underline">double authentification</Link> (2 minutes) avant d'enregistrer de vrais jeunes.</p>}
-        <div className="grid gap-3 sm:grid-cols-3" aria-label="En un coup d'œil">
-          <StatTile value={pending.length} label={pending.length > 1 ? "demandes à traiter" : "demande à traiter"} icon="📨" to="#t-coaching" />
-          <StatTile value={(videos ?? []).filter((v) => !v.analysis?.sentAt && !v.fromCoach).length} label="vidéos à analyser" icon="🎬" to="#t-centre" tone="ink" />
-          <StatTile value={players.length} label={players.length > 1 ? "jeunes suivis" : "jeune suivi"} icon="🏆" to="/coach/centre" tone="ok" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Raccourcis">
+          <ShortcutTile tone="yellow" icon="⭐" title="Fin de cours" text="Donner les étoiles du jour" to="/coach/centre/fin-de-cours" />
+          <ShortcutTile tone="clay" icon="🏆" title="Centre jeunes" text="Fiches, objectifs, bulletins" to="/coach/centre" />
+          <ShortcutTile tone="blue" icon="📨" title="Demandes" text="Cours et vidéos des adultes" to="#t-coaching" badge={pending.length + (videos ?? []).filter((v) => v.kind === "coaching" && !v.analysis?.sentAt).length} />
+          <ShortcutTile tone="ink" icon="🔐" title="Sécurité" text="Double authentification" to="/coach/securite" />
         </div>
         <section className="card grid gap-3" aria-labelledby="t-coaching">
-          <h2 id="t-coaching" className="m-0">Demandes de coaching</h2>
+          <h2 id="t-coaching" className="m-0 flex items-center gap-2"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#dbe9fb] text-xl" aria-hidden="true">📨</span>Demandes de coaching</h2>
           <p className="hint m-0">Adhérents adultes qui te contactent : demandes de cours.</p>
           <ul className="m-0 grid list-none gap-3 p-0">
             {pending.map((l) => <LessonRow key={l.id} l={l} onDone={load} />)}
@@ -97,17 +106,17 @@ export function CoachHome() {
         </section>
 
         <section className="card grid gap-3 border-t-[6px] border-t-clay bg-[#fffaf5]" aria-labelledby="t-centre">
-          <h2 id="t-centre" className="m-0">Centre de compétition jeunes</h2>
+          <h2 id="t-centre" className="m-0 flex items-center gap-2"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#fde3d6] text-xl" aria-hidden="true">🏆</span>Centre de compétition jeunes</h2>
           <p className="hint m-0">Suivi des jeunes compétiteurs. Séparé des demandes de coaching.</p>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="m-0"><strong>{players.length} jeune{players.length > 1 ? "s" : ""} suivi{players.length > 1 ? "s" : ""}</strong></p>
+            <div className="flex flex-wrap items-center gap-2">{players.slice(0, 8).map((p) => <Link key={p.id} to={`/coach/centre/${p.id}`} title={fullName(p)} className="no-underline"><Avatar name={fullName(p)} size={40} /></Link>)}<strong>{players.length} jeune{players.length > 1 ? "s" : ""} suivi{players.length > 1 ? "s" : ""}</strong></div>
             <Link to="/coach/centre" className="btn-clay btn-sm no-underline">Ouvrir le Centre</Link>
           </div>
           <WaitingVideos videos={(videos ?? []).filter((v) => v.kind === "centre")} label={(v) => v.player?.firstName ?? "Joueur"} />
         </section>
         {storage && (
           <section className="card grid gap-2 border-dashed" aria-label="Espace de stockage des vidéos">
-            <h2 className="m-0 text-lg">Espace de stockage des vidéos</h2>
+            <h2 className="m-0 flex items-center gap-2 text-lg"><span aria-hidden="true">💾</span>Espace de stockage des vidéos</h2>
             <p className="m-0">{fmtMo(storage.usedBytes)} utilisés sur {fmtMo(storage.quotaBytes)}</p>
             <div className="h-2 overflow-hidden rounded-full bg-sand" role="progressbar" aria-valuenow={Math.round((storage.usedBytes / storage.quotaBytes) * 100)} aria-valuemin={0} aria-valuemax={100}><div className={"h-full " + (storage.usedBytes / storage.quotaBytes > 0.8 ? "bg-bad" : "bg-clay")} style={{ width: `${Math.min(100, (storage.usedBytes / storage.quotaBytes) * 100)}%` }} /></div>
             <p className="hint m-0">Les vidéos sont supprimées automatiquement après 12 mois. Supprime celles qui ne servent plus pour garder de la place.</p>
@@ -167,7 +176,13 @@ export function Centre() {
 
   return (
     <>
-      <PageHead eyebrow="Centre de compétition jeunes" title="Mes jeunes compétiteurs">Profil, objectifs de l'année, accords des parents et accès des familles.</PageHead>
+      <CoachHero
+        eyebrow="Centre de compétition jeunes"
+        title="Mes jeunes compétiteurs"
+        subtitle="Profil, objectifs de l'année, accords des parents et accès des familles."
+        chips={<><HeroChip>🏆 {players.length} joueur{players.length > 1 ? "s" : ""}</HeroChip>{inactive.length > 0 && <HeroChip>🗓️ {inactive.length} dossier{inactive.length > 1 ? "s" : ""} inactif{inactive.length > 1 ? "s" : ""}</HeroChip>}</>}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link><button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button></>}
+      />
       <Page>
         <p className="alert m-0"><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -175,8 +190,6 @@ export function Centre() {
           <div className="flex flex-wrap gap-2">
             <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
             <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
-            <Link to="/coach/centre/fin-de-cours" className="btn bg-[#fff3b0] text-ink btn-sm no-underline hover:bg-[#ffe978]">⭐ Fin de cours</Link>
-            <button className="btn-clay btn-sm" aria-expanded={open} onClick={() => setOpen(!open)}>+ Ajouter un joueur</button>
           </div>
         </div>
         {open && (
@@ -193,18 +206,19 @@ export function Centre() {
         )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {players.map((p) => (
-            <div key={p.id} className="card lift grid content-between gap-4">
-              <Link to={`/coach/centre/${p.id}`} className="flex items-center gap-3 no-underline">
-                <Avatar name={fullName(p)} size={52} />
-                <span className="min-w-0">
-                  <h3 className="m-0">{fullName(p)}</h3>
-                  <span className="mt-1 flex flex-wrap gap-1.5">
-                    {p.ranking ? <span className="badge">🎾 {p.ranking}{p.targetRanking ? ` → ${p.targetRanking}` : ""}</span> : <span className="badge text-muted">Fiche à compléter</span>}
-                    {p.hand && <span className="badge">{p.hand}</span>}
-                  </span>
+            <div key={p.id} className="card lift grid content-between gap-4 overflow-hidden !p-0">
+              <div className="h-16" style={{ background: `linear-gradient(120deg, ${hueOf(fullName(p))}, #10203a)` }} aria-hidden="true" />
+              <Link to={`/coach/centre/${p.id}`} className="-mt-12 flex items-end gap-3 px-5 no-underline">
+                <span className="rounded-full ring-4 ring-white"><Avatar name={fullName(p)} size={64} /></span>
+                <span className="min-w-0 pb-1">
+                  <h3 className="m-0 truncate">{fullName(p)}</h3>
                 </span>
               </Link>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 px-5">
+                {p.ranking ? <span className="badge">🎾 {p.ranking}{p.targetRanking ? ` → ${p.targetRanking}` : ""}</span> : <span className="badge text-muted">Fiche à compléter</span>}
+                {p.hand && <span className="badge">{p.hand}</span>}
+              </div>
+              <div className="flex flex-wrap gap-2 px-5 pb-5">
                 <Link to={`/coach/centre/${p.id}`} className="btn-outline btn-sm no-underline">Ouvrir le dossier</Link>
                 <Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link>
               </div>

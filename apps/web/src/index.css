@@ -69,7 +69,9 @@
 @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 .skeleton { border-radius: 0.75rem; background: linear-gradient(90deg, #efe5d8 25%, #f9f3ea 37%, #efe5d8 63%); background-size: 400% 100%; }
+@keyframes ballfloat { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-12px) rotate(4deg); } }
 @media (prefers-reduced-motion: no-preference) {
+  .coach-ball { animation: ballfloat 6s ease-in-out infinite; }
   html { scroll-behavior: smooth; }
   .page-in { animation: pageIn 0.35s ease-out backwards; }
   .skeleton { animation: shimmer 1.4s ease-in-out infinite; }
