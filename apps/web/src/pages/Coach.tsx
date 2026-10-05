@@ -115,22 +115,6 @@ export function CoachHome() {
         subtitle={todos.length === 0 ? "Rien d'urgent : tout est à jour. Belle séance !" : `${todos.length} chose${todos.length > 1 ? "s" : ""} à regarder aujourd'hui.`}
       />
       <Page>
-        <section className="card grid gap-1" aria-labelledby="t-afaire">
-          <h2 id="t-afaire" className="m-0 text-lg uppercase tracking-wide text-muted">À faire aujourd'hui</h2>
-          {todos.length === 0 ? <Empty>Tout est à jour 🎾</Empty> : (
-            <ul className="m-0 list-none p-0">
-              {todos.slice(0, 8).map((t, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-3 border-t border-line py-3 first:border-t-0">
-                  <span className={"rounded-full px-3 py-0.5 text-xs font-black " + tag[t.space]}>{t.space}</span>
-                  <span className="min-w-0 flex-1">{t.text}</span>
-                  <Link to={t.to} className="font-bold text-clay no-underline hover:underline">{t.cta} →</Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {todos.length > 8 && <p className="hint m-0 pt-2">… et {todos.length - 8} autre{todos.length - 8 > 1 ? "s" : ""} dans les espaces ci-dessous.</p>}
-        </section>
-
         <div className="grid gap-4 md:grid-cols-2">
           <section className="grid content-between gap-4 rounded-3xl p-6" style={{ background: "linear-gradient(135deg,#dbe9fb,#a9c8f2)" }} aria-labelledby="t-adultes">
             <div className="grid gap-1"><p className="m-0 text-xs font-black uppercase tracking-[0.14em] text-[#1c4f8a]">Espace 1</p><h2 id="t-adultes" className="m-0">👥 Adultes · demandes de coaching</h2><p className="m-0 text-[#243b5c]">Cours particuliers et vidéos des adhérents adultes.</p></div>
@@ -143,6 +127,22 @@ export function CoachHome() {
             <div className="flex flex-wrap gap-2"><Link to="/coach/centre" className="btn-clay no-underline">Ouvrir le Centre</Link><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link></div>
           </section>
         </div>
+
+        <details className="card group" open>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 className="m-0 text-lg uppercase tracking-wide text-muted">À faire aujourd'hui{todos.length > 0 && <span className="ml-2 rounded-full bg-clay px-2.5 py-0.5 text-sm font-black normal-case text-white">{todos.length}</span>}</h2><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
+          {todos.length === 0 ? <Empty>Tout est à jour 🎾</Empty> : (
+            <ul className="m-0 list-none p-0">
+              {todos.slice(0, 8).map((t, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-3 border-t border-line py-3 first:border-t-0">
+                  <span className={"rounded-full px-3 py-0.5 text-xs font-black " + tag[t.space]}>{t.space}</span>
+                  <span className="min-w-0 flex-1">{t.text}</span>
+                  <Link to={t.to} className="font-bold text-clay no-underline hover:underline">{t.cta} →</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {todos.length > 8 && <p className="hint m-0 pt-2">… et {todos.length - 8} autre{todos.length - 8 > 1 ? "s" : ""} dans les espaces Adultes et Jeunes.</p>}
+        </details>
       </Page>
     </>
   );
