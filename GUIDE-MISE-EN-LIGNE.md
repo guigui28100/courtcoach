@@ -80,3 +80,6 @@ Le coach n'a pas de bouton « mot de passe oublié » (par sécurité, sans serv
 
 ## Étape L – « Deployment rate limited » (limite de publications de Vercel)
 Vercel gratuit limite le nombre de publications par jour (environ 100). Chaque fusion en déclenchait trois (ancien site, nouveau site, serveur). Depuis octobre 2026, chaque projet ne se republie que si **ses propres fichiers** ont changé (réglage `ignoreCommand` dans les `vercel.json`). Si le message « Deployment rate limited — retry in 24 hours » apparaît : attendre le lendemain, puis dans Vercel ouvrir le projet concerné → **Deployments** → le dernier → **⋯** → **Redeploy**.
+
+## Étape M – Vérifier que le serveur est à jour
+Ouvrir `https://courtcoach-api.vercel.app/api/health` : la page doit afficher `"etoiles":"ok"` et un numéro de version (`"version":"abc1234"`) qui correspond au dernier changement du dossier `apps/api`. Si elle affiche `"etoiles":"ABSENT"`, le serveur n'a pas été republié : fusionner une PR qui modifie `apps/api` (le serveur ne se republie que dans ce cas) ou, dans Vercel, courtcoach-api → Deployments → Redeploy.

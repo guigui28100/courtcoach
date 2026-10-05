@@ -20,6 +20,8 @@ export class HealthController {
     const out: Record<string, unknown> = { serveur: "ok" };
     try { await this.prisma.$queryRaw`SELECT 1`; out.connexion = "ok"; } catch (e) { out.connexion = "ECHEC"; out.detail = safeError(e); return { ok: false, ...out }; }
     try { await this.prisma.user.count(); out.tables = "ok"; } catch (e) { out.tables = "ECHEC (tables absentes ?)"; out.detail = safeError(e); return { ok: false, ...out }; }
+    try { await this.prisma.courseStar.count(); out.etoiles = "ok"; } catch { out.etoiles = "ABSENT (le serveur doit être republié)"; } // contrôle de la dernière mise à jour de la base
+    out.version = (process.env.VERCEL_GIT_COMMIT_SHA ?? "local").slice(0, 7); // numéro de la version publiée
     return { ok: true, ...out };
   }
 }
