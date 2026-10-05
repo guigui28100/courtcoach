@@ -85,6 +85,23 @@ export class StarDto {
   @IsOptional() @IsString() @MaxLength(140) comment?: string;
 }
 
+// Match déclaré par le jeune : des choix proposés, aucun nom d'adversaire
+export const MATCH_KINDS = ["tournoi", "plateau", "equipes", "amical", "entrainement"];
+export const MATCH_OPPONENTS = ["plus-fort", "pareil", "moins-fort"];
+export const MATCH_SKILLS = ["service", "coup-droit", "revers", "retour", "volee", "deplacements", "calme", "tactique", "physique", "combativite", "concentration"];
+export class DeclaredMatchDto {
+  @IsDateString() day: string;
+  @IsIn(MATCH_KINDS) kind: string;
+  @IsOptional() @IsString() @MaxLength(60) event?: string;
+  @IsIn(["Victoire", "Défaite"]) result: string;
+  @IsOptional() @IsString() @MaxLength(40) score?: string;
+  @IsIn(MATCH_OPPONENTS) opponent: string;
+  @Type(() => Number) @IsInt() @Min(1) @Max(5) feeling: number;
+  @IsOptional() @IsArray() @ArrayMaxSize(2) @IsIn(MATCH_SKILLS, { each: true }) wellDone?: string[];
+  @IsOptional() @IsIn(MATCH_SKILLS) toImprove?: string;
+}
+export class MatchCommentDto { @IsString() @MaxLength(300) comment: string; }
+
 export class MatchDto {
   @IsDateString() date: string;
   @Transform(trim) @IsString() @MaxLength(120) tournament: string;

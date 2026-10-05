@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, post, put } from "../api";
+import { CoachDeclaredMatches } from "./DeclaredMatches";
 import { GoalEvalCard } from "./GoalEval";
 import { CoachSelfEval } from "./SelfEval";
 import { Radar } from "./Radar";
@@ -140,6 +141,7 @@ export function Matchs({ p }: { p: Player }) {
         <div className="sm:col-span-2 lg:col-span-3"><button className="btn-clay">Ajouter</button></div>
       </form>
       <Err msg={err} />
+      <CoachDeclaredMatches p={p} />
       {matches.length > 0 && <p className="m-0 font-bold">{wins} victoire{wins > 1 ? "s" : ""} · {matches.length - wins} défaite{matches.length - wins > 1 ? "s" : ""}</p>}
       <div className="card"><MatchTable matches={matches} />{!matches.length && <p className="m-0 text-muted">Aucun match enregistré.</p>}</div>
       {matches.length > 0 && (

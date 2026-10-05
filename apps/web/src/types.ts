@@ -136,3 +136,10 @@ export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id);
 export const totalStars = (list: Pick<CourseStar, "stars">[]) => list.reduce((n, s) => n + s.stars, 0);
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+// ----- Matchs déclarés par le jeune (choix proposés, jamais de nom d'adversaire) -----
+export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; coachComment: string; editable: boolean; editableUntil: string; }
+export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["amical", "🤝 Match amical"], ["entrainement", "🏋️ Match d'entraînement"]];
+export const MATCH_OPPONENTS: [string, string][] = [["plus-fort", "💪 Plus fort que moi"], ["pareil", "⚖️ Du même niveau"], ["moins-fort", "🌱 Moins fort que moi"]];
+export const MATCH_SKILLS: [string, string][] = [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["volee", "Mon jeu au filet"], ["deplacements", "Mes déplacements"], ["calme", "Mon calme"], ["tactique", "Mes choix tactiques"], ["physique", "Mon physique"], ["combativite", "Ma combativité"], ["concentration", "Ma concentration"]];
+export const matchLabel = (list: [string, string][], id: string | null) => list.find(([k]) => k === id)?.[1] ?? id ?? "";
