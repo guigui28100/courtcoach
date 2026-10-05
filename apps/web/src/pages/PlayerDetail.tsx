@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { ReasonPicker, StarPicker, StarsLine, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
@@ -379,7 +379,9 @@ export default function PlayerDetail() {
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
   const [missing, setMissing] = useState(false);
-  const [tab, setTab] = useState<Tab>("profil");
+  const [search] = useSearchParams();
+  const wanted = search.get("onglet");
+  const [tab, setTab] = useState<Tab>((["profil", "accords", "objectifs", "evaluations", "etoiles", "videos", "matchs", "bulletins"] as string[]).includes(wanted || "") ? (wanted as Tab) : "profil");
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
