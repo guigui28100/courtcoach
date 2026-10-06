@@ -76,11 +76,6 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
   return (
     <form onSubmit={(e) => { e.preventDefault(); save(); }}>
       <fieldset disabled={locked} className={"m-0 grid min-w-0 gap-5 border-0 p-0 " + (locked ? "opacity-60" : "")}>
-      <div className="grid gap-1 rounded-2xl bg-white/10 p-4">
-        <strong className="text-lg">🧭 À quoi sert ce bulletin ?</strong>
-        <p className="m-0 text-white/90">C'est <strong>ton</strong> bulletin. Il ne sert pas à te noter : c'est un moment pour <strong>réfléchir à ton jeu, à ce que tu as appris et à ton projet</strong> pour la suite. Il n'y a ni bonne ni mauvaise réponse : sois sincère. Ton coach le lira pour mieux t'accompagner.</p>
-        <p className="m-0 text-sm text-[#dcf247]">📅 À remplir en décembre (trimestre 1), en mars (trimestre 2) et en juin (trimestre 3). Compte 10 minutes, tu peux enregistrer un brouillon et finir plus tard.</p>
-      </div>
       <div className="grid gap-2">{step(1, "Mon trimestre, c'était…", "Comment as-tu vécu ce trimestre en général : plaisir, motivation, envie de venir t'entraîner ? Choisis le visage qui te ressemble le mieux.")}<Faces faces={MOODS} value={mood} onChange={setMood} label="Mon trimestre" /></div>
       {mine.length > 0 && (
         <div className="grid gap-2">{step(2, "Mes missions", "Pour chaque mission de ton coach, dis où tu en es. ✅ J'ai réussi : je sens que c'est acquis. 🔄 Je progresse : ça avance, mais ce n'est pas fini. 💪 Pas encore : je n'y suis pas encore, et c'est normal, on s'entraîne pour ça !")}
@@ -128,7 +123,7 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
   const opens = t === null ? null : selfEvalOpensOn(season, t);
   return (
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mon-bulletin">
-      <h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin du trimestre</h2>
+      <h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2>
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Choisir le trimestre">
         {[1, 2, 3].map((n) => { const e = list?.find((x) => x.season === season && x.trimester === n); return (
           <button key={n} type="button" role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"min-h-11 rounded-full border-2 px-4 font-bold " + (t === n ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white")}>Trimestre {n} · {SELF_EVAL_MONTH[n]}{e?.sentAt ? " ✅" : lockedAt(n) ? " 🔒" : e ? " ✏️" : ""}</button>
