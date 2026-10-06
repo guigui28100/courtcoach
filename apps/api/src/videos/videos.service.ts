@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, HttpException, Injectable, Not
 import { ConsentKind, Role, Video, VideoStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
-import { AuthUser } from "../common/auth.types";
+import { AuthUser, isStaff } from "../common/auth.types";
 import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES } from "./dto";
 
 export const CHUNK_SIZE = 2 * 1024 * 1024; // le fichier est envoyé et gardé par morceaux de 2 Mo
@@ -64,7 +64,7 @@ export class VideosService {
       if (!(await this.imageConsent(dto.playerId))) throw new ForbiddenException("L'accord des parents « droit à l'image » n'est pas enregistré : aucune vidéo ne peut être ajoutée.");
       playerId = dto.playerId;
     }
-    const fromCoach = user.role === Role.COACH && !!playerId; // le coach envoie une vidéo au joueur
+    const fromCoach = isStaff(user) && !!playerId; // le coach envoie une vidéo au joueur
     const used = await this.usedBytes();
     if (used + dto.sizeBytes > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein. Préviens le coach.", 507);
     const chunkCount = Math.ceil(dto.sizeBytes / CHUNK_SIZE);
@@ -119,7 +119,7 @@ export class VideosService {
   // ----- Listes -----
   private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
-    const coach = user?.role === Role.COACH;
+    const coach = !!user && isStaff(user);
     const visible = a && (coach || a.sentAt);
     return {
       id: v.id, title: v.title, shot: v.shot, question: v.question, status: v.status, sizeBytes: v.sizeBytes, mimeType: v.mimeType, complete: v.complete,
@@ -155,16 +155,16 @@ export class VideosService {
   // ----- Détail, discussion -----
   async detail(user: AuthUser, id: string) {
     await this.load(user, id);
-    if (user.role === Role.COACH) await this.audit.log(user.id, "view", "Video", id); // journal : le coach a ouvert cette vidéo
+    if (isStaff(user)) await this.audit.log(user.id, "view", "Video", id); // journal : le coach a ouvert cette vidéo
     const v = await this.prisma.video.findUniqueOrThrow({ where: { id }, include: this.include });
     const out = this.summary(v, user);
-    const talk = user.role === Role.COACH || !!out.analysis?.sentAt;
+    const talk = isStaff(user) || !!out.analysis?.sentAt;
     const msgs = talk ? await this.prisma.message.findMany({ where: { videoId: id }, orderBy: { createdAt: "asc" } }) : [];
     const authors = await this.prisma.user.findMany({ where: { id: { in: [...new Set(msgs.map((m) => m.authorId))] } }, select: { id: true, role: true } });
     const roleOf = new Map(authors.map((a) => [a.id, a.role]));
-    const goals = user.role === Role.COACH && v.playerId ? await this.prisma.goal.findMany({ where: { playerId: v.playerId }, orderBy: { createdAt: "asc" }, select: { id: true, axis: true, title: true, season: true } }) : [];
+    const goals = isStaff(user) && v.playerId ? await this.prisma.goal.findMany({ where: { playerId: v.playerId }, orderBy: { createdAt: "asc" }, select: { id: true, axis: true, title: true, season: true } }) : [];
     const linked = v.playerId && out.analysis ? await this.prisma.goal.findMany({ where: { id: { in: out.analysis.goalIds } }, select: { id: true, axis: true, title: true } }) : [];
-    return { ...out, messages: msgs.map((m) => ({ id: m.id, text: m.text, createdAt: m.createdAt, fromCoach: roleOf.get(m.authorId) === Role.COACH, mine: m.authorId === user.id })), goals, linkedGoals: linked };
+    return { ...out, messages: msgs.map((m) => ({ id: m.id, text: m.text, createdAt: m.createdAt, fromCoach: roleOf.get(m.authorId) === Role.COACH || roleOf.get(m.authorId) === Role.TRAINER, mine: m.authorId === user.id })), goals, linkedGoals: linked };
   }
 
   async addMessage(user: AuthUser, id: string, text: string) {
@@ -176,13 +176,14 @@ export class VideosService {
 
   async markSeen(user: AuthUser, id: string) {
     const v = await this.load(user, id);
-    if (user.role === Role.COACH) return;
+    if (isStaff(user)) return;
     if (v.fromCoach || (await this.prisma.analysis.findFirst({ where: { videoId: v.id, sentAt: { not: null } } }))) await this.prisma.video.update({ where: { id }, data: { seenAt: new Date() } });
   }
 
   // ----- Analyse (coach) -----
   async saveAnalysis(user: AuthUser, id: string, dto: AnalysisDto) {
-    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id); // un entraîneur ne touche qu'aux vidéos de ses jeunes
     const v = await this.prisma.video.findUnique({ where: { id } });
     if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
     // Centre de compétition : pas d'exercices correctifs, mais des liens vers les objectifs du joueur. Adultes : l'inverse.
@@ -204,7 +205,8 @@ export class VideosService {
   }
 
   async sendAnalysis(user: AuthUser, id: string) {
-    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id); // un entraîneur ne touche qu'aux vidéos de ses jeunes
     const a = await this.prisma.analysis.findFirst({ where: { videoId: id } });
     if (!a || !a.observation.trim()) throw new BadRequestException("Écris au moins une observation avant d'envoyer l'analyse.");
     await this.prisma.$transaction([
@@ -217,11 +219,12 @@ export class VideosService {
   // ----- Images annotées (studio d'analyse) : ajoutées par le coach, visibles par la personne concernée une fois l'analyse envoyée -----
   private async imageVisible(user: AuthUser, videoId: string) {
     await this.load(user, videoId);
-    if (user.role === Role.COACH) return;
+    if (isStaff(user)) return;
     if (!(await this.prisma.analysis.findFirst({ where: { videoId, sentAt: { not: null } } }))) throw new NotFoundException("Image introuvable");
   }
   async addImage(user: AuthUser, id: string, body: unknown, note?: string) {
-    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
     const v = await this.prisma.video.findUnique({ where: { id } });
     if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
     if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Image invalide");
@@ -242,7 +245,8 @@ export class VideosService {
     return { data: Buffer.from(img.data), mime: img.mimeType };
   }
   async removeImage(user: AuthUser, id: string, imageId: string) {
-    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
     const r = await this.prisma.videoImage.deleteMany({ where: { id: imageId, videoId: id } });
     if (!r.count) throw new NotFoundException("Image introuvable");
   }
@@ -250,7 +254,7 @@ export class VideosService {
   // ----- Suppression -----
   async remove(user: AuthUser, id: string) {
     const v = await this.load(user, id);
-    if (user.role !== Role.COACH && v.fromCoach) throw new ForbiddenException("Cette vidéo vient de ton coach : lui seul peut la supprimer.");
+    if (!isStaff(user) && v.fromCoach) throw new ForbiddenException("Cette vidéo vient de ton coach : lui seul peut la supprimer.");
     await this.prisma.video.delete({ where: { id } });
     await this.audit.log(user.id, "video-delete", "Video", id);
   }

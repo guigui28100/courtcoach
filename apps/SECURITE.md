@@ -32,3 +32,9 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 5. **Confirmation par e-mail de l'accord parental** : aujourd'hui le coach enregistre l'accord papier ; un vrai envoi d'e-mail demande un service d'envoi.
 6. **E-mail déjà utilisé à l'inscription** : le message indique qu'un compte existe (risque faible, accepté).
 7. **Faille signalée dans l'outil de construction Prisma** : sans risque réel (il ne reçoit jamais de données d'un visiteur) ; à corriger à la prochaine mise à jour majeure.
+
+## Entraîneurs de comité (rôle TRAINER)
+- Accès limité par `PlayerAccess` : une fiche, une vidéo ou un objectif d'un jeune non confié répond 404 (on ne révèle pas son existence).
+- Réservé au coach : création / suppression / export d'un jeune, accords, comptes des familles, gestion des entraîneurs, dossiers inactifs, stockage.
+- Santé et notes privées jamais envoyées à un entraîneur, et ignorées s'il tente de les modifier.
+- Routes `/lessons` fermées aux entraîneurs. Test : `apps/api/test/trainers.e2e-spec.ts` et matrice `routes.e2e-spec.ts`.

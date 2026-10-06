@@ -13,7 +13,7 @@ export default function Securite() {
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const on = !!me?.twoFactor;
   const [storage, setStorage] = useState<{ usedBytes: number; quotaBytes: number } | null>(null);
-  useEffect(() => { get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => setStorage(null)); }, []);
+  useEffect(() => { if (me?.role !== "COACH") return; get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => setStorage(null)); }, []);
 
   async function start() { setErr(""); setBusy(true); try { setSetup(await post("/auth/2fa/setup")); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); } }
   async function enable(e: FormEvent<HTMLFormElement>) {
@@ -27,7 +27,7 @@ export default function Securite() {
 
   return (
     <>
-      <PageHead eyebrow="Espace coach" title="Sécurité de mon compte">Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection.</PageHead>
+      <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : "Espace coach"} title="Sécurité de mon compte">{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
       <Page>
         {storage && (
           <section className="card grid gap-2" aria-labelledby="s-place">

@@ -4,7 +4,7 @@ import { randomBytes, randomInt } from "crypto";
 import { hash } from "@node-rs/argon2";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
-import { AuthUser } from "../common/auth.types";
+import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
 import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
@@ -22,6 +22,12 @@ export class PlayersService {
     if (!access) throw new NotFoundException("Fiche introuvable"); // 404 plutôt que 403 : on ne révèle pas son existence
   }
   assertCoach(user: AuthUser) { if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach"); }
+  // Saisie du suivi : le coach partout ; un entraîneur de comité seulement pour les jeunes qui lui sont confiés (sinon la fiche « n'existe pas » pour lui).
+  async assertStaffFor(user: AuthUser, playerId: string) {
+    if (user.role === Role.COACH) return;
+    if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé au coach");
+    await this.assertCanRead(user, playerId);
+  }
 
   // Ce que voit chaque rôle : jamais les notes privées du coach en dehors du coach, et pas la santé pour un compte « jeune ».
   private shape(p: Player, user: AuthUser) {
@@ -41,9 +47,9 @@ export class PlayersService {
     await this.assertCanRead(user, id);
     const p = await this.prisma.player.findUnique({ where: { id }, include: { consents: { select: { id: true, kind: true, givenBy: true, method: true, grantedAt: true, withdrawnAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
-    if (user.role === Role.COACH) await this.audit.log(user.id, "read", "Player", id); // journal : le coach a ouvert cette fiche
+    if (isStaff(user)) await this.audit.log(user.id, "read", "Player", id); // journal : le coach (ou l'entraîneur) a ouvert cette fiche
     const { consents, ...player } = p;
-    return { ...this.shape(player as Player, user), consents: user.role === Role.COACH ? consents : undefined };
+    return { ...this.shape(player as Player, user), consents: isStaff(user) ? consents : undefined };
   }
 
   async create(user: AuthUser, dto: CreatePlayerDto) {
@@ -54,8 +60,9 @@ export class PlayersService {
   }
 
   async update(user: AuthUser, id: string, dto: UpdatePlayerDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, id);
     const { birthDate, ...rest } = dto;
+    if (user.role === Role.TRAINER) { delete rest.health; delete rest.coachNotes; } // santé et notes privées : réservées au coach
     const p = await this.prisma.player.update({ where: { id }, data: { ...rest, ...(birthDate ? { birthDate: new Date(birthDate) } : {}), lastActivityAt: new Date() } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.audit.log(user.id, "update", "Player", id);
     return p;
@@ -73,6 +80,7 @@ export class PlayersService {
 
   // Droit d'accès / portabilité : copie complète d'une fiche.
   async export(user: AuthUser, id: string) {
+    if (user.role === Role.TRAINER) throw new ForbiddenException("Réservé au coach");
     await this.assertCanRead(user, id);
     const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
@@ -190,13 +198,18 @@ export class PlayersService {
     return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, status: true, progress: true, comment: true }, orderBy: { trimester: "asc" } } } });
   }
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     const g = await this.prisma.goal.create({ data: { playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return g;
   }
+  private async goalOwner(user: AuthUser, goalId: string) {
+    const g = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { playerId: true } });
+    if (!g) throw new NotFoundException("Objectif introuvable");
+    await this.assertStaffFor(user, g.playerId);
+  }
   async updateGoal(user: AuthUser, goalId: string, dto: UpdateGoalDto) {
-    this.assertCoach(user);
+    await this.goalOwner(user, goalId);
     const { deadline, trimesters, ...rest } = dto;
     const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
     await this.touch(g.playerId);
@@ -208,7 +221,7 @@ export class PlayersService {
   // Point de contrôle : où en est l'objectif à la fin d'un trimestre + la note du coach.
   // L'avancement « actuel » de l'objectif suit le point de contrôle du dernier trimestre renseigné.
   async saveCheckpoint(user: AuthUser, goalId: string, trimester: number, dto: CheckpointDto) {
-    this.assertCoach(user);
+    await this.goalOwner(user, goalId);
     if (![1, 2, 3].includes(trimester)) throw new BadRequestException("Trimestre invalide");
     const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true, season: true } });
     if (!goal) throw new NotFoundException("Objectif introuvable");
@@ -223,7 +236,7 @@ export class PlayersService {
   }
 
   async removeGoal(user: AuthUser, goalId: string) {
-    this.assertCoach(user);
+    await this.goalOwner(user, goalId);
     await this.prisma.goal.delete({ where: { id: goalId } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
   }
 
@@ -233,7 +246,7 @@ export class PlayersService {
     return this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
   }
   async saveEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: EvaluationDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     if (!SEASON.test(season) || ![0, 1, 2, 3].includes(trimester)) throw new BadRequestException("Période invalide"); // 0 = bilan de début d'année
     for (const [k, v] of Object.entries(dto.ratings ?? {})) {
       if (!/^[a-z_]{1,40}$/.test(k) || !Number.isInteger(v) || v < 1 || v > 5) throw new BadRequestException("Notes invalides (1 à 5)");
@@ -248,7 +261,7 @@ export class PlayersService {
   // Écrit par le jeune (ou son parent) seulement ; le coach ne voit que ce qui a été ENVOYÉ.
   async selfEvaluations(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.selfEvaluation.findMany({ where: { playerId, ...(user.role === Role.COACH ? { sentAt: { not: null } } : {}) }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+    return this.prisma.selfEvaluation.findMany({ where: { playerId, ...(isStaff(user) ? { sentAt: { not: null } } : {}) }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
   }
   private assertWriter(user: AuthUser) { if (user.role !== Role.YOUTH && user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé au jeune et à sa famille"); }
   // L'auto-évaluation s'ouvre à la fin de chaque trimestre : 1er décembre (T1), 1er mars (T2), 1er juin (T3). Les périodes passées restent ouvertes.
@@ -291,7 +304,7 @@ export class PlayersService {
     return sent;
   }
   async markSelfEvaluationRead(user: AuthUser, playerId: string, season: string, trimester: number) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     this.checkPeriod(season, trimester);
     const e = await this.prisma.selfEvaluation.findUnique({ where: { playerId_season_trimester: { playerId, season, trimester } } });
     if (!e?.sentAt) throw new NotFoundException("Bulletin introuvable");
@@ -310,7 +323,7 @@ export class PlayersService {
     return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
   }
   async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     this.checkDay(day);
     if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
     // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
@@ -322,7 +335,7 @@ export class PlayersService {
     return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: { createdAt: "asc" }, select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
   }
   async removeStar(user: AuthUser, playerId: string, day: string) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     this.checkDay(day);
     const r = await this.prisma.courseStar.deleteMany({ where: { playerId, day } });
     if (!r.count) throw new NotFoundException("Aucune étoile ce jour-là");
@@ -340,7 +353,7 @@ export class PlayersService {
     return { id: m.id, day: m.day, kind: m.kind, event: m.event, result: m.result, score: m.score, opponent: m.opponent, feeling: m.feeling, wellDone: m.wellDone, toImprove: m.toImprove, coachComment: m.coachComment, editableUntil: new Date(m.createdAt.getTime() + 7 * 24 * 3600 * 1000).toISOString(), editable: this.editable(m) };
   }
   async declaredMatches(user: AuthUser, playerId: string) {
-    if (user.role !== Role.COACH && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    if (!isStaff(user) && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
     await this.assertCanRead(user, playerId);
     const rows = await this.prisma.declaredMatch.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "desc" }] });
     return rows.map((m) => this.matchOut(m));
@@ -364,14 +377,14 @@ export class PlayersService {
     return this.matchOut(u);
   }
   async removeDeclaredMatch(user: AuthUser, playerId: string, matchId: string) {
-    if (user.role !== Role.COACH && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    if (!isStaff(user) && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
     await this.assertCanRead(user, playerId);
     const m = await this.ownMatch(user, playerId, matchId);
     if (user.role === Role.YOUTH && !this.editable(m)) throw new ConflictException("Ce match ne peut plus être supprimé (au-delà de 7 jours) : demande à ton coach.");
     await this.prisma.declaredMatch.delete({ where: { id: matchId } });
   }
   async commentDeclaredMatch(user: AuthUser, playerId: string, matchId: string, dto: MatchCommentDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     await this.ownMatch(user, playerId, matchId);
     const u = await this.prisma.declaredMatch.update({ where: { id: matchId }, data: { coachComment: dto.comment.trim() } });
     return this.matchOut(u);
@@ -383,13 +396,15 @@ export class PlayersService {
     return this.prisma.match.findMany({ where: { playerId }, orderBy: { date: "desc" } });
   }
   async addMatch(user: AuthUser, playerId: string, dto: MatchDto) {
-    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
     const m = await this.prisma.match.create({ data: { playerId, date: new Date(dto.date), tournament: dto.tournament, round: dto.round ?? "", result: dto.result, score: dto.score ?? "", remark: dto.remark ?? "" } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return m;
   }
   async removeMatch(user: AuthUser, matchId: string) {
-    this.assertCoach(user);
+    const m = await this.prisma.match.findUnique({ where: { id: matchId }, select: { playerId: true } });
+    if (!m) throw new NotFoundException("Match introuvable");
+    await this.assertStaffFor(user, m.playerId);
     await this.prisma.match.delete({ where: { id: matchId } }).catch(() => { throw new NotFoundException("Match introuvable"); });
   }
 }

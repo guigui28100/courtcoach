@@ -1,4 +1,4 @@
-export type Role = "COACH" | "ADULT" | "GUARDIAN" | "YOUTH";
+export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH";
 export interface Me { id: string; email: string; role: Role; firstName: string | null; mustChangePassword?: boolean; twoFactor?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [

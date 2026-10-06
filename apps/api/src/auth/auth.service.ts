@@ -185,7 +185,7 @@ export class AuthService {
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.
   async eraseAccount(userId: string) {
     const me = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (me.role === Role.COACH) throw new ForbiddenException("Le compte du coach ne peut pas être supprimé depuis le site.");
+    if (me.role === Role.COACH || me.role === Role.TRAINER) throw new ForbiddenException("Ce compte ne peut pas être supprimé depuis le site : demande au coach.");
     await this.prisma.$transaction([
       this.prisma.video.deleteMany({ where: { ownerId: userId } }),
       this.prisma.lessonRequest.deleteMany({ where: { memberId: userId } }),

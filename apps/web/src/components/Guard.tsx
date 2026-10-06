@@ -4,7 +4,7 @@ import { useAuth } from "../auth";
 import { Role } from "../types";
 import { Skeleton } from "./ui";
 
-export const homeFor = (role: Role) => (role === "COACH" ? "/coach" : role === "ADULT" ? "/espace" : "/suivi");
+export const homeFor = (role: Role) => (role === "COACH" ? "/coach" : role === "TRAINER" ? "/coach/centre" : role === "ADULT" ? "/espace" : "/suivi");
 
 // Réserve une page à certains rôles ; sinon on renvoie vers la connexion ou vers l'espace de la personne.
 export function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {

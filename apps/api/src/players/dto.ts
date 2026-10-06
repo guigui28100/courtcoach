@@ -128,3 +128,13 @@ export class SelfEvaluationDto {
   @IsOptional() @IsArray() @ArrayMaxSize(5) @Matches(PRESET_ID, { each: true }) wish?: string[];
   @IsOptional() @IsString() @MaxLength(300) comment?: string;
 }
+
+// Entraîneur de comité : créé par le coach avec les jeunes qu'il pourra voir
+export class TrainerDto {
+  @Transform(trim) @IsString() @MaxLength(60) firstName: string;
+  @Transform(lower) @IsEmail() @MaxLength(200) email: string;
+  @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) playerIds: string[];
+}
+export class TrainerPlayersDto {
+  @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) playerIds: string[];
+}
