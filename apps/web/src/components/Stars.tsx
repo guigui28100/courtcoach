@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
-import { CourseStar, fmtDay, Player, starReason, STAR_REASONS, totalStars } from "../types";
+import { Radar } from "./Radar";
+import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, starReason, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -35,6 +36,48 @@ export function ReasonPicker({ value, onChange }: { value: string; onChange: (id
   );
 }
 
+// Choix du domaine du radar (un seul) : à quoi correspond cette étoile ?
+export function DomainPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Quel domaine du radar fait-elle grandir ?">
+      {EVAL_AXES.map((a) => (
+        <button key={a.key} type="button" role="radio" aria-checked={value === a.key} onClick={() => onChange(a.key)}
+          className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (value === a.key ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</button>
+      ))}
+    </div>
+  );
+}
+
+// Radar « de tous les jours » : alimenté par les étoiles de la saison, mis à jour à chaque cours
+export function StarsRadar({ stars, dark = false, who = "jeune" }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach" }) {
+  if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
+  const season = currentSeason();
+  const by = starsByDomain(stars, season);
+  const values = Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.min(5, (by[a.key] * 5) / STARS_FOR_FULL)]));
+  const total = Object.values(by).reduce((n, v) => n + v, 0);
+  const sub = dark ? "text-white/80" : "text-muted";
+  const me = who === "jeune";
+  return (
+    <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
+      <h2 id="stars-radar" className="m-0 text-2xl">🌟 {me ? "Mon radar de tous les jours" : "Le radar de tous les jours"}</h2>
+      <p className={"m-0 " + sub}>{me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit : il se met à jour à chaque cours, toute la saison !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours de la saison et se met à jour à chaque cours."} Quand un domaine a {STARS_FOR_FULL} étoiles, il est plein.</p>
+      {total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile cette saison : le radar se remplira dès les premiers cours.</p> : (
+        <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
+          <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles ${season.replace("-", "/")}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
+          <ul className="m-0 grid list-none gap-2 p-0" aria-label="Étoiles par domaine">
+            {EVAL_AXES.map((a) => (
+              <li key={a.key} className={"flex items-center justify-between gap-3 rounded-xl px-3 py-2 " + (dark ? "bg-white/10" : "bg-sand/60")}>
+                <span className="font-bold"><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</span>
+                <strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export const StarsLine = ({ n }: { n: number }) => <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
 
 // Carte « Mes étoiles » (lecture seule) pour le jeune (fond sombre) et pour sa famille
@@ -54,7 +97,7 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
           <ul className="m-0 grid list-none gap-2 p-0">
             {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); return (
               <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row}>
-                <span className="flex flex-wrap items-center justify-between gap-2"><strong><StarsLine n={s.stars} /> {r ? `${r.emoji} ${r.label}` : ""}</strong><small className={sub}>{fmtDay(s.day)}</small></span>
+                <span className="flex flex-wrap items-center justify-between gap-2"><strong><StarsLine n={s.stars} /> {r ? `${r.emoji} ${r.label}` : ""}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : ""}</strong><small className={sub}>{fmtDay(s.day)}</small></span>
                 {s.comment && <span className="text-sm">💬 {s.comment}</span>}
               </li>
             ); })}

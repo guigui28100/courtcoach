@@ -6,7 +6,7 @@ import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
-import { StarsCard, useStars } from "../components/Stars";
+import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
@@ -302,7 +302,7 @@ export function FamilySpace() {
               )}
               {tab === "objectifs" && <GoalsTab goals={list} />}
               {tab === "evaluations" && <EvalTab p={p} />}
-              {tab === "etoiles" && <StarsCard stars={stars} who="famille" />}
+              {tab === "etoiles" && <><StarsRadar stars={stars} who="famille" /><StarsCard stars={stars} who="famille" /></>}
               {tab === "matchs" && <MatchesTab p={p} />}
               {tab === "videos" && <PlayerVideos p={p} mine={mine} fresh={fresh} refresh={refresh} />}
               {tab === "compte" && (

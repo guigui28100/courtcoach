@@ -248,6 +248,7 @@ model CourseStar {
   day       String   // jour du cours « AAAA-MM-JJ » (une seule fiche d'étoiles par joueur et par jour)
   stars     Int      // 1, 2 ou 3
   reason    String   // identifiant d'une raison proposée (effort, ecoute, progres…)
+  domain    String?  // domaine du radar fait grandir par l'étoile (technique, tactique, physique, mental, attitude) ; vide pour les anciennes étoiles
   comment   String   @default("") // petit mot du coach (140 caractères maximum)
   createdAt DateTime @default(now())
 

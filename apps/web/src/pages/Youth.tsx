@@ -7,7 +7,7 @@ import { Radar } from "../components/Radar";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
-import { StarsCard, useStars } from "../components/Stars";
+import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
@@ -85,7 +85,7 @@ function Radarlike({ p, bulletinBase }: { p: Player; bulletinBase: string }) {
   return (
     <>
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-radar">
-        <h2 id="gal-radar" className="m-0 text-2xl">📡 {last?.trimester === 0 ? "Mon point de départ" : "Mon radar"}</h2>
+        <h2 id="gal-radar" className="m-0 text-2xl">📡 {last?.trimester === 0 ? "Mon point de départ" : "Mon radar du bulletin"}</h2>
         {!last ? <p className="m-0 text-white/80">Ton point de départ et ton premier radar arriveront après les premières évaluations de ton coach.</p> : (
           <div className="grid items-start gap-5 md:grid-cols-[300px_1fr]">
             <div className="grid justify-items-center gap-2">
@@ -136,15 +136,29 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
   );
 }
 
-// Onglet « Mes bulletins » : bilan de départ + trimestres, toujours consultables
-function BulletinsTab({ p, base, selfEvals, preview }: { p: Player; base: string; selfEvals: SelfEvaluation[]; preview: boolean }) {
+// Onglet « Mes bulletins » : tout au même endroit — mon propre bulletin à remplir + les bulletins de mon coach (bilan de départ + trimestres)
+function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: { p: Player; goals: Goal[]; base: string; selfEvals: SelfEvaluation[]; pending: number | null; preview: boolean; onSaved: () => void }) {
   const { evals } = useFollowUp(p.id);
   return (
-    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins">
-      <h2 id="gal-bulletins" className="m-0 text-2xl">📄 Mes bulletins</h2>
-      <p className="m-0 text-white/85">Ton <strong>bilan de début d'année</strong> et tes <strong>bulletins de chaque trimestre</strong> sont enregistrés ici. Tu peux les ouvrir quand tu veux, pour voir tes progrès.</p>
-      {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
-    </section>
+    <>
+      <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins">
+        <h2 id="gal-bulletins" className="m-0 text-2xl">📄 Mes bulletins</h2>
+        <p className="m-0 text-lg text-white/90">Ici, tu retrouves <strong>2 choses</strong> :</p>
+        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
+          <li className="grid gap-1 rounded-2xl border-2 border-[#dcf247] bg-white/10 p-4"><strong className="text-xl">✍️ Mon bulletin à moi</strong><span>Trois fois dans l'année, <strong>c'est toi qui remplis ton propre bulletin</strong> : avec des boutons à toucher, tu dis comment s'est passé ton trimestre.</span></li>
+          <li className="grid gap-1 rounded-2xl border border-white/25 bg-white/10 p-4"><strong className="text-xl">📄 Les bulletins de mon coach</strong><span>Son bilan de début d'année et son bulletin de chaque trimestre. Tu peux les relire quand tu veux.</span></li>
+        </ul>
+        <p className="m-0 rounded-xl bg-white/10 p-3"><strong>💡 Pourquoi remplir mon bulletin ?</strong> Pour réfléchir à mon jeu : ce dont je suis fier, ce que je veux améliorer, ce que j'aimerais faire. Ton coach le lit et ça l'aide à mieux t'aider. <strong>Il n'y a pas de mauvaise réponse</strong>, et ça ne change pas ta note. Compte 10 minutes ; tu peux enregistrer un brouillon et finir plus tard.</p>
+        {!preview && (pending !== null
+          ? <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend juste en dessous !</p>
+          : <p className="m-0 text-white/85">🗓️ Ton bulletin s'ouvre le <strong>1er décembre</strong> (trimestre 1), le <strong>1er mars</strong> (trimestre 2) et le <strong>1er juin</strong> (trimestre 3).</p>)}
+      </section>
+      <SelfEvalSection p={p} goals={goals} preview={preview} onSaved={onSaved} />
+      <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins-coach">
+        <h2 id="gal-bulletins-coach" className="m-0 text-2xl">📄 Les bulletins de mon coach</h2>
+        {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
+      </section>
+    </>
   );
 }
 
@@ -181,7 +195,7 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
   );
 }
 
-type Tab = "accueil" | "missions" | "bulletin" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
+type Tab = "accueil" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
 
 // Carte cliquable de l'accueil (« à faire » ou « nouveau »)
 function Todo({ icon, title, text, onClick, hot = false, children }: { icon: string; title: string; text?: string; onClick: () => void; hot?: boolean; children?: React.ReactNode }) {
@@ -210,7 +224,7 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p:
         {stars.length > 0 && <Todo icon="⭐" title={`${totalStars(stars)} étoile${totalStars(stars) > 1 ? "s" : ""}`} text={`Dernier cours : +${stars[0].stars} ⭐ ${starReason(stars[0].reason)?.label ?? ""}${stars[0].comment ? ` · « ${stars[0].comment} »` : ""}`} onClick={() => go("progres")} />}
         {sent > 0 && <Todo hot icon="🎓" title={`Ton coach t'a envoyé ${sent > 1 ? `${sent} vidéos` : "une vidéo"} !`} text="Regarde-la, elle est faite pour toi." onClick={() => go("videos")} />}
         {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
-        <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletin")} />
+        <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletins")} />
         <Todo icon="🚀" title={here.length ? (evaluated ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} mission${here.length > 1 ? "s" : ""} à travailler`) : "Tes missions"} text={here.length ? (evaluated ? `Trimestre ${t}` : `Trimestre ${t} : ton coach fera le point à la fin du trimestre.`) : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
           {here.length > 0 && evaluated && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
         </Todo>
@@ -221,7 +235,7 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p:
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["missions", "🚀", "Missions"], ["bulletin", "✍️", "Mon bulletin"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["missions", "🚀", "Missions"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
@@ -247,14 +261,14 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   }, [previewId, version]);
 
   const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
-  const tab: Tab = (TABS.find(([k]) => k === params.get("onglet"))?.[0]) ?? "accueil";
+  const tab: Tab = (TABS.find(([k]) => k === (params.get("onglet") === "bulletin" ? "bulletins" : params.get("onglet")))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const stars = useStars(p?.id, version);
   const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
   const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt); // nouvelle analyse ou nouvelle vidéo du coach
   const freshSent = fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length;
   const pending = pendingSelfEval(selfEvals, currentSeason());
-  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletin" && !previewId && pending !== null);
+  const dot = (k: Tab) => (k === "videos" && fresh.length > 0) || (k === "bulletins" && !previewId && pending !== null);
 
   return (
     <div className="relative isolate overflow-clip">
@@ -284,11 +298,10 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
               {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
               {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
-              {tab === "bulletin" && <SelfEvalSection p={p} goals={goals[p.id] ?? []} preview={!!previewId} onSaved={refresh} />}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
-              {tab === "progres" && <><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
+              {tab === "progres" && <><StarsRadar stars={stars} dark /><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
-              {tab === "bulletins" && <BulletinsTab p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} preview={!!previewId} />}
+              {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "compte" && !previewId && (
                 <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                   <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>

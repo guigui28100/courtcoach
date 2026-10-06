@@ -307,15 +307,15 @@ export class PlayersService {
   }
   async stars(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: { day: "desc" }, select: { id: true, day: true, stars: true, reason: true, comment: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: { day: "desc" }, select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
   }
   async saveStar(user: AuthUser, playerId: string, day: string, dto: StarDto) {
     this.assertCoach(user);
     this.checkDay(day);
-    const data = { stars: dto.stars, reason: dto.reason, comment: (dto.comment ?? "").trim() };
+    const data = { stars: dto.stars, reason: dto.reason, domain: dto.domain, comment: (dto.comment ?? "").trim() };
     const s = await this.prisma.courseStar.upsert({ where: { playerId_day: { playerId, day } }, update: data, create: { playerId, day, ...data } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
-    return { id: s.id, day: s.day, stars: s.stars, reason: s.reason, comment: s.comment };
+    return { id: s.id, day: s.day, stars: s.stars, reason: s.reason, domain: s.domain, comment: s.comment };
   }
   async removeStar(user: AuthUser, playerId: string, day: string) {
     this.assertCoach(user);
