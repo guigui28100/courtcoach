@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
-import { StarLine, StarLinesEditor, starLinesError } from "../components/Stars";
+import { activeLines, StarLine, StarLinesEditor, starLinesError } from "../components/Stars";
 import { Avatar, Empty, Err, Page, PageHead } from "../components/ui";
 import { CourseStar, fullName, Player, todayIso } from "../types";
 
@@ -32,11 +32,12 @@ export default function FinDeCours() {
       for (const p of list) {
         const r = rows[p.id]; if (!r) continue;
         const bad = starLinesError(r.lines); if (bad) throw new Error(`${p.firstName} : ${bad}`);
-        if (r.lines.length) await put(`/players/${p.id}/stars/${day}`, { items: r.lines.map((l, i) => ({ ...l, comment: i === 0 ? r.comment.trim() || undefined : undefined })) });
+        const act = activeLines(r.lines);
+        if (act.length) await put(`/players/${p.id}/stars/${day}`, { items: act.map((l, i) => ({ ...l, comment: i === 0 ? r.comment.trim() || undefined : undefined })) });
         else if (r.had) await del(`/players/${p.id}/stars/${day}`);
       }
       const ids = new Set(list.map((p) => p.id));
-      setRows((all) => Object.fromEntries(Object.entries(all).map(([id, r]) => [id, ids.has(id) ? { ...r, had: r.lines.length > 0, dirty: false } : r])));
+      setRows((all) => Object.fromEntries(Object.entries(all).map(([id, r]) => [id, ids.has(id) ? { ...r, lines: activeLines(r.lines), had: activeLines(r.lines).length > 0, dirty: false } : r])));
       setMsg({ ok: true, text: list.length === 1 ? `✅ Étoiles de ${list[0].firstName} enregistrées.` : `✅ Modifications enregistrées pour ${list.length} joueur${list.length > 1 ? "s" : ""}.` });
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(false); }
   }

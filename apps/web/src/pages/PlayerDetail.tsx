@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { activeLines, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -356,7 +356,8 @@ function StarsTab({ p }: { p: Player }) {
   }
   async function save() {
     setErr(""); const bad = starLinesError(lines); if (bad) return setErr(bad);
-    try { await put(`/players/${p.id}/stars/${day}`, { items: lines.map((l, i) => ({ ...l, comment: i === 0 ? comment.trim() || undefined : undefined })) }); setLines([]); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
+    const act = activeLines(lines); if (!act.length) return setErr("Choisis au moins 1 étoile (ou retire la ligne).");
+    try { await put(`/players/${p.id}/stars/${day}`, { items: act.map((l, i) => ({ ...l, comment: i === 0 ? comment.trim() || undefined : undefined })) }); setLines([]); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
   }
   // Une même journée peut avoir plusieurs lignes : on les regroupe par jour
   const days = [...new Set((stars ?? []).map((s) => s.day))];
