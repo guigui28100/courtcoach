@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
-import { ReasonPicker, StarPicker, StarsLine, useStars } from "../components/Stars";
+import { DomainPicker, ReasonPicker, StarPicker, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -323,11 +323,12 @@ function StarsTab({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const stars = useStars(p.id, version);
   const [day, setDay] = useState(todayIso());
-  const [n, setN] = useState(0), [reason, setReason] = useState("effort"), [comment, setComment] = useState("");
+  const [n, setN] = useState(0), [reason, setReason] = useState("effort"), [domain, setDomain] = useState(""), [comment, setComment] = useState("");
   const [err, setErr] = useState("");
-  async function save() { setErr(""); try { await put(`/players/${p.id}/stars/${day}`, { stars: n, reason, comment: comment.trim() || undefined }); setN(0); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); } }
+  async function save() { setErr(""); if (!domain) return setErr("Choisis le domaine du radar que cette étoile fait grandir."); try { await put(`/players/${p.id}/stars/${day}`, { stars: n, reason, domain, comment: comment.trim() || undefined }); setN(0); setDomain(""); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); } }
   return (
     <div className="grid gap-4">
+      <StarsRadar stars={stars} who="coach" />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
@@ -336,7 +337,10 @@ function StarsTab({ p }: { p: Player }) {
           <StarPicker value={n} onChange={setN} label={`Étoiles pour ${p.firstName}`} />
         </div>
         {n > 0 && <>
+          <p className="hint m-0">Pourquoi ?</p>
           <ReasonPicker value={reason} onChange={setReason} />
+          <p className="hint m-0">Quel domaine du radar fait-elle grandir ?</p>
+          <DomainPicker value={domain} onChange={setDomain} />
           <input className="input" aria-label="Petit mot (facultatif)" maxLength={140} placeholder="Un petit mot (facultatif)" value={comment} onChange={(e) => setComment(e.target.value)} />
           <div><button className="btn-clay" onClick={save}>Enregistrer</button></div>
         </>}

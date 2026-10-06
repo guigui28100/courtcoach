@@ -79,9 +79,11 @@ export class EvaluationDto {
 
 // Étoiles de fin de cours (jamais négatives)
 export const STAR_REASONS = ["effort", "ecoute", "progres", "fairplay", "equipe", "courage", "concentration", "bonne-humeur"];
+export const STAR_DOMAINS = ["technique", "tactique", "physique", "mental", "attitude"];
 export class StarDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(3) stars: number;
   @IsIn(STAR_REASONS) reason: string;
+  @IsIn(STAR_DOMAINS) domain: string;
   @IsOptional() @IsString() @MaxLength(140) comment?: string;
 }
 

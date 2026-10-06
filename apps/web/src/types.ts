@@ -121,7 +121,7 @@ export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂",
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
 // ----- Étoiles de fin de cours (données par le coach, toujours positives) -----
-export interface CourseStar { id: string; day: string; stars: number; reason: string; comment: string; }
+export interface CourseStar { id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
 export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
   { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
   { id: "ecoute", emoji: "👂", label: "Écoute", hint: "A bien écouté et appliqué les consignes" },
@@ -134,6 +134,14 @@ export const STAR_REASONS: { id: string; emoji: string; label: string; hint: str
 ];
 export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id);
 export const totalStars = (list: Pick<CourseStar, "stars">[]) => list.reduce((n, s) => n + s.stars, 0);
+// Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 15 étoiles dans la saison = domaine plein (5 sur 5)
+export const STARS_FOR_FULL = 15;
+export const DOMAIN_EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
+export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">[], season = currentSeason()) {
+  const out: Record<string, number> = {}; EVAL_AXES.forEach((a) => { out[a.key] = 0; });
+  list.forEach((s) => { if (s.domain && s.domain in out && currentSeason(new Date(s.day + "T12:00:00")) === season) out[s.domain] += s.stars; });
+  return out;
+}
 export const todayIso = () => new Date().toISOString().slice(0, 10);
 export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
