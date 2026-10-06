@@ -161,7 +161,7 @@ function GoalsTab({ goals }: { goals: Goal[] }) {
 }
 
 // Dernière évaluation et bulletins d'un joueur (lecture seule)
-function EvalTab({ p }: { p: Player }) {
+function EvalTab({ p, goals = [] }: { p: Player; goals?: Goal[] }) {
   const { evals } = useFollowUp(p.id);
   if (!evals) return <div className="skeleton h-40" role="status" aria-label="Chargement en cours" />;
   const last = evals.find((e) => ratedCount(e) > 0);
@@ -192,7 +192,7 @@ function EvalTab({ p }: { p: Player }) {
           </div>
         </div>
       )}
-      {evals.length > 0 && <><h3 className="m-0">Bulletins</h3><BulletinShelf evals={evals} base={`/suivi/${p.id}`} famille /></>}
+      {(evals.length > 0 || goals.length > 0) && <><h3 className="m-0">Bulletins</h3><BulletinShelf evals={evals} goals={goals} base={`/suivi/${p.id}`} famille /></>}
     </div>
   );
 }
@@ -301,7 +301,7 @@ export function FamilySpace() {
                 </>
               )}
               {tab === "objectifs" && <GoalsTab goals={list} />}
-              {tab === "evaluations" && <EvalTab p={p} />}
+              {tab === "evaluations" && <EvalTab p={p} goals={list} />}
               {tab === "etoiles" && <><StarsRadar stars={stars} who="famille" /><StarsCard stars={stars} who="famille" /></>}
               {tab === "matchs" && <MatchesTab p={p} />}
               {tab === "videos" && <PlayerVideos p={p} mine={mine} fresh={fresh} refresh={refresh} />}

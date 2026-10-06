@@ -189,7 +189,7 @@ function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: 
       <SelfEvalSection p={p} goals={goals} preview={preview} onSaved={onSaved} />
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins-coach">
         <h2 id="gal-bulletins-coach" className="m-0 text-2xl">📄 Les bulletins de mon coach</h2>
-        {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
+        {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} goals={goals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
       </section>
     </>
   );
