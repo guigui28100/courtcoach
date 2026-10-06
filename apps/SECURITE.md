@@ -43,3 +43,8 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 - Détecteur de posture MediaPipe exécuté DANS le navigateur ; modèle et fichiers WebAssembly servis par le site lui-même (aucun appel à un autre site, `connect-src 'self'` inchangé).
 - La CSP ajoute seulement `'wasm-unsafe-eval'` à `script-src` : nécessaire pour compiler du WebAssembly, ne réactive pas `eval()`.
 - Aucune donnée de posture n'est envoyée ni enregistrée : seule l'image annotée choisie par le coach l'est (comme avant).
+
+## Programmations de tournoi (documents)
+- Format vérifié sur le contenu du fichier (PDF, JPEG, PNG, docx, xlsx), 3 Mo maximum ; tout autre fichier (exécutable renommé, page web…) est refusé.
+- Téléchargement : `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, Word et Excel toujours en téléchargement (jamais ouverts dans la page).
+- Droits vérifiés à chaque lecture (coach : tout ; entraîneur : ses jeunes ; famille et jeune : seulement les documents partagés pour leur joueur) ; adultes : 403 ; chaque ouverture par le personnel est inscrite au journal.

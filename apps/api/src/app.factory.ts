@@ -20,6 +20,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.use((_req: any, res: any, next: any) => { res.setHeader("Cache-Control", "no-store"); next(); }); // données personnelles : jamais gardées en cache
   app.use(cookieParser());
   app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
+  app.use("/api/tournaments", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // documents de tournoi (3 Mo maximum)
   app.enableCors({ origin: process.env.WEB_ORIGIN, credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   return app;

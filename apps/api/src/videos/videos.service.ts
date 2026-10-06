@@ -265,7 +265,8 @@ export class VideosService {
     const now = new Date();
     const a = await this.prisma.video.deleteMany({ where: { deleteAfter: { lt: now } } });
     const b = await this.prisma.video.deleteMany({ where: { complete: false, recordedAt: { lt: new Date(now.getTime() - STALE_UPLOAD_MS) } } });
+    const d = await this.prisma.tournamentDoc.deleteMany({ where: { deleteAfter: { lt: now } } }); // programmations de tournoi : 12 mois aussi
     const c = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } } }); // le journal est gardé 12 mois
-    return { expired: a.count, incomplete: b.count, journal: c.count };
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count };
   }
 }

@@ -70,7 +70,7 @@ describe("Matrice des droits de toutes les routes", () => {
 
   it("l'espace Centre (joueurs) est fermé aux adultes sur toutes ses routes", async () => {
     const a = request.agent(app.getHttpServer()); await a.post("/api/auth/login").set(ORIGIN).send({ email: "adulte@exemple.fr", password: PASSWORD }).expect(200);
-    const centre = routes.filter((r) => /^\/api\/(players|goals|matches)/.test(r.url));
+    const centre = routes.filter((r) => /^\/api\/(players|goals|matches|tournaments)/.test(r.url));
     expect(centre.length).toBeGreaterThan(15);
     for (const r of centre) {
       const res = await (a as any)[r.method](r.url).set(ORIGIN).send({});

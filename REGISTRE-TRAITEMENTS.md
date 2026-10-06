@@ -25,3 +25,5 @@
 **Droits des personnes** : accès et copie (bouton « télécharger »), effacement (bouton « supprimer »), rectification (le coach), retrait du droit à l'image (les vidéos du jeune sont alors supprimées).
 
 **Entraîneurs de comité** : comptes créés par le coach (e-mail, prénom, mot de passe chiffré). Chacun ne voit que les jeunes que le coach coche ; ni santé, ni notes privées ; aucun accès aux adultes. Ouvertures de fiche et de vidéo inscrites au journal (12 mois). Compte supprimable à tout moment par le coach ; double authentification possible.
+
+**Programmations de tournoi** : document déposé par le coach ou un entraîneur de comité pour des jeunes précis (titre, fichier, jeunes concernés, auteur). Visible du coach et des entraîneurs concernés ; de la famille et du jeune seulement si le déposant l'a partagé. Conservation 12 mois, suppression avec la fiche.

@@ -3,11 +3,9 @@ import { createLandmarker, drawSkeleton, Skeleton, smooth, toSkeleton } from "./
 
 // Squelette qui suit le joueur PENDANT la vidéo (lecture, pause, image par image).
 // Se pose par-dessus la vidéo ; ne gêne pas les boutons du lecteur (pointer-events: none).
-export function PoseOverlay({ video, active, guides, labels = false, onSkeleton, onStatus, onRate, fps = 30 }: {
+export function PoseOverlay({ video, active, guides, labels = false, onSkeleton, onStatus }: {
   video: RefObject<HTMLVideoElement | null>; active: boolean; guides: boolean; labels?: boolean;
   onSkeleton?: (s: Skeleton | null) => void; onStatus?: (s: "idle" | "loading" | "ready" | "error", msg?: string) => void;
-  // Vitesse de lecture conseillée (entre 0,1 et 1) pour que le squelette ait le temps de suivre chaque image
-  onRate?: (rate: number) => void; fps?: number;
 }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const opts = useRef({ guides, labels }); opts.current = { guides, labels };
@@ -30,22 +28,14 @@ export function PoseOverlay({ video, active, guides, labels = false, onSkeleton,
 
   useEffect(() => {
     const v = video.current; if (!active || !v) { last.current = null; onSkeleton?.(null); paint(); onStatus?.("idle"); return; }
-    let stop = false, lm: Awaited<ReturnType<typeof createLandmarker>> | null = null, lastTs = 0, handle = 0, busy = false, ema = 0, rate = 1, n = 0;
+    let stop = false, lm: Awaited<ReturnType<typeof createLandmarker>> | null = null, lastTs = 0, handle = 0, busy = false;
     onStatus?.("loading");
     const detect = () => {
       if (!lm || busy || v.readyState < 2 || !v.videoWidth) return;
       busy = true;
       try {
-        const t0 = performance.now(), ts = Math.max(t0, lastTs + 1); lastTs = ts;
+        const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts;
         const sk = toSkeleton(lm.detectForVideo(v, ts));
-        // Temps de calcul d'une image → vitesse de lecture qui laisse au squelette le temps de suivre (avec une marge de 25 %)
-        if (!v.paused) {
-          const took = performance.now() - t0; n++;
-          if (n > 3) ema = ema ? ema * 0.7 + took * 0.3 : took; // les premières images (réveil du détecteur) sont ignorées
-          if (cv.current) cv.current.dataset.ms = String(Math.round(took));
-          const want = !ema ? 1 : Math.max(0.1, Math.min(1, (1000 / fps / ema) * 0.75)), snapped = Math.round(want * 20) / 20;
-          if (Math.abs(snapped - rate) >= 0.05) { rate = snapped; onRate?.(rate); }
-        }
         last.current = sk ? smooth(last.current, sk) : last.current;
         onSkeleton?.(last.current); paint();
       } catch (e) { onStatus?.("error", (e as Error).message); } finally { busy = false; }
@@ -55,7 +45,7 @@ export function PoseOverlay({ video, active, guides, labels = false, onSkeleton,
       const anyV = v as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
       if (anyV.requestVideoFrameCallback) handle = anyV.requestVideoFrameCallback(loop); else handle = requestAnimationFrame(loop);
     };
-    const onSeek = () => { detect(); };
+    const onSeek = () => { last.current = null; detect(); };
     createLandmarker("VIDEO").then((m) => {
       if (stop) { m.close(); return; }
       lm = m; onStatus?.("ready"); detect(); loop();
@@ -69,7 +59,7 @@ export function PoseOverlay({ video, active, guides, labels = false, onSkeleton,
       const anyV = v as HTMLVideoElement & { cancelVideoFrameCallback?: (h: number) => void };
       if (anyV.cancelVideoFrameCallback) anyV.cancelVideoFrameCallback(handle); else cancelAnimationFrame(handle);
       try { lm?.close(); } catch { /* déjà fermé */ }
-      last.current = null; paint(); onRate?.(1);
+      last.current = null; paint();
     };
   }, [active]); // eslint-disable-line react-hooks/exhaustive-deps
 

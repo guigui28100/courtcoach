@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
+import { FamilyTournaments } from "../components/Tournaments";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
@@ -150,6 +151,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
   const { matches } = useFollowUp(p.id);
   return (
     <>
+      {!preview && <FamilyTournaments dark />}
       <DeclaredMatchesSection p={p} preview={preview} />
       {matches.length > 0 && (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-matchs">
