@@ -6,7 +6,7 @@ import { StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useSt
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { DOMAIN_EMOJI, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { inPeriod, DOMAIN_EMOJI, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -339,6 +339,21 @@ function StarsTab({ p }: { p: Player }) {
   const [day, setDay] = useState(todayIso());
   const [lines, setLines] = useState<StarLine[]>([]), [comment, setComment] = useState("");
   const [err, setErr] = useState("");
+  const [msgMinus, setMsgMinus] = useState("");
+  // « − » sur un domaine du radar : on retire une étoile de la saisie la plus récente de ce domaine ce trimestre (la ligne disparaît quand il ne lui en reste plus)
+  async function minus(domain: string) {
+    setErr(""); setMsgMinus("");
+    const season = currentSeason(), tri = trimesterOf();
+    const mine = (stars ?? []).filter((s) => s.domain === domain && inPeriod(s.day + "T12:00:00", season, tri));
+    if (!mine.length) return;
+    const lastDay = mine.reduce((m, s) => (s.day > m ? s.day : m), mine[0].day);
+    const line = mine.filter((s) => s.day === lastDay).slice(-1)[0];
+    try {
+      if (line.stars > 1) await patch(`/players/${p.id}/stars/line/${line.id}`, { stars: line.stars - 1 });
+      else await del(`/players/${p.id}/stars/line/${line.id}`);
+      setVersion((v) => v + 1); setMsgMinus(`1 étoile retirée (${fmtDay(line.day)}).`);
+    } catch (e) { setErr((e as Error).message); }
+  }
   async function save() {
     setErr(""); const bad = starLinesError(lines); if (bad) return setErr(bad);
     try { await put(`/players/${p.id}/stars/${day}`, { items: lines.map((l, i) => ({ ...l, comment: i === 0 ? comment.trim() || undefined : undefined })) }); setLines([]); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
@@ -348,7 +363,8 @@ function StarsTab({ p }: { p: Player }) {
   function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "" }))); setComment(list.find((s) => s.comment)?.comment ?? ""); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
-      <StarsRadar stars={stars} who="coach" />
+      <StarsRadar stars={stars} who="coach" onMinus={minus} />
+      {msgMinus && <p role="status" className="m-0 font-bold text-ok">{msgMinus}</p>}
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>

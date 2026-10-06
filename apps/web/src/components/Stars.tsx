@@ -49,7 +49,7 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
 }
 
 // Radar « de tous les jours » : alimenté par les étoiles de la saison, mis à jour à chaque cours
-export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean }) {
+export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false, onMinus }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean; onMinus?: (domain: string) => void }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
   const by = starsByDomain(stars, season, t);
@@ -61,14 +61,14 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
       <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Radar des étoiles du trimestre ${t}` : me ? `Mon radar de tous les jours · trimestre ${t}` : `Le radar de tous les jours · trimestre ${t}`}</h2>
       <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
-      {total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar se remplira dès les premiers cours.</p> : (
+      {total === 0 && !onMinus ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar se remplira dès les premiers cours.</p> : (
         <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
           <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
           <ul className="m-0 grid list-none gap-2 p-0" aria-label="Étoiles par domaine">
             {EVAL_AXES.map((a) => (
               <li key={a.key} className={"flex items-center justify-between gap-3 rounded-xl px-3 py-2 " + (dark ? "bg-white/10" : "bg-sand/60")}>
                 <span className="font-bold"><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</span>
-                <strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong>
+                <span className="flex items-center gap-2"><strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong>{onMinus && <button type="button" className="btn-outline btn-sm !min-h-9 !w-9 !px-0 text-lg" onClick={() => onMinus(a.key)} disabled={by[a.key] === 0} title={by[a.key] === 0 ? "Aucune étoile à retirer dans ce domaine ce trimestre" : `Retirer une étoile en ${a.label}`} aria-label={`Retirer une étoile en ${a.label}`}>−</button>}</span>
               </li>
             ))}
           </ul>
@@ -92,9 +92,10 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
         <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2" role="group" aria-label={`Étoiles n°${i + 1} pour ${who}`}>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Enlever une étoile" disabled={l.stars <= 1} onClick={() => set(i, { stars: l.stars - 1 })}>−</button>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label={l.stars <= 1 ? "Enlever la dernière étoile (retire la ligne)" : "Enlever une étoile"} title={l.stars <= 1 ? "Retire cette ligne" : "Enlever une étoile"} onClick={() => (l.stars <= 1 ? onChange(lines.filter((_, j) => j !== i)) : set(i, { stars: l.stars - 1 }))}>−</button>
               <output className="min-w-24 text-center text-xl" aria-live="polite">{"⭐".repeat(l.stars)}</output>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" title={l.stars >= 3 ? "3 étoiles au maximum par ligne : ajoute une autre ligne pour en donner plus" : "Ajouter une étoile"} disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
+              {l.stars >= 3 && <small className="hint">3 maximum par ligne : ajoute une autre ligne ci-dessous pour en donner plus.</small>}
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
