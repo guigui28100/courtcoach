@@ -38,3 +38,8 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 - Réservé au coach : création / suppression / export d'un jeune, accords, comptes des familles, gestion des entraîneurs, dossiers inactifs, stockage.
 - Santé et notes privées jamais envoyées à un entraîneur, et ignorées s'il tente de les modifier.
 - Routes `/lessons` fermées aux entraîneurs. Test : `apps/api/test/trainers.e2e-spec.ts` et matrice `routes.e2e-spec.ts`.
+
+## Suivi du squelette (studio d'analyse)
+- Détecteur de posture MediaPipe exécuté DANS le navigateur ; modèle et fichiers WebAssembly servis par le site lui-même (aucun appel à un autre site, `connect-src 'self'` inchangé).
+- La CSP ajoute seulement `'wasm-unsafe-eval'` à `script-src` : nécessaire pour compiler du WebAssembly, ne réactive pas `eval()`.
+- Aucune donnée de posture n'est envoyée ni enregistrée : seule l'image annotée choisie par le coach l'est (comme avant).
