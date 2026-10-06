@@ -3,6 +3,8 @@ import { api, del } from "../api";
 import { Err } from "./ui";
 import { useVideos } from "./Videos";
 import { VideoDetail } from "../types";
+import { PoseOverlay } from "./PoseOverlay";
+import { createLandmarker, defaultSkeleton, drawSkeleton, JOINT_LABEL, Joint, measures, nearestJoint, Skeleton, toSkeleton } from "./skeleton";
 
 type Pt = [number, number];
 type Tool = "line" | "arrow" | "circle" | "free" | "angle" | "text";
@@ -80,7 +82,7 @@ function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number, h = w) {
 }
 
 // Éditeur d'une image figée : dessiner, mesurer un angle, puis l'enregistrer dans l'analyse.
-function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCancel: () => void; onSave: (blob: Blob, note: string) => Promise<void> }) {
+function Annotator({ base, onCancel, onSave, initialSkeleton = null }: { base: HTMLCanvasElement; onCancel: () => void; onSave: (blob: Blob, note: string) => Promise<void>; initialSkeleton?: Skeleton | null }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("arrow");
   const [color, setColor] = useState(COLORS[0][0]);
@@ -91,6 +93,11 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
   const [typing, setTyping] = useState<{ p: Pt; left: number; top: number; text: string } | null>(null);
+  // Squelette du joueur : déplaçable point par point, avec repères d'alignement et mesures
+  const [skel, setSkel] = useState<Skeleton | null>(initialSkeleton);
+  const [guides, setGuides] = useState(true), [showMeasures, setShowMeasures] = useState(true);
+  const [drag, setDrag] = useState<Joint | null>(null);
+  const [detecting, setDetecting] = useState(false), [skMsg, setSkMsg] = useState("");
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => { box.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, []); // l'éditeur apparaît à l'écran dès la capture
   const W = base.width, H = base.height;
@@ -99,13 +106,29 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
     const g = target.getContext("2d")!;
     g.clearRect(0, 0, W, H); g.drawImage(base, 0, 0);
     list.forEach((s) => drawShape(g, s, W, H));
-  }, [base, W, H]);
+    if (skel) drawSkeleton(g, skel, 0, 0, W, H, { guides, labels: showMeasures, active: drag });
+  }, [base, W, H, skel, guides, showMeasures, drag]);
   useEffect(() => { if (cv.current) paint(cv.current, draft ? [...shapes, draft] : shapes); }, [shapes, draft, paint]);
 
+  async function detect() {
+    setSkMsg(""); setDetecting(true);
+    try {
+      const lm = await createLandmarker("IMAGE");
+      try { const sk = toSkeleton(lm.detect(base)); if (sk) { setSkel(sk); setSkMsg("Joueur repéré. Glisse les points blancs pour corriger ce qui est mal placé."); } else setSkMsg("Aucun joueur repéré sur cette image : place le squelette à la main."); }
+      finally { lm.close(); }
+    } catch (x) { setSkMsg("Le suivi automatique n'a pas pu démarrer sur cet appareil (" + ((x as Error).message || "erreur") + "). Place le squelette à la main."); }
+    finally { setDetecting(false); }
+  }
+
   const at = (e: PointerEvent<HTMLCanvasElement>): Pt => { const r = cv.current!.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H]; };
+  const norm = (p: Pt): Pt => [Math.max(0, Math.min(1, p[0] / W)), Math.max(0, Math.min(1, p[1] / H))];
   function down(e: PointerEvent<HTMLCanvasElement>) {
     e.preventDefault();
     const p = at(e);
+    if (skel) { // près d'un point du squelette : on le déplace au lieu de dessiner
+      const rect = cv.current!.getBoundingClientRect(), j = nearestJoint(skel, norm(p), W, H, 26 * (W / rect.width));
+      if (j) { (e.target as Element).setPointerCapture(e.pointerId); setDrag(j); return; }
+    }
     if (tool === "text") { const r = cv.current!.getBoundingClientRect(); setTyping({ p, left: e.clientX - r.left, top: e.clientY - r.top, text: "" }); return; }
     (e.target as Element).setPointerCapture(e.pointerId);
     if (tool === "angle") {
@@ -116,6 +139,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
     setDraft({ tool, color, pts: tool === "free" ? [p] : [p, p] });
   }
   function move(e: PointerEvent<HTMLCanvasElement>) {
+    if (drag && skel) { const np = norm(at(e)); setSkel({ ...skel, [drag]: np }); return; }
     if (!draft) return;
     const p = at(e);
     if (draft.tool === "free") setDraft({ ...draft, pts: [...draft.pts, p] });
@@ -123,6 +147,7 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
     else if (e.buttons) setDraft({ ...draft, pts: [draft.pts[0], p] });
   }
   function up() {
+    if (drag) { setDrag(null); return; }
     if (!draft || draft.tool === "angle") return;
     const moved = draft.tool === "free" ? draft.pts.length > 2 : Math.hypot(draft.pts[1][0] - draft.pts[0][0], draft.pts[1][1] - draft.pts[0][1]) > 4;
     if (moved) setShapes((l) => [...l, draft]);
@@ -162,6 +187,28 @@ function Annotator({ base, onCancel, onSave }: { base: HTMLCanvasElement; onCanc
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length} onClick={() => setShapes((l) => l.slice(0, -1))}>Annuler le dernier tracé</button>
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length && !draft} onClick={() => { setShapes([]); setDraft(null); }}>Tout effacer</button>
       </div>
+      <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Squelette du joueur">
+        <div className="flex flex-wrap items-center gap-2">
+          <strong>🦴 Squelette</strong>
+          <button type="button" className="btn-clay btn-sm" disabled={detecting} onClick={() => void detect()}>{detecting ? "Recherche du joueur…" : "🤖 Repérer le joueur automatiquement"}</button>
+          {!skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(defaultSkeleton()); setSkMsg("Squelette posé : glisse chaque point blanc à sa place sur le joueur."); }}>Placer un squelette à la main</button>}
+          {skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(null); setSkMsg(""); }}>Retirer le squelette</button>}
+        </div>
+        {skMsg && <p role="status" className="m-0 text-sm font-bold">{skMsg}</p>}
+        {skel && (
+          <>
+            <div className="flex flex-wrap gap-4 text-sm font-bold">
+              <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
+              <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={showMeasures} onChange={(e) => setShowMeasures(e.target.checked)} />Écrire les mesures sur l'image</label>
+            </div>
+            <p className="hint m-0">Glisse un point blanc pour le replacer (ex. : {JOINT_LABEL.rElbow.toLowerCase()}). Les mesures se mettent à jour tout de suite.</p>
+            <ul className="m-0 grid list-none gap-1 p-0 text-sm sm:grid-cols-2" aria-label="Mesures du squelette">
+              {measures(skel, W, H).map((m) => <li key={m.key} className="flex items-baseline justify-between gap-2 rounded-lg bg-sand/60 px-2 py-1" title={m.hint}><span>{m.label}</span><strong className="whitespace-nowrap">{m.value}</strong></li>)}
+            </ul>
+            <p className="hint m-0">Mesures faites sur une image à plat : elles sont indicatives (la perspective de la caméra les déforme un peu).</p>
+          </>
+        )}
+      </section>
       {tool === "text" && <p className="hint m-0">Clique à l'endroit où le texte doit apparaître, écris, puis appuie sur Entrée. Choisis la couleur avant de cliquer.</p>}
       {tool === "angle" && <p className="hint m-0">{pending === null ? "Clique 3 points : le début d'un segment, le sommet de l'angle (l'articulation), puis la fin du second segment. L'angle s'affiche en degrés." : `Encore ${pending} point${pending > 1 ? "s" : ""} à cliquer.`}</p>}
       <div className="relative">
@@ -195,17 +242,20 @@ async function saveImage(videoId: string, blob: Blob, note: string) {
 }
 
 // Un lecteur de la comparaison : image par image, curseur, et « le geste démarre ici ».
-function ComparePane({ label, src, vref, start, onStart, onTime }: { label: string; src: string; vref: React.RefObject<HTMLVideoElement | null>; start: number; onStart: (t: number) => void; onTime: () => void }) {
+function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, guides = true, onSkeleton }: { label: string; src: string; vref: React.RefObject<HTMLVideoElement | null>; start: number; onStart: (t: number) => void; onTime: () => void; pose?: boolean; guides?: boolean; onSkeleton?: (s: Skeleton | null) => void }) {
   const [pos, setPos] = useState(0), [dur, setDur] = useState(0);
   const el = () => vref.current;
   const go = (t: number) => { const v = el(); if (!v) return; v.pause(); v.currentTime = Math.max(0, Math.min(Number.isFinite(v.duration) ? v.duration : t, t)); };
   return (
     <div className="grid content-start gap-2">
       <p className="m-0 font-bold">{label}</p>
-      <video ref={vref} src={src} playsInline preload="auto" muted className="w-full rounded-xl bg-black" aria-label={label}
+      <div className="relative">
+      <video ref={vref} src={src} playsInline preload="auto" muted className="block w-full rounded-xl bg-black" aria-label={label}
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onDurationChange={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />
+      <PoseOverlay video={vref} active={pose} guides={guides} onSkeleton={onSkeleton} />
+      </div>
       <label className="flex items-center gap-2 text-sm font-bold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn-outline btn-sm" onClick={() => go(pos - 1 / FPS)} aria-label={`${label} : reculer d'une image`}>◀ 1 image</button>
@@ -232,6 +282,8 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   const [frame, setFrame] = useState<HTMLCanvasElement | null>(null);
   const [err, setErr] = useState(""), [done, setDone] = useState("");
   const startRef = useRef({ a: 0, b: 0 }); startRef.current = { a: startA, b: startB };
+  const [pose, setPose] = useState(false), [guides, setGuides] = useState(true);
+  const skA = useRef<Skeleton | null>(null), skB = useRef<Skeleton | null>(null);
   const dur = (el: HTMLVideoElement | null) => (el && Number.isFinite(el.duration) ? el.duration : 1e9);
   const clamp = (x: number, el: HTMLVideoElement | null) => Math.max(0, Math.min(dur(el), x));
 
@@ -265,6 +317,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
     const c = document.createElement("canvas"); c.width = wA + wB + gap; c.height = H;
     const g = c.getContext("2d")!; g.fillStyle = "#10203a"; g.fillRect(0, 0, c.width, H);
     g.drawImage(A, 0, 0, wA, H); g.drawImage(B, wA + gap, 0, wB, H);
+    if (pose) { if (skA.current) drawSkeleton(g, skA.current, 0, 0, wA, H, { guides, labels: true }); if (skB.current) drawSkeleton(g, skB.current, wA + gap, 0, wB, H, { guides, labels: true }); } // les deux squelettes, avec leurs mesures, pour comparer le placement
     g.font = "bold 24px sans-serif"; g.textBaseline = "top"; g.lineWidth = 5; g.strokeStyle = "#10203a"; g.fillStyle = "#fff";
     const lab = (txt: string, x: number) => { g.strokeText(txt, x + 12, 10); g.fillText(txt, x + 12, 10); };
     lab(`${pair[0].title} · ${frDate(pair[0].recordedAt)}`, 0); lab(`${pair[1].title} · ${frDate(pair[1].recordedAt)}`, wA + gap);
@@ -284,8 +337,8 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
         <>
           <ol className="m-0 list-decimal pl-5 text-sm text-muted"><li>Pour chaque vidéo, avance jusqu'au <strong>début du geste</strong> (par exemple le lancer de balle) puis clique sur « 🎯 Le geste démarre ici ».</li><li>Utilise ensuite les commandes communes : les deux gestes démarrent <strong>en même temps</strong>.</li><li>Fige l'image voulue et annote-la (traits, cercles, angles, texte).</li></ol>
           <div className="grid gap-4 md:grid-cols-2">
-            <ComparePane label={`1 · ${pair[0].title} (${frDate(pair[0].recordedAt)})`} src={`/api/videos/${pair[0].id}/file`} vref={a} start={startA} onStart={(x) => { setStartA(x); startRef.current.a = x; setT(0); }} onTime={follow} />
-            <ComparePane label={`2 · ${pair[1].title} (${frDate(pair[1].recordedAt)})`} src={`/api/videos/${pair[1].id}/file`} vref={b} start={startB} onStart={(x) => { setStartB(x); startRef.current.b = x; }} onTime={() => undefined} />
+            <ComparePane label={`1 · ${pair[0].title} (${frDate(pair[0].recordedAt)})`} src={`/api/videos/${pair[0].id}/file`} vref={a} start={startA} onStart={(x) => { setStartA(x); startRef.current.a = x; setT(0); }} onTime={follow} pose={pose} guides={guides} onSkeleton={(s) => { skA.current = s; }} />
+            <ComparePane label={`2 · ${pair[1].title} (${frDate(pair[1].recordedAt)})`} src={`/api/videos/${pair[1].id}/file`} vref={b} start={startB} onStart={(x) => { setStartB(x); startRef.current.b = x; }} onTime={() => undefined} pose={pose} guides={guides} onSkeleton={(s) => { skB.current = s; }} />
           </div>
           <div className="grid gap-2 rounded-xl bg-sand p-3" role="group" aria-label="Commandes communes aux deux vidéos">
             <div className="flex flex-wrap items-center gap-2">
@@ -296,6 +349,10 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
               {SPEEDS.map((x) => <button key={x} aria-pressed={speed === x} className={"btn btn-sm " + (speed === x ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(x)}>{x}×</button>)}
             </div>
             <label className="flex items-center gap-3 text-sm font-bold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>🦴 {pose ? "Arrêter le suivi du squelette" : "Suivre le squelette sur les deux vidéos"}</button>
+            {pose && <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement</label>}
           </div>
           <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>📸 Capturer la comparaison et annoter</button></div>
           <Err msg={err} />
@@ -315,6 +372,10 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
   const [err, setErr] = useState("");
   const [done, setDone] = useState("");
   const gallery = useRef<HTMLElement>(null);
+  // Suivi du squelette pendant la vidéo
+  const [pose, setPose] = useState(false), [guides, setGuides] = useState(true);
+  const [poseStatus, setPoseStatus] = useState<{ s: string; msg?: string }>({ s: "idle" });
+  const poseSk = useRef<Skeleton | null>(null), [frameSk, setFrameSk] = useState<Skeleton | null>(null);
   useEffect(() => { if (vid.current) vid.current.playbackRate = speed; }, [speed]);
   const seek = (d: number) => { const el = vid.current; if (!el) return; el.pause(); el.currentTime = Math.max(0, Math.min(el.duration || 1e9, el.currentTime + d)); };
 
@@ -325,6 +386,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
     const scale = Math.min(1, 960 / el.videoWidth), c = document.createElement("canvas");
     c.width = Math.round(el.videoWidth * scale); c.height = Math.round(el.videoHeight * scale);
     c.getContext("2d")!.drawImage(el, 0, 0, c.width, c.height);
+    setFrameSk(pose && poseSk.current ? JSON.parse(JSON.stringify(poseSk.current)) : null); // le squelette suivi est repris tel quel : on peut encore le corriger
     setFrame(c);
   }
   async function save(blob: Blob, note: string) {
@@ -335,7 +397,10 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
 
   return (
     <div className="grid content-start gap-3">
-      <video ref={vid} controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
+      <div className="relative">
+        <video ref={vid} controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="block max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
+        <PoseOverlay video={vid} active={pose} guides={guides} onSkeleton={(s) => { poseSk.current = s; }} onStatus={(s, msg) => setPoseStatus({ s, msg })} />
+      </div>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Commandes du lecteur">
         <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ 1 image</button>
         <button className="btn-outline btn-sm" onClick={() => seek(1 / FPS)} aria-label="Avancer d'une image">1 image ▶</button>
@@ -346,9 +411,17 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       <div className="flex flex-wrap gap-2">
         <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
         <button className="btn-outline btn-sm" aria-expanded={cmpOpen} onClick={onToggleCompare}>{cmpOpen ? "Fermer la comparaison" : "Comparer avec une autre vidéo"}</button>
+        <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>🦴 {pose ? "Arrêter le suivi du squelette" : "Suivre le squelette du joueur"}</button>
       </div>
+      {pose && (
+        <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
+          <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
+          <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
+          <p className="hint m-0">Le calcul se fait sur cet appareil : la vidéo n'est envoyée nulle part. Si le joueur est flou ou caché, glisse les points à la main sur l'image capturée.</p>
+        </div>
+      )}
       <Err msg={err} />
-      {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={save} />}
+      {frame && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
         <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
         {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
