@@ -52,6 +52,16 @@ describe("Étoiles de fin de cours", () => {
     await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
   });
 
+  it("le coach retire une seule ligne d'étoiles ; les autres lignes du cours restent ; la famille ne le peut pas", async () => {
+    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique" }] }).expect(200)).body;
+    await A.parent.delete(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).expect(403);
+    await A.coach.delete(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).expect(404); // pas la fiche de ce joueur
+    await A.coach.delete(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).expect(204);
+    await A.coach.delete(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).expect(404);
+    expect((await A.coach.get(`/api/players/${p2}/stars`).expect(200)).body.map((s: any) => s.reason)).toEqual(["progres"]);
+    await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
+  });
+
   it("valeurs refusées : 0 ou 4 étoiles, raison inconnue, mot trop long, date invalide, cours à venir, date trop ancienne", async () => {
     const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send(body);
     await put(iso(1), { items: [{ stars: 0, reason: "effort", domain: "technique" }] }).expect(400);

@@ -348,6 +348,13 @@ export class PlayersService {
     await this.touch(playerId);
     return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } });
   }
+  // Retire UNE ligne d'étoiles (les autres lignes du cours restent, avec leur auteur)
+  async removeStarLine(user: AuthUser, playerId: string, lineId: string) {
+    await this.assertStaffFor(user, playerId);
+    const r = await this.prisma.courseStar.deleteMany({ where: { id: lineId, playerId } });
+    if (!r.count) throw new NotFoundException("Ligne d'étoiles introuvable");
+    await this.touch(playerId);
+  }
   async removeStar(user: AuthUser, playerId: string, day: string) {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);

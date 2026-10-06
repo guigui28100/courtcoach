@@ -367,7 +367,7 @@ function StarsTab({ p }: { p: Player }) {
           <ul className="m-0 grid list-none gap-2 p-0">{days.map((d) => { const list = stars.filter((s) => s.day === d); return (
             <li key={d} className="grid gap-1 rounded-xl border border-line px-3 py-2">
               <span className="flex flex-wrap items-center justify-between gap-2"><strong>{fmtDay(d)}</strong><span className="flex gap-2"><button className="btn-outline btn-sm" onClick={() => edit(d)}>Corriger</button><button className="btn-danger btn-sm" onClick={async () => { if (confirm("Retirer toutes les étoiles de ce cours ?")) { await del(`/players/${p.id}/stars/${d}`); setVersion((v) => v + 1); } }}>Retirer</button></span></span>
-              {list.map((s) => <span key={s.id}><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${s.domain}` : ""}{s.comment ? <small className="hint block">{s.comment}</small> : null} <AuthorBadge a={s} /></span>)}
+              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-2"><button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button><span><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${s.domain}` : ""}{s.comment ? <small className="hint block">{s.comment}</small> : null} <AuthorBadge a={s} /></span></span>)}
             </li>
           ); })}</ul>
         )}
