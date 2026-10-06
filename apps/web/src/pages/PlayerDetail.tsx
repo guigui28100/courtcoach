@@ -290,7 +290,7 @@ function Objectifs({ p }: { p: Player }) {
           <input className="input min-w-52 flex-1" aria-label="Nouvel objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
           <button className="btn-clay" disabled={!newTitle.trim()}>+ Ajouter l'objectif</button>
         </div>
-        <p className="hint m-0">Tu peux ensuite modifier chaque objectif, le rendre à travailler sur d'autres trimestres, ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre : onglet <strong>Évaluations</strong>.</p>
+        <p className="hint m-0">Tu peux ensuite modifier chaque objectif, le rendre à travailler sur d'autres trimestres, ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
       </form>
       <div className="grid gap-4 lg:grid-cols-2">
         {AXES.map((a) => {
