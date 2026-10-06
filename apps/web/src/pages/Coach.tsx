@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
+import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
@@ -214,7 +215,7 @@ export function Centre() {
   const { me } = useAuth();
   const isCoach = me?.role === "COACH"; // un entraîneur de comité ne voit que les jeunes qui lui sont confiés : pas de création, pas de dossiers inactifs, pas de gestion des comptes
   const d = useCoachData();
-  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "dossiers", "entraineurs"] as const);
+  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "tournois", "dossiers", "entraineurs"] as const);
   const players = d.players, inactive = d.inactive;
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
@@ -242,7 +243,7 @@ export function Centre() {
       />
       <Page>
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
-        <TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />
+        <TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />
 
         {tab === "joueurs" && (
           <>
@@ -300,6 +301,8 @@ export function Centre() {
             {!d.selfEvals.length && <li><Empty>Aucun nouveau bulletin d'auto-évaluation à lire ✍️</Empty></li>}
           </ul>
         )}
+
+        {tab === "tournois" && <TournamentsTab players={players} isCoach={isCoach} />}
 
         {isCoach && tab === "entraineurs" && <TrainersTab players={players} />}
 

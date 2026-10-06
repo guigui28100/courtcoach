@@ -6,10 +6,10 @@ import { fmtDate, fullName, Player } from "../types";
 interface Trainer { id: string; email: string; firstName: string | null; mustChangePassword: boolean; lastLoginAt: string | null; twoFactor: boolean; playerIds: string[]; }
 
 // Cases à cocher : les jeunes que l'entraîneur pourra voir (et eux seulement)
-function PlayerPicker({ players, value, onChange, name }: { players: Player[]; value: string[]; onChange: (ids: string[]) => void; name: string }) {
+export function PlayerPicker({ players, value, onChange, name, label }: { players: Player[]; value: string[]; onChange: (ids: string[]) => void; name: string; label?: string }) {
   if (!players.length) return <p className="hint m-0">Aucun jeune pour l'instant : crée d'abord les fiches des jeunes.</p>;
   return (
-    <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-bold">Jeunes que {name} peut voir</legend>
+    <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-bold">{label ?? `Jeunes que ${name} peut voir`}</legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {players.map((p) => (
           <label key={p.id} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">

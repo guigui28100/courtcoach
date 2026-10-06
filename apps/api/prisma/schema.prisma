@@ -119,6 +119,7 @@ model Player {
   selfEvaluations SelfEvaluation[]
   courseStars CourseStar[]
   declaredMatches DeclaredMatch[]
+  tournamentDocs TournamentDocPlayer[]
   matches     Match[]
   videos      Video[]
   analyses    Analysis[]
@@ -428,4 +429,31 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// Programmation d'un tournoi (document déjà fait : PDF, image, Word ou Excel) déposé par le coach ou un entraîneur de comité.
+// Visible par le coach et les entraîneurs des jeunes concernés ; par le jeune et sa famille seulement si « partagé ». Gardé 12 mois.
+model TournamentDoc {
+  id          String   @id @default(cuid())
+  title       String
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  data        Bytes
+  shared      Boolean  @default(false)
+  uploadedById String
+  authorName  String?
+  authorRole  String?
+  createdAt   DateTime @default(now())
+  deleteAfter DateTime
+  players     TournamentDocPlayer[]
+}
+
+model TournamentDocPlayer {
+  docId    String
+  doc      TournamentDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
+  playerId String
+  player   Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([docId, playerId])
 }

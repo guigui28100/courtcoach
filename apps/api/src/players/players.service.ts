@@ -84,6 +84,7 @@ export class PlayersService {
       this.prisma.video.deleteMany({ where: { playerId: id } }),
       this.prisma.player.delete({ where: { id } }),
     ]).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    await this.prisma.tournamentDoc.deleteMany({ where: { players: { none: {} } } }); // un document qui ne concerne plus personne est supprimé
     await this.audit.log(user.id, "erase", "Player", id);
   }
 
