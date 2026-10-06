@@ -77,7 +77,8 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
 
       {t > 0 && (
         <section className="card grid gap-3" aria-labelledby="ev-objectifs">
-          <div><h2 id="ev-objectifs" className="m-0 text-xl">🎯 Objectifs du trimestre {t}</h2><p className="hint m-0">Pour chaque objectif fixé, indique où il en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et repris dans le bulletin.</p></div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 id="ev-objectifs" className="m-0 text-xl">🎯 Missions fixées pour le trimestre {t}</h2><p className="hint m-0">Ce sont les missions que tu as fixées dans l'onglet Objectifs. Pour chacune, indique où elle en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et <strong>figure automatiquement sur le bulletin du trimestre {t}</strong>.</p></div>
+            <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin du trimestre {t}</Link></div>
           {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
             <div className="grid gap-3 lg:grid-cols-2">
               {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} color={axisOf(g)?.color ?? "#7c3aed"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
