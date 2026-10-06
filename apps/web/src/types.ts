@@ -134,12 +134,12 @@ export const STAR_REASONS: { id: string; emoji: string; label: string; hint: str
 ];
 export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id);
 export const totalStars = (list: Pick<CourseStar, "stars">[]) => list.reduce((n, s) => n + s.stars, 0);
-// Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 15 étoiles dans la saison = domaine plein (5 sur 5)
-export const STARS_FOR_FULL = 15;
+// Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 30 étoiles dans le trimestre = domaine plein (5 sur 5) ; il repart de zéro à chaque trimestre
+export const STARS_FOR_FULL = 30;
 export const DOMAIN_EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
-export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">[], season = currentSeason()) {
+export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">[], season = currentSeason(), t = trimesterOf()) {
   const out: Record<string, number> = {}; EVAL_AXES.forEach((a) => { out[a.key] = 0; });
-  list.forEach((s) => { if (s.domain && s.domain in out && currentSeason(new Date(s.day + "T12:00:00")) === season) out[s.domain] += s.stars; });
+  list.forEach((s) => { if (s.domain && s.domain in out && inPeriod(s.day + "T12:00:00", season, t)) out[s.domain] += s.stars; });
   return out;
 }
 export const todayIso = () => new Date().toISOString().slice(0, 10);
