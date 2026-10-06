@@ -92,9 +92,10 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
         <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2" role="group" aria-label={`Étoiles n°${i + 1} pour ${who}`}>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Enlever une étoile" disabled={l.stars <= 1} onClick={() => set(i, { stars: l.stars - 1 })}>−</button>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label={l.stars <= 1 ? "Enlever la dernière étoile (retire la ligne)" : "Enlever une étoile"} title={l.stars <= 1 ? "Retire cette ligne" : "Enlever une étoile"} onClick={() => (l.stars <= 1 ? onChange(lines.filter((_, j) => j !== i)) : set(i, { stars: l.stars - 1 }))}>−</button>
               <output className="min-w-24 text-center text-xl" aria-live="polite">{"⭐".repeat(l.stars)}</output>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" title={l.stars >= 3 ? "3 étoiles au maximum par ligne : ajoute une autre ligne pour en donner plus" : "Ajouter une étoile"} disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
+              {l.stars >= 3 && <small className="hint">3 maximum par ligne : ajoute une autre ligne ci-dessous pour en donner plus.</small>}
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
