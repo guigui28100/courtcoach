@@ -78,6 +78,33 @@ export function StarsRadar({ stars, dark = false, who = "jeune" }: { stars: Cour
   );
 }
 
+// Les étoiles d'un cours : une ou plusieurs lignes, chacune avec son nombre d'étoiles, sa raison et son domaine du radar
+export type StarLine = { stars: number; reason: string; domain: string };
+export const MAX_STAR_LINES = 6;
+export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "" });
+// Message si une ligne est incomplète, sinon chaîne vide
+export const starLinesError = (lines: StarLine[]) => lines.some((l) => l.stars < 1) ? "Une ligne n'a pas d'étoile." : lines.some((l) => !l.reason) ? "Choisis « pourquoi » pour chaque ligne d'étoiles." : lines.some((l) => !l.domain) ? "Choisis le domaine du radar pour chaque ligne d'étoiles." : "";
+export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string }) {
+  const set = (i: number, patch: Partial<StarLine>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  return (
+    <div className="grid gap-3">
+      {lines.map((l, i) => (
+        <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <StarPicker value={l.stars} onChange={(n) => set(i, { stars: Math.max(1, n) })} label={`Étoiles n°${i + 1} pour ${who}`} />
+            <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>Retirer</button>
+          </div>
+          <p className="hint m-0">Pourquoi ?</p>
+          <ReasonPicker value={l.reason} onChange={(id) => set(i, { reason: id })} />
+          <p className="hint m-0">Quel domaine du radar fait-elle grandir ?</p>
+          <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
+        </div>
+      ))}
+      {lines.length < MAX_STAR_LINES && <div><button type="button" className="btn-outline btn-sm" onClick={() => onChange([...lines, newStarLine()])}>{lines.length ? "➕ Ajouter une autre raison / un autre domaine" : "⭐ Donner des étoiles"}</button></div>}
+    </div>
+  );
+}
+
 export const StarsLine = ({ n }: { n: number }) => <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
 
 // Carte « Mes étoiles » (lecture seule) pour le jeune (fond sombre) et pour sa famille

@@ -32,27 +32,39 @@ describe("Étoiles de fin de cours", () => {
   afterAll(async () => { await clean(); await app.close(); });
 
   it("le coach donne des étoiles à la fin d'un cours ; une seule fiche par joueur et par jour (la 2e remplace la 1re)", async () => {
-    const r = await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ stars: 2, reason: "effort", domain: "technique", comment: "Bravo pour ton énergie !" }).expect(200);
-    expect(r.body).toMatchObject({ day: iso(0), stars: 2, reason: "effort", domain: "technique" });
-    await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ stars: 3, reason: "progres", domain: "technique" }).expect(200);
-    await A.coach.put(`/api/players/${p1}/stars/${iso(3)}`).set(ORIGIN).send({ stars: 1, reason: "ecoute", domain: "technique" }).expect(200);
+    const r = await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "technique", comment: "Bravo pour ton énergie !" }] }).expect(200);
+    expect(r.body[0]).toMatchObject({ day: iso(0), stars: 2, reason: "effort", domain: "technique" });
+    await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "progres", domain: "technique" }] }).expect(200);
+    await A.coach.put(`/api/players/${p1}/stars/${iso(3)}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "ecoute", domain: "technique" }] }).expect(200);
     const list = (await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body;
     expect(list.map((s: any) => [s.day, s.stars, s.reason])).toEqual([[iso(0), 3, "progres"], [iso(3), 1, "ecoute"]]);
   });
 
+  it("plusieurs lignes le même jour (raison + domaine différents) : elles remplacent celles du jour, 6 au maximum", async () => {
+    const put = (body: object) => A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send(body);
+    const r = await put({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique", comment: "Beau service" }, { stars: 3, reason: "fairplay", domain: "attitude" }] }).expect(200);
+    expect(r.body.map((s: any) => [s.reason, s.domain, s.stars])).toEqual([["effort", "mental", 2], ["progres", "technique", 1], ["fairplay", "attitude", 3]]);
+    await put({ items: [{ stars: 1, reason: "courage", domain: "mental" }] }).expect(200); // remplace tout le jour
+    expect(await prisma.courseStar.count({ where: { playerId: p2 } })).toBe(1);
+    await put({ items: [] }).expect(400);
+    await put({ items: Array.from({ length: 7 }, () => ({ stars: 1, reason: "effort", domain: "mental" })) }).expect(400);
+    await put({ items: [{ stars: 4, reason: "effort", domain: "mental" }] }).expect(400);
+    await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
+  });
+
   it("valeurs refusées : 0 ou 4 étoiles, raison inconnue, mot trop long, date invalide, cours à venir, date trop ancienne", async () => {
     const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send(body);
-    await put(iso(1), { stars: 0, reason: "effort", domain: "technique" }).expect(400);
-    await put(iso(1), { stars: 4, reason: "effort", domain: "technique" }).expect(400);
-    await put(iso(1), { stars: -1, reason: "effort", domain: "technique" }).expect(400); // jamais d'étoile négative
-    await put(iso(1), { stars: 2, reason: "mauvais-comportement", domain: "technique" }).expect(400);
-    await put(iso(1), { stars: 2, reason: "effort" }).expect(400); // il faut choisir un domaine du radar
-    await put(iso(1), { stars: 2, reason: "effort", domain: "chance" }).expect(400);
-    await put(iso(1), { stars: 2, reason: "effort", domain: "technique", comment: "x".repeat(141) }).expect(400);
-    await put("pas-une-date", { stars: 2, reason: "effort", domain: "technique" }).expect(400);
-    await put(iso(-10), { stars: 2, reason: "effort", domain: "technique" }).expect(400);
-    await put(iso(500), { stars: 2, reason: "effort", domain: "technique" }).expect(400);
-    await A.coach.put(`/api/players/inconnu/stars/${iso(1)}`).set(ORIGIN).send({ stars: 2, reason: "effort", domain: "technique" }).expect(404);
+    await put(iso(1), { items: [{ stars: 0, reason: "effort", domain: "technique" }] }).expect(400);
+    await put(iso(1), { items: [{ stars: 4, reason: "effort", domain: "technique" }] }).expect(400);
+    await put(iso(1), { items: [{ stars: -1, reason: "effort", domain: "technique" }] }).expect(400); // jamais d'étoile négative
+    await put(iso(1), { items: [{ stars: 2, reason: "mauvais-comportement", domain: "technique" }] }).expect(400);
+    await put(iso(1), { items: [{ stars: 2, reason: "effort" }] }).expect(400); // il faut choisir un domaine du radar
+    await put(iso(1), { items: [{ stars: 2, reason: "effort", domain: "chance" }] }).expect(400);
+    await put(iso(1), { items: [{ stars: 2, reason: "effort", domain: "technique", comment: "x".repeat(141) }] }).expect(400);
+    await put("pas-une-date", { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
+    await put(iso(-10), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
+    await put(iso(500), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
+    await A.coach.put(`/api/players/inconnu/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(404);
   });
 
   it("la famille et le jeune lisent leurs étoiles, jamais celles d'un autre ; ils ne peuvent ni en donner ni en retirer ; un adulte n'a aucun accès", async () => {
@@ -60,11 +72,11 @@ describe("Étoiles de fin de cours", () => {
     await A.autre.get(`/api/players/${p1}/stars`).expect(404);
     await A.parent.get(`/api/players/${p2}/stars`).expect(404);
     for (const who of ["parent", "jeune", "autre"]) {
-      await A[who].put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ stars: 3, reason: "effort", domain: "technique" }).expect(403);
+      await A[who].put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
       await A[who].delete(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).expect(403);
     }
     await A.adulte.get(`/api/players/${p1}/stars`).expect(403);
-    await A.adulte.put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ stars: 3, reason: "effort", domain: "technique" }).expect(403);
+    await A.adulte.put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
     expect(await prisma.courseStar.count({ where: { playerId: p1 } })).toBe(2);
   });
 

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -45,7 +45,7 @@ export class PlayersController {
   @Roles(Role.COACH) @Post("players/:id/self-evaluations/:season/:trimester/read") readSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.markSelfEvaluationRead(u, id, season, t); }
 
   @Get("players/:id/stars") stars(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.stars(u, id); }
-  @Roles(Role.COACH) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarDto) { return this.svc.saveStar(u, id, day, dto); }
+  @Roles(Role.COACH) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
   @Roles(Role.COACH) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
 
   @Get("players/:id/declared-matches") declaredMatches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.declaredMatches(u, id); }

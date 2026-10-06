@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -307,15 +307,19 @@ export class PlayersService {
   }
   async stars(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: { day: "desc" }, select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
   }
-  async saveStar(user: AuthUser, playerId: string, day: string, dto: StarDto) {
+  async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
     this.assertCoach(user);
     this.checkDay(day);
-    const data = { stars: dto.stars, reason: dto.reason, domain: dto.domain, comment: (dto.comment ?? "").trim() };
-    const s = await this.prisma.courseStar.upsert({ where: { playerId_day: { playerId, day } }, update: data, create: { playerId, day, ...data } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
+    // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
+    await this.prisma.$transaction([
+      this.prisma.courseStar.deleteMany({ where: { playerId, day } }),
+      this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ playerId, day, stars: i.stars, reason: i.reason, domain: i.domain, comment: (i.comment ?? "").trim() })) }),
+    ]);
     await this.touch(playerId);
-    return { id: s.id, day: s.day, stars: s.stars, reason: s.reason, domain: s.domain, comment: s.comment };
+    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: { createdAt: "asc" }, select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
   }
   async removeStar(user: AuthUser, playerId: string, day: string) {
     this.assertCoach(user);

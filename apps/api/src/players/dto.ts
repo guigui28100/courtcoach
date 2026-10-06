@@ -1,6 +1,6 @@
 import { Axis, ConsentKind, GoalStatus, Role } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, ValidateNested, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 const lower = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim().toLowerCase() : value);
@@ -85,6 +85,10 @@ export class StarDto {
   @IsIn(STAR_REASONS) reason: string;
   @IsIn(STAR_DOMAINS) domain: string;
   @IsOptional() @IsString() @MaxLength(140) comment?: string;
+}
+// Les étoiles d'un joueur pour un cours : de 1 à 6 lignes (raison + domaine + nombre d'étoiles), qui remplacent celles du jour
+export class StarsDayDto {
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(6) @ValidateNested({ each: true }) @Type(() => StarDto) items: StarDto[];
 }
 
 // Match déclaré par le jeune : des choix proposés, aucun nom d'adversaire
