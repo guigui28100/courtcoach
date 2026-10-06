@@ -228,7 +228,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
 
   return (
     <details className="card" open={false}>
-      <summary className="cursor-pointer font-display text-lg font-bold">➡️ Préparer le trimestre {next}</summary>
+      <summary className="cursor-pointer font-display text-lg font-bold">➡️ À la fin du trimestre {t} : préparer le trimestre {next}</summary>
       <div className="mt-3 grid gap-3">
         <p className="hint m-0">Pour chaque objectif du trimestre {t} : <strong>clore</strong> s'il est atteint, <strong>reconduire</strong> s'il ne l'est pas encore, ou le <strong>remplacer</strong> par un nouveau. Le bulletin du trimestre {t} ne change pas. Pense à évaluer d'abord chaque objectif dans l'onglet Évaluations.</p>
         {mine.length === 0 && <p className="m-0 text-muted">Aucun objectif à travailler ce trimestre.</p>}
@@ -269,6 +269,8 @@ function Objectifs({ p }: { p: Player }) {
   const seasons = [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`];
   const here = goals.filter((g) => goalApplies(g, t));
 
+  const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [newTitle, setNewTitle] = useState("");
+  async function addQuick(e: FormEvent) { e.preventDefault(); if (!newTitle.trim()) return; await post(`/players/${p.id}/goals`, { season, axis: newAxis, title: newTitle.trim(), trimesters: [t] }); setNewTitle(""); load(); }
   async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif", trimesters: [t] }); load(); }
   async function upd(g: Goal, body: Partial<Goal>) { setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, ...body } : x))); await patch(`/goals/${g.id}`, body); }
   return (
@@ -276,12 +278,20 @@ function Objectifs({ p }: { p: Player }) {
       <div className="flex flex-wrap items-center gap-3">
         <label className="sr-only" htmlFor="season">Saison</label>
         <select id="season" className="input !w-auto" value={season} onChange={(e) => setSeason(e.target.value)}>{seasons.map((s) => <option key={s} value={s}>Saison {s.replace("-", "/")}</option>)}</select>
-        <label className="sr-only" htmlFor="obj-t">Trimestre</label>
-        <select id="obj-t" className="input !w-auto" value={t} onChange={(e) => setT(Number(e.target.value))}>{[1, 2, 3].map((n) => <option key={n} value={n}>Trimestre {n}</option>)}</select>
-        <p className="m-0 font-bold">{here.length === 0 ? "Aucun objectif à travailler ce trimestre" : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}`}</p>
+        <div role="tablist" aria-label="Choisir le trimestre" className="flex flex-wrap gap-2">
+          {[1, 2, 3].map((n) => <button key={n} role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"btn btn-sm " + (t === n ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Trimestre {n}{season === currentSeason() && n === trimesterOf() ? " · en cours" : ""}</button>)}
+        </div>
       </div>
-      <p className="hint m-0">Ici, tu <strong>fixes</strong> les objectifs du joueur et tu choisis les trimestres où ils sont à travailler (rien de coché = toute la saison). Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, va dans l'onglet <strong>Évaluations</strong>.</p>
-      {t < 3 && <PrepareNext key={`${season}-${t}`} p={p} season={season} t={t} goals={goals} onDone={load} onNext={() => setT(t + 1)} />}
+      <form onSubmit={addQuick} className="card grid gap-3 border-2 !border-clay" aria-labelledby="obj-add">
+        <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
+        <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
+        <div className="flex flex-wrap gap-2">
+          <select className="input !w-auto" aria-label="Domaine" value={newAxis} onChange={(e) => setNewAxis(e.target.value)}>{AXES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select>
+          <input className="input min-w-52 flex-1" aria-label="Nouvel objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+          <button className="btn-clay" disabled={!newTitle.trim()}>+ Ajouter l'objectif</button>
+        </div>
+        <p className="hint m-0">Tu peux ensuite modifier chaque objectif, le rendre à travailler sur d'autres trimestres, ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre : onglet <strong>Évaluations</strong>.</p>
+      </form>
       <div className="grid gap-4 lg:grid-cols-2">
         {AXES.map((a) => {
           const mine = goals.filter((g) => g.axis === a.key);
@@ -314,6 +324,7 @@ function Objectifs({ p }: { p: Player }) {
           );
         })}
       </div>
+      {t < 3 && here.length > 0 && <PrepareNext key={`${season}-${t}`} p={p} season={season} t={t} goals={goals} onDone={load} onNext={() => setT(t + 1)} />}
     </div>
   );
 }
