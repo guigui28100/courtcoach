@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { put } from "../api";
-import { ProgressBar } from "./ui";
+import { AuthorBadge, ProgressBar } from "./ui";
 import { checkpointAt, Goal, GoalCheckpoint, GoalStatus, isCarriedOver, progressAt, STATUS, statusAt } from "../types";
 
 // Évaluation d'un objectif à la fin d'un trimestre : statut, avancement et commentaire du coach (enregistrés au fur et à mesure).
@@ -24,6 +24,7 @@ export function GoalEvalCard({ g, t, color, label, onUpdate }: { g: Goal; t: num
   return (
     <article className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-chalk p-3" style={{ borderLeftColor: color }}>
       <div className="flex flex-wrap items-start justify-between gap-2"><strong>{g.title}</strong><span className="text-sm font-bold" style={{ color }}>{label}</span></div>
+      <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" />{checkpointAt(g, t) && <AuthorBadge a={checkpointAt(g, t)} prefix="Évalué par" />}</div>
       {g.indicator && <p className="hint m-0">Mesuré par : {g.indicator}</p>}
       {isCarriedOver(g, t) && <p className="m-0 text-sm font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</p>}
       <div role="radiogroup" aria-label={`Statut de « ${g.title} » au trimestre ${t}`} className="flex flex-wrap gap-2">

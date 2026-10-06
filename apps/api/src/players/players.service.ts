@@ -35,6 +35,15 @@ export class PlayersService {
     if (user.role === Role.COACH) return p;
     return user.role === Role.GUARDIAN ? { ...rest, health } : rest;
   }
+  // Qui saisit : le nom et le rôle sont gardés avec chaque saisie pour l'afficher en couleur (coach ≠ entraîneur) ; jamais montrés aux familles
+  private async who(user: AuthUser) {
+    const u = await this.prisma.user.findUnique({ where: { id: user.id }, select: { firstName: true } });
+    return { authorId: user.id, authorName: u?.firstName || (user.role === Role.COACH ? "Coach" : "Entraîneur"), authorRole: user.role as string };
+  }
+  private hideAuthors<T extends Record<string, any>>(user: AuthUser, rows: T[]): T[] {
+    if (isStaff(user)) return rows;
+    return rows.map((r) => { const { authorId, authorName, authorRole, ...rest } = r as any; if (Array.isArray(rest.checkpoints)) rest.checkpoints = rest.checkpoints.map(({ authorId: a, authorName: b, authorRole: c, ...cp }: any) => cp); return rest as T; });
+  }
   private async touch(playerId: string) { await this.prisma.player.update({ where: { id: playerId }, data: { lastActivityAt: new Date() } }); }
 
   async list(user: AuthUser) {
@@ -88,7 +97,8 @@ export class PlayersService {
     const { coachNotes, declaredMatches, ...visible } = p;
     // Les matchs déclarés par le jeune ne sont jamais montrés aux parents (même dans leur copie des données)
     const forYouth = user.role === Role.YOUTH ? { ...visible, declaredMatches } : visible;
-    return { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : forYouth) };
+    const out = { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : forYouth) };
+    return user.role === Role.COACH ? out : JSON.parse(JSON.stringify(out, (k, v) => (["authorId", "authorName", "authorRole"].includes(k) ? undefined : v))); // jamais le nom d'un entraîneur chez la famille
   }
 
   // Dossiers sans activité depuis plus de 12 mois (durée de conservation)
@@ -195,11 +205,13 @@ export class PlayersService {
   async goals(user: AuthUser, playerId: string, season?: string) {
     await this.assertCanRead(user, playerId);
     if (season && !SEASON.test(season)) throw new BadRequestException("Saison invalide");
-    return this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, status: true, progress: true, comment: true }, orderBy: { trimester: "asc" } } } });
+    const rows = await this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, status: true, progress: true, comment: true, authorId: true, authorName: true, authorRole: true }, orderBy: { trimester: "asc" } } } });
+    return this.hideAuthors(user, rows);
   }
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
     await this.assertStaffFor(user, playerId);
-    const g = await this.prisma.goal.create({ data: { playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    const who = await this.who(user);
+    const g = await this.prisma.goal.create({ data: { ...who, playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return g;
   }
@@ -211,7 +223,8 @@ export class PlayersService {
   async updateGoal(user: AuthUser, goalId: string, dto: UpdateGoalDto) {
     await this.goalOwner(user, goalId);
     const { deadline, trimesters, ...rest } = dto;
-    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
+    const who = await this.who(user);
+    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...who, ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
     await this.touch(g.playerId);
     return g;
   }
@@ -225,14 +238,14 @@ export class PlayersService {
     if (![1, 2, 3].includes(trimester)) throw new BadRequestException("Trimestre invalide");
     const goal = await this.prisma.goal.findUnique({ where: { id: goalId }, select: { id: true, playerId: true, season: true } });
     if (!goal) throw new NotFoundException("Objectif introuvable");
-    const data = { progress: dto.progress, comment: dto.comment ?? "", status: dto.status ?? (dto.progress >= 100 ? GoalStatus.ACHIEVED : GoalStatus.IN_PROGRESS) };
+    const data = { ...(await this.who(user)), progress: dto.progress, comment: dto.comment ?? "", status: dto.status ?? (dto.progress >= 100 ? GoalStatus.ACHIEVED : GoalStatus.IN_PROGRESS) };
     const cp = await this.prisma.goalCheckpoint.upsert({ where: { goalId_trimester: { goalId, trimester } }, update: data, create: { goalId, trimester, ...data } });
     const latest = await this.prisma.goalCheckpoint.findFirst({ where: { goalId }, orderBy: { trimester: "desc" } });
     await this.prisma.goal.update({ where: { id: goalId }, data: { progress: latest!.progress } });
     // Évaluer un objectif crée le bulletin du trimestre s'il n'existe pas encore (les compétences restent facultatives)
     await this.prisma.evaluation.upsert({ where: { playerId_season_trimester: { playerId: goal.playerId, season: goal.season, trimester } }, update: {}, create: { playerId: goal.playerId, season: goal.season, trimester } });
     await this.touch(goal.playerId);
-    return { trimester: cp.trimester, status: cp.status, progress: cp.progress, comment: cp.comment };
+    return { trimester: cp.trimester, status: cp.status, progress: cp.progress, comment: cp.comment, authorId: cp.authorId, authorName: cp.authorName, authorRole: cp.authorRole };
   }
 
   async removeGoal(user: AuthUser, goalId: string) {
@@ -243,7 +256,7 @@ export class PlayersService {
   // ----- Évaluations trimestrielles -----
   async evaluations(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+    return this.hideAuthors(user, await this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] }));
   }
   async saveEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: EvaluationDto) {
     await this.assertStaffFor(user, playerId);
@@ -251,7 +264,7 @@ export class PlayersService {
     for (const [k, v] of Object.entries(dto.ratings ?? {})) {
       if (!/^[a-z_]{1,40}$/.test(k) || !Number.isInteger(v) || v < 1 || v > 5) throw new BadRequestException("Notes invalides (1 à 5)");
     }
-    const data = { ratings: dto.ratings ?? {}, comments: dto.comments ?? {}, strengths: dto.strengths ?? "", improve: dto.improve ?? "", next: dto.next ?? "", appreciation: dto.appreciation ?? "" };
+    const data = { ...(await this.who(user)), ratings: dto.ratings ?? {}, comments: dto.comments ?? {}, strengths: dto.strengths ?? "", improve: dto.improve ?? "", next: dto.next ?? "", appreciation: dto.appreciation ?? "" };
     const e = await this.prisma.evaluation.upsert({ where: { playerId_season_trimester: { playerId, season, trimester } }, update: data, create: { playerId, season, trimester, ...data } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return e;
@@ -320,19 +333,20 @@ export class PlayersService {
   }
   async stars(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } }).then((rows) => this.hideAuthors(user, rows));
   }
   async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);
     if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
+    const who = await this.who(user);
     // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
     await this.prisma.$transaction([
       this.prisma.courseStar.deleteMany({ where: { playerId, day } }),
-      this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ playerId, day, stars: i.stars, reason: i.reason, domain: i.domain, comment: (i.comment ?? "").trim() })) }),
+      this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ ...who, playerId, day, stars: i.stars, reason: i.reason, domain: i.domain, comment: (i.comment ?? "").trim() })) }),
     ]);
     await this.touch(playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: { createdAt: "asc" }, select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } });
   }
   async removeStar(user: AuthUser, playerId: string, day: string) {
     await this.assertStaffFor(user, playerId);
@@ -393,11 +407,11 @@ export class PlayersService {
   // ----- Matchs -----
   async matches(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.match.findMany({ where: { playerId }, orderBy: { date: "desc" } });
+    return this.hideAuthors(user, await this.prisma.match.findMany({ where: { playerId }, orderBy: { date: "desc" } }));
   }
   async addMatch(user: AuthUser, playerId: string, dto: MatchDto) {
     await this.assertStaffFor(user, playerId);
-    const m = await this.prisma.match.create({ data: { playerId, date: new Date(dto.date), tournament: dto.tournament, round: dto.round ?? "", result: dto.result, score: dto.score ?? "", remark: dto.remark ?? "" } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    const m = await this.prisma.match.create({ data: { ...(await this.who(user)), playerId, date: new Date(dto.date), tournament: dto.tournament, round: dto.round ?? "", result: dto.result, score: dto.score ?? "", remark: dto.remark ?? "" } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return m;
   }

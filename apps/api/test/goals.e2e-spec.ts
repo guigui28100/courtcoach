@@ -44,7 +44,7 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     await A.coach.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 50, comment: "Bon début, corrigé" }).expect(200); // on corrige le T1 : l'actuel reste celui du T2
     expect((await prisma.goal.findUniqueOrThrow({ where: { id: goal } })).progress).toBe(70);
     const list = (await A.coach.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body;
-    expect(list[0].checkpoints).toEqual([{ trimester: 1, status: "IN_PROGRESS", progress: 50, comment: "Bon début, corrigé" }, { trimester: 2, status: "IN_PROGRESS", progress: 70, comment: "Très bien" }]);
+    expect(list[0].checkpoints).toMatchObject([{ trimester: 1, status: "IN_PROGRESS", progress: 50, comment: "Bon début, corrigé" }, { trimester: 2, status: "IN_PROGRESS", progress: 70, comment: "Très bien" }]);
   });
 
   it("chaque point de contrôle a un statut (atteint, en progrès, pas atteint) ; par défaut déduit de l'avancement", async () => {

@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, post, put } from "../api";
-import { Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
+import { AuthorBadge, Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
 import { Compare, VideoStudio } from "../components/Studio";
 import { Thread } from "../components/Videos";
 import { AXES, fmtDate, fmtMo, VideoDetail } from "../types";
@@ -53,7 +53,7 @@ export default function VideoReview() {
           </div>
           <div className="grid content-start gap-4">
             <form ref={formRef} className="card grid gap-3" noValidate onSubmit={(e) => e.preventDefault()}>
-              <h2 className="m-0 text-xl">Mon analyse {sent ? <span className="badge ml-2 !border-ok !text-ok">Envoyée</span> : <span className="badge ml-2">Brouillon</span>}</h2>
+              <h2 className="m-0 text-xl">Mon analyse {v.analysis?.authorName && <AuthorBadge a={v.analysis} prefix="Rédigée par" />} {sent ? <span className="badge ml-2 !border-ok !text-ok">Envoyée</span> : <span className="badge ml-2">Brouillon</span>}</h2>
               <Field label="Observation" id="observation"><textarea id="observation" name="observation" className="input min-h-32" maxLength={3000} defaultValue={v.analysis?.observation ?? ""} /></Field>
               <Field label="Points forts" id="strengths"><textarea id="strengths" name="strengths" className="input" maxLength={2000} defaultValue={v.analysis?.strengths ?? ""} /></Field>
               <Field label="À améliorer" id="improve"><textarea id="improve" name="improve" className="input" maxLength={2000} defaultValue={v.analysis?.improve ?? ""} /></Field>

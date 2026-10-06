@@ -73,6 +73,19 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
     expect(row).toMatchObject({ ranking: "30/3", health: "allergie", coachNotes: "note privée" }); // la santé et les notes du coach n'ont pas bougé
     await t.put(`/api/videos/${v1}/analysis`).set(ORIGIN).send({ observation: "Belle préparation" }).expect(200);
     await t.post(`/api/videos/${v1}/analysis/send`).set(ORIGIN).expect(204);
+    // Chaque saisie garde son auteur (couleur différente côté coach), jamais montré à la famille
+    await prisma.user.update({ where: { id: trainerId }, data: { firstName: "Julie" } });
+    await t.put(`/api/goals/${g.id}/checkpoints/1`).set(ORIGIN).send({ progress: 70, comment: "Mieux" }).expect(200);
+    const seen = (await A.coach.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body[0];
+    expect(seen).toMatchObject({ authorName: "Julie", authorRole: "TRAINER" }); expect(seen.checkpoints[0]).toMatchObject({ authorName: "Julie", authorRole: "TRAINER" });
+    await A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "effort", domain: "mental" }] }).expect(200);
+    expect((await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body[0]).toMatchObject({ authorRole: "COACH" });
+    const par = await login("parent", Role.GUARDIAN); await prisma.playerAccess.create({ data: { userId: par, playerId: p1, relation: "parent" } });
+    const famille = (await A.parent.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body[0];
+    expect(JSON.stringify(famille)).not.toMatch(/author|Julie/);
+    expect(JSON.stringify((await A.parent.get(`/api/players/${p1}/stars`).expect(200)).body)).not.toMatch(/author|Julie/);
+    expect(JSON.stringify((await A.parent.get(`/api/players/${p1}/export`).expect(200)).body)).not.toMatch(/authorName|Julie/);
+    await prisma.playerAccess.deleteMany({ where: { userId: par } });
     await t.delete(`/api/goals/${g.id}`).set(ORIGIN).expect(204);
   });
 

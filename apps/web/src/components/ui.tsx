@@ -139,3 +139,17 @@ export function TabsBar({ tabs, active, onChange, label }: { tabs: [string, stri
     </div>
   );
 }
+
+// Qui a saisi : le coach est orange, chaque entraîneur de comité a sa propre couleur (stable, tirée de son identifiant)
+export interface Authored { authorId?: string | null; authorName?: string | null; authorRole?: string | null; }
+const TRAINER_COLORS = ["#2a6fb0", "#2f8f5b", "#7a4cc2", "#0e7490", "#be185d", "#4d7c0f"];
+export function authorColor(a: Authored | null | undefined) {
+  if (!a?.authorName) return null;
+  if (a.authorRole === "COACH") return "#b8471f";
+  let h = 0; for (const ch of a.authorId ?? a.authorName) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TRAINER_COLORS[h % TRAINER_COLORS.length];
+}
+export function AuthorBadge({ a, prefix = "Saisi par" }: { a: Authored | null | undefined; prefix?: string }) {
+  const c = authorColor(a); if (!c || !a) return null;
+  return <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ borderColor: c, color: c, background: `${c}14` }}><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />{prefix} {a.authorName}{a.authorRole === "COACH" ? " (coach)" : ""}</span>;
+}

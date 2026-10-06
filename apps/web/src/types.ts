@@ -20,8 +20,8 @@ export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: stri
   IN_PROGRESS: { label: "En progrès", emoji: "🔄", bg: "#e7e0ff", ink: "#4c1d95" },
   NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
 };
-export interface GoalCheckpoint { trimester: number; status: GoalStatus; progress: number; comment: string; }
-export interface Goal { id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
+export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
+export interface Goal { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
 export const fullName = (p: Pick<Player, "firstName" | "lastName">) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Joueur";
@@ -39,8 +39,8 @@ export const EVAL_AXES: EvalAxis[] = [
   { key: "attitude", label: "Attitude", color: "#8a6200", skills: [["assiduite", "Assiduité et ponctualité"], ["etat_esprit", "État d'esprit à l'entraînement"], ["esprit_equipe", "Esprit d'équipe et fair-play"]] },
 ];
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
-export interface Evaluation { id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
-export interface MatchRow { id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
+export interface Evaluation { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
+export interface MatchRow { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
 
 export const TRIMESTER_MONTHS = ["début de saison", "septembre – décembre", "janvier – mars", "avril – août"];
 // t = 0 : bilan de début d'année (point de départ de la saison) ; 1 à 3 : bulletin du trimestre
@@ -77,7 +77,7 @@ export function trendCommon(ev: Pick<Evaluation, "ratings"> | undefined, prev: P
 
 // ----- Vidéos et analyses -----
 export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
-export interface AnalysisOut { id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
+export interface AnalysisOut { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
   kind: "coaching" | "centre"; fromCoach: boolean; images: { id: string; note: string }[]; player: { id: string; firstName: string } | null; owner: { id: string; firstName: string | null; email: string } | null; analysis: AnalysisOut | null; messageCount: number;
@@ -121,7 +121,7 @@ export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂",
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
 // ----- Étoiles de fin de cours (données par le coach, toujours positives) -----
-export interface CourseStar { id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
+export interface CourseStar { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
 export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
   { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
   { id: "ecoute", emoji: "👂", label: "Écoute", hint: "A bien écouté et appliqué les consignes" },

@@ -1,3 +1,4 @@
+import { AuthorBadge } from "./ui";
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Evaluation, EVAL_AXES, EvalAxis, fmtAvg, MatchRow, RATING_LABELS, trend } from "../types";
@@ -46,7 +47,7 @@ export function MatchTable({ matches }: { matches: MatchRow[] }) {
           {matches.map((m) => (
             <tr key={m.id} className="border-b border-line align-top">
               <td className="whitespace-nowrap p-2">{fmtDate(m.date)}</td>
-              <td className="p-2">{m.tournament}{m.round && ` · ${m.round}`}{m.remark && <div className="hint">{m.remark}</div>}</td>
+              <td className="p-2">{m.tournament}{m.round && ` · ${m.round}`}{m.remark && <div className="hint">{m.remark}</div>}<AuthorBadge a={m} /></td>
               <td className={"p-2 font-bold " + (m.result === "Victoire" ? "text-ok" : "text-bad")}>{m.result}</td>
               <td className="whitespace-nowrap p-2">{m.score}</td>
             </tr>
