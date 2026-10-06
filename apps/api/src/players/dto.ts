@@ -138,3 +138,8 @@ export class TrainerDto {
 export class TrainerPlayersDto {
   @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) playerIds: string[];
 }
+
+// Corriger le nombre d'étoiles d'une seule ligne (1 à 3) ; pour retirer la dernière étoile on supprime la ligne
+export class StarLineDto {
+  @Type(() => Number) @IsInt() @Min(1) @Max(3) stars: number;
+}

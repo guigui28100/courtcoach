@@ -62,6 +62,18 @@ describe("Étoiles de fin de cours", () => {
     await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
   });
 
+  it("le coach retire une étoile d'une ligne (sans toucher aux autres) ; 0 ou 4 refusés ; la famille ne le peut pas", async () => {
+    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "mental" }, { stars: 2, reason: "progres", domain: "technique" }] }).expect(200)).body;
+    const r = await A.coach.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 2 }).expect(200);
+    expect(r.body).toMatchObject({ stars: 2, reason: "effort", domain: "mental" });
+    await A.coach.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 0 }).expect(400);
+    await A.coach.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 4 }).expect(400);
+    await A.coach.patch(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 1 }).expect(404);
+    await A.parent.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 1 }).expect(403);
+    expect((await A.coach.get(`/api/players/${p2}/stars`).expect(200)).body.map((s: any) => s.stars).sort()).toEqual([2, 2]);
+    await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
+  });
+
   it("valeurs refusées : 0 ou 4 étoiles, raison inconnue, mot trop long, date invalide, cours à venir, date trop ancienne", async () => {
     const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send(body);
     await put(iso(1), { items: [{ stars: 0, reason: "effort", domain: "technique" }] }).expect(400);

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -46,6 +46,7 @@ export class PlayersController {
 
   @Get("players/:id/stars") stars(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.stars(u, id); }
   @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Patch("players/:id/stars/line/:lineId") updateStarLine(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("lineId") lid: string, @Body() dto: StarLineDto) { return this.svc.updateStarLine(u, id, lid, dto); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/line/:lineId") @HttpCode(204) removeStarLine(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("lineId") lid: string) { return this.svc.removeStarLine(u, id, lid); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
 

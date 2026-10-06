@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -347,6 +347,15 @@ export class PlayersService {
     ]);
     await this.touch(playerId);
     return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } });
+  }
+  // Change le nombre d'étoiles d'UNE ligne (ex. en retirer une) sans toucher aux autres lignes du cours
+  async updateStarLine(user: AuthUser, playerId: string, lineId: string, dto: StarLineDto) {
+    await this.assertStaffFor(user, playerId);
+    const line = await this.prisma.courseStar.findFirst({ where: { id: lineId, playerId } });
+    if (!line) throw new NotFoundException("Ligne d'étoiles introuvable");
+    const u = await this.prisma.courseStar.update({ where: { id: lineId }, data: { stars: dto.stars, ...(await this.who(user)) } });
+    await this.touch(playerId);
+    return { id: u.id, day: u.day, stars: u.stars, reason: u.reason, domain: u.domain, comment: u.comment, authorId: u.authorId, authorName: u.authorName, authorRole: u.authorRole };
   }
   // Retire UNE ligne d'étoiles (les autres lignes du cours restent, avec leur auteur)
   async removeStarLine(user: AuthUser, playerId: string, lineId: string) {
