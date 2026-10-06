@@ -122,10 +122,13 @@ async function fileset() {
 export async function createLandmarker(mode: "IMAGE" | "VIDEO"): Promise<Landmarker> {
   const lib = await import("@mediapipe/tasks-vision");
   const fs = (await fileset()) as Awaited<ReturnType<typeof lib.FilesetResolver.forVisionTasks>>;
-  const lm = await lib.PoseLandmarker.createFromOptions(fs, {
-    baseOptions: { modelAssetPath: "/models/pose_landmarker_lite.task", delegate: "CPU" },
+  const make = (delegate: "GPU" | "CPU") => lib.PoseLandmarker.createFromOptions(fs, {
+    baseOptions: { modelAssetPath: "/models/pose_landmarker_lite.task", delegate },
     runningMode: mode, numPoses: 1, minPoseDetectionConfidence: 0.4, minPosePresenceConfidence: 0.4, minTrackingConfidence: 0.4,
   });
+  // La carte graphique rend le suivi beaucoup plus rapide ; si l'appareil ne la permet pas, on calcule avec le processeur.
+  let lm;
+  try { lm = await make("GPU"); } catch { lm = await make("CPU"); }
   return lm as unknown as Landmarker;
 }
 export function toSkeleton(result: unknown): Skeleton | null {
@@ -136,7 +139,7 @@ export function toSkeleton(result: unknown): Skeleton | null {
   return out;
 }
 // Lissage léger entre deux images : le squelette tremble moins pendant la lecture
-export function smooth(prev: Skeleton | null, next: Skeleton, alpha = 0.55): Skeleton {
+export function smooth(prev: Skeleton | null, next: Skeleton, alpha = 0.85): Skeleton {
   if (!prev) return next;
   const out = {} as Skeleton;
   for (const k of JOINTS) out[k] = [prev[k][0] + (next[k][0] - prev[k][0]) * alpha, prev[k][1] + (next[k][1] - prev[k][1]) * alpha];
