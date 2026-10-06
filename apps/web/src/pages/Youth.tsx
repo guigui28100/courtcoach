@@ -4,7 +4,7 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { MissionBar, Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
-import { BulletinShelf } from "../components/BulletinShelf";
+import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
@@ -39,7 +39,40 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
   );
 }
 
-function Missions({ goals }: { goals: Goal[] }) {
+// « Mon point de départ » : le bilan de début d'année que le coach a rempli, affiché avec les missions
+function StartBilan({ p, base }: { p: Player; base: string }) {
+  const { evals } = useFollowUp(p.id);
+  if (!evals) return null;
+  const season = currentSeason();
+  const start = evals.find((e) => e.season === season && e.trimester === 0);
+  const ready = hasContent(start);
+  return (
+    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-depart">
+      <h2 id="gal-depart" className="m-0 text-2xl">📍 Mon point de départ</h2>
+      {!ready || !start ? <p className="m-0 text-white/80">Ton coach va faire ton <strong>bilan de début d'année</strong> : ce que tu sais déjà bien et ce que tu vas travailler. Tu le verras ici dès qu'il sera prêt.</p> : (
+        <div className="grid items-start gap-5 md:grid-cols-[300px_1fr]">
+          <div className="grid justify-items-center gap-2">
+            <Radar dark series={[{ label: "Départ", values: Object.fromEntries(EVAL_AXES.map((a) => [a.key, axisAverage(start, a)])), color: "#dcf247" }]} />
+            <p className="m-0 text-center font-bold">Bilan de début d'année · saison {season.replace("-", "/")}</p>
+          </div>
+          <div className="grid content-start gap-3">
+            <p className="m-0 text-white/85">C'est ton coach qui l'a rempli : c'est là que tu commences la saison. Tes missions viennent de là, et tu pourras voir ta progression au fil des trimestres.</p>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mon point de départ par domaine">
+              {EVAL_AXES.map((a) => axisAverage(start, a) ? <li key={a.key} className="gal-chip">{a.label} {fmtAvg(axisAverage(start, a))}/5</li> : null)}
+            </ul>
+            {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-bold text-clay">💬 Le mot de ton coach</footer></blockquote>}
+            {start.strengths && <p className="m-0"><strong className="text-[#dcf247]">⭐ Tes points forts : </strong>{start.strengths}</p>}
+            {start.improve && <p className="m-0"><strong className="text-[#dcf247]">🎯 Pour progresser : </strong>{start.improve}</p>}
+            {start.next && <p className="m-0"><strong className="text-[#dcf247]">🚀 Prochaines missions : </strong>{start.next}</p>}
+            <div><Link to={`${base}/bulletin/${season}/0`} className="gal-btn btn-sm no-underline">Voir mon bilan de départ en entier</Link></div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Missions({ goals, p, base }: { goals: Goal[]; p: Player; base: string }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t)); // les missions de CE trimestre
   return (
@@ -297,7 +330,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
               {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
-              {tab === "missions" && <Missions goals={goals[p.id] ?? []} />}
+              {tab === "missions" && <><StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
               {tab === "progres" && <><StarsRadar stars={stars} dark /><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
