@@ -83,7 +83,9 @@ export type StarLine = { stars: number; reason: string; domain: string };
 export const MAX_STAR_LINES = 6;
 export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "" });
 // Message si une ligne est incomplète, sinon chaîne vide
-export const starLinesError = (lines: StarLine[]) => lines.some((l) => l.stars < 1) ? "Une ligne n'a pas d'étoile." : lines.some((l) => !l.reason) ? "Choisis « pourquoi » pour chaque ligne d'étoiles." : lines.some((l) => !l.domain) ? "Choisis le domaine du radar pour chaque ligne d'étoiles." : "";
+// Une ligne à 0 étoile n'est pas enregistrée : on ne garde que celles qui ont au moins 1 étoile
+export const activeLines = (lines: StarLine[]) => lines.filter((l) => l.stars > 0);
+export const starLinesError = (all: StarLine[]) => { const lines = activeLines(all); return lines.some((l) => !l.reason) ? "Choisis « pourquoi » pour chaque ligne d'étoiles." : lines.some((l) => !l.domain) ? "Choisis le domaine du radar pour chaque ligne d'étoiles." : ""; };
 export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string }) {
   const set = (i: number, patch: Partial<StarLine>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   return (
@@ -91,18 +93,21 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
       {lines.map((l, i) => (
         <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2" role="group" aria-label={`Étoiles n°${i + 1} pour ${who}`}>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label={l.stars <= 1 ? "Enlever la dernière étoile (retire la ligne)" : "Enlever une étoile"} title={l.stars <= 1 ? "Retire cette ligne" : "Enlever une étoile"} onClick={() => (l.stars <= 1 ? onChange(lines.filter((_, j) => j !== i)) : set(i, { stars: l.stars - 1 }))}>−</button>
-              <output className="min-w-24 text-center text-xl" aria-live="polite">{"⭐".repeat(l.stars)}</output>
-              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" title={l.stars >= 3 ? "3 étoiles au maximum par ligne : ajoute une autre ligne pour en donner plus" : "Ajouter une étoile"} disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
-              {l.stars >= 3 && <small className="hint">3 maximum par ligne : ajoute une autre ligne ci-dessous pour en donner plus.</small>}
+            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Nombre d'étoiles n°${i + 1} pour ${who}`}>
+              {[0, 1, 2, 3].map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={l.stars === n} onClick={() => set(i, { stars: n })}
+                  className={"min-h-11 min-w-14 rounded-xl border-2 px-3 text-lg font-bold " + (l.stars === n ? "border-[#e0b100] bg-[#fff3b0]" : "border-line bg-white text-ink hover:bg-sand")}>{n === 0 ? "0" : "⭐".repeat(n)}</button>
+              ))}
+              <span className="text-sm font-bold">{l.stars === 0 ? "aucune étoile : cette ligne ne sera pas enregistrée" : `${l.stars} étoile${l.stars > 1 ? "s" : ""}`}</span>
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
+          {l.stars > 0 && <>
           <p className="hint m-0">Pourquoi ?</p>
           <ReasonPicker value={l.reason} onChange={(id) => set(i, { reason: id })} />
           <p className="hint m-0">Quel domaine du radar fait-elle grandir ?</p>
           <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
+          </>}
         </div>
       ))}
       {lines.length < MAX_STAR_LINES && <div><button type="button" className="btn-outline btn-sm" onClick={() => onChange([...lines, newStarLine()])}>{lines.length ? "➕ Ajouter une autre raison / un autre domaine" : "⭐ Donner des étoiles"}</button></div>}
