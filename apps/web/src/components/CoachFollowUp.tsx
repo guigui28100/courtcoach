@@ -5,6 +5,7 @@ import { CoachDeclaredMatches } from "./DeclaredMatches";
 import { GoalEvalCard } from "./GoalEval";
 import { CoachSelfEval } from "./SelfEval";
 import { Radar } from "./Radar";
+import { hasContent } from "./BulletinShelf";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { Err, Field } from "./ui";
 import { AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
@@ -54,8 +55,18 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   }
 
   const axisOf = (g: Goal) => AXES.find((x) => x.key === g.axis);
+  const startDone = hasContent(evals?.find((e) => e.season === currentSeason() && e.trimester === 0));
   return (
     <div className="grid gap-4">
+      {evals && season === currentSeason() && (
+        <section className={"card flex flex-wrap items-center justify-between gap-3 border-2 " + (startDone ? "border-line" : "!border-clay")} aria-label="Bilan de départ">
+          <div className="grid gap-1">
+            <h3 className="m-0">📍 Bilan de départ de {p.firstName} (début de saison)</h3>
+            <p className="m-0 text-sm text-muted">{startDone ? "Déjà rempli : le jeune le voit en haut de son onglet Missions." : "Pas encore rempli. C'est le point de départ de la saison : tu notes ses compétences, il le verra dans son onglet Missions."}</p>
+          </div>
+          <button type="button" className={t === 0 ? "btn-ink btn-sm" : "btn-clay"} disabled={t === 0} onClick={() => { setSeason(currentSeason()); setT(0); }}>{t === 0 ? "Tu es sur le bilan de départ ↓" : startDone ? "Modifier le bilan de départ" : "Saisir le bilan de départ"}</button>
+        </section>
+      )}
       {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
       {t > 0 && <CoachSelfEval p={p} season={season} t={t} goals={here} onPick={(s, n) => { setSeason(s); setT(n); }} />}
       <div className="flex flex-wrap items-center gap-3">
