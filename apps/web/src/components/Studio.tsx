@@ -264,7 +264,7 @@ async function saveImage(videoId: string, blob: Blob, note: string) {
 }
 
 // Un lecteur de la comparaison : image par image, curseur, et « le geste démarre ici ».
-function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, guides = true, onSkeleton, onRate }: { label: string; src: string; vref: React.RefObject<HTMLVideoElement | null>; start: number; onStart: (t: number) => void; onTime: () => void; pose?: boolean; guides?: boolean; onSkeleton?: (s: Skeleton | null) => void; onRate?: (r: number) => void }) {
+function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, guides = true, onSkeleton }: { label: string; src: string; vref: React.RefObject<HTMLVideoElement | null>; start: number; onStart: (t: number) => void; onTime: () => void; pose?: boolean; guides?: boolean; onSkeleton?: (s: Skeleton | null) => void }) {
   const [pos, setPos] = useState(0), [dur, setDur] = useState(0);
   const el = () => vref.current;
   const go = (t: number) => { const v = el(); if (!v) return; v.pause(); v.currentTime = Math.max(0, Math.min(Number.isFinite(v.duration) ? v.duration : t, t)); };
@@ -276,7 +276,7 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onDurationChange={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />
-      <PoseOverlay video={vref} active={pose} guides={guides} onSkeleton={onSkeleton} onRate={onRate} />
+      <PoseOverlay video={vref} active={pose} guides={guides} onSkeleton={onSkeleton} />
       </div>
       <label className="flex items-center gap-2 text-sm font-bold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
       <div className="flex flex-wrap items-center gap-2">
@@ -300,7 +300,6 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   const a = useRef<HTMLVideoElement>(null), b = useRef<HTMLVideoElement>(null);
   const [startA, setStartA] = useState(0), [startB, setStartB] = useState(0);
   const [speed, setSpeed] = useState(1), [playing, setPlaying] = useState(false);
-  const [autoA, setAutoA] = useState(1), [autoB, setAutoB] = useState(1);
   const [pose, setPose] = useState(false), [guides, setGuides] = useState(true);
   const [t, setT] = useState(0);
   const [frame, setFrame] = useState<HTMLCanvasElement | null>(null);
@@ -319,8 +318,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const pauseBoth = () => { a.current?.pause(); b.current?.pause(); setPlaying(false); };
   const playBoth = () => { void a.current?.play(); void b.current?.play(); setPlaying(true); };
-  const rate = pose ? Math.min(speed, autoA, autoB) : speed; // les deux vidéos restent à la même vitesse, ralentie si le suivi en a besoin
-  useEffect(() => { [a.current, b.current].forEach((el) => el && (el.playbackRate = rate)); }, [rate, otherId]);
+  useEffect(() => { [a.current, b.current].forEach((el) => el && (el.playbackRate = speed)); }, [speed, otherId]);
 
   // Pendant la lecture, la deuxième vidéo est recalée sur la première si elle dérive de plus de 0,06 s.
   const follow = useCallback(() => {
@@ -361,8 +359,8 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
         <>
           <ol className="m-0 list-decimal pl-5 text-sm text-muted"><li>Pour chaque vidéo, avance jusqu'au <strong>début du geste</strong> (par exemple le lancer de balle) puis clique sur « 🎯 Le geste démarre ici ».</li><li>Utilise ensuite les commandes communes : les deux gestes démarrent <strong>en même temps</strong>.</li><li>Fige l'image voulue et annote-la (traits, cercles, angles, texte).</li></ol>
           <div className="grid gap-4 md:grid-cols-2">
-            <ComparePane label={`1 · ${pair[0].title} (${frDate(pair[0].recordedAt)})`} src={`/api/videos/${pair[0].id}/file`} vref={a} start={startA} onStart={(x) => { setStartA(x); startRef.current.a = x; setT(0); }} onTime={follow} pose={pose} guides={guides} onSkeleton={(s) => { skA.current = s; }} onRate={setAutoA} />
-            <ComparePane label={`2 · ${pair[1].title} (${frDate(pair[1].recordedAt)})`} src={`/api/videos/${pair[1].id}/file`} vref={b} start={startB} onStart={(x) => { setStartB(x); startRef.current.b = x; }} onTime={() => undefined} pose={pose} guides={guides} onSkeleton={(s) => { skB.current = s; }} onRate={setAutoB} />
+            <ComparePane label={`1 · ${pair[0].title} (${frDate(pair[0].recordedAt)})`} src={`/api/videos/${pair[0].id}/file`} vref={a} start={startA} onStart={(x) => { setStartA(x); startRef.current.a = x; setT(0); }} onTime={follow} pose={pose} guides={guides} onSkeleton={(s) => { skA.current = s; }} />
+            <ComparePane label={`2 · ${pair[1].title} (${frDate(pair[1].recordedAt)})`} src={`/api/videos/${pair[1].id}/file`} vref={b} start={startB} onStart={(x) => { setStartB(x); startRef.current.b = x; }} onTime={() => undefined} pose={pose} guides={guides} onSkeleton={(s) => { skB.current = s; }} />
           </div>
           <div className="grid gap-2 rounded-xl bg-sand p-3" role="group" aria-label="Commandes communes aux deux vidéos">
             <div className="flex flex-wrap items-center gap-2">
@@ -400,9 +398,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
   const [pose, setPose] = useState(false), [guides, setGuides] = useState(true);
   const [poseStatus, setPoseStatus] = useState<{ s: string; msg?: string }>({ s: "idle" });
   const poseSk = useRef<Skeleton | null>(null), [frameSk, setFrameSk] = useState<Skeleton | null>(null);
-  const [autoRate, setAutoRate] = useState(1);
-  const rate = pose ? Math.min(speed, autoRate) : speed; // le suivi ralentit la vidéo si l'appareil a besoin de temps pour calculer chaque image
-  useEffect(() => { if (vid.current) vid.current.playbackRate = rate; }, [rate]);
+  useEffect(() => { if (vid.current) vid.current.playbackRate = speed; }, [speed]);
   const seek = (d: number) => { const el = vid.current; if (!el) return; el.pause(); el.currentTime = Math.max(0, Math.min(el.duration || 1e9, el.currentTime + d)); };
 
   function capture() {
@@ -425,7 +421,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
     <div className="grid content-start gap-3">
       <div className="relative">
         <video ref={vid} controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="block max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
-        <PoseOverlay video={vid} active={pose} guides={guides} onSkeleton={(s) => { poseSk.current = s; }} onStatus={(s, msg) => setPoseStatus({ s, msg })} onRate={setAutoRate} />
+        <PoseOverlay video={vid} active={pose} guides={guides} onSkeleton={(s) => { poseSk.current = s; }} onStatus={(s, msg) => setPoseStatus({ s, msg })} />
       </div>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Commandes du lecteur">
         <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ 1 image</button>
@@ -442,7 +438,6 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       {pose && (
         <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
           <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
-          {rate < speed - 0.04 && <p role="status" className="m-0 font-bold">🐢 La vidéo est ralentie automatiquement à {String(rate.toFixed(2)).replace(".", ",")}× pour que le squelette suive le joueur sans retard. Sur un appareil plus puissant elle ira plus vite.</p>}
           <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
           <p className="hint m-0">Le calcul se fait sur cet appareil : la vidéo n'est envoyée nulle part. Si le joueur est flou ou caché, glisse les points à la main sur l'image capturée.</p>
         </div>
