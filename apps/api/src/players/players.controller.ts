@@ -46,6 +46,7 @@ export class PlayersController {
 
   @Get("players/:id/stars") stars(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.stars(u, id); }
   @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/line/:lineId") @HttpCode(204) removeStarLine(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("lineId") lid: string) { return this.svc.removeStarLine(u, id, lid); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
 
   @Get("players/:id/declared-matches") declaredMatches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.declaredMatches(u, id); }

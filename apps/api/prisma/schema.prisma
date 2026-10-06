@@ -186,6 +186,9 @@ model Goal {
   checkpoints GoalCheckpoint[]
 
   @@index([playerId, season])
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 // Point de contrôle d'un objectif à la fin d'un trimestre : où le jeune en est, et la note du coach (garde l'historique pour le bulletin)
@@ -200,6 +203,9 @@ model GoalCheckpoint {
   updatedAt DateTime @updatedAt
 
   @@unique([goalId, trimester])
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 model Evaluation {
@@ -217,6 +223,9 @@ model Evaluation {
   updatedAt    DateTime @updatedAt
 
   @@unique([playerId, season, trimester])
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 // Match déclaré PAR le jeune (avec des choix proposés). Visible du jeune et du coach seulement, jamais des parents.
@@ -254,6 +263,9 @@ model CourseStar {
   createdAt DateTime @default(now())
 
   @@index([playerId, day])
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 // Auto-évaluation du jeune en fin de trimestre : choix pré-enregistrés (identifiants) + un mot libre court.
@@ -290,6 +302,9 @@ model Match {
   remark     String   @default("")
 
   @@index([playerId, date])
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 model Video {
@@ -360,6 +375,9 @@ model Analysis {
   sentAt       DateTime?
   createdAt    DateTime @default(now())
   goals        AnalysisGoal[]
+  authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
+  authorName String?
+  authorRole String?
 }
 
 model AnalysisGoal {

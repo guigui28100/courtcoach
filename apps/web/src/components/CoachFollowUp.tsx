@@ -7,7 +7,7 @@ import { CoachSelfEval } from "./SelfEval";
 import { Radar } from "./Radar";
 import { hasContent } from "./BulletinShelf";
 import { MatchTable, useFollowUp } from "./Suivi";
-import { Err, Field } from "./ui";
+import { AuthorBadge, Err, Field } from "./ui";
 import { AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
@@ -72,6 +72,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
         {t === 0 && <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>}
+        {saved && <AuthorBadge a={saved} prefix="Dernière saisie :" />}
         {saved && <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">{t === 0 ? "Voir le bilan" : "Voir le bulletin"}</Link>}
       </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, starReason, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars } from "../types";
+import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, starReason, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -49,21 +49,21 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
 }
 
 // Radar « de tous les jours » : alimenté par les étoiles de la saison, mis à jour à chaque cours
-export function StarsRadar({ stars, dark = false, who = "jeune" }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach" }) {
+export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
-  const season = currentSeason();
-  const by = starsByDomain(stars, season);
+  const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
+  const by = starsByDomain(stars, season, t);
   const values = Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.min(5, (by[a.key] * 5) / STARS_FOR_FULL)]));
   const total = Object.values(by).reduce((n, v) => n + v, 0);
   const sub = dark ? "text-white/80" : "text-muted";
   const me = who === "jeune";
   return (
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
-      <h2 id="stars-radar" className="m-0 text-2xl">🌟 {me ? "Mon radar de tous les jours" : "Le radar de tous les jours"}</h2>
-      <p className={"m-0 " + sub}>{me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit : il se met à jour à chaque cours, toute la saison !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours de la saison et se met à jour à chaque cours."} Quand un domaine a {STARS_FOR_FULL} étoiles, il est plein.</p>
-      {total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile cette saison : le radar se remplira dès les premiers cours.</p> : (
+      <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Radar des étoiles du trimestre ${t}` : me ? `Mon radar de tous les jours · trimestre ${t}` : `Le radar de tous les jours · trimestre ${t}`}</h2>
+      <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
+      {total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar se remplira dès les premiers cours.</p> : (
         <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
-          <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles ${season.replace("-", "/")}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
+          <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
           <ul className="m-0 grid list-none gap-2 p-0" aria-label="Étoiles par domaine">
             {EVAL_AXES.map((a) => (
               <li key={a.key} className={"flex items-center justify-between gap-3 rounded-xl px-3 py-2 " + (dark ? "bg-white/10" : "bg-sand/60")}>
@@ -91,8 +91,12 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
       {lines.map((l, i) => (
         <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <StarPicker value={l.stars} onChange={(n) => set(i, { stars: Math.max(1, n) })} label={`Étoiles n°${i + 1} pour ${who}`} />
-            <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>Retirer</button>
+            <div className="flex items-center gap-2" role="group" aria-label={`Étoiles n°${i + 1} pour ${who}`}>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Enlever une étoile" disabled={l.stars <= 1} onClick={() => set(i, { stars: l.stars - 1 })}>−</button>
+              <output className="min-w-24 text-center text-xl" aria-live="polite">{"⭐".repeat(l.stars)}</output>
+              <button type="button" className="btn-outline btn-sm !min-h-11 !w-11 !px-0 text-xl" aria-label="Ajouter une étoile" disabled={l.stars >= 3} onClick={() => set(i, { stars: l.stars + 1 })}>+</button>
+            </div>
+            <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
           <p className="hint m-0">Pourquoi ?</p>
           <ReasonPicker value={l.reason} onChange={(id) => set(i, { reason: id })} />

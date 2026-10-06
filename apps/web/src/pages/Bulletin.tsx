@@ -1,3 +1,4 @@
+import { StarsRadar, useStars } from "../components/Stars";
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { get } from "../api";
@@ -8,7 +9,7 @@ import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -40,6 +41,7 @@ export default function Bulletin() {
   const [selfEvals, setSelfEvals] = useState<SelfEvaluation[]>([]);
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
+  const stars = useStars(id);
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
@@ -146,6 +148,8 @@ export default function Bulletin() {
             )}
 
             {ev?.next?.trim() && <Tint emoji="🚀" title={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Pour le trimestre suivant"} text={ev.next} bg="#f3efff" ink="#5b21b6" />}
+
+            {t > 0 && stars && Object.values(starsByDomain(stars, season, t)).some((n) => n > 0) && <StarsRadar bulletin stars={stars} season={season} t={t} who={me?.role === "COACH" || me?.role === "TRAINER" ? "coach" : "famille"} />}
 
             {(() => { const se = t > 0 ? selfEvals.find((e) => e.season === season && e.trimester === t && e.sentAt) : undefined; return se ? (
               <section className="grid min-w-0 gap-2 break-inside-avoid rounded-2xl border-2 border-[#d9ccff] p-4" aria-labelledby="bul-regard">

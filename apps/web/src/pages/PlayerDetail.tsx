@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
-import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { DOMAIN_EMOJI, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
@@ -301,7 +301,8 @@ function Objectifs({ p }: { p: Player }) {
             <section key={a.key} className="card grid content-start gap-3 border-t-[6px]" style={{ borderTopColor: a.color }} aria-label={a.label}>
               <h3 className="m-0" style={{ color: a.color }}>{a.label}</h3>
               {mine.map((g) => (
-                <article key={g.id} className={"grid gap-2 rounded-xl border border-line bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")}>
+                <article key={g.id} className={"grid gap-2 rounded-xl border border-line border-l-[6px] bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")} style={{ borderLeftColor: authorColor(g) ?? undefined }}>
+                  <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" /></div>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
                   <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={g.indicator} maxLength={200} onBlur={(e) => e.target.value !== g.indicator && upd(g, { indicator: e.target.value })} />
                   <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"><legend className="mb-1 text-sm font-bold">À travailler au</legend>
@@ -366,7 +367,7 @@ function StarsTab({ p }: { p: Player }) {
           <ul className="m-0 grid list-none gap-2 p-0">{days.map((d) => { const list = stars.filter((s) => s.day === d); return (
             <li key={d} className="grid gap-1 rounded-xl border border-line px-3 py-2">
               <span className="flex flex-wrap items-center justify-between gap-2"><strong>{fmtDay(d)}</strong><span className="flex gap-2"><button className="btn-outline btn-sm" onClick={() => edit(d)}>Corriger</button><button className="btn-danger btn-sm" onClick={async () => { if (confirm("Retirer toutes les étoiles de ce cours ?")) { await del(`/players/${p.id}/stars/${d}`); setVersion((v) => v + 1); } }}>Retirer</button></span></span>
-              {list.map((s) => <span key={s.id}><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${s.domain}` : ""}{s.comment ? <small className="hint block">{s.comment}</small> : null}</span>)}
+              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-2"><button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button><span><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${s.domain}` : ""}{s.comment ? <small className="hint block">{s.comment}</small> : null} <AuthorBadge a={s} /></span></span>)}
             </li>
           ); })}</ul>
         )}

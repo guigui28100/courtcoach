@@ -128,13 +128,13 @@ export class VideosService {
       fromCoach: v.fromCoach,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, email: v.owner.email } : null,
-      analysis: visible ? this.analysisOut(a) : null,
+      analysis: visible ? this.analysisOut(a, coach) : null,
       images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
       messageCount: v._count?.messages ?? 0,
     };
   }
-  private analysisOut(a: any) {
-    return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId) };
+  private analysisOut(a: any, staff = false) {
+    return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId), ...(staff ? { authorName: a.authorName, authorRole: a.authorRole } : {}) };
   }
   private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, _count: { select: { messages: true } } };
 
@@ -193,7 +193,8 @@ export class VideosService {
       const n = await this.prisma.goal.count({ where: { id: { in: dto.goalIds }, playerId: v.playerId } });
       if (n !== new Set(dto.goalIds).size) throw new BadRequestException("Objectif invalide.");
     }
-    const data = { observation: dto.observation ?? "", strengths: dto.strengths ?? "", improve: dto.improve ?? "", exercises: (dto.exercises ?? []).map((e) => e.trim()).filter(Boolean) };
+    const me = await this.prisma.user.findUnique({ where: { id: user.id }, select: { firstName: true } });
+    const data = { authorId: user.id, authorName: me?.firstName || (user.role === Role.COACH ? "Coach" : "Entraîneur"), authorRole: user.role as string, observation: dto.observation ?? "", strengths: dto.strengths ?? "", improve: dto.improve ?? "", exercises: (dto.exercises ?? []).map((e) => e.trim()).filter(Boolean) };
     const existing = await this.prisma.analysis.findFirst({ where: { videoId: id } });
     const a = existing ? await this.prisma.analysis.update({ where: { id: existing.id }, data }) : await this.prisma.analysis.create({ data: { videoId: id, playerId: v.playerId, ...data } });
     if (dto.goalIds) {
