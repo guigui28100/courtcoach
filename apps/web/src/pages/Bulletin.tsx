@@ -46,7 +46,8 @@ export default function Bulletin() {
     get<SelfEvaluation[]>(`/players/${id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
   }, [id, season]);
 
-  const back = me?.role === "COACH" ? `/coach/centre/${id}` : "/suivi";
+  const staff = me?.role === "COACH" || me?.role === "TRAINER";
+  const back = staff ? `/coach/centre/${id}` : "/suivi";
   if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
   if (!p || !evals) return <p className="p-8 text-center text-muted">Chargement…</p>;
 
@@ -93,7 +94,7 @@ export default function Bulletin() {
         <div className="print:hidden mb-4 flex flex-wrap items-center gap-3">
           <Link to={back} className="font-bold text-white underline">← Retour</Link>
           <button className="gal-btn" onClick={() => window.print()}>🖨️ Imprimer / Enregistrer en PDF</button>
-          {me?.role === "COACH" && <Link to={`/coach/centre/${id}/apercu`} className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme le jeune</Link>}
+          {staff && <Link to={`/coach/centre/${id}/apercu`} className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme le jeune</Link>}
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>
         </div>
 

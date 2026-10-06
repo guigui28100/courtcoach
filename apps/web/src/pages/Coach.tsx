@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
+import { TrainersTab } from "../components/Trainers";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
@@ -210,8 +211,10 @@ async function createExample(stage: "debut" | "fin" = "debut"): Promise<string> 
 // ───────── ESPACE JEUNES : le Centre de compétition ─────────
 export function Centre() {
   const nav = useNavigate();
+  const { me } = useAuth();
+  const isCoach = me?.role === "COACH"; // un entraîneur de comité ne voit que les jeunes qui lui sont confiés : pas de création, pas de dossiers inactifs, pas de gestion des comptes
   const d = useCoachData();
-  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "dossiers"] as const);
+  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "dossiers", "entraineurs"] as const);
   const players = d.players, inactive = d.inactive;
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
@@ -234,16 +237,16 @@ export function Centre() {
         tone="jeunes"
         eyebrow="Espace jeunes · Centre de compétition"
         title="🏆 Mes jeunes compétiteurs"
-        subtitle="Profil, objectifs de l'année, accords des parents et accès des familles."
-        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link><button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button></>}
+        subtitle={isCoach ? "Profil, objectifs de l'année, accords des parents et accès des familles." : "Les jeunes que le coach te confie : objectifs, missions, bilans, bulletins, étoiles et vidéos."}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link>{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
       />
       <Page>
-        <p className="alert m-0"><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</p>
-        <TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ["dossiers", "🗓️ Dossiers à vérifier", inactive.length]]} />
+        <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
+        <TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />
 
         {tab === "joueurs" && (
           <>
-        {open && (
+        {isCoach && open && (
           <form onSubmit={add} className="card grid gap-4 sm:grid-cols-2" noValidate>
             <Field label="Prénom" id="p-first"><input id="p-first" name="firstName" required maxLength={60} className="input" autoFocus /></Field>
             <Field label="Nom" id="p-last"><input id="p-last" name="lastName" maxLength={60} className="input" /></Field>
@@ -275,15 +278,15 @@ export function Centre() {
               </div>
             </div>
           ))}
-              {!players.length && <div className="sm:col-span-2 lg:col-span-3"><Empty>Aucun joueur pour l'instant. Ajoute le premier avec le bouton « + Ajouter un joueur » ci-dessus.</Empty></div>}
+              {!players.length && <div className="sm:col-span-2 lg:col-span-3"><Empty>{isCoach ? "Aucun joueur pour l'instant. Ajoute le premier avec le bouton « + Ajouter un joueur » ci-dessus." : "Le coach ne t'a pas encore confié de jeune."}</Empty></div>}
             </div>
-            <details className="card">
+            {isCoach && <details className="card">
               <summary className="cursor-pointer font-bold text-muted">Pour essayer : créer un joueur fictif</summary>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
                 <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
               </div>
-            </details>
+            </details>}
           </>
         )}
 
@@ -298,7 +301,9 @@ export function Centre() {
           </ul>
         )}
 
-        {tab === "dossiers" && (
+        {isCoach && tab === "entraineurs" && <TrainersTab players={players} />}
+
+        {isCoach && tab === "dossiers" && (
           <section className="card grid gap-2">
             <h2 className="m-0 text-lg">Dossiers inactifs depuis plus de 12 mois</h2>
             <p className="hint m-0">Les données d'un jeune qui a quitté le club ne doivent pas être gardées : télécharge une copie si besoin, puis supprime.</p>

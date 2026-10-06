@@ -14,6 +14,7 @@ enum Role {
   ADULT      // adhérent adulte
   GUARDIAN   // parent ou responsable légal d'un jeune du Centre
   YOUTH      // compte d'un jeune, ouvert sur invitation du coach (facultatif)
+  TRAINER    // entraîneur de comité : créé par le coach, ne voit que les jeunes que le coach lui a choisis (jamais les demandes de coaching)
 }
 
 enum Axis {

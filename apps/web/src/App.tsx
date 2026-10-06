@@ -34,13 +34,13 @@ export default function App() {
         <Route path="/autorisation" element={<Authorization />} />
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
-        <Route path="/coach/securite" element={<Guard roles={["COACH"]}><Securite /></Guard>} />
-        <Route path="/coach/centre" element={<Guard roles={["COACH"]}><Centre /></Guard>} />
-        <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH"]}><FinDeCours /></Guard>} />
-        <Route path="/coach/centre/:id" element={<Guard roles={["COACH"]}><PlayerDetail /></Guard>} />
-        <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH"]}><Apercu /></Guard>} />
-        <Route path="/coach/videos/:id" element={<Guard roles={["COACH"]}><VideoReview /></Guard>} />
-        <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH"]}><Bulletin /></Guard>} />
+        <Route path="/coach/securite" element={<Guard roles={["COACH", "TRAINER"]}><Securite /></Guard>} />
+        <Route path="/coach/centre" element={<Guard roles={["COACH", "TRAINER"]}><Centre /></Guard>} />
+        <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH", "TRAINER"]}><FinDeCours /></Guard>} />
+        <Route path="/coach/centre/:id" element={<Guard roles={["COACH", "TRAINER"]}><PlayerDetail /></Guard>} />
+        <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH", "TRAINER"]}><Apercu /></Guard>} />
+        <Route path="/coach/videos/:id" element={<Guard roles={["COACH", "TRAINER"]}><VideoReview /></Guard>} />
+        <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />

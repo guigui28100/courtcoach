@@ -67,9 +67,9 @@ export class AuthController {
     return publicUser(user);
   }
 
-  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/setup") twoFactorSetup(@CurrentUser() u: AuthUser) { return this.auth.twoFactorSetup(u.id); }
-  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/enable") twoFactorEnable(@CurrentUser() u: AuthUser, @Body() dto: TotpCodeDto) { return this.auth.twoFactorEnable(u.id, dto.code); }
-  @Roles(Role.COACH) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(204) @Post("2fa/disable") twoFactorDisable(@CurrentUser() u: AuthUser, @Body() dto: TotpDisableDto) { return this.auth.twoFactorDisable(u.id, dto.password, dto.code); }
+  @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/setup") twoFactorSetup(@CurrentUser() u: AuthUser) { return this.auth.twoFactorSetup(u.id); }
+  @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/enable") twoFactorEnable(@CurrentUser() u: AuthUser, @Body() dto: TotpCodeDto) { return this.auth.twoFactorEnable(u.id, dto.code); }
+  @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(204) @Post("2fa/disable") twoFactorDisable(@CurrentUser() u: AuthUser, @Body() dto: TotpDisableDto) { return this.auth.twoFactorDisable(u.id, dto.password, dto.code); }
 
   @Get("me/export") exportMine(@CurrentUser() u: AuthUser) { return this.auth.exportAccount(u.id); }
 

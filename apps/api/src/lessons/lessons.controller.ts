@@ -1,9 +1,12 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { AuthUser } from "../common/auth.types";
-import { CurrentUser } from "../common/decorators";
+import { Role } from "@prisma/client";
+import { CurrentUser, Roles } from "../common/decorators";
 import { AnswerLessonDto, CreateLessonDto } from "./lessons.dto";
 import { LessonsService } from "./lessons.service";
 
+// Les demandes de coaching : réservées aux adultes et au coach (ni familles, ni entraîneurs de comité)
+@Roles(Role.COACH, Role.ADULT)
 @Controller("lessons")
 export class LessonsController {
   constructor(private readonly svc: LessonsService) {}

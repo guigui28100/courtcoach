@@ -23,3 +23,5 @@
 **Mesures de sécurité** : mots de passe chiffrés (Argon2) ; double authentification du coach ; blocage après 5 erreurs ; session fermée après 30 minutes ; connexion chiffrée imposée ; cloisonnement strict (aucun accès des adultes aux jeunes, chaque famille voit son enfant) ; vidéos servies seulement après vérification des droits ; journal des actions sensibles ; suppression automatique des vidéos après 12 mois ; droits d'accès / effacement par la personne ou le coach. Détails : `apps/SECURITE.md`.
 
 **Droits des personnes** : accès et copie (bouton « télécharger »), effacement (bouton « supprimer »), rectification (le coach), retrait du droit à l'image (les vidéos du jeune sont alors supprimées).
+
+**Entraîneurs de comité** : comptes créés par le coach (e-mail, prénom, mot de passe chiffré). Chacun ne voit que les jeunes que le coach coche ; ni santé, ni notes privées ; aucun accès aux adultes. Ouvertures de fiche et de vidéo inscrites au journal (12 mois). Compte supprimable à tout moment par le coach ; double authentification possible.

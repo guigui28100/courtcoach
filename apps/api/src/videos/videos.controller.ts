@@ -26,20 +26,20 @@ export class VideosController {
     }).end(r.data);
   }
 
-  @Roles(Role.COACH) @Post("videos/:id/images") addImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("note") note: string | undefined, @Req() req: Request) { return this.svc.addImage(u, id, req.body, note); }
+  @Roles(Role.COACH, Role.TRAINER) @Post("videos/:id/images") addImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("note") note: string | undefined, @Req() req: Request) { return this.svc.addImage(u, id, req.body, note); }
   @Get("videos/:id/images/:imageId")
   async image(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Res() res: Response) {
     const r = await this.svc.imageFile(u, id, imageId);
     res.status(200).set({ "Content-Type": r.mime, "Content-Length": String(r.data.length), "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" }).end(r.data);
   }
-  @Roles(Role.COACH) @Delete("videos/:id/images/:imageId") @HttpCode(204) removeImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.removeImage(u, id, imageId); }
+  @Roles(Role.COACH, Role.TRAINER) @Delete("videos/:id/images/:imageId") @HttpCode(204) removeImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.removeImage(u, id, imageId); }
 
   @Get("videos/:id") detail(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.detail(u, id); }
   @Delete("videos/:id") @HttpCode(204) remove(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.remove(u, id); }
   @Post("videos/:id/seen") @HttpCode(204) seen(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.markSeen(u, id); }
   @Post("videos/:id/messages") message(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: MessageDto) { return this.svc.addMessage(u, id, dto.text); }
-  @Roles(Role.COACH) @Put("videos/:id/analysis") saveAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: AnalysisDto) { return this.svc.saveAnalysis(u, id, dto); }
-  @Roles(Role.COACH) @Post("videos/:id/analysis/send") @HttpCode(204) sendAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.sendAnalysis(u, id); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/analysis") saveAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: AnalysisDto) { return this.svc.saveAnalysis(u, id, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Post("videos/:id/analysis/send") @HttpCode(204) sendAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.sendAnalysis(u, id); }
 
   // Appelée chaque nuit par Vercel (tâche planifiée) : supprime les vidéos de plus de 12 mois.
   @Public() @Get("cron/purge")

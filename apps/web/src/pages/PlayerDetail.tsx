@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
+import { useAuth } from "../auth";
 import { StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
@@ -15,6 +16,7 @@ const CONSENT_LABEL: Record<Consent["kind"], string> = {
 const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6"];
 
 function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
+  const isCoach = useAuth().me?.role === "COACH"; // santé et notes privées : réservées au coach
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,14 +43,14 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
         ))}
         {t("hand", "Main")}{t("backhand", "Revers")}{t("playStyle", "Style de jeu")}{t("training", "Entraînement et compétitions")}{t("availability", "Disponibilités")}
       </fieldset>
-      <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
+      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et les parents.">
           <textarea id="health" name="health" className="input" defaultValue={p.health ?? ""} maxLength={1000} />
         </Field>
-      </fieldset>
-      <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Notes privées</legend>
+      </fieldset>}
+      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Notes privées</legend>
         <Field label="Notes du coach" id="coachNotes" hint="Seul toi peux les lire : jamais visibles par les familles."><textarea id="coachNotes" name="coachNotes" className="input" defaultValue={p.coachNotes ?? ""} maxLength={3000} /></Field>
-      </fieldset>
+      </fieldset>}
       <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
@@ -392,6 +394,7 @@ function PlayerVideosTab({ p }: { p: Player }) {
 }
 
 export default function PlayerDetail() {
+  const isCoach = useAuth().me?.role === "COACH";
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
   const [missing, setMissing] = useState(false);
@@ -402,7 +405,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = [["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["etoiles", "⭐ Étoiles"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]];
+  const tabs: [Tab, string][] = ([["profil", "Profil"], ["accords", "Accords et famille"], ["objectifs", "Objectifs"], ["evaluations", "Évaluations"], ["etoiles", "⭐ Étoiles"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>

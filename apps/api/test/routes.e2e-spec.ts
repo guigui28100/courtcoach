@@ -35,7 +35,7 @@ describe("Matrice des droits de toutes les routes", () => {
       }
     }
     await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.user.deleteMany();
-    for (const [email, role] of [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH]] as [string, Role][]) await prisma.user.create({ data: { email, role, passwordHash: await hash(PASSWORD) } });
+    for (const [email, role] of [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER]] as [string, Role][]) await prisma.user.create({ data: { email, role, passwordHash: await hash(PASSWORD) } });
   });
   afterAll(async () => { await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.user.deleteMany(); await app.close(); });
 
@@ -55,8 +55,8 @@ describe("Matrice des droits de toutes les routes", () => {
     }
   });
 
-  it("les routes réservées au coach refusent adulte, parent et jeune (403)", async () => {
-    const who: [string, Role][] = [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH]];
+  it("les routes réservées au coach refusent adulte, parent, jeune et entraîneur (403)", async () => {
+    const who: [string, Role][] = [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER]];
     const coachOnly = routes.filter((r) => !r.pub && r.roles && r.roles.length === 1 && r.roles[0] === Role.COACH);
     expect(coachOnly.length).toBeGreaterThanOrEqual(4);
     for (const [email, role] of who) {

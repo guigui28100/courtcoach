@@ -6,7 +6,7 @@ import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, Inv
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
-@Roles(Role.COACH, Role.GUARDIAN, Role.YOUTH)
+@Roles(Role.COACH, Role.TRAINER, Role.GUARDIAN, Role.YOUTH)
 @Controller()
 export class PlayersController {
   constructor(private readonly svc: PlayersService) {}
@@ -42,17 +42,17 @@ export class PlayersController {
   @Get("players/:id/self-evaluations") selfEvaluations(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.selfEvaluations(u, id); }
   @Roles(Role.GUARDIAN, Role.YOUTH) @Put("players/:id/self-evaluations/:season/:trimester") saveSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number, @Body() dto: SelfEvaluationDto) { return this.svc.saveSelfEvaluation(u, id, season, t, dto); }
   @Roles(Role.GUARDIAN, Role.YOUTH) @Post("players/:id/self-evaluations/:season/:trimester/send") sendSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.sendSelfEvaluation(u, id, season, t); }
-  @Roles(Role.COACH) @Post("players/:id/self-evaluations/:season/:trimester/read") readSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.markSelfEvaluationRead(u, id, season, t); }
+  @Roles(Role.COACH, Role.TRAINER) @Post("players/:id/self-evaluations/:season/:trimester/read") readSelfEvaluation(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("season") season: string, @Param("trimester", ParseIntPipe) t: number) { return this.svc.markSelfEvaluationRead(u, id, season, t); }
 
   @Get("players/:id/stars") stars(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.stars(u, id); }
-  @Roles(Role.COACH) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
-  @Roles(Role.COACH) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
 
   @Get("players/:id/declared-matches") declaredMatches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.declaredMatches(u, id); }
   @Roles(Role.YOUTH) @Post("players/:id/declared-matches") addDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: DeclaredMatchDto) { return this.svc.addDeclaredMatch(u, id, dto); }
   @Roles(Role.YOUTH) @Put("players/:id/declared-matches/:matchId") updateDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("matchId") mid: string, @Body() dto: DeclaredMatchDto) { return this.svc.updateDeclaredMatch(u, id, mid, dto); }
-  @Roles(Role.COACH, Role.YOUTH) @Delete("players/:id/declared-matches/:matchId") @HttpCode(204) removeDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("matchId") mid: string) { return this.svc.removeDeclaredMatch(u, id, mid); }
-  @Roles(Role.COACH) @Put("players/:id/declared-matches/:matchId/comment") commentDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("matchId") mid: string, @Body() dto: MatchCommentDto) { return this.svc.commentDeclaredMatch(u, id, mid, dto); }
+  @Roles(Role.COACH, Role.TRAINER, Role.YOUTH) @Delete("players/:id/declared-matches/:matchId") @HttpCode(204) removeDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("matchId") mid: string) { return this.svc.removeDeclaredMatch(u, id, mid); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/declared-matches/:matchId/comment") commentDeclaredMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("matchId") mid: string, @Body() dto: MatchCommentDto) { return this.svc.commentDeclaredMatch(u, id, mid, dto); }
 
   @Get("players/:id/matches") matches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.matches(u, id); }
   @Post("players/:id/matches") addMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: MatchDto) { return this.svc.addMatch(u, id, dto); }
