@@ -1,6 +1,6 @@
 import { StarsRadar, useStars } from "../components/Stars";
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { get } from "../api";
 import { useAuth } from "../auth";
 import { Planet, Stars } from "../components/Galaxy";
@@ -9,7 +9,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { AXES, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -117,15 +117,13 @@ export default function Bulletin() {
           <div className="grid gap-6 p-6 sm:p-8">
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte, en cours ou non atteinte.</p></div>
-                <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
-                    <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
-                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
-                      {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
-                    </li>
-                  ); })}
-                </ul>
+                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
+                <DomainMissions goals={here} render={(g) => { const st = statusAt(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
+                  <li key={g.id} className="grid gap-1">
+                    <div className="flex items-start justify-between gap-2"><span>{g.title}</span><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
+                    {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
+                  </li>
+                ); }} />
               </section>
             )}
 
@@ -161,16 +159,8 @@ export default function Bulletin() {
 
             {startGoals.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-t1">
-                <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 Objectifs à travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison.</p></div>
-                <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {startGoals.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); return (
-                    <li key={g.id} className="grid min-w-0 break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a?.color ?? "#7c3aed"}` }}>
-                      <strong>{g.title}</strong>
-                      <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
-                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
-                    </li>
-                  ); })}
-                </ul>
+                <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 À travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison, domaine par domaine.</p></div>
+                <DomainMissions goals={startGoals} rating={(k) => ev?.ratings?.[k]} render={(g) => <li key={g.id}>{g.title}</li>} />
               </section>
             )}
 
@@ -196,6 +186,20 @@ export default function Bulletin() {
           </div>
         </article>
       </div>
+    </div>
+  );
+}
+
+// Une seule carte par domaine (technique, tactique, physique, mental), avec dessous ce qu'il y a à travailler
+function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: Goal) => ReactNode; rating?: (axisKey: string) => number | undefined }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+      {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase()); return (
+        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }} aria-label={a.label}>
+          <h3 className="m-0 flex items-center justify-between gap-2 text-lg" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
+          <ul className="m-0 grid list-disc gap-1.5 pl-5">{list.map(render)}</ul>
+        </section>
+      ); })}
     </div>
   );
 }

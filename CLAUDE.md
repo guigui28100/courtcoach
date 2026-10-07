@@ -88,3 +88,4 @@
 - Le « mot du coach » (champ `appreciation`, facultatif) se saisit dans le bilan de départ et dans l'image du joueur de fin de trimestre (`StartBilan`) ; il apparaît sur le bulletin sous le radar.
 - Dans le bilan de départ, le coach ajoute directement les missions à travailler (texte libre + domaine, trimestre 1, suppression possible) ; elles apparaissent aussitôt dans l'onglet « Mes missions » du jeune. Des idées sont proposées d'après les domaines notés 3 ou moins.
 - Bulletin du bilan de départ : le radar « Image du joueur » est en haut, puis le mot du coach, puis les objectifs du trimestre 1.
+- Sur les bulletins, les missions sont regroupées en UNE carte par domaine (technique, tactique, physique, mental) avec dessous ce qu'il y a à travailler (bilan de départ : avec la note du domaine ; trimestre : avec atteinte / en cours / non atteinte et le mot du coach).
