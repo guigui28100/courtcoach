@@ -1,4 +1,4 @@
-import { StarsRadar, useStars } from "../components/Stars";
+import { StarsRadar, useQualities, useStars } from "../components/Stars";
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { get } from "../api";
@@ -9,7 +9,7 @@ import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { missionPercent, missionStars, QUALITIES, qualityAverages, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -42,6 +42,7 @@ export default function Bulletin() {
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
   const stars = useStars(id);
+  const qualities = useQualities(id);
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
@@ -60,6 +61,11 @@ export default function Bulletin() {
   const brief = (s: string, n: number) => (n === 0 ? "le bilan de départ" : `T${n} ${s.slice(0, 4)}/${s.slice(7)}`); // « T3 2025/26 » : tient sur une ligne
   const now: Record<string, number> = {}, before: Record<string, number> = {};
   EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(ev, a); before[a.key] = axisAverage(prev, a); });
+  // L'axe « Attitude » de l'araignée s'appuie sur les 4 qualités notées à chaque cours (moyenne du trimestre), quand il y en a
+  const qNow = qualityAverages(qualities ?? [], season, t), qBefore = t >= 1 ? qualityAverages(qualities ?? [], pp.season, pp.t) : null;
+  const meanQ = (a: Record<string, number | null>) => { const v = Object.values(a).filter((x): x is number => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
+  if (t > 0 && meanQ(qNow.avg) != null) now.attitude = meanQ(qNow.avg)!;
+  if (qBefore && meanQ(qBefore.avg) != null) before.attitude = meanQ(qBefore.avg)!;
   // Radar : maintenant, le trimestre précédent, et le point de départ de la saison (bilan de début d'année) quand il est différent
   const start = t >= 2 ? evals.find((e) => e.season === season && e.trimester === 0) : undefined;
   const origin: Record<string, number> = {};
@@ -72,6 +78,7 @@ export default function Bulletin() {
   const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t)); // le bilan de départ n'a pas encore d'objectifs
   const startGoals = t === 0 ? goals.filter((g) => goalApplies(g, 1)) : []; // le bilan de départ annonce ce qui sera à travailler au trimestre 1
   const at = (g: Goal) => progressAt(g, t);
+  const LAB = { ACHIEVED: "Atteinte", NOT_ACHIEVED: "Non atteinte", IN_PROGRESS: "En progrès" } as const;
   const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
   const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
@@ -115,16 +122,15 @@ export default function Bulletin() {
           <div className="grid gap-6 p-6 sm:p-8">
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Objectifs du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {STATUS[k].label.toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Ce que {p.firstName} avait à travailler et le bilan de chaque objectif à la fin du trimestre.</p></div>
+                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte ou non atteinte, avec les étoiles gagnées sur chacune.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
-                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : "Pas encore évalué"}</span></div>
+                      <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
                       {carried && <span className="text-sm font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
                       <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
                       {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
-                      {v !== null && <div role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={`Où il en est : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${v}%`, background: `linear-gradient(90deg, ${a?.color ?? "#7c3aed"}, #dcf247)` }} /></div>}
-                      {v !== null && before !== null && <span className="text-sm font-bold" style={{ color: v > before ? "#166534" : "#4b5566" }}>{v > before ? `▲ +${v - before} points depuis le trimestre précédent` : v < before ? `▼ ${v - before} points depuis le trimestre précédent` : "= stable depuis le trimestre précédent"}</span>}
+                      {(() => { const earned = missionStars(stars ?? [], g.id, season, t), target = g.targetStars ?? 10, pct = missionPercent(earned, target); return <><div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Étoiles gagnées : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: a?.color ?? "#7c3aed" }} /></div><span className="text-sm font-bold">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} ({pct} %)</span></>; })()}
                       {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
                     </li>
                   ); })}
@@ -157,6 +163,20 @@ export default function Bulletin() {
                 <SelfEvalView ev={se} goals={here} />
               </section>
             ) : null; })()}
+
+            {t > 0 && qNow.courses > 0 && (
+              <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-qualites">
+                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 4 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Moyenne des notes (de 1 à 5) données à {qNow.courses} cours.</p></div>
+                <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
+                  {QUALITIES.map((q) => { const v = qNow.avg[q.key]; return (
+                    <li key={q.key} className="grid gap-1 rounded-2xl bg-[#f6f4fb] p-3">
+                      <span className="flex items-baseline justify-between gap-2"><strong><span aria-hidden="true">{q.emoji} </span>{q.label}</strong><span className="font-black">{v == null ? "—" : `${v.toFixed(1).replace(".", ",")} / 5`}</span></span>
+                      <div role="progressbar" aria-valuenow={v == null ? 0 : Math.round((v / 5) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={q.label} className="h-2.5 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full bg-[#7c3aed]" style={{ width: `${v == null ? 0 : (v / 5) * 100}%` }} /></div>
+                    </li>
+                  ); })}
+                </ul>
+              </section>
+            )}
 
             {(rated || t === 0 || !!ev?.strengths?.trim() || !!ev?.improve?.trim() || !!ev?.appreciation?.trim()) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">

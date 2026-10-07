@@ -11,7 +11,7 @@ import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
+import { missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -73,7 +73,7 @@ function StartBilan({ p, base }: { p: Player; base: string }) {
   );
 }
 
-function Missions({ goals, p, base }: { goals: Goal[]; p: Player; base: string }) {
+function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: string; stars: CourseStar[] | null }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t)); // les missions de CE trimestre
   return (
@@ -93,7 +93,7 @@ function Missions({ goals, p, base }: { goals: Goal[]; p: Player; base: string }
                     <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : g.progress > 0 ? `${g.progress} %` : "🎯 À travailler"}</span></div>
                     {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
                     {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
-                    <MissionBar value={g.progress} color={m.color} label={`Mission : ${g.title}`} />
+                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
                     {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
                   </div>
                 ); })}
@@ -332,7 +332,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
               {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
-              {tab === "missions" && <><StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
+              {tab === "missions" && <><StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
               {tab === "progres" && <><StarsRadar stars={stars} dark /><StarsCard stars={stars} dark /><Radarlike p={p} bulletinBase={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /></>}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}

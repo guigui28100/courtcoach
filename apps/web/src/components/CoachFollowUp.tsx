@@ -6,6 +6,7 @@ import { GoalEvalCard } from "./GoalEval";
 import { CoachSelfEval } from "./SelfEval";
 import { Radar } from "./Radar";
 import { hasContent } from "./BulletinShelf";
+import { useStars } from "./Stars";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { AuthorBadge, Err, Field } from "./ui";
 import { RANKINGS, AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
@@ -21,7 +22,7 @@ function PeriodPicker({ season, t, onChange }: { season: string; t: number; onCh
   );
 }
 
-export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void }) {
+export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [season, setSeason] = useState(currentSeason());
   const [t, setT] = useState(trimesterOf());
   const [version, setVersion] = useState(0);
@@ -31,6 +32,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   const [comments, setComments] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [made, setMade] = useState<Record<string, boolean>>({});
   useEffect(() => { get<Goal[]>(`/players/${p.id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([])); }, [p.id, season]);
   const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t));
   // On recharge le formulaire quand on change de trimestre ou quand les données arrivent.
@@ -55,6 +57,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
   }
 
   const axisOf = (g: Goal) => AXES.find((x) => x.key === g.axis);
+  const stars = useStars(p.id);
   const startDone = hasContent(evals?.find((e) => e.season === currentSeason() && e.trimester === 0));
   return (
     <div className="grid gap-4">
@@ -68,6 +71,24 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
         </section>
       )}
       {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
+      {t === 0 && saved && ratedCount(saved) > 0 && (() => {
+        // Les compétences les moins bien notées au bilan de départ : des idées de missions pour le trimestre 1
+        const weak = EVAL_AXES.filter((a) => a.key !== "attitude").flatMap((a) => a.skills.map(([k, label]) => ({ key: k, label, axis: a.key.toUpperCase(), rating: saved.ratings?.[k] ?? 0 }))).filter((x) => x.rating > 0).sort((x, y) => x.rating - y.rating).slice(0, 4);
+        return weak.length ? (
+          <section className="card grid gap-3 border-2 !border-clay" aria-labelledby="ev-missions">
+            <div><h2 id="ev-missions" className="m-0 text-xl">🎯 Du bilan aux missions du trimestre 1</h2><p className="hint m-0">Voici les compétences les moins bien notées au bilan de départ. Crée en un clic une mission à partir de celles que tu veux travailler en priorité (tu pourras ensuite la renommer et choisir son nombre d'étoiles dans l'onglet Objectifs).</p></div>
+            <ul className="m-0 grid list-none gap-2 p-0">
+              {weak.map((w) => (
+                <li key={w.key} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sand/60 px-3 py-2">
+                  <span><strong>{w.label}</strong> <small className="hint">noté {w.rating}/5</small></span>
+                  {made[w.key] ? <span className="font-bold text-ok">✅ Mission créée</span> : <button type="button" className="btn-clay btn-sm" onClick={async () => { try { await post(`/players/${p.id}/goals`, { season, axis: w.axis, title: `Progresser en : ${w.label}`, trimesters: [1] }); setMade((m) => ({ ...m, [w.key]: true })); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } }}>+ Créer la mission</button>}
+                </li>
+              ))}
+            </ul>
+            {onGoto && <div><button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Voir et modifier les missions →</button></div>}
+          </section>
+        ) : null;
+      })()}
       {t > 0 && <CoachSelfEval p={p} season={season} t={t} goals={here} onPick={(s, n) => { setSeason(s); setT(n); }} />}
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
@@ -82,7 +103,7 @@ export function Evaluations({ p, onSaved }: { p: Player; onSaved?: () => void })
             <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin du trimestre {t}</Link></div>
           {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
             <div className="grid gap-3 lg:grid-cols-2">
-              {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} color={axisOf(g)?.color ?? "#7c3aed"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
+              {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} season={season} stars={stars ?? []} color={axisOf(g)?.color ?? "#7c3aed"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
             </div>
           )}
         </section>
