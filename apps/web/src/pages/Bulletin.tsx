@@ -129,20 +129,6 @@ export default function Bulletin() {
               </section>
             )}
 
-            {startGoals.length > 0 && (
-              <section className="grid gap-3" aria-labelledby="bul-t1">
-                <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 Objectifs à travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison.</p></div>
-                <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {startGoals.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); return (
-                    <li key={g.id} className="grid min-w-0 break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a?.color ?? "#7c3aed"}` }}>
-                      <strong>{g.title}</strong>
-                      <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
-                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
-                    </li>
-                  ); })}
-                </ul>
-              </section>
-            )}
 
 
 
@@ -171,6 +157,21 @@ export default function Bulletin() {
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
+            )}
+
+            {startGoals.length > 0 && (
+              <section className="grid gap-3" aria-labelledby="bul-t1">
+                <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 Objectifs à travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison.</p></div>
+                <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
+                  {startGoals.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); return (
+                    <li key={g.id} className="grid min-w-0 break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a?.color ?? "#7c3aed"}` }}>
+                      <strong>{g.title}</strong>
+                      <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
+                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
+                    </li>
+                  ); })}
+                </ul>
+              </section>
             )}
 
             {t > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
