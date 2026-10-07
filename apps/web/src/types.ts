@@ -17,7 +17,7 @@ export interface Consent { id: string; kind: "PRIVACY_POLICY" | "FOLLOW_UP" | "I
 export type GoalStatus = "ACHIEVED" | "IN_PROGRESS" | "NOT_ACHIEVED";
 export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: string; ink: string }> = {
   ACHIEVED: { label: "Atteint", emoji: "✅", bg: "#dcf247", ink: "#10203a" },
-  IN_PROGRESS: { label: "En progrès", emoji: "🔄", bg: "#e7e0ff", ink: "#4c1d95" },
+  IN_PROGRESS: { label: "En cours", emoji: "🔄", bg: "#e7e0ff", ink: "#4c1d95" },
   NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }

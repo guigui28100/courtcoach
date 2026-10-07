@@ -80,21 +80,21 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
 
 // Les étoiles d'un cours : une ou plusieurs lignes, chacune avec son nombre d'étoiles, sa raison et son domaine du radar
 export type StarLine = { stars: number; reason: string; domain: string; comment: string; goalId?: string };
-export const MAX_STAR_LINES = 6;
+export const MAX_STAR_LINES = 12;
 export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "", comment: "" });
 // Message si une ligne est incomplète, sinon chaîne vide
 // Une ligne à 0 n'est pas enregistrée : on ne garde que celles qui ajoutent ou retirent des étoiles
 export const activeLines = (lines: StarLine[]) => lines.filter((l) => l.stars !== 0);
 export const starLinesError = (all: StarLine[]) => {
   const lines = activeLines(all);
-  if (lines.some((l) => !l.reason)) return "Choisis la raison pour chaque ligne d'étoiles.";
+  if (lines.some((l) => !l.goalId && !l.reason)) return "Choisis la raison pour chaque ligne d'étoiles.";
   if (lines.some((l) => !l.goalId && !l.domain)) return "Choisis la mission (ou le domaine du radar) pour chaque ligne d'étoiles.";
   if (lines.some((l) => l.stars < 0 && l.comment.trim().length < 3)) return "Pour retirer des étoiles, explique en une phrase ce qui n'a pas été : le jeune la verra.";
   return "";
 };
 // Les lignes à envoyer au serveur
-export const starItems = (lines: StarLine[]) => activeLines(lines).map((l) => ({ stars: l.stars, reason: l.reason, comment: l.comment.trim() || undefined, ...(l.goalId ? { goalId: l.goalId } : { domain: l.domain }) }));
-export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
+export const starItems = (lines: StarLine[]) => activeLines(lines).map((l) => ({ stars: l.stars, reason: l.goalId ? (l.stars < 0 ? "neg-objectifs" : "progres") : l.reason, comment: l.comment.trim() || undefined, ...(l.goalId ? { goalId: l.goalId } : { domain: l.domain }) }));
+function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
   const set = (i: number, patch: Partial<StarLine>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   return (
     <div className="grid gap-3">
@@ -135,6 +135,40 @@ export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: S
         </div>
       ))}
       {lines.length < MAX_STAR_LINES && <div><button type="button" className="btn-outline btn-sm" onClick={() => onChange([...lines, newStarLine()])}>{lines.length ? "➕ Ajouter une autre ligne (autre raison, autre domaine)" : "⭐ Donner ou retirer des étoiles"}</button></div>}
+    </div>
+  );
+}
+
+// Étoiles = évaluation jour après jour des missions : une rangée par mission (de −3 à 3), puis éventuellement une étoile « hors mission »
+export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
+  if (!goals.length) return <OtherLinesEditor lines={lines} onChange={onChange} who={who} />;
+  const ids = new Set(goals.map((g) => g.id));
+  const others = lines.filter((l) => !l.goalId || !ids.has(l.goalId));
+  const setMission = (g: Goal, patch: Partial<StarLine>) => {
+    const cur = lines.find((l) => l.goalId === g.id);
+    const next: StarLine = { stars: 0, reason: "", domain: g.axis.toLowerCase(), comment: "", ...cur, ...patch, goalId: g.id };
+    onChange(cur ? lines.map((l) => (l === cur ? next : l)) : [...lines, next]);
+  };
+  return (
+    <div className="grid gap-3">
+      <p className="hint m-0">Les étoiles évaluent, cours après cours, les missions de {who}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
+      {goals.map((g) => { const l = lines.find((x) => x.goalId === g.id); const n = l?.stars ?? 0; return (
+        <div key={g.id} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
+          <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
+          <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Étoiles de ${who} pour la mission ${g.title}`}>
+            {[-3, -2, -1, 0, 1, 2, 3].map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={n === k} aria-label={k < 0 ? `Retirer ${-k} étoile${k < -1 ? "s" : ""}` : k === 0 ? "Aucune étoile" : `${k} étoile${k > 1 ? "s" : ""}`} onClick={() => setMission(g, { stars: k })}
+                className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (n === k ? (k < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (k === 0 ? " mx-1" : "")}>{k < 0 ? `−${-k}` : k === 0 ? "0" : "⭐".repeat(k)}</button>
+            ))}
+          </div>
+          {n !== 0 && <label className="grid gap-1 text-sm font-bold">{n < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+            <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => setMission(g, { comment: e.target.value })} placeholder={n < 0 ? "Ex. : Peu de concentration sur cet exercice, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>}
+        </div>
+      ); })}
+      <details className="rounded-2xl border border-line bg-white p-3" open={others.length > 0}>
+        <summary className="cursor-pointer font-bold">Autre étoile, hors mission (comportement, bonne ambiance…)</summary>
+        <div className="mt-2"><OtherLinesEditor lines={others} who={who} onChange={(o) => onChange([...lines.filter((l) => l.goalId && ids.has(l.goalId)), ...o])} /></div>
+      </details>
     </div>
   );
 }
