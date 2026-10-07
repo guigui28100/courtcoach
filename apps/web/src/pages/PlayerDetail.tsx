@@ -375,8 +375,8 @@ function StarsTab({ p }: { p: Player }) {
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
       </section>
-      <section className="card grid gap-2">
-        <h3 className="m-0">Historique {stars && stars.length > 0 && <small className="font-normal text-muted">· ⭐ {totalStars(stars)} en tout</small>}</h3>
+      <details className="card group grid gap-2">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">Historique {stars && stars.length > 0 && <small className="font-normal text-muted">· ⭐ {totalStars(stars)} en tout · {days.length} cours</small>}</h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
         {!stars ? <div className="skeleton h-16" /> : !stars.length ? <p className="hint m-0">Aucune étoile pour l'instant.</p> : (
           <ul className="m-0 grid list-none gap-2 p-0">{days.map((d) => { const list = stars.filter((s) => s.day === d); return (
             <li key={d} className="grid gap-1 rounded-xl border border-line px-3 py-2">
@@ -385,7 +385,7 @@ function StarsTab({ p }: { p: Player }) {
             </li>
           ); })}</ul>
         )}
-      </section>
+      </details>
     </div>
   );
 }
