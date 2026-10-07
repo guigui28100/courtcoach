@@ -97,14 +97,14 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 // Bilan de départ, version simple : une note par domaine, deux phrases, et des missions créées en un clic
 function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [rt, setRt] = useState<Record<string, number>>(() => Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)));
-  const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? "");
+  const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? ""), [word, setWord] = useState(saved?.appreciation ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [made, setMade] = useState<Record<string, boolean>>({});
   async function save(e: FormEvent) {
     e.preventDefault();
     try {
-      await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? strengths : saved?.strengths ?? "", improve: t === 0 ? improve : saved?.improve ?? "", next: saved?.next ?? "", appreciation: saved?.appreciation ?? "" });
-      setMsg({ ok: true, text: "Bilan enregistré ✓" }); onSaved();
+      await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? strengths : saved?.strengths ?? "", improve: t === 0 ? improve : saved?.improve ?? "", next: saved?.next ?? "", appreciation: word });
+      setMsg({ ok: true, text: "Enregistré ✓" }); onSaved();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
@@ -132,6 +132,9 @@ function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; seaso
         <Field label="Points forts" id="b-strengths"><textarea id="b-strengths" className="input" maxLength={3000} value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="Ce qu'il fait déjà bien" /></Field>
         <Field label="À progresser" id="b-improve"><textarea id="b-improve" className="input" maxLength={3000} value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Ce qu'il doit travailler en priorité" /></Field>
       </fieldset>}
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "3. " : ""}Le mot du coach</legend>
+        <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Beau trimestre, continue comme ça !" /></Field>
+      </fieldset>
       <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{t === 0 && onGoto && <button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Voir et modifier les missions →</button>}{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
