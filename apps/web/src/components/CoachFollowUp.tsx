@@ -65,34 +65,14 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
         <section className={"card flex flex-wrap items-center justify-between gap-3 border-2 " + (startDone ? "border-line" : "!border-clay")} aria-label="Bilan de départ">
           <div className="grid gap-1">
             <h3 className="m-0">📍 Bilan de départ de {p.firstName} (début de saison)</h3>
-            <p className="m-0 text-sm text-muted">{startDone ? "Déjà rempli : le jeune le voit en haut de son onglet Missions." : "Pas encore rempli. C'est le point de départ de la saison : tu notes ses compétences, il le verra dans son onglet Missions."}</p>
+            <p className="m-0 text-sm text-muted">{startDone ? "Déjà rempli : le jeune le voit en haut de son onglet Missions." : "Pas encore rempli. C’est le point de départ de la saison : tu notes ses 5 domaines, il le verra dans son onglet Missions."}</p>
           </div>
           <button type="button" className={t === 0 ? "btn-ink btn-sm" : "btn-clay"} disabled={t === 0} onClick={() => { setSeason(currentSeason()); setT(0); }}>{t === 0 ? "Tu es sur le bilan de départ ↓" : startDone ? "Modifier le bilan de départ" : "Saisir le bilan de départ"}</button>
         </section>
       )}
-      {t === 0 && <p className="alert m-0"><strong>Bilan de début d'année.</strong> C'est le point de départ de la saison : note toutes les compétences en septembre. Il apparaîtra sur le radar des bulletins pour mesurer la progression du jeune.</p>}
-      {t === 0 && saved && ratedCount(saved) > 0 && (() => {
-        // Les compétences les moins bien notées au bilan de départ : des idées de missions pour le trimestre 1
-        const weak = EVAL_AXES.filter((a) => a.key !== "attitude").flatMap((a) => a.skills.map(([k, label]) => ({ key: k, label, axis: a.key.toUpperCase(), rating: saved.ratings?.[k] ?? 0 }))).filter((x) => x.rating > 0).sort((x, y) => x.rating - y.rating).slice(0, 4);
-        return weak.length ? (
-          <section className="card grid gap-3 border-2 !border-clay" aria-labelledby="ev-missions">
-            <div><h2 id="ev-missions" className="m-0 text-xl">🎯 Du bilan aux missions du trimestre 1</h2><p className="hint m-0">Voici les compétences les moins bien notées au bilan de départ. Crée en un clic une mission à partir de celles que tu veux travailler en priorité (tu pourras ensuite la renommer et choisir son nombre d'étoiles dans l'onglet Objectifs).</p></div>
-            <ul className="m-0 grid list-none gap-2 p-0">
-              {weak.map((w) => (
-                <li key={w.key} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sand/60 px-3 py-2">
-                  <span><strong>{w.label}</strong> <small className="hint">noté {w.rating}/5</small></span>
-                  {made[w.key] ? <span className="font-bold text-ok">✅ Mission créée</span> : <button type="button" className="btn-clay btn-sm" onClick={async () => { try { await post(`/players/${p.id}/goals`, { season, axis: w.axis, title: `Progresser en : ${w.label}`, trimesters: [1] }); setMade((m) => ({ ...m, [w.key]: true })); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } }}>+ Créer la mission</button>}
-                </li>
-              ))}
-            </ul>
-            {onGoto && <div><button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Voir et modifier les missions →</button></div>}
-          </section>
-        ) : null;
-      })()}
       {t > 0 && <CoachSelfEval p={p} season={season} t={t} goals={here} onPick={(s, n) => { setSeason(s); setT(n); }} />}
       <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker season={season} t={t} onChange={(s, n) => { setSeason(s); setT(n); }} />
-        {t === 0 && <p className="m-0 font-bold">{count} compétence{count > 1 ? "s" : ""} notée{count > 1 ? "s" : ""} sur {TOTAL_SKILLS}</p>}
         {saved && <AuthorBadge a={saved} prefix="Dernière saisie :" />}
         {saved && <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">{t === 0 ? "Voir le bilan" : "Voir le bulletin"}</Link>}
       </div>
@@ -109,7 +89,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
         </section>
       )}
 
-      <form onSubmit={save} className="grid gap-4" noValidate key={`${season}-${t}-${evals ? "ok" : "chargement"}`}>
+      {t === 0 ? <StartBilan key={`${season}-${evals ? "ok" : "chargement"}`} p={p} season={season} saved={saved} onSaved={() => { setVersion((v) => v + 1); onSaved?.(); }} onGoto={onGoto} /> : <form onSubmit={save} className="grid gap-4" noValidate key={`${season}-${t}-${evals ? "ok" : "chargement"}`}>
         <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "Synthèse du bilan de départ" : "Synthèse du trimestre"}</legend>
           <Field label={t === 0 ? "Premier regard sur le joueur" : "Appréciation générale"} id="appreciation"><textarea id="appreciation" name="appreciation" className="input" maxLength={3000} defaultValue={saved?.appreciation ?? ""} /></Field>
           <Field label="Points forts" id="strengths"><textarea id="strengths" name="strengths" className="input" maxLength={3000} defaultValue={saved?.strengths ?? ""} /></Field>
@@ -145,8 +125,51 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
           </div>
         </details>
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer la synthèse et les compétences"}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
-      </form>
+      </form>}
     </div>
+  );
+}
+
+// Bilan de départ, version simple : une note par domaine, deux phrases, et des missions créées en un clic
+function StartBilan({ p, season, saved, onSaved, onGoto }: { p: Player; season: string; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
+  const [rt, setRt] = useState<Record<string, number>>(() => Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)));
+  const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? "");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [made, setMade] = useState<Record<string, boolean>>({});
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await put(`/players/${p.id}/evaluations/${season}/0`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths, improve, next: saved?.next ?? "", appreciation: saved?.appreciation ?? "" });
+      setMsg({ ok: true, text: "Bilan enregistré ✓" }); onSaved();
+    } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+  }
+  return (
+    <form onSubmit={save} className="grid gap-4" noValidate>
+      <p className="alert m-0"><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine, deux phrases, puis tu crées en un clic les missions du trimestre 1.</p>
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">1. Où en est {p.firstName} ?</legend>
+        {EVAL_AXES.map((a) => (
+          <div key={a.key} className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-white p-3" style={{ borderLeftColor: a.color }}>
+            <div role="radiogroup" aria-label={a.label} className="flex flex-wrap items-center justify-between gap-2">
+              <strong style={{ color: a.color }}>{a.label}</strong>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <label key={n} className={"flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-2 font-display font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink " + (rt[a.key] === n ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:border-ink")} title={RATING_LABELS[n]}>
+                    <input type="radio" name={`b-${a.key}`} className="sr-only" checked={rt[a.key] === n} onChange={() => setRt((r) => ({ ...r, [a.key]: n }))} aria-label={`${a.label} : ${n} sur 5, ${RATING_LABELS[n]}`} />{n}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {rt[a.key] > 0 && (made[a.key] ? <span className="font-bold text-ok">✅ Mission créée</span> : <div><button type="button" className="btn-outline btn-sm" onClick={async () => { try { await post(`/players/${p.id}/goals`, { season, axis: a.key.toUpperCase(), title: `Progresser en : ${a.label}`, trimesters: [1] }); setMade((m) => ({ ...m, [a.key]: true })); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } }}>🎯 Créer une mission « Progresser en {a.label.toLowerCase()} »</button></div>)}
+          </div>
+        ))}
+        <p className="hint m-0">1 = à travailler · 3 = acquis · 5 = point fort.</p>
+      </fieldset>
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">2. En deux phrases</legend>
+        <Field label="Points forts" id="b-strengths"><textarea id="b-strengths" className="input" maxLength={3000} value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="Ce qu'il fait déjà bien" /></Field>
+        <Field label="À progresser" id="b-improve"><textarea id="b-improve" className="input" maxLength={3000} value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Ce qu'il doit travailler en priorité" /></Field>
+      </fieldset>
+      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer le bilan</button>{onGoto && <button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Voir et modifier les missions →</button>}{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+    </form>
   );
 }
 
