@@ -131,6 +131,10 @@ export const STAR_REASONS: { id: string; emoji: string; label: string; hint: str
   { id: "courage", emoji: "🦁", label: "Courage", hint: "N'a pas lâché malgré la difficulté" },
   { id: "concentration", emoji: "🎯", label: "Concentration", hint: "Très concentré" },
   { id: "bonne-humeur", emoji: "😄", label: "Bonne humeur", hint: "A mis de la joie dans le groupe" },
+  { id: "etat-d-esprit", emoji: "🧠", label: "État d'esprit", hint: "Positif, ouvert, prêt à apprendre" },
+  { id: "motivation", emoji: "🔥", label: "Motivation", hint: "Envie de bien faire et d'avancer" },
+  { id: "assiduite", emoji: "⏰", label: "Assiduité", hint: "Présent, à l'heure, régulier" },
+  { id: "attitude", emoji: "🤝", label: "Attitude", hint: "Respect, écoute, fair-play" },
 ];
 // « Pas en progrès » : ce qui peut faire perdre des étoiles (le jeune voit toujours l'explication)
 export const STAR_NEG_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
@@ -143,6 +147,8 @@ export const STAR_NEG_REASONS: { id: string; emoji: string; label: string; hint:
   { id: "neg-effort", emoji: "💤", label: "Effort", hint: "Pas assez d'effort" },
   { id: "neg-fairplay", emoji: "🤝", label: "Fair-play", hint: "Un manque de respect ou de fair-play" },
   { id: "neg-assiduite", emoji: "⏰", label: "Assiduité", hint: "Retard ou absence" },
+  { id: "neg-etat-d-esprit", emoji: "🌧️", label: "État d'esprit", hint: "Un état d'esprit à changer" },
+  { id: "neg-motivation", emoji: "🪫", label: "Motivation", hint: "Peu d'envie aujourd'hui" },
 ];
 export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id) ?? STAR_NEG_REASONS.find((r) => r.id === id);
 export const isNegReason = (id: string) => id.startsWith("neg-");
@@ -181,19 +187,19 @@ export const missionStars = (stars: Pick<CourseStar, "day" | "stars" | "goalId">
   Math.max(0, stars.filter((x) => x.goalId === goalId && inPeriod(x.day + "T12:00:00", season, t)).reduce((n, x) => n + x.stars, 0));
 export const missionPercent = (earned: number, target = 10) => Math.min(100, Math.round((earned / Math.max(1, target)) * 100));
 
-// ----- Les quatre qualités notées à chaque cours (de 1 à 5) -----
-export interface CourseQuality { id?: string; day: string; mindset: number | null; motivation: number | null; attendance: number | null; attitude: number | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; }
+// ----- Les quatre qualités : des étoiles comme les autres (état d'esprit, motivation, assiduité, attitude) -----
 export type QualityKey = "mindset" | "motivation" | "attendance" | "attitude";
-export const QUALITIES: { key: QualityKey; label: string; emoji: string; hint: string }[] = [
-  { key: "mindset", label: "État d'esprit", emoji: "🧠", hint: "Positif, ouvert, prêt à apprendre" },
-  { key: "motivation", label: "Motivation", emoji: "🔥", hint: "Envie de bien faire et d'avancer" },
-  { key: "attendance", label: "Assiduité", emoji: "⏰", hint: "Présent, à l'heure, régulier" },
-  { key: "attitude", label: "Attitude", emoji: "🤝", hint: "Respect, écoute, fair-play" },
+export const QUALITIES: { key: QualityKey; label: string; emoji: string; hint: string; reason: string; domain: string }[] = [
+  { key: "mindset", label: "État d'esprit", emoji: "🧠", hint: "Positif, ouvert, prêt à apprendre", reason: "etat-d-esprit", domain: "mental" },
+  { key: "motivation", label: "Motivation", emoji: "🔥", hint: "Envie de bien faire et d'avancer", reason: "motivation", domain: "mental" },
+  { key: "attendance", label: "Assiduité", emoji: "⏰", hint: "Présent, à l'heure, régulier", reason: "assiduite", domain: "attitude" },
+  { key: "attitude", label: "Attitude", emoji: "🤝", hint: "Respect, écoute, fair-play", reason: "attitude", domain: "attitude" },
 ];
-// Moyenne de chaque qualité sur le trimestre (null s'il n'y a aucune note)
-export function qualityAverages(rows: CourseQuality[], season: string, t: number): { avg: Record<QualityKey, number | null>; courses: number } {
-  const inT = rows.filter((r) => inPeriod(r.day + "T12:00:00", season, t));
-  const avg = {} as Record<QualityKey, number | null>;
-  for (const q of QUALITIES) { const v = inT.map((r) => r[q.key]).filter((x): x is number => x != null); avg[q.key] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
-  return { avg, courses: inT.length };
+export const qualityOfReason = (reason: string) => QUALITIES.find((q) => q.reason === reason || "neg-" + q.reason === reason);
+// Étoiles gagnées (en plus ou en moins) pour chaque qualité pendant le trimestre
+export function qualityStars(stars: Pick<CourseStar, "day" | "stars" | "reason" | "goalId">[], season: string, t: number): { sum: Record<QualityKey, number>; courses: number } {
+  const inT = stars.filter((s) => !s.goalId && qualityOfReason(s.reason) && inPeriod(s.day + "T12:00:00", season, t));
+  const sum = {} as Record<QualityKey, number>;
+  for (const q of QUALITIES) sum[q.key] = inT.filter((s) => qualityOfReason(s.reason)!.key === q.key).reduce((n, s) => n + s.stars, 0);
+  return { sum, courses: new Set(inT.map((s) => s.day)).size };
 }

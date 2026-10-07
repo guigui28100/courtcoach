@@ -80,8 +80,8 @@ export class EvaluationDto {
 }
 
 // Étoiles de fin de cours : positives (bravo) ou « pas en progrès » (jamais sans explication : le jeune voit toujours le commentaire)
-export const STAR_REASONS = ["effort", "ecoute", "progres", "fairplay", "equipe", "courage", "concentration", "bonne-humeur"];
-export const STAR_NEG_REASONS = ["neg-comportement", "neg-attitude", "neg-concentration", "neg-ecoute", "neg-technique", "neg-objectifs", "neg-effort", "neg-fairplay", "neg-assiduite"];
+export const STAR_REASONS = ["effort", "ecoute", "progres", "fairplay", "equipe", "courage", "concentration", "bonne-humeur", "etat-d-esprit", "motivation", "assiduite", "attitude"];
+export const STAR_NEG_REASONS = ["neg-comportement", "neg-attitude", "neg-concentration", "neg-ecoute", "neg-technique", "neg-objectifs", "neg-effort", "neg-fairplay", "neg-assiduite", "neg-etat-d-esprit", "neg-motivation"];
 export const STAR_DOMAINS = ["technique", "tactique", "physique", "mental", "attitude"];
 export class StarDto {
   @Type(() => Number) @IsInt() @IsIn([-3, -2, -1, 1, 2, 3]) stars: number;
@@ -92,7 +92,7 @@ export class StarDto {
 }
 // Les étoiles d'un joueur pour un cours : de 1 à 6 lignes (raison + domaine + nombre d'étoiles), qui remplacent celles du jour
 export class StarsDayDto {
-  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => StarDto) items: StarDto[];
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => StarDto) items: StarDto[];
 }
 
 // Match déclaré par le jeune : des choix proposés, aucun nom d'adversaire

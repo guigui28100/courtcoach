@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
-import { hasQuality, QualitiesEditor, QualityValues, qualityItems, StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
+import { StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
 import { Avatar, Empty, Err, Page, PageHead } from "../components/ui";
-import { CourseQuality, CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
+import { CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
 
-type Row = { lines: StarLine[]; had: boolean; q: QualityValues; hadQ: boolean; dirty?: boolean };
-const EMPTY: Row = { lines: [], had: false, q: {}, hadQ: false };
+type Row = { lines: StarLine[]; had: boolean; dirty?: boolean };
+const EMPTY: Row = { lines: [], had: false };
 
 // Fin de cours : pour chaque joueur, des étoiles SUR SES MISSIONS (avec une raison et un petit mot) + les 4 qualités du cours (état d'esprit, motivation, assiduité, attitude).
 export default function FinDeCours() {
@@ -22,13 +22,12 @@ export default function FinDeCours() {
     if (!players) return;
     const d = new Date(day + "T12:00:00"), season = currentSeason(d), tri = trimesterOf(d);
     Promise.all(players.map(async (p) => {
-      const [stars, quals, gs] = await Promise.all([
+      const [stars, gs] = await Promise.all([
         get<CourseStar[]>(`/players/${p.id}/stars`).catch(() => [] as CourseStar[]),
-        get<CourseQuality[]>(`/players/${p.id}/qualities`).catch(() => [] as CourseQuality[]),
         get<Goal[]>(`/players/${p.id}/goals?season=${season}`).catch(() => [] as Goal[]),
       ]);
-      const list = stars.filter((s) => s.day === day), q = quals.find((x) => x.day === day);
-      return [p.id, { lines: list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined })), had: list.length > 0, q: q ? { mindset: q.mindset, motivation: q.motivation, attendance: q.attendance, attitude: q.attitude } : {}, hadQ: !!q } as Row, gs.filter((g) => goalApplies(g, tri))] as const;
+      const list = stars.filter((s) => s.day === day);
+      return [p.id, { lines: list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined })), had: list.length > 0 } as Row, gs.filter((g) => goalApplies(g, tri))] as const;
     })).then((all) => {
       setRows(Object.fromEntries(all.map(([id, r]) => [id, r])));
       setGoals(Object.fromEntries(all.map(([id, , gs]) => [id, gs])));
@@ -47,11 +46,9 @@ export default function FinDeCours() {
         const act = activeLines(r.lines);
         if (act.length) await put(`/players/${p.id}/stars/${day}`, { items: starItems(r.lines) });
         else if (r.had) await del(`/players/${p.id}/stars/${day}`);
-        if (hasQuality(r.q)) await put(`/players/${p.id}/qualities/${day}`, qualityItems(r.q));
-        else if (r.hadQ) await del(`/players/${p.id}/qualities/${day}`);
       }
       const ids = new Set(list.map((p) => p.id));
-      setRows((all) => Object.fromEntries(Object.entries(all).map(([id, r]) => [id, ids.has(id) ? { ...r, lines: activeLines(r.lines), had: activeLines(r.lines).length > 0, hadQ: hasQuality(r.q), dirty: false } : r])));
+      setRows((all) => Object.fromEntries(Object.entries(all).map(([id, r]) => [id, ids.has(id) ? { ...r, lines: activeLines(r.lines), had: activeLines(r.lines).length > 0, dirty: false } : r])));
       setMsg({ ok: true, text: list.length === 1 ? `✅ Étoiles de ${list[0].firstName} enregistrées.` : `✅ Modifications enregistrées pour ${list.length} joueur${list.length > 1 ? "s" : ""}.` });
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(false); }
   }
@@ -76,7 +73,6 @@ export default function FinDeCours() {
                 <span className="flex items-center gap-3"><strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>{r.dirty && <button className="btn-clay btn-sm" disabled={busy} onClick={() => saveRows([p])}>Enregistrer {p.firstName}</button>}</span>
               </div>
               <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} onChange={(lines) => set(p.id, { lines })} />
-              <QualitiesEditor who={p.firstName} value={r.q} onChange={(q) => set(p.id, { q })} />
             </li>
           ); })}
         </ul>

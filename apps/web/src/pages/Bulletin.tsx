@@ -1,4 +1,4 @@
-import { StarsRadar, useQualities, useStars } from "../components/Stars";
+import { StarsRadar, useStars } from "../components/Stars";
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { get } from "../api";
@@ -9,7 +9,7 @@ import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { missionPercent, missionStars, QUALITIES, qualityAverages, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -42,7 +42,6 @@ export default function Bulletin() {
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
   const stars = useStars(id);
-  const qualities = useQualities(id);
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
@@ -61,11 +60,7 @@ export default function Bulletin() {
   const brief = (s: string, n: number) => (n === 0 ? "le bilan de départ" : `T${n} ${s.slice(0, 4)}/${s.slice(7)}`); // « T3 2025/26 » : tient sur une ligne
   const now: Record<string, number> = {}, before: Record<string, number> = {};
   EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(ev, a); before[a.key] = axisAverage(prev, a); });
-  // L'axe « Attitude » de l'araignée s'appuie sur les 4 qualités notées à chaque cours (moyenne du trimestre), quand il y en a
-  const qNow = qualityAverages(qualities ?? [], season, t), qBefore = t >= 1 ? qualityAverages(qualities ?? [], pp.season, pp.t) : null;
-  const meanQ = (a: Record<string, number | null>) => { const v = Object.values(a).filter((x): x is number => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
-  if (t > 0 && meanQ(qNow.avg) != null) now.attitude = meanQ(qNow.avg)!;
-  if (qBefore && meanQ(qBefore.avg) != null) before.attitude = meanQ(qBefore.avg)!;
+  const qNow = qualityStars(stars ?? [], season, t);
   // Radar : maintenant, le trimestre précédent, et le point de départ de la saison (bilan de début d'année) quand il est différent
   const start = t >= 2 ? evals.find((e) => e.season === season && e.trimester === 0) : undefined;
   const origin: Record<string, number> = {};
@@ -166,12 +161,11 @@ export default function Bulletin() {
 
             {t > 0 && qNow.courses > 0 && (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-qualites">
-                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 4 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Moyenne des notes (de 1 à 5) données à {qNow.courses} cours.</p></div>
+                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 4 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
                 <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {QUALITIES.map((q) => { const v = qNow.avg[q.key]; return (
-                    <li key={q.key} className="grid gap-1 rounded-2xl bg-[#f6f4fb] p-3">
-                      <span className="flex items-baseline justify-between gap-2"><strong><span aria-hidden="true">{q.emoji} </span>{q.label}</strong><span className="font-black">{v == null ? "—" : `${v.toFixed(1).replace(".", ",")} / 5`}</span></span>
-                      <div role="progressbar" aria-valuenow={v == null ? 0 : Math.round((v / 5) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={q.label} className="h-2.5 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full bg-[#7c3aed]" style={{ width: `${v == null ? 0 : (v / 5) * 100}%` }} /></div>
+                  {QUALITIES.map((q) => { const v = qNow.sum[q.key]; return (
+                    <li key={q.key} className="flex items-baseline justify-between gap-2 rounded-2xl bg-[#f6f4fb] p-3">
+                      <strong><span aria-hidden="true">{q.emoji} </span>{q.label}</strong><span className={"font-black " + (v < 0 ? "text-[#b3261e]" : "")}>{v < 0 ? `📉 −${-v}` : `⭐ ${v}`}</span>
                     </li>
                   ); })}
                 </ul>

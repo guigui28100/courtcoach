@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { hasQuality, QualitiesEditor, QualityValues, qualityItems, useQualities, activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -341,16 +341,9 @@ function StarsTab({ p }: { p: Player }) {
   const stars = useStars(p.id, version);
   const [day, setDay] = useState(todayIso());
   const [lines, setLines] = useState<StarLine[]>([]);
-  // Missions du trimestre du cours choisi (pour donner des étoiles SUR une mission) et les 4 qualités de ce cours
+  // Missions du trimestre du cours choisi (pour donner des étoiles SUR une mission)
   const [goals, setGoals] = useState<Goal[]>([]);
   useEffect(() => { const d = new Date(day + "T12:00:00"); get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason(d)}`).then((g) => setGoals(g.filter((x) => goalApplies(x, trimesterOf(d))))).catch(() => setGoals([])); }, [p.id, day]);
-  const quals = useQualities(p.id, version);
-  const [q, setQ] = useState<QualityValues>({}), [qMsg, setQMsg] = useState("");
-  useEffect(() => { const r = (quals ?? []).find((x) => x.day === day); setQ(r ? { mindset: r.mindset, motivation: r.motivation, attendance: r.attendance, attitude: r.attitude } : {}); setQMsg(""); }, [quals, day]);
-  async function saveQ() {
-    setErr(""); setQMsg("");
-    try { if (hasQuality(q)) await put(`/players/${p.id}/qualities/${day}`, qualityItems(q)); else await del(`/players/${p.id}/qualities/${day}`).catch(() => undefined); setQMsg("✅ Qualités enregistrées"); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
-  }
   const [err, setErr] = useState("");
   const [msgMinus, setMsgMinus] = useState("");
   // « − » sur un domaine du radar : on retire une étoile de la saisie la plus récente de ce domaine ce trimestre (la ligne disparaît quand il ne lui en reste plus)
@@ -387,12 +380,6 @@ function StarsTab({ p }: { p: Player }) {
         <StarLinesEditor who={p.firstName} lines={lines} goals={goals} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
-      </section>
-      <section className="card grid gap-3">
-        <h3 className="m-0">Les 4 qualités de ce cours</h3>
-        <p className="hint m-0">État d'esprit, motivation, assiduité, attitude : de 1 à 5, pour le cours du {fmtDay(day)}. Leur moyenne du trimestre alimente l'araignée « image du joueur » du bulletin.</p>
-        <QualitiesEditor who={p.firstName} value={q} onChange={setQ} />
-        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={saveQ}>Enregistrer les qualités</button>{qMsg && <span role="status" className="font-bold text-ok">{qMsg}</span>}</div>
       </section>
       <details className="card group grid gap-2">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">Historique {stars && stars.length > 0 && <small className="font-normal text-muted">· ⭐ {totalStars(stars)} en tout · {days.length} cours</small>}</h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>

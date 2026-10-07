@@ -40,14 +40,18 @@ describe("Étoiles de fin de cours", () => {
     expect(list.map((s: any) => [s.day, s.stars, s.reason])).toEqual([[iso(0), 3, "progres"], [iso(3), 1, "ecoute"]]);
   });
 
-  it("plusieurs lignes le même jour (raison + domaine différents) : elles remplacent celles du jour, 12 au maximum", async () => {
+  it("plusieurs lignes le même jour (raison + domaine différents) : elles remplacent celles du jour, 20 au maximum", async () => {
     const put = (body: object) => A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send(body);
     const r = await put({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique", comment: "Beau service" }, { stars: 3, reason: "fairplay", domain: "attitude" }] }).expect(200);
     expect(r.body.map((s: any) => [s.reason, s.domain, s.stars])).toEqual([["effort", "mental", 2], ["progres", "technique", 1], ["fairplay", "attitude", 3]]);
     await put({ items: [{ stars: 1, reason: "courage", domain: "mental" }] }).expect(200); // remplace tout le jour
     expect(await prisma.courseStar.count({ where: { playerId: p2 } })).toBe(1);
+    // Les 4 qualités sont des étoiles : état d'esprit, motivation, assiduité, attitude (en moins : toujours expliqué)
+    await put({ items: [{ stars: 2, reason: "etat-d-esprit", domain: "mental" }, { stars: 1, reason: "motivation", domain: "mental" }, { stars: 1, reason: "assiduite", domain: "attitude" }, { stars: 3, reason: "attitude", domain: "attitude" }] }).expect(200);
+    await put({ items: [{ stars: -1, reason: "neg-motivation", domain: "mental" }] }).expect(400);
+    await put({ items: [{ stars: -1, reason: "neg-motivation", domain: "mental", comment: "Peu d'envie" }] }).expect(200);
     await put({ items: [] }).expect(400);
-    await put({ items: Array.from({ length: 13 }, () => ({ stars: 1, reason: "effort", domain: "mental" })) }).expect(400);
+    await put({ items: Array.from({ length: 21 }, () => ({ stars: 1, reason: "effort", domain: "mental" })) }).expect(400);
     await put({ items: [{ stars: 4, reason: "effort", domain: "mental" }] }).expect(400);
     await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
   });
