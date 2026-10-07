@@ -61,7 +61,8 @@ export function previousPeriod(season: string, t: number) { if (t >= 1) return {
 export const inPeriod = (iso: string, season: string, t: number) => { const d = new Date(iso); return currentSeason(d) === season && trimesterOf(d) === t; };
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-export const axisAverage = (ev: Pick<Evaluation, "ratings"> | undefined, axis: EvalAxis) => mean(axis.skills.map(([k]) => ev?.ratings?.[k]).filter((v): v is number => !!v));
+// Bilan de départ simple : une note par domaine (rangée sous la clé du domaine) ; sinon moyenne des compétences notées
+export const axisAverage = (ev: Pick<Evaluation, "ratings"> | undefined, axis: EvalAxis) => ev?.ratings?.[axis.key] || mean(axis.skills.map(([k]) => ev?.ratings?.[k]).filter((v): v is number => !!v));
 export const overallAverage = (ev: Pick<Evaluation, "ratings"> | undefined) => mean(Object.values(ev?.ratings ?? {}).filter((v) => v > 0));
 export const ratedCount = (ev: Pick<Evaluation, "ratings"> | undefined) => Object.values(ev?.ratings ?? {}).filter((v) => v > 0).length;
 export const TOTAL_SKILLS = EVAL_AXES.reduce((n, a) => n + a.skills.length, 0);
