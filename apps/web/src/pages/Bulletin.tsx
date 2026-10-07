@@ -163,13 +163,14 @@ export default function Bulletin() {
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-            {t === 0 && ev?.appreciation?.trim() && (
+              </section>
+            )}
+
+            {ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
-              )}
-              </section>
             )}
 
             {t > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
