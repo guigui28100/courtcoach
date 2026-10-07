@@ -92,7 +92,7 @@ export class StarDto {
 }
 // Les étoiles d'un joueur pour un cours : de 1 à 6 lignes (raison + domaine + nombre d'étoiles), qui remplacent celles du jour
 export class StarsDayDto {
-  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(6) @ValidateNested({ each: true }) @Type(() => StarDto) items: StarDto[];
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => StarDto) items: StarDto[];
 }
 
 // Match déclaré par le jeune : des choix proposés, aucun nom d'adversaire
