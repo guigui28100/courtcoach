@@ -78,7 +78,7 @@ export default function Bulletin() {
   const here = t === 0 ? [] : goals.filter((g) => goalApplies(g, t)); // le bilan de départ n'a pas encore d'objectifs
   const startGoals = t === 0 ? goals.filter((g) => goalApplies(g, 1)) : []; // le bilan de départ annonce ce qui sera à travailler au trimestre 1
   const at = (g: Goal) => progressAt(g, t);
-  const LAB = { ACHIEVED: "Atteinte", NOT_ACHIEVED: "Non atteinte", IN_PROGRESS: "En progrès" } as const;
+  const LAB = { ACHIEVED: "Atteinte", NOT_ACHIEVED: "Non atteinte", IN_PROGRESS: "En cours" } as const;
   const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
   const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
@@ -122,7 +122,7 @@ export default function Bulletin() {
           <div className="grid gap-6 p-6 sm:p-8">
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte ou non atteinte, avec les étoiles gagnées sur chacune.</p></div>
+                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte, en cours ou non atteinte, avec les étoiles gagnées sur chacune.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">

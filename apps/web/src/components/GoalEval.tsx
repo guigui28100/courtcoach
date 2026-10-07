@@ -8,7 +8,7 @@ export function GoalEvalCard({ g, t, season, stars, color, label, onUpdate }: { 
   const [err, setErr] = useState("");
   const cur = checkpointAt(g, t);
   const target = g.targetStars ?? 10, earned = missionStars(stars, g.id, season, t), pct = missionPercent(earned, target);
-  const advice: GoalStatus = pct >= 100 ? "ACHIEVED" : "NOT_ACHIEVED";
+  const advice: GoalStatus = pct >= 100 ? "ACHIEVED" : "IN_PROGRESS";
   const status = cur?.status === "ACHIEVED" || cur?.status === "NOT_ACHIEVED" ? cur.status : null; // l'ancien « en progrès » compte comme « pas encore évalué »
 
   async function save(change: { status?: GoalStatus; comment?: string }) {
@@ -30,16 +30,16 @@ export function GoalEvalCard({ g, t, season, stars, color, label, onUpdate }: { 
       <div className="grid gap-1 rounded-xl bg-white p-2">
         <p className="m-0 flex flex-wrap items-baseline justify-between gap-2 text-sm font-bold"><span>⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} à gagner</span><span>{pct} %</span></p>
         <ProgressBar value={pct} color={color} />
-        <p className="hint m-0">{pct >= 100 ? "Objectif d'étoiles atteint : « atteinte » est conseillé." : `Il manque ${target - earned} étoile${target - earned > 1 ? "s" : ""} : « non atteinte » est conseillé pour l'instant.`} La décision t'appartient.</p>
+        <p className="hint m-0">{pct >= 100 ? "Objectif d'étoiles atteint : « atteinte » est conseillé." : `Il manque ${target - earned} étoile${target - earned > 1 ? "s" : ""} : « en cours » est conseillé pour l'instant.`} La décision t'appartient.</p>
       </div>
       <div role="radiogroup" aria-label={`Bilan de « ${g.title} » au trimestre ${t}`} className="flex flex-wrap gap-2">
-        {(["ACHIEVED", "NOT_ACHIEVED"] as GoalStatus[]).map((k) => { const on = status === k; return (
+        {(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as GoalStatus[]).map((k) => { const on = status === k; return (
           <button key={k} type="button" role="radio" aria-checked={on} onClick={() => save({ status: k })} className={"btn btn-sm " + (on ? "" : "border-2 border-line bg-white text-ink")} style={on ? { background: STATUS[k].bg, color: STATUS[k].ink, border: `2px solid ${STATUS[k].ink}` } : undefined}>
-            {k === "ACHIEVED" ? "✅ Atteinte" : "❌ Non atteinte"}{!status && k === advice ? " · conseillé" : ""}
+            {k === "ACHIEVED" ? "✅ Atteinte" : k === "IN_PROGRESS" ? "🔄 En cours" : "❌ Non atteinte"}{!status && k === advice ? " · conseillé" : ""}
           </button>
         ); })}
       </div>
-      {!status && <p className="hint m-0">Pas encore évaluée ce trimestre : choisis « atteinte » ou « non atteinte ».</p>}
+      {!status && <p className="hint m-0">Pas encore évaluée ce trimestre : choisis « atteinte », « en cours » ou « non atteinte ».</p>}
       <label className="grid gap-1 text-sm font-bold">Ton commentaire (facultatif)
         <textarea key={`${g.id}-${t}`} className="input !min-h-16 font-normal" maxLength={500} defaultValue={cur?.comment ?? ""} placeholder="Ex. : la première balle passe mieux, à consolider sous pression" onBlur={(e) => e.target.value !== (cur?.comment ?? "") && save({ comment: e.target.value })} />
       </label>
