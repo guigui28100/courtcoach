@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, starReason, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
+import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -25,12 +25,12 @@ export function StarPicker({ value, onChange, dark = false, label }: { value: nu
 }
 
 // Choix de la raison (une seule), avec une phrase d'aide
-export function ReasonPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+export function ReasonPicker({ value, onChange, negative = false }: { value: string; onChange: (id: string) => void; negative?: boolean }) {
   return (
-    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Pourquoi ces étoiles ?">
-      {STAR_REASONS.map((r) => (
+    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={negative ? "Qu'est-ce qui n'a pas été ?" : "Pourquoi ces étoiles ?"}>
+      {(negative ? STAR_NEG_REASONS : STAR_REASONS).map((r) => (
         <button key={r.id} type="button" role="radio" aria-checked={value === r.id} title={r.hint} onClick={() => onChange(r.id)}
-          className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (value === r.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{r.emoji} </span>{r.label}</button>
+          className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (value === r.id ? (negative ? "border-[#b3261e] bg-[#b3261e] text-white" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{r.emoji} </span>{r.label}</button>
       ))}
     </div>
   );
@@ -60,7 +60,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
   return (
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
       <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Radar des étoiles du trimestre ${t}` : me ? `Mon radar de tous les jours · trimestre ${t}` : `Le radar de tous les jours · trimestre ${t}`}</h2>
-      <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
+      <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit ; quand ton coach te dit « pas en progrès » dans un domaine, il perd des étoiles. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
       {total === 0 && !onMinus ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar se remplira dès les premiers cours.</p> : (
         <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
           <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
@@ -79,13 +79,21 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
 }
 
 // Les étoiles d'un cours : une ou plusieurs lignes, chacune avec son nombre d'étoiles, sa raison et son domaine du radar
-export type StarLine = { stars: number; reason: string; domain: string };
+export type StarLine = { stars: number; reason: string; domain: string; comment: string };
 export const MAX_STAR_LINES = 6;
-export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "" });
+export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "", comment: "" });
 // Message si une ligne est incomplète, sinon chaîne vide
-// Une ligne à 0 étoile n'est pas enregistrée : on ne garde que celles qui ont au moins 1 étoile
-export const activeLines = (lines: StarLine[]) => lines.filter((l) => l.stars > 0);
-export const starLinesError = (all: StarLine[]) => { const lines = activeLines(all); return lines.some((l) => !l.reason) ? "Choisis « pourquoi » pour chaque ligne d'étoiles." : lines.some((l) => !l.domain) ? "Choisis le domaine du radar pour chaque ligne d'étoiles." : ""; };
+// Une ligne à 0 n'est pas enregistrée : on ne garde que celles qui ajoutent ou retirent des étoiles
+export const activeLines = (lines: StarLine[]) => lines.filter((l) => l.stars !== 0);
+export const starLinesError = (all: StarLine[]) => {
+  const lines = activeLines(all);
+  if (lines.some((l) => !l.reason)) return "Choisis la raison pour chaque ligne d'étoiles.";
+  if (lines.some((l) => !l.domain)) return "Choisis le domaine du radar pour chaque ligne d'étoiles.";
+  if (lines.some((l) => l.stars < 0 && l.comment.trim().length < 3)) return "Pour retirer des étoiles, explique en une phrase ce qui n'a pas été : le jeune la verra.";
+  return "";
+};
+// Les lignes à envoyer au serveur
+export const starItems = (lines: StarLine[]) => activeLines(lines).map((l) => ({ stars: l.stars, reason: l.reason, domain: l.domain, comment: l.comment.trim() || undefined }));
 export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string }) {
   const set = (i: number, patch: Partial<StarLine>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   return (
@@ -94,28 +102,31 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
         <div key={i} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Nombre d'étoiles n°${i + 1} pour ${who}`}>
-              {[0, 1, 2, 3].map((n) => (
-                <button key={n} type="button" role="radio" aria-checked={l.stars === n} onClick={() => set(i, { stars: n })}
-                  className={"min-h-11 min-w-14 rounded-xl border-2 px-3 text-lg font-bold " + (l.stars === n ? "border-[#e0b100] bg-[#fff3b0]" : "border-line bg-white text-ink hover:bg-sand")}>{n === 0 ? "0" : "⭐".repeat(n)}</button>
+              {[-3, -2, -1, 0, 1, 2, 3].map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={l.stars === n} aria-label={n < 0 ? `Retirer ${-n} étoile${n < -1 ? "s" : ""} (pas en progrès)` : n === 0 ? "Aucune étoile" : `${n} étoile${n > 1 ? "s" : ""}`}
+                  onClick={() => set(i, { stars: n, ...(n !== 0 && (n < 0) !== (l.stars < 0) ? { reason: "" } : {}) })}
+                  className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (l.stars === n ? (n < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (n === 0 ? " mx-1" : "")}>{n < 0 ? `−${-n}` : n === 0 ? "0" : "⭐".repeat(n)}</button>
               ))}
-              <span className="text-sm font-bold">{l.stars === 0 ? "aucune étoile : cette ligne ne sera pas enregistrée" : `${l.stars} étoile${l.stars > 1 ? "s" : ""}`}</span>
+              <span className={"text-sm font-bold " + (l.stars < 0 ? "text-[#b3261e]" : "")}>{l.stars === 0 ? "aucune étoile : cette ligne ne sera pas enregistrée" : l.stars < 0 ? `📉 pas en progrès : ${who} perd ${-l.stars} étoile${l.stars < -1 ? "s" : ""} dans ce domaine` : `${l.stars} étoile${l.stars > 1 ? "s" : ""}`}</span>
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
-          {l.stars > 0 && <>
-          <p className="hint m-0">Pourquoi ?</p>
-          <ReasonPicker value={l.reason} onChange={(id) => set(i, { reason: id })} />
-          <p className="hint m-0">Quel domaine du radar fait-elle grandir ?</p>
+          {l.stars !== 0 && <>
+          <p className="hint m-0">{l.stars < 0 ? "Qu'est-ce qui n'a pas été ?" : "Pourquoi ?"}</p>
+          <ReasonPicker negative={l.stars < 0} value={l.reason} onChange={(id) => set(i, { reason: id })} />
+          <p className="hint m-0">{l.stars < 0 ? "Quel domaine du radar n'est pas en progrès ?" : "Quel domaine du radar fait-elle grandir ?"}</p>
           <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
+          <label className="grid gap-1 text-sm font-bold">{l.stars < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+            <input className="input" maxLength={300} value={l.comment} onChange={(e) => set(i, { comment: e.target.value })} placeholder={l.stars < 0 ? "Ex. : Tu as discuté pendant l'exercice, on en reparle mardi." : "Ex. : Super service aujourd'hui !"} /></label>
           </>}
         </div>
       ))}
-      {lines.length < MAX_STAR_LINES && <div><button type="button" className="btn-outline btn-sm" onClick={() => onChange([...lines, newStarLine()])}>{lines.length ? "➕ Ajouter une autre raison / un autre domaine" : "⭐ Donner des étoiles"}</button></div>}
+      {lines.length < MAX_STAR_LINES && <div><button type="button" className="btn-outline btn-sm" onClick={() => onChange([...lines, newStarLine()])}>{lines.length ? "➕ Ajouter une autre ligne (autre raison, autre domaine)" : "⭐ Donner ou retirer des étoiles"}</button></div>}
     </div>
   );
 }
 
-export const StarsLine = ({ n }: { n: number }) => <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
+export const StarsLine = ({ n }: { n: number }) => n < 0 ? <span className="font-black text-[#b3261e]" aria-label={`${-n} étoile${n < -1 ? "s" : ""} en moins`}>📉 −{-n} ⭐</span> : <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
 
 // Carte « Mes étoiles » (lecture seule) pour le jeune (fond sombre) et pour sa famille
 export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" }) {
@@ -127,14 +138,15 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="stars-t">
       <h2 id="stars-t" className="m-0 text-2xl">⭐ {who === "jeune" ? "Mes étoiles" : "Les étoiles"}</h2>
-      <p className={"m-0 " + sub}>{who === "jeune" ? "Ton coach te donne 1 à 3 étoiles à la fin d'un cours, pour ton effort, ton attitude ou un progrès. Ce n'est jamais une note, et personne d'autre que toi (et tes parents) ne les voit." : "Le coach donne 1 à 3 étoiles à la fin d'un cours, pour l'effort, l'attitude ou un progrès. Ce n'est jamais une note."}</p>
+      <p className={"m-0 " + sub}>{who === "jeune" ? "Ton coach te donne 1 à 3 étoiles à la fin d'un cours, pour ton effort, ton attitude ou un progrès. Quand un domaine n'est pas en progrès, tu peux en perdre : il t'explique toujours pourquoi, pour t'aider à progresser. Ce n'est jamais une note, et personne d'autre que toi (et tes parents) ne les voit." : "Le coach donne 1 à 3 étoiles à la fin d'un cours, pour l'effort, l'attitude ou un progrès. Quand un domaine n'est pas en progrès, il peut en retirer, toujours avec une explication. Ce n'est jamais une note."}</p>
       {stars.length === 0 ? <p className={"m-0 rounded-2xl p-3 " + row}>Pas encore d'étoile : {who === "jeune" ? "ton coach en donne" : "le coach en donne"} à la fin des cours.</p> : (
         <>
           <p className="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1"><strong className="text-4xl font-black">⭐ {totalStars(stars)}</strong><span className={sub}>étoile{totalStars(stars) > 1 ? "s" : ""} en tout · {thisMonth} ce mois-ci</span></p>
           <ul className="m-0 grid list-none gap-2 p-0">
-            {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); return (
-              <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row}>
+            {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); const neg = s.stars < 0; return (
+              <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row + (neg ? " border-l-4 border-[#ff8a80]" : "")}>
                 <span className="flex flex-wrap items-center justify-between gap-2"><strong><StarsLine n={s.stars} /> {r ? `${r.emoji} ${r.label}` : ""}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : ""}</strong><small className={sub}>{fmtDay(s.day)}</small></span>
+                {neg && <small className={sub}>Pas en progrès cette fois : ce n'est pas grave, c'est pour t'aider à progresser.</small>}
                 {s.comment && <span className="text-sm">💬 {s.comment}</span>}
               </li>
             ); })}

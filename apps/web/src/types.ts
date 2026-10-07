@@ -120,7 +120,7 @@ export const SELF_PRESETS: { proud: Preset[]; improve: Preset[]; wish: Preset[] 
 export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂", "Ça va"], ["😀", "Bien"], ["🤩", "Super"]] as const;
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
-// ----- Étoiles de fin de cours (données par le coach, toujours positives) -----
+// ----- Étoiles de fin de cours (données par le coach : en plus pour dire bravo, en moins pour dire « pas en progrès », toujours avec un commentaire pour les retraits) -----
 export interface CourseStar { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
 export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
   { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
@@ -132,14 +132,29 @@ export const STAR_REASONS: { id: string; emoji: string; label: string; hint: str
   { id: "concentration", emoji: "🎯", label: "Concentration", hint: "Très concentré" },
   { id: "bonne-humeur", emoji: "😄", label: "Bonne humeur", hint: "A mis de la joie dans le groupe" },
 ];
-export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id);
-export const totalStars = (list: Pick<CourseStar, "stars">[]) => list.reduce((n, s) => n + s.stars, 0);
+// « Pas en progrès » : ce qui peut faire perdre des étoiles (le jeune voit toujours l'explication)
+export const STAR_NEG_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
+  { id: "neg-comportement", emoji: "🚧", label: "Comportement", hint: "Un comportement à reprendre" },
+  { id: "neg-attitude", emoji: "😐", label: "Attitude", hint: "Une attitude à changer" },
+  { id: "neg-concentration", emoji: "🌫️", label: "Concentration", hint: "Pas assez concentré" },
+  { id: "neg-ecoute", emoji: "🙉", label: "Écoute", hint: "Les consignes n'ont pas été suivies" },
+  { id: "neg-technique", emoji: "🎾", label: "Technique", hint: "La technique n'a pas été travaillée" },
+  { id: "neg-objectifs", emoji: "🎯", label: "Objectifs", hint: "Les objectifs n'ont pas été travaillés" },
+  { id: "neg-effort", emoji: "💤", label: "Effort", hint: "Pas assez d'effort" },
+  { id: "neg-fairplay", emoji: "🤝", label: "Fair-play", hint: "Un manque de respect ou de fair-play" },
+  { id: "neg-assiduite", emoji: "⏰", label: "Assiduité", hint: "Retard ou absence" },
+];
+export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id) ?? STAR_NEG_REASONS.find((r) => r.id === id);
+export const isNegReason = (id: string) => id.startsWith("neg-");
+// Total : les étoiles en moins se soustraient, mais le total ne descend jamais sous zéro
+export const totalStars = (list: Pick<CourseStar, "stars">[]) => Math.max(0, list.reduce((n, s) => n + s.stars, 0));
 // Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 30 étoiles dans le trimestre = domaine plein (5 sur 5) ; il repart de zéro à chaque trimestre
 export const STARS_FOR_FULL = 30;
 export const DOMAIN_EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">[], season = currentSeason(), t = trimesterOf()) {
   const out: Record<string, number> = {}; EVAL_AXES.forEach((a) => { out[a.key] = 0; });
   list.forEach((s) => { if (s.domain && s.domain in out && inPeriod(s.day + "T12:00:00", season, t)) out[s.domain] += s.stars; });
+  for (const k of Object.keys(out)) out[k] = Math.max(0, out[k]); // un domaine ne descend jamais sous zéro
   return out;
 }
 export const todayIso = () => new Date().toISOString().slice(0, 10);

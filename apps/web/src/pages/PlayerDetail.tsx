@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { activeLines, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -337,14 +337,14 @@ function StarsTab({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const stars = useStars(p.id, version);
   const [day, setDay] = useState(todayIso());
-  const [lines, setLines] = useState<StarLine[]>([]), [comment, setComment] = useState("");
+  const [lines, setLines] = useState<StarLine[]>([]);
   const [err, setErr] = useState("");
   const [msgMinus, setMsgMinus] = useState("");
   // « − » sur un domaine du radar : on retire une étoile de la saisie la plus récente de ce domaine ce trimestre (la ligne disparaît quand il ne lui en reste plus)
   async function minus(domain: string) {
     setErr(""); setMsgMinus("");
     const season = currentSeason(), tri = trimesterOf();
-    const mine = (stars ?? []).filter((s) => s.domain === domain && inPeriod(s.day + "T12:00:00", season, tri));
+    const mine = (stars ?? []).filter((s) => s.stars > 0 && s.domain === domain && inPeriod(s.day + "T12:00:00", season, tri));
     if (!mine.length) return;
     const lastDay = mine.reduce((m, s) => (s.day > m ? s.day : m), mine[0].day);
     const line = mine.filter((s) => s.day === lastDay).slice(-1)[0];
@@ -356,26 +356,23 @@ function StarsTab({ p }: { p: Player }) {
   }
   async function save() {
     setErr(""); const bad = starLinesError(lines); if (bad) return setErr(bad);
-    const act = activeLines(lines); if (!act.length) return setErr("Choisis au moins 1 étoile (ou retire la ligne).");
-    try { await put(`/players/${p.id}/stars/${day}`, { items: act.map((l, i) => ({ ...l, comment: i === 0 ? comment.trim() || undefined : undefined })) }); setLines([]); setComment(""); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
+    const act = activeLines(lines); if (!act.length) return setErr("Choisis un nombre d'étoiles (ou retire la ligne).");
+    try { await put(`/players/${p.id}/stars/${day}`, { items: starItems(lines) }); setLines([]); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
   }
   // Une même journée peut avoir plusieurs lignes : on les regroupe par jour
   const days = [...new Set((stars ?? []).map((s) => s.day))];
-  function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "" }))); setComment(list.find((s) => s.comment)?.comment ?? ""); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
       <StarsRadar stars={stars} who="coach" onMinus={minus} />
       {msgMinus && <p role="status" className="m-0 font-bold text-ok">{msgMinus}</p>}
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
-        <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
+        <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
         <StarLinesEditor who={p.firstName} lines={lines} onChange={setLines} />
-        {lines.length > 0 && <>
-          <input className="input" aria-label="Petit mot (facultatif)" maxLength={140} placeholder="Un petit mot (facultatif)" value={comment} onChange={(e) => setComment(e.target.value)} />
-          <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>
-        </>}
+        {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
       </section>
       <section className="card grid gap-2">
