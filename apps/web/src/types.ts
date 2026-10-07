@@ -21,7 +21,7 @@ export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: stri
   NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
-export interface Goal { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
+export interface Goal { targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
 export const fullName = (p: Pick<Player, "firstName" | "lastName">) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Joueur";
@@ -121,7 +121,7 @@ export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂",
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
 // ----- Étoiles de fin de cours (données par le coach : en plus pour dire bravo, en moins pour dire « pas en progrès », toujours avec un commentaire pour les retraits) -----
-export interface CourseStar { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
+export interface CourseStar { goalId?: string | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
 export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
   { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
   { id: "ecoute", emoji: "👂", label: "Écoute", hint: "A bien écouté et appliqué les consignes" },
@@ -174,4 +174,26 @@ export function matchStats(ms: { result: string; opponentRanking?: string | null
   const beaten = wins.map((m) => m.opponentRanking).filter((r): r is string => !!r && RANKINGS.includes(r));
   const best = beaten.length ? beaten.reduce((a, b) => (RANKINGS.indexOf(b) > RANKINGS.indexOf(a) ? b : a)) : null;
   return { played: ms.length, wins: wins.length, losses: ms.length - wins.length, bestBeaten: best, rankedWins: beaten.length };
+}
+
+// ----- Missions : étoiles gagnées sur la mission pendant le trimestre → pourcentage qui aide le coach à décider « atteinte » ou « non atteinte » -----
+export const missionStars = (stars: Pick<CourseStar, "day" | "stars" | "goalId">[], goalId: string, season: string, t: number) =>
+  Math.max(0, stars.filter((x) => x.goalId === goalId && inPeriod(x.day + "T12:00:00", season, t)).reduce((n, x) => n + x.stars, 0));
+export const missionPercent = (earned: number, target = 10) => Math.min(100, Math.round((earned / Math.max(1, target)) * 100));
+
+// ----- Les quatre qualités notées à chaque cours (de 1 à 5) -----
+export interface CourseQuality { id?: string; day: string; mindset: number | null; motivation: number | null; attendance: number | null; attitude: number | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; }
+export type QualityKey = "mindset" | "motivation" | "attendance" | "attitude";
+export const QUALITIES: { key: QualityKey; label: string; emoji: string; hint: string }[] = [
+  { key: "mindset", label: "État d'esprit", emoji: "🧠", hint: "Positif, ouvert, prêt à apprendre" },
+  { key: "motivation", label: "Motivation", emoji: "🔥", hint: "Envie de bien faire et d'avancer" },
+  { key: "attendance", label: "Assiduité", emoji: "⏰", hint: "Présent, à l'heure, régulier" },
+  { key: "attitude", label: "Attitude", emoji: "🤝", hint: "Respect, écoute, fair-play" },
+];
+// Moyenne de chaque qualité sur le trimestre (null s'il n'y a aucune note)
+export function qualityAverages(rows: CourseQuality[], season: string, t: number): { avg: Record<QualityKey, number | null>; courses: number } {
+  const inT = rows.filter((r) => inPeriod(r.day + "T12:00:00", season, t));
+  const avg = {} as Record<QualityKey, number | null>;
+  for (const q of QUALITIES) { const v = inT.map((r) => r[q.key]).filter((x): x is number => x != null); avg[q.key] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+  return { avg, courses: inT.length };
 }

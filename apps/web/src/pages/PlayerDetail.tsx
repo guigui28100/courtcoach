@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { hasQuality, QualitiesEditor, QualityValues, qualityItems, useQualities, activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -305,6 +305,9 @@ function Objectifs({ p }: { p: Player }) {
                   <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" /></div>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
                   <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={g.indicator} maxLength={200} onBlur={(e) => e.target.value !== g.indicator && upd(g, { indicator: e.target.value })} />
+                  <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ Étoiles à gagner pour réussir cette mission
+                    <input type="number" min={3} max={60} className="input !w-24" defaultValue={g.targetStars ?? 10} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== (g.targetStars ?? 10)) upd(g, { targetStars: v }); }} />
+                    <span className="hint font-normal">Aide à décider « atteinte » en fin de trimestre.</span></label>
                   <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"><legend className="mb-1 text-sm font-bold">À travailler au</legend>
                     {[1, 2, 3].map((n) => (
                       <label key={n} className="flex min-h-10 items-center gap-2 rounded-full border-2 border-line bg-white px-3 text-sm font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
@@ -338,6 +341,16 @@ function StarsTab({ p }: { p: Player }) {
   const stars = useStars(p.id, version);
   const [day, setDay] = useState(todayIso());
   const [lines, setLines] = useState<StarLine[]>([]);
+  // Missions du trimestre du cours choisi (pour donner des étoiles SUR une mission) et les 4 qualités de ce cours
+  const [goals, setGoals] = useState<Goal[]>([]);
+  useEffect(() => { const d = new Date(day + "T12:00:00"); get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason(d)}`).then((g) => setGoals(g.filter((x) => goalApplies(x, trimesterOf(d))))).catch(() => setGoals([])); }, [p.id, day]);
+  const quals = useQualities(p.id, version);
+  const [q, setQ] = useState<QualityValues>({}), [qMsg, setQMsg] = useState("");
+  useEffect(() => { const r = (quals ?? []).find((x) => x.day === day); setQ(r ? { mindset: r.mindset, motivation: r.motivation, attendance: r.attendance, attitude: r.attitude } : {}); setQMsg(""); }, [quals, day]);
+  async function saveQ() {
+    setErr(""); setQMsg("");
+    try { if (hasQuality(q)) await put(`/players/${p.id}/qualities/${day}`, qualityItems(q)); else await del(`/players/${p.id}/qualities/${day}`).catch(() => undefined); setQMsg("✅ Qualités enregistrées"); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
+  }
   const [err, setErr] = useState("");
   const [msgMinus, setMsgMinus] = useState("");
   // « − » sur un domaine du radar : on retire une étoile de la saisie la plus récente de ce domaine ce trimestre (la ligne disparaît quand il ne lui en reste plus)
@@ -361,7 +374,7 @@ function StarsTab({ p }: { p: Player }) {
   }
   // Une même journée peut avoir plusieurs lignes : on les regroupe par jour
   const days = [...new Set((stars ?? []).map((s) => s.day))];
-  function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
       <StarsRadar stars={stars} who="coach" onMinus={minus} />
@@ -371,9 +384,15 @@ function StarsTab({ p }: { p: Player }) {
         <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
-        <StarLinesEditor who={p.firstName} lines={lines} onChange={setLines} />
+        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
+      </section>
+      <section className="card grid gap-3">
+        <h3 className="m-0">Les 4 qualités de ce cours</h3>
+        <p className="hint m-0">État d'esprit, motivation, assiduité, attitude : de 1 à 5, pour le cours du {fmtDay(day)}. Leur moyenne du trimestre alimente l'araignée « image du joueur » du bulletin.</p>
+        <QualitiesEditor who={p.firstName} value={q} onChange={setQ} />
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={saveQ}>Enregistrer les qualités</button>{qMsg && <span role="status" className="font-bold text-ok">{qMsg}</span>}</div>
       </section>
       <details className="card group grid gap-2">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">Historique {stars && stars.length > 0 && <small className="font-normal text-muted">· ⭐ {totalStars(stars)} en tout · {days.length} cours</small>}</h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
@@ -438,7 +457,7 @@ export default function PlayerDetail() {
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "objectifs" && <Objectifs p={p} />}
-          {tab === "evaluations" && <Evaluations p={p} />}
+          {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <Matchs p={p} />}
           {tab === "etoiles" && <StarsTab p={p} />}

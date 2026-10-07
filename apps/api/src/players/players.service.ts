@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -92,7 +92,7 @@ export class PlayersService {
   async export(user: AuthUser, id: string) {
     if (user.role === Role.TRAINER) throw new ForbiddenException("Réservé au coach");
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, qualities: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
     const { coachNotes, declaredMatches, ...visible } = p;
@@ -212,7 +212,7 @@ export class PlayersService {
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
     await this.assertStaffFor(user, playerId);
     const who = await this.who(user);
-    const g = await this.prisma.goal.create({ data: { ...who, playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    const g = await this.prisma.goal.create({ data: { ...who, playerId, season: dto.season, axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", deadline: dto.deadline ? new Date(dto.deadline) : null, progress: dto.progress ?? 0, trimesters: this.trimesters(dto.trimesters), ...(dto.targetStars ? { targetStars: dto.targetStars } : {}) } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return g;
   }
@@ -334,7 +334,7 @@ export class PlayersService {
   }
   async stars(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } }).then((rows) => this.hideAuthors(user, rows));
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, comment: true, authorId: true, authorName: true, authorRole: true } }).then((rows) => this.hideAuthors(user, rows));
   }
   async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
     await this.assertStaffFor(user, playerId);
@@ -346,14 +346,40 @@ export class PlayersService {
       if (neg !== STAR_NEG_REASONS.includes(i.reason)) throw new BadRequestException(neg ? "Pour retirer des étoiles, choisis une raison « à travailler »." : "Pour donner des étoiles, choisis une raison positive.");
       if (neg && (i.comment ?? "").trim().length < 3) throw new BadRequestException("Explique en une phrase ce qui n'a pas été : le jeune la verra.");
     }
+    // Une ligne peut porter sur une mission du joueur : le domaine du radar est alors celui de la mission
+    const goalIds = [...new Set(dto.items.map((i) => i.goalId).filter((g): g is string => !!g))];
+    const goals = goalIds.length ? await this.prisma.goal.findMany({ where: { id: { in: goalIds }, playerId }, select: { id: true, axis: true } }) : [];
+    if (goals.length !== goalIds.length) throw new BadRequestException("Cette mission n'appartient pas à ce joueur.");
+    const axisOf = new Map(goals.map((g) => [g.id, g.axis.toLowerCase()]));
     const who = await this.who(user);
     // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
     await this.prisma.$transaction([
       this.prisma.courseStar.deleteMany({ where: { playerId, day } }),
-      this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ ...who, playerId, day, stars: i.stars, reason: i.reason, domain: i.domain, comment: (i.comment ?? "").trim() })) }),
+      this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ ...who, playerId, day, stars: i.stars, reason: i.reason, goalId: i.goalId ?? null, domain: i.goalId ? axisOf.get(i.goalId)! : i.domain!, comment: (i.comment ?? "").trim() })) }),
     ]);
     await this.touch(playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, comment: true, authorId: true, authorName: true, authorRole: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, comment: true, authorId: true, authorName: true, authorRole: true } });
+  }
+  // ----- Les quatre qualités notées à chaque cours (état d'esprit, motivation, assiduité, attitude : de 1 à 5) -----
+  async qualities(user: AuthUser, playerId: string) {
+    await this.assertCanRead(user, playerId);
+    const rows = await this.prisma.courseQuality.findMany({ where: { playerId }, orderBy: { day: "desc" }, select: { id: true, day: true, mindset: true, motivation: true, attendance: true, attitude: true, authorId: true, authorName: true, authorRole: true } });
+    return this.hideAuthors(user, rows);
+  }
+  async saveQualities(user: AuthUser, playerId: string, day: string, dto: QualitiesDto) {
+    await this.assertStaffFor(user, playerId);
+    this.checkDay(day);
+    if (dto.mindset == null && dto.motivation == null && dto.attendance == null && dto.attitude == null) throw new BadRequestException("Note au moins une qualité (de 1 à 5).");
+    const data = { mindset: dto.mindset ?? null, motivation: dto.motivation ?? null, attendance: dto.attendance ?? null, attitude: dto.attitude ?? null, ...(await this.who(user)) };
+    const r = await this.prisma.courseQuality.upsert({ where: { playerId_day: { playerId, day } }, update: data, create: { playerId, day, ...data }, select: { id: true, day: true, mindset: true, motivation: true, attendance: true, attitude: true, authorId: true, authorName: true, authorRole: true } });
+    await this.touch(playerId);
+    return r;
+  }
+  async removeQualities(user: AuthUser, playerId: string, day: string) {
+    await this.assertStaffFor(user, playerId);
+    this.checkDay(day);
+    const r = await this.prisma.courseQuality.deleteMany({ where: { playerId, day } });
+    if (!r.count) throw new NotFoundException("Aucune note ce jour-là");
   }
   // Change le nombre d'étoiles d'UNE ligne (ex. en retirer une) sans toucher aux autres lignes du cours
   async updateStarLine(user: AuthUser, playerId: string, lineId: string, dto: StarLineDto) {

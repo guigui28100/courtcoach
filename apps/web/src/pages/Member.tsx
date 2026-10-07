@@ -4,7 +4,7 @@ import { get, post, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { CourseStar, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
@@ -129,7 +129,7 @@ export function AdultSpace() {
 }
 
 // Objectifs du trimestre : « À travailler » tant que le coach n'a pas fait le point (le statut n'apparaît qu'après son évaluation)
-function GoalsTab({ goals }: { goals: Goal[] }) {
+function GoalsTab({ goals, stars }: { goals: Goal[]; stars: CourseStar[] | null }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
   if (!here.length) return <Empty>Aucun objectif fixé pour le trimestre {t} pour l'instant.</Empty>;
@@ -150,7 +150,7 @@ function GoalsTab({ goals }: { goals: Goal[] }) {
                     <span className="shrink-0 rounded-full px-2.5 py-0.5 text-sm font-bold" style={st ? { background: GOAL_STATUS[st].bg, color: GOAL_STATUS[st].ink } : { background: "#f1ece4", color: "#4b5566" }}>{st ? `${GOAL_STATUS[st].emoji} ${GOAL_STATUS[st].label}` : "🎯 À travailler"}</span></div>
                   {isCarriedOver(g, t) && <small className="font-bold text-[#5b21b6]">🔁 Objectif reconduit depuis le trimestre {t - 1}</small>}
                   {g.indicator && <small className="hint">Mesuré par : {g.indicator}</small>}
-                  {(st || g.progress > 0) && <><ProgressBar value={g.progress} color={a.color} /><small className="font-bold">{g.progress} %</small></>}
+                  {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><ProgressBar value={missionPercent(earned, target)} color={a.color} /><small className="font-bold">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
                 </div>
               ); })}
             </section>
@@ -301,7 +301,7 @@ export function FamilySpace() {
                   </div>
                 </>
               )}
-              {tab === "objectifs" && <GoalsTab goals={list} />}
+              {tab === "objectifs" && <GoalsTab goals={list} stars={stars} />}
               {tab === "evaluations" && <EvalTab p={p} goals={list} />}
               {tab === "etoiles" && <><StarsRadar stars={stars} who="famille" /><StarsCard stars={stars} who="famille" /></>}
               {tab === "matchs" && <><FamilyTournaments /><MatchesTab p={p} /></>}

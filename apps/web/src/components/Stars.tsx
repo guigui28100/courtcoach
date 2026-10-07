@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
+import { CourseQuality, Goal, QUALITIES, QualityKey, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -79,7 +79,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
 }
 
 // Les étoiles d'un cours : une ou plusieurs lignes, chacune avec son nombre d'étoiles, sa raison et son domaine du radar
-export type StarLine = { stars: number; reason: string; domain: string; comment: string };
+export type StarLine = { stars: number; reason: string; domain: string; comment: string; goalId?: string };
 export const MAX_STAR_LINES = 6;
 export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "", comment: "" });
 // Message si une ligne est incomplète, sinon chaîne vide
@@ -88,13 +88,13 @@ export const activeLines = (lines: StarLine[]) => lines.filter((l) => l.stars !=
 export const starLinesError = (all: StarLine[]) => {
   const lines = activeLines(all);
   if (lines.some((l) => !l.reason)) return "Choisis la raison pour chaque ligne d'étoiles.";
-  if (lines.some((l) => !l.domain)) return "Choisis le domaine du radar pour chaque ligne d'étoiles.";
+  if (lines.some((l) => !l.goalId && !l.domain)) return "Choisis la mission (ou le domaine du radar) pour chaque ligne d'étoiles.";
   if (lines.some((l) => l.stars < 0 && l.comment.trim().length < 3)) return "Pour retirer des étoiles, explique en une phrase ce qui n'a pas été : le jeune la verra.";
   return "";
 };
 // Les lignes à envoyer au serveur
-export const starItems = (lines: StarLine[]) => activeLines(lines).map((l) => ({ stars: l.stars, reason: l.reason, domain: l.domain, comment: l.comment.trim() || undefined }));
-export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string }) {
+export const starItems = (lines: StarLine[]) => activeLines(lines).map((l) => ({ stars: l.stars, reason: l.reason, comment: l.comment.trim() || undefined, ...(l.goalId ? { goalId: l.goalId } : { domain: l.domain }) }));
+export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
   const set = (i: number, patch: Partial<StarLine>) => onChange(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   return (
     <div className="grid gap-3">
@@ -114,8 +114,21 @@ export function StarLinesEditor({ lines, onChange, who }: { lines: StarLine[]; o
           {l.stars !== 0 && <>
           <p className="hint m-0">{l.stars < 0 ? "Qu'est-ce qui n'a pas été ?" : "Pourquoi ?"}</p>
           <ReasonPicker negative={l.stars < 0} value={l.reason} onChange={(id) => set(i, { reason: id })} />
-          <p className="hint m-0">{l.stars < 0 ? "Quel domaine du radar n'est pas en progrès ?" : "Quel domaine du radar fait-elle grandir ?"}</p>
-          <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
+          {goals.length > 0 && <>
+            <p className="hint m-0">Sur quelle mission ?</p>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sur quelle mission ?">
+              {goals.map((g) => (
+                <button key={g.id} type="button" role="radio" aria-checked={l.goalId === g.id} onClick={() => set(i, { goalId: g.id, domain: g.axis.toLowerCase() })}
+                  className={"min-h-10 rounded-full border-2 px-3 text-left text-sm font-bold " + (l.goalId === g.id ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</button>
+              ))}
+              <button type="button" role="radio" aria-checked={!l.goalId} onClick={() => set(i, { goalId: undefined })}
+                className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (!l.goalId ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>Autre (sans mission)</button>
+            </div>
+          </>}
+          {!l.goalId && <>
+            <p className="hint m-0">{l.stars < 0 ? "Quel domaine du radar n'est pas en progrès ?" : "Quel domaine du radar fait-elle grandir ?"}</p>
+            <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
+          </>}
           <label className="grid gap-1 text-sm font-bold">{l.stars < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
             <input className="input" maxLength={300} value={l.comment} onChange={(e) => set(i, { comment: e.target.value })} placeholder={l.stars < 0 ? "Ex. : Tu as discuté pendant l'exercice, on en reparle mardi." : "Ex. : Super service aujourd'hui !"} /></label>
           </>}
@@ -155,5 +168,35 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
         </>
       )}
     </section>
+  );
+}
+
+// Chargement des qualités notées à chaque cours (le coach, le joueur et sa famille y ont accès)
+export function useQualities(playerId: string | undefined, reload = 0) {
+  const [rows, setRows] = useState<CourseQuality[] | null>(null);
+  useEffect(() => { if (!playerId) return; get<CourseQuality[]>(`/players/${playerId}/qualities`).then(setRows).catch(() => setRows([])); }, [playerId, reload]);
+  return rows;
+}
+
+// Les quatre qualités d'un cours, de 1 à 5 : état d'esprit, motivation, assiduité, attitude (un second clic sur la note l'enlève)
+export type QualityValues = Partial<Record<QualityKey, number | null>>;
+export const qualityItems = (v: QualityValues) => Object.fromEntries(QUALITIES.filter((q) => v[q.key] != null).map((q) => [q.key, v[q.key]]));
+export const hasQuality = (v: QualityValues) => QUALITIES.some((q) => v[q.key] != null);
+export function QualitiesEditor({ value, onChange, who }: { value: QualityValues; onChange: (v: QualityValues) => void; who: string }) {
+  return (
+    <fieldset className="m-0 grid gap-2 rounded-2xl border border-line bg-white p-3"><legend className="px-1 font-bold">🌟 Les 4 qualités de {who} à ce cours (de 1 à 5, facultatif)</legend>
+      {QUALITIES.map((q) => (
+        <div key={q.key} className="flex flex-wrap items-center justify-between gap-2" role="radiogroup" aria-label={`${q.label} de ${who}`}>
+          <span className="min-w-36 text-sm font-bold" title={q.hint}><span aria-hidden="true">{q.emoji} </span>{q.label}</span>
+          <span className="flex gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={value[q.key] === n} aria-label={`${q.label} : ${n} sur 5`} onClick={() => onChange({ ...value, [q.key]: value[q.key] === n ? null : n })}
+                className={"h-10 w-10 rounded-xl border-2 text-base font-bold " + (value[q.key] === n ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{n}</button>
+            ))}
+          </span>
+        </div>
+      ))}
+      <p className="hint m-0">1 = à travailler · 3 = correct · 5 = excellent. Un second clic sur la note l'enlève.</p>
+    </fieldset>
   );
 }

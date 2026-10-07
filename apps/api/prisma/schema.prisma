@@ -120,6 +120,7 @@ model Player {
   courseStars CourseStar[]
   declaredMatches DeclaredMatch[]
   tournamentDocs TournamentDocPlayer[]
+  qualities   CourseQuality[]
   matches     Match[]
   videos      Video[]
   analyses    Analysis[]
@@ -185,6 +186,8 @@ model Goal {
   createdAt  DateTime @default(now())
   analyses   AnalysisGoal[]
   checkpoints GoalCheckpoint[]
+  targetStars Int     @default(10) // nombre d'étoiles à gagner sur cette mission pour la considérer atteinte (aide à décider)
+  stars      CourseStar[]
 
   @@index([playerId, season])
   authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
@@ -261,6 +264,8 @@ model CourseStar {
   reason    String   // identifiant d'une raison proposée (effort, ecoute, progres…)
   domain    String?  // domaine du radar fait grandir par l'étoile (technique, tactique, physique, mental, attitude) ; vide pour les anciennes étoiles
   comment   String   @default("") // petit mot du coach (140 caractères maximum)
+  goalId    String?  // mission (objectif) sur laquelle porte cette ligne d'étoiles
+  goal      Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 
   @@index([playerId, day])
@@ -457,4 +462,22 @@ model TournamentDocPlayer {
   player   Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@id([docId, playerId])
+}
+
+// Les quatre qualités notées à chaque cours (de 1 à 5) : état d'esprit, motivation, assiduité, attitude. Leur moyenne du trimestre alimente l'araignée « image du joueur » du bulletin.
+model CourseQuality {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  day        String   // jour du cours « AAAA-MM-JJ » (une fiche par joueur et par jour)
+  mindset    Int?     // état d'esprit
+  motivation Int?
+  attendance Int?     // assiduité
+  attitude   Int?
+  createdAt  DateTime @default(now())
+  authorId   String?
+  authorName String?
+  authorRole String?
+
+  @@unique([playerId, day])
 }
