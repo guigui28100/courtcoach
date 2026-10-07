@@ -161,7 +161,7 @@ export default function Bulletin() {
 
             {t > 0 && qNow.courses > 0 && (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-qualites">
-                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 4 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
+                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 2 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
                 <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {QUALITIES.map((q) => { const v = qNow.sum[q.key]; return (
                     <li key={q.key} className="flex items-baseline justify-between gap-2 rounded-2xl bg-[#f6f4fb] p-3">

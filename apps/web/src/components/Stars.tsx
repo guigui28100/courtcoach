@@ -172,10 +172,10 @@ export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: S
   ); };
   return (
     <div className="grid gap-3">
-      <p className="hint m-0">Les étoiles évaluent, cours après cours, {goals.length ? `les missions de ${who} et ses 4 qualités` : `les 4 qualités de ${who}`}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
+      <p className="hint m-0">Les étoiles évaluent, cours après cours, {goals.length ? `les missions de ${who} et ses 2 qualités` : `les 2 qualités de ${who}`}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
       {goals.length > 0 && <h4 className="m-0">🎯 Les missions</h4>}
       {goals.map((g) => row("mission " + g.title, <>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</>, null, lines.find((x) => x.goalId === g.id), (p) => setMission(g, p)))}
-      <h4 className="m-0">🌟 Les 4 qualités</h4>
+      <h4 className="m-0">🌟 Les 2 qualités</h4>
       {QUALITIES.map((q) => row(q.label, <><span aria-hidden="true">{q.emoji} </span>{q.label}</>, q.hint, lines.find((l) => isQuality(l) && qualityOfReason(l.reason)!.key === q.key), (p) => setQuality(q.key, p)))}
       <details className="rounded-2xl border border-line bg-white p-3" open={others.length > 0}>
         <summary className="cursor-pointer font-bold">Autre étoile, hors mission et hors qualités</summary>
