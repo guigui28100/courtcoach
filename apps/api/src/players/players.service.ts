@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -340,6 +340,12 @@ export class PlayersService {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);
     if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
+    // Étoiles en plus (bravo) ou en moins (« pas en progrès ») : la raison doit correspondre, et une ligne en moins doit toujours être expliquée au jeune
+    for (const i of dto.items) {
+      const neg = i.stars < 0;
+      if (neg !== STAR_NEG_REASONS.includes(i.reason)) throw new BadRequestException(neg ? "Pour retirer des étoiles, choisis une raison « à travailler »." : "Pour donner des étoiles, choisis une raison positive.");
+      if (neg && (i.comment ?? "").trim().length < 3) throw new BadRequestException("Explique en une phrase ce qui n'a pas été : le jeune la verra.");
+    }
     const who = await this.who(user);
     // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
     await this.prisma.$transaction([
@@ -354,6 +360,7 @@ export class PlayersService {
     await this.assertStaffFor(user, playerId);
     const line = await this.prisma.courseStar.findFirst({ where: { id: lineId, playerId } });
     if (!line) throw new NotFoundException("Ligne d'étoiles introuvable");
+    if (line.stars < 0) throw new BadRequestException("Cette ligne « pas en progrès » se corrige depuis la fiche du joueur, onglet Étoiles.");
     const u = await this.prisma.courseStar.update({ where: { id: lineId }, data: { stars: dto.stars, ...(await this.who(user)) } });
     await this.touch(playerId);
     return { id: u.id, day: u.day, stars: u.stars, reason: u.reason, domain: u.domain, comment: u.comment, authorId: u.authorId, authorName: u.authorName, authorRole: u.authorRole };

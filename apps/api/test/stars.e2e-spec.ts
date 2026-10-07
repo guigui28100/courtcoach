@@ -74,6 +74,25 @@ describe("Étoiles de fin de cours", () => {
     await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
   });
 
+  it("« pas en progrès » : des étoiles en moins, avec une raison « à travailler » et TOUJOURS un commentaire que le jeune et la famille voient", async () => {
+    const put = (items: object[]) => A.coach.put(`/api/players/${p1}/stars/${iso(6)}`).set(ORIGIN).send({ items });
+    await put([{ stars: -1, reason: "neg-attitude", domain: "attitude" }]).expect(400); // sans explication : refusé
+    await put([{ stars: -1, reason: "neg-attitude", domain: "attitude", comment: "  " }]).expect(400);
+    await put([{ stars: -1, reason: "effort", domain: "attitude", comment: "Tu as chahuté pendant l'exercice" }]).expect(400); // raison positive avec étoile en moins
+    await put([{ stars: 2, reason: "neg-attitude", domain: "attitude", comment: "x" }]).expect(400); // raison « à travailler » avec étoile en plus
+    await put([{ stars: -4, reason: "neg-attitude", domain: "attitude", comment: "Trop" }]).expect(400);
+    const r = await put([{ stars: 2, reason: "effort", domain: "mental" }, { stars: -2, reason: "neg-concentration", domain: "mental", comment: "Tu étais ailleurs pendant la séance de service" }]).expect(200);
+    expect(r.body.map((x: any) => x.stars).sort()).toEqual([-2, 2]);
+    for (const who of ["parent", "jeune"]) {
+      const list = (await A[who].get(`/api/players/${p1}/stars`).expect(200)).body;
+      expect(list.find((x: any) => x.stars === -2)).toMatchObject({ reason: "neg-concentration", comment: "Tu étais ailleurs pendant la séance de service" });
+    }
+    // une ligne « pas en progrès » ne se corrige pas par le bouton − du radar
+    const neg = r.body.find((x: any) => x.stars === -2);
+    await A.coach.patch(`/api/players/${p1}/stars/line/${neg.id}`).set(ORIGIN).send({ stars: 1 }).expect(400);
+    await A.coach.delete(`/api/players/${p1}/stars/${iso(6)}`).set(ORIGIN).expect(204);
+  });
+
   it("valeurs refusées : 0 ou 4 étoiles, raison inconnue, mot trop long, date invalide, cours à venir, date trop ancienne", async () => {
     const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send(body);
     await put(iso(1), { items: [{ stars: 0, reason: "effort", domain: "technique" }] }).expect(400);
@@ -82,7 +101,7 @@ describe("Étoiles de fin de cours", () => {
     await put(iso(1), { items: [{ stars: 2, reason: "mauvais-comportement", domain: "technique" }] }).expect(400);
     await put(iso(1), { items: [{ stars: 2, reason: "effort" }] }).expect(400); // il faut choisir un domaine du radar
     await put(iso(1), { items: [{ stars: 2, reason: "effort", domain: "chance" }] }).expect(400);
-    await put(iso(1), { items: [{ stars: 2, reason: "effort", domain: "technique", comment: "x".repeat(141) }] }).expect(400);
+    await put(iso(1), { items: [{ stars: 2, reason: "effort", domain: "technique", comment: "x".repeat(301) }] }).expect(400);
     await put("pas-une-date", { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(-10), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(500), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);

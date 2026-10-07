@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
-import { activeLines, StarLine, StarLinesEditor, starLinesError } from "../components/Stars";
+import { StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
 import { Avatar, Empty, Err, Page, PageHead } from "../components/ui";
 import { CourseStar, fullName, Player, todayIso } from "../types";
 
-type Row = { lines: StarLine[]; comment: string; had: boolean; dirty?: boolean };
+type Row = { lines: StarLine[]; had: boolean; dirty?: boolean };
 
 // Fin de cours : le coach donne les étoiles à tous ses joueurs d'un coup (1 à 3, une raison, un petit mot facultatif).
 export default function FinDeCours() {
@@ -19,11 +19,11 @@ export default function FinDeCours() {
   useEffect(() => {
     if (!players) return;
     Promise.all(players.map(async (p) => [p.id, (await get<CourseStar[]>(`/players/${p.id}/stars`).catch(() => [])).filter((s) => s.day === day)] as const)).then((all) => {
-      setRows(Object.fromEntries(all.map(([id, list]) => [id, { lines: list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "" })), comment: list.find((s) => s.comment)?.comment ?? "", had: list.length > 0 }])));
+      setRows(Object.fromEntries(all.map(([id, list]) => [id, { lines: list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment })), had: list.length > 0 }])));
       setMsg(null);
     });
   }, [players, day]);
-  const set = (id: string, patch: Partial<Row>) => setRows((r) => ({ ...r, [id]: { ...(r[id] ?? { lines: [], comment: "", had: false }), ...patch, dirty: true } }));
+  const set = (id: string, patch: Partial<Row>) => setRows((r) => ({ ...r, [id]: { ...(r[id] ?? { lines: [], had: false }), ...patch, dirty: true } }));
   
   // Enregistre un joueur (ou tous ceux qui ont été modifiés) : les lignes affichées remplacent celles du cours
   async function saveRows(list: Player[]) {
@@ -33,7 +33,7 @@ export default function FinDeCours() {
         const r = rows[p.id]; if (!r) continue;
         const bad = starLinesError(r.lines); if (bad) throw new Error(`${p.firstName} : ${bad}`);
         const act = activeLines(r.lines);
-        if (act.length) await put(`/players/${p.id}/stars/${day}`, { items: act.map((l, i) => ({ ...l, comment: i === 0 ? r.comment.trim() || undefined : undefined })) });
+        if (act.length) await put(`/players/${p.id}/stars/${day}`, { items: starItems(r.lines) });
         else if (r.had) await del(`/players/${p.id}/stars/${day}`);
       }
       const ids = new Set(list.map((p) => p.id));
@@ -46,7 +46,7 @@ export default function FinDeCours() {
 
   return (
     <>
-      <PageHead eyebrow="Centre de compétition jeunes" title="⭐ Fin de cours">Donne des étoiles à tes joueurs : 1 = bien, 2 = très bien, 3 = exceptionnel. Pour chaque joueur, tu peux ajouter plusieurs lignes (par exemple 2 étoiles pour l'effort en Mental, puis 1 étoile pour un progrès en Technique). Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
+      <PageHead eyebrow="Centre de compétition jeunes" title="⭐ Fin de cours">Donne des étoiles à tes joueurs : 1 = bien, 2 = très bien, 3 = exceptionnel. Si un domaine n'est pas en progrès (comportement, concentration, technique ou objectifs pas travaillés…), choisis −1, −2 ou −3 : le joueur perd des étoiles dans ce domaine et voit toujours ton explication. Pour chaque joueur, tu peux ajouter plusieurs lignes (par exemple 2 étoiles pour l'effort en Mental, puis 1 étoile pour un progrès en Technique). Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
       <Page>
         <div className="flex flex-wrap items-center gap-3">
           <div className="field"><label htmlFor="fc-day">Date du cours</label><input id="fc-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
@@ -55,19 +55,13 @@ export default function FinDeCours() {
         {players === null && <div className="skeleton h-32" role="status" aria-label="Chargement en cours" />}
         {players && !players.length && <Empty>Aucun joueur pour l'instant.</Empty>}
         <ul className="m-0 grid list-none gap-3 p-0">
-          {(players ?? []).map((p) => { const r = rows[p.id] ?? { lines: [], comment: "", had: false }; return (
+          {(players ?? []).map((p) => { const r = rows[p.id] ?? { lines: [], had: false }; return (
             <li key={p.id} className={"card grid gap-3 " + (r.lines.length > 0 ? "!border-[#e0b100] !bg-[#fffdf0]" : "")}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">⚠️ pas encore enregistré</span>}</span>
-                <span className="flex items-center gap-3"><strong aria-live="polite">⭐ {r.lines.reduce((n, l) => n + l.stars, 0)} étoile{r.lines.reduce((n, l) => n + l.stars, 0) > 1 ? "s" : ""} ce cours</strong>{r.dirty && <button className="btn-clay btn-sm" disabled={busy} onClick={() => saveRows([p])}>Enregistrer {p.firstName}</button>}</span>
+                <span className="flex items-center gap-3"><strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>{r.dirty && <button className="btn-clay btn-sm" disabled={busy} onClick={() => saveRows([p])}>Enregistrer {p.firstName}</button>}</span>
               </div>
               <StarLinesEditor who={p.firstName} lines={r.lines} onChange={(lines) => set(p.id, { lines })} />
-              {r.lines.length > 0 && (
-                <>
-                  <label className="sr-only" htmlFor={`fc-c-${p.id}`}>Petit mot pour {p.firstName}</label>
-                  <input id={`fc-c-${p.id}`} className="input" maxLength={140} placeholder="Un petit mot (facultatif) : « Super service aujourd'hui ! »" value={r.comment} onChange={(e) => set(p.id, { comment: e.target.value })} />
-                </>
-              )}
             </li>
           ); })}
         </ul>
