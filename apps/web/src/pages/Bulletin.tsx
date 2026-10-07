@@ -117,15 +117,11 @@ export default function Bulletin() {
           <div className="grid gap-6 p-6 sm:p-8">
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
-                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte, en cours ou non atteinte, avec les étoiles gagnées sur chacune.</p></div>
+                <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul><p className="m-0 text-sm text-muted">Les missions de {p.firstName} pour ce trimestre : atteinte, en cours ou non atteinte.</p></div>
                 <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {here.map((g) => { const a = EVAL_AXES.find((x) => x.key === g.axis.toLowerCase()); const v = at(g); const st = statusAt(g, t); const carried = isCarriedOver(g, t); const before = progressBefore(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                     <li key={g.id} className="grid break-inside-avoid content-start gap-1.5 rounded-2xl border border-line p-3">
                       <div className="flex items-start justify-between gap-2"><strong>{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
-                      {carried && <span className="text-sm font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
-                      <span className="text-sm font-bold" style={{ color: a?.color }}><span aria-hidden="true">{EMOJI[g.axis.toLowerCase()]} </span>{a?.label}</span>
-                      {g.indicator && <span className="text-sm text-muted">Objectif mesuré par : {g.indicator}{g.deadline ? ` · avant le ${fmtDate(g.deadline)}` : ""}</span>}
-                      {(() => { const earned = missionStars(stars ?? [], g.id, season, t), target = g.targetStars ?? 10, pct = missionPercent(earned, target); return <><div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Étoiles gagnées : ${g.title}`} className="h-3 overflow-hidden rounded-full bg-[#ece7ff]"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: a?.color ?? "#7c3aed" }} /></div><span className="text-sm font-bold">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} ({pct} %)</span></>; })()}
                       {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
                     </li>
                   ); })}
@@ -148,62 +144,26 @@ export default function Bulletin() {
               </section>
             )}
 
-            {ev?.next?.trim() && <Tint emoji="🚀" title={t === 0 ? "Pistes d'objectifs pour le trimestre 1" : "Pour le trimestre suivant"} text={ev.next} bg="#f3efff" ink="#5b21b6" />}
 
-            {t > 0 && stars && Object.values(starsByDomain(stars, season, t)).some((n) => n > 0) && <StarsRadar bulletin stars={stars} season={season} t={t} who={me?.role === "COACH" || me?.role === "TRAINER" ? "coach" : "famille"} />}
 
-            {(() => { const se = t > 0 ? selfEvals.find((e) => e.season === season && e.trimester === t && e.sentAt) : undefined; return se ? (
-              <section className="grid min-w-0 gap-2 break-inside-avoid rounded-2xl border-2 border-[#d9ccff] p-4" aria-labelledby="bul-regard">
-                <h2 id="bul-regard" className="m-0 text-xl">💬 Le regard de {p.firstName} sur son trimestre</h2>
-                <SelfEvalView ev={se} goals={here} />
-              </section>
-            ) : null; })()}
 
-            {t > 0 && qNow.courses > 0 && (
-              <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-qualites">
-                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 2 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
-                <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {QUALITIES.map((q) => { const v = qNow.sum[q.key]; return (
-                    <li key={q.key} className="flex items-baseline justify-between gap-2 rounded-2xl bg-[#f6f4fb] p-3">
-                      <strong><span aria-hidden="true">{q.emoji} </span>{q.label}</strong><span className={"font-black " + (v < 0 ? "text-[#b3261e]" : "")}>{v < 0 ? `📉 −${-v}` : `⭐ ${v}`}</span>
-                    </li>
-                  ); })}
-                </ul>
-              </section>
-            )}
 
-            {(rated || t === 0 || !!ev?.strengths?.trim() || !!ev?.improve?.trim() || !!ev?.appreciation?.trim()) && (
+            {(rated || t === 0) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
                 <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
-              {rated && (
-                <div className="flex items-center gap-3 rounded-2xl bg-[#f3efff] p-4 sm:max-w-sm">
-                  <Gauge value={overallAverage(ev)} />
-                  <div><p className="m-0 font-display text-lg font-extrabold leading-tight">Moyenne générale</p><p className="m-0 text-sm text-muted">{t === 0 ? "Point de départ de la saison" : prev ? `${trendCommon(ev, prev)} depuis ${brief(pp.season, pp.t)}` : "Premier bulletin"}</p></div>
-                </div>
-              )}
             {rated ? (
-                <div className="grid gap-4">
-                  <div className="grid gap-5 md:grid-cols-[minmax(0,290px)_1fr] print:grid-cols-[250px_1fr]">
-                    <div className="grid content-start gap-3 self-start">
-                      <div className="grid content-start justify-items-center gap-1 break-inside-avoid rounded-2xl border border-line p-3">
-                        <Radar series={series} />
-                      </div>
-                      {EVAL_AXES.filter((a) => a.key === "attitude").map(axisCard)}
-                    </div>
-                    <div className="grid content-start gap-3 sm:grid-cols-2 print:grid-cols-2">
-                      {EVAL_AXES.filter((a) => a.key !== "attitude").map(axisCard)}
-                    </div>
-                  </div>
+                <div className="grid justify-items-center gap-1 break-inside-avoid rounded-2xl border border-line p-3 sm:mx-auto sm:max-w-md">
+                  <Radar series={series} />
                 </div>
-              ) : t === 0 ? <Empty>Les compétences du bilan de départ ne sont pas encore notées.</Empty> : null}
+              ) : t === 0 ? <Empty>Les notes du bilan de départ ne sont pas encore saisies.</Empty> : null}
 
-              {ev && (ev.strengths.trim() || ev.improve.trim()) && (
+              {t === 0 && ev && (ev.strengths.trim() || ev.improve.trim()) && (
                 <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
                   <Tint emoji="⭐" title="Points forts" text={ev.strengths} bg="#e9f9f0" ink="#166534" />
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-            {ev?.appreciation?.trim() && (
+            {t === 0 && ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
@@ -228,21 +188,6 @@ export default function Bulletin() {
               </section>
             ); })()}
 
-            {analysed.length > 0 && (
-              <section className="grid gap-3" aria-labelledby="bul-videos">
-                <h2 id="bul-videos" className="m-0 text-2xl">🎬 Analyses vidéo du trimestre</h2>
-                {analysed.map((v) => (
-                  <div key={v.id} className="grid gap-1.5 break-inside-avoid rounded-2xl border border-line p-4">
-                    <h3 className="m-0 text-base">{v.title} <span className="font-normal text-muted">· {fmtDate(v.analysis!.sentAt!)}</span></h3>
-                    {v.analysis!.goalIds.length > 0 && <p className="m-0 text-sm"><strong>Missions travaillées : </strong>{goals.filter((g) => v.analysis!.goalIds.includes(g.id)).map((g) => g.title).join(" ; ")}</p>}
-                    {v.analysis!.observation && <p className="m-0 whitespace-pre-line">{v.analysis!.observation}</p>}
-                    {v.analysis!.strengths && <p className="m-0"><strong>⭐ Points forts : </strong>{v.analysis!.strengths}</p>}
-                    {v.analysis!.improve && <p className="m-0"><strong>🎯 À améliorer : </strong>{v.analysis!.improve}</p>}
-                    {v.images.length > 0 && <div className="mt-1 grid grid-cols-2 gap-2">{v.images.slice(0, 4).map((i) => <figure key={i.id} className="m-0 break-inside-avoid"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée"} className="w-full rounded-lg" />{i.note && <figcaption className="mt-0.5 text-xs text-muted">{i.note}</figcaption>}</figure>)}</div>}
-                  </div>
-                ))}
-              </section>
-            )}
 
             <div className="mt-2 grid grid-cols-2 gap-8 break-inside-avoid text-sm text-muted"><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature du coach</div><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
             <p className="m-0 text-center text-xs text-muted">✦ Tennis Club Houdan · Bulletin généré avec CourtCoach le {fmtDate(new Date().toISOString())} ✦</p>
