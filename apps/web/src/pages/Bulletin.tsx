@@ -9,7 +9,7 @@ import { SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -198,20 +198,19 @@ export default function Bulletin() {
               </section>
             )}
 
-            {ms.length > 0 && (
+            {ms.length > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
+              <li className="grid gap-0.5 rounded-2xl p-4 text-center" style={{ background: bg, color: ink }}><span aria-hidden="true" className="text-2xl">{emoji}</span><strong className="font-display text-3xl font-black leading-tight">{big}</strong><span className="text-sm font-bold">{label}</span></li>); return (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-matchs">
-                <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre{ms.length > 0 && <span className="ml-2 text-base font-bold text-[#166534]">· 🏆 {wins} victoire{wins > 1 ? "s" : ""} en {ms.length} match{ms.length > 1 ? "s" : ""}</span>}</h2>
-                <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
-                  {ms.map((m) => (
-                    <li key={m.id} className="grid gap-0.5 rounded-2xl bg-[#f6f4fb] p-3">
-                      <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: m.result === "Victoire" ? "#dcf247" : "#e7e0ff" }}>{m.result === "Victoire" ? "🏆 Victoire" : "💪 Défaite"}</span></span>
-                      <span className="text-sm text-muted">{fmtDate(m.date)}{m.score && ` · ${m.score}`}</span>
-                      {m.remark && <span className="text-sm text-muted">{m.remark}</span>}
-                    </li>
-                  ))}
+                <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre</h2>
+                <ul className="m-0 grid list-none gap-3 p-0 grid-cols-2 sm:grid-cols-4 print:grid-cols-4">
+                  {tile("🎾", String(st.played), st.played > 1 ? "matchs joués" : "match joué", "#f6f4fb", "#10203a")}
+                  {tile("🏆", String(st.wins), st.wins > 1 ? "victoires" : "victoire", "#e8f7ee", "#166534")}
+                  {tile("💪", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
+                  {tile("🎯", st.bestBeaten ?? "—", "classement le plus élevé battu", "#fff8d6", "#6b4e00")}
                 </ul>
+                {st.wins > 0 && st.rankedWins === 0 && <p className="m-0 text-sm text-muted">Le classement des adversaires battus n'a pas été renseigné.</p>}
               </section>
-            )}
+            ); })()}
 
             {analysed.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-videos">

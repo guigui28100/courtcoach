@@ -301,6 +301,7 @@ model Match {
   result     String   // « Victoire » ou « Défaite »
   score      String   @default("")
   remark     String   @default("")
+  opponentRanking String? // classement de l'adversaire (ex. « 15/2 »), pour le récapitulatif du bulletin
 
   @@index([playerId, date])
   authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente

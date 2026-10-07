@@ -40,7 +40,7 @@ export const EVAL_AXES: EvalAxis[] = [
 ];
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
 export interface Evaluation { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
-export interface MatchRow { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
+export interface MatchRow { opponentRanking?: string | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
 
 export const TRIMESTER_MONTHS = ["début de saison", "septembre – décembre", "janvier – mars", "avril – août"];
 // t = 0 : bilan de début d'année (point de départ de la saison) ; 1 à 3 : bulletin du trimestre
@@ -166,3 +166,12 @@ export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["p
 export const MATCH_OPPONENTS: [string, string][] = [["plus-fort", "💪 Plus fort que moi"], ["pareil", "⚖️ Du même niveau"], ["moins-fort", "🌱 Moins fort que moi"]];
 export const MATCH_SKILLS: [string, string][] = [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["volee", "Mon jeu au filet"], ["deplacements", "Mes déplacements"], ["calme", "Mon calme"], ["tactique", "Mes choix tactiques"], ["physique", "Mon physique"], ["combativite", "Ma combativité"], ["concentration", "Ma concentration"]];
 export const matchLabel = (list: [string, string][], id: string | null) => list.find(([k]) => k === id)?.[1] ?? id ?? "";
+
+// Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »
+export const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
+export function matchStats(ms: { result: string; opponentRanking?: string | null }[]) {
+  const wins = ms.filter((m) => m.result === "Victoire");
+  const beaten = wins.map((m) => m.opponentRanking).filter((r): r is string => !!r && RANKINGS.includes(r));
+  const best = beaten.length ? beaten.reduce((a, b) => (RANKINGS.indexOf(b) > RANKINGS.indexOf(a) ? b : a)) : null;
+  return { played: ms.length, wins: wins.length, losses: ms.length - wins.length, bestBeaten: best, rankedWins: beaten.length };
+}

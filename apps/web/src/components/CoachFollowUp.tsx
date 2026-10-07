@@ -8,7 +8,7 @@ import { Radar } from "./Radar";
 import { hasContent } from "./BulletinShelf";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { AuthorBadge, Err, Field } from "./ui";
-import { AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { RANKINGS, AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -138,7 +138,7 @@ export function Matchs({ p }: { p: Player }) {
     const form = e.currentTarget;
     const f = new FormData(form);
     setErr("");
-    try { await post(`/players/${p.id}/matches`, { date: String(f.get("date")), tournament: String(f.get("tournament")), round: String(f.get("round") || ""), result: f.get("result"), score: String(f.get("score") || ""), remark: String(f.get("remark") || "") }); form.reset(); setVersion((v) => v + 1); } catch (x) { setErr((x as Error).message); }
+    try { await post(`/players/${p.id}/matches`, { date: String(f.get("date")), tournament: String(f.get("tournament")), round: String(f.get("round") || ""), result: f.get("result"), opponentRanking: String(f.get("opponentRanking") || "") || undefined, score: String(f.get("score") || ""), remark: String(f.get("remark") || "") }); form.reset(); setVersion((v) => v + 1); } catch (x) { setErr((x as Error).message); }
   }
   const wins = matches.filter((m) => m.result === "Victoire").length;
   return (
@@ -149,6 +149,7 @@ export function Matchs({ p }: { p: Player }) {
         <Field label="Tournoi ou rencontre" id="m-t"><input id="m-t" name="tournament" required maxLength={120} className="input" /></Field>
         <Field label="Tour (facultatif)" id="m-r"><input id="m-r" name="round" maxLength={60} className="input" placeholder="1/4 de finale" /></Field>
         <Field label="Résultat" id="m-res"><select id="m-res" name="result" className="input"><option>Victoire</option><option>Défaite</option></select></Field>
+        <Field label="Classement de l'adversaire (facultatif)" id="m-rk"><select id="m-rk" name="opponentRanking" className="input" defaultValue=""><option value="">Non renseigné</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></Field>
         <Field label="Score" id="m-s"><input id="m-s" name="score" maxLength={40} className="input" placeholder="6/3 4/6 6/2" /></Field>
         <Field label="Remarque (facultatif)" id="m-rem"><input id="m-rem" name="remark" maxLength={300} className="input" /></Field>
         <div className="sm:col-span-2 lg:col-span-3"><button className="btn-clay">Ajouter</button></div>

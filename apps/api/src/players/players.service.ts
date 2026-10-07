@@ -435,7 +435,7 @@ export class PlayersService {
   }
   async addMatch(user: AuthUser, playerId: string, dto: MatchDto) {
     await this.assertStaffFor(user, playerId);
-    const m = await this.prisma.match.create({ data: { ...(await this.who(user)), playerId, date: new Date(dto.date), tournament: dto.tournament, round: dto.round ?? "", result: dto.result, score: dto.score ?? "", remark: dto.remark ?? "" } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    const m = await this.prisma.match.create({ data: { ...(await this.who(user)), playerId, date: new Date(dto.date), tournament: dto.tournament, round: dto.round ?? "", result: dto.result, score: dto.score ?? "", remark: dto.remark ?? "", opponentRanking: dto.opponentRanking ?? null } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.touch(playerId);
     return m;
   }
