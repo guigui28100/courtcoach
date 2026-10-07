@@ -48,7 +48,7 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
   );
 }
 
-// Radar « de tous les jours » : alimenté par les étoiles de la saison, mis à jour à chaque cours
+// Suivi des progrès cours après cours (ancien « radar de tous les jours ») : alimenté par les étoiles de la saison, mis à jour à chaque cours
 export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false, onMinus }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean; onMinus?: (domain: string) => void }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
@@ -59,9 +59,9 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
   const me = who === "jeune";
   return (
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
-      <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Radar des étoiles du trimestre ${t}` : me ? `Mon radar de tous les jours · trimestre ${t}` : `Le radar de tous les jours · trimestre ${t}`}</h2>
+      <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Suivi des progrès cours après cours · trimestre ${t}` : me ? `Mon suivi des progrès cours après cours · trimestre ${t}` : `Le suivi des progrès cours après cours · trimestre ${t}`}</h2>
       <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit ; quand ton coach te dit « pas en progrès » dans un domaine, il perd des étoiles. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
-      {total === 0 && !onMinus ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar se remplira dès les premiers cours.</p> : (
+      {total === 0 && !onMinus ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le suivi se remplira dès les premiers cours.</p> : (
         <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
           <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
           <ul className="m-0 grid list-none gap-2 p-0" aria-label="Étoiles par domaine">
