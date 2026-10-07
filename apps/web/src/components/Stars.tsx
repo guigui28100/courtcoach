@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { CourseQuality, Goal, QUALITIES, QualityKey, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
+import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -80,7 +80,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
 
 // Les étoiles d'un cours : une ou plusieurs lignes, chacune avec son nombre d'étoiles, sa raison et son domaine du radar
 export type StarLine = { stars: number; reason: string; domain: string; comment: string; goalId?: string };
-export const MAX_STAR_LINES = 12;
+export const MAX_STAR_LINES = 20;
 export const newStarLine = (): StarLine => ({ stars: 1, reason: "", domain: "", comment: "" });
 // Message si une ligne est incomplète, sinon chaîne vide
 // Une ligne à 0 n'est pas enregistrée : on ne garde que celles qui ajoutent ou retirent des étoiles
@@ -141,33 +141,45 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
 
 // Étoiles = évaluation jour après jour des missions : une rangée par mission (de −3 à 3), puis éventuellement une étoile « hors mission »
 export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
-  if (!goals.length) return <OtherLinesEditor lines={lines} onChange={onChange} who={who} />;
   const ids = new Set(goals.map((g) => g.id));
-  const others = lines.filter((l) => !l.goalId || !ids.has(l.goalId));
+  const isMission = (l: StarLine) => !!l.goalId && ids.has(l.goalId);
+  const isQuality = (l: StarLine) => !isMission(l) && !!qualityOfReason(l.reason);
+  const others = lines.filter((l) => !isMission(l) && !isQuality(l));
   const setMission = (g: Goal, patch: Partial<StarLine>) => {
     const cur = lines.find((l) => l.goalId === g.id);
     const next: StarLine = { stars: 0, reason: "", domain: g.axis.toLowerCase(), comment: "", ...cur, ...patch, goalId: g.id };
     onChange(cur ? lines.map((l) => (l === cur ? next : l)) : [...lines, next]);
   };
+  const setQuality = (key: string, patch: Partial<StarLine>) => {
+    const q = QUALITIES.find((x) => x.key === key)!;
+    const cur = lines.find((l) => isQuality(l) && qualityOfReason(l.reason)!.key === key);
+    const stars = patch.stars ?? cur?.stars ?? 0;
+    const next: StarLine = { stars: 0, comment: "", ...cur, ...patch, domain: q.domain, reason: stars < 0 ? "neg-" + q.reason : q.reason, goalId: undefined };
+    onChange(cur ? lines.map((l) => (l === cur ? next : l)) : [...lines, next]);
+  };
+  const row = (key: string, title: React.ReactNode, hint: string | null, l: StarLine | undefined, set: (p: Partial<StarLine>) => void) => { const n = l?.stars ?? 0; return (
+    <div key={key} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
+      <strong title={hint ?? undefined}>{title}</strong>
+      <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Étoiles de ${who} : ${key}`}>
+        {[-3, -2, -1, 0, 1, 2, 3].map((k) => (
+          <button key={k} type="button" role="radio" aria-checked={n === k} aria-label={k < 0 ? `Retirer ${-k} étoile${k < -1 ? "s" : ""}` : k === 0 ? "Aucune étoile" : `${k} étoile${k > 1 ? "s" : ""}`} onClick={() => set({ stars: k })}
+            className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (n === k ? (k < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (k === 0 ? " mx-1" : "")}>{k < 0 ? `−${-k}` : k === 0 ? "0" : "⭐".repeat(k)}</button>
+        ))}
+      </div>
+      {n !== 0 && <label className="grid gap-1 text-sm font-bold">{n < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+        <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => set({ comment: e.target.value })} placeholder={n < 0 ? "Ex. : Peu concentré sur cet exercice, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>}
+    </div>
+  ); };
   return (
     <div className="grid gap-3">
-      <p className="hint m-0">Les étoiles évaluent, cours après cours, les missions de {who}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
-      {goals.map((g) => { const l = lines.find((x) => x.goalId === g.id); const n = l?.stars ?? 0; return (
-        <div key={g.id} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
-          <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
-          <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Étoiles de ${who} pour la mission ${g.title}`}>
-            {[-3, -2, -1, 0, 1, 2, 3].map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={n === k} aria-label={k < 0 ? `Retirer ${-k} étoile${k < -1 ? "s" : ""}` : k === 0 ? "Aucune étoile" : `${k} étoile${k > 1 ? "s" : ""}`} onClick={() => setMission(g, { stars: k })}
-                className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (n === k ? (k < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (k === 0 ? " mx-1" : "")}>{k < 0 ? `−${-k}` : k === 0 ? "0" : "⭐".repeat(k)}</button>
-            ))}
-          </div>
-          {n !== 0 && <label className="grid gap-1 text-sm font-bold">{n < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
-            <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => setMission(g, { comment: e.target.value })} placeholder={n < 0 ? "Ex. : Peu de concentration sur cet exercice, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>}
-        </div>
-      ); })}
+      <p className="hint m-0">Les étoiles évaluent, cours après cours, {goals.length ? `les missions de ${who} et ses 4 qualités` : `les 4 qualités de ${who}`}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
+      {goals.length > 0 && <h4 className="m-0">🎯 Les missions</h4>}
+      {goals.map((g) => row("mission " + g.title, <>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</>, null, lines.find((x) => x.goalId === g.id), (p) => setMission(g, p)))}
+      <h4 className="m-0">🌟 Les 4 qualités</h4>
+      {QUALITIES.map((q) => row(q.label, <><span aria-hidden="true">{q.emoji} </span>{q.label}</>, q.hint, lines.find((l) => isQuality(l) && qualityOfReason(l.reason)!.key === q.key), (p) => setQuality(q.key, p)))}
       <details className="rounded-2xl border border-line bg-white p-3" open={others.length > 0}>
-        <summary className="cursor-pointer font-bold">Autre étoile, hors mission (comportement, bonne ambiance…)</summary>
-        <div className="mt-2"><OtherLinesEditor lines={others} who={who} onChange={(o) => onChange([...lines.filter((l) => l.goalId && ids.has(l.goalId)), ...o])} /></div>
+        <summary className="cursor-pointer font-bold">Autre étoile, hors mission et hors qualités</summary>
+        <div className="mt-2"><OtherLinesEditor lines={others} who={who} onChange={(o) => onChange([...lines.filter((l) => !others.includes(l)), ...o])} /></div>
       </details>
     </div>
   );
@@ -202,35 +214,5 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
         </>
       )}
     </section>
-  );
-}
-
-// Chargement des qualités notées à chaque cours (le coach, le joueur et sa famille y ont accès)
-export function useQualities(playerId: string | undefined, reload = 0) {
-  const [rows, setRows] = useState<CourseQuality[] | null>(null);
-  useEffect(() => { if (!playerId) return; get<CourseQuality[]>(`/players/${playerId}/qualities`).then(setRows).catch(() => setRows([])); }, [playerId, reload]);
-  return rows;
-}
-
-// Les quatre qualités d'un cours, de 1 à 5 : état d'esprit, motivation, assiduité, attitude (un second clic sur la note l'enlève)
-export type QualityValues = Partial<Record<QualityKey, number | null>>;
-export const qualityItems = (v: QualityValues) => Object.fromEntries(QUALITIES.filter((q) => v[q.key] != null).map((q) => [q.key, v[q.key]]));
-export const hasQuality = (v: QualityValues) => QUALITIES.some((q) => v[q.key] != null);
-export function QualitiesEditor({ value, onChange, who }: { value: QualityValues; onChange: (v: QualityValues) => void; who: string }) {
-  return (
-    <fieldset className="m-0 grid gap-2 rounded-2xl border border-line bg-white p-3"><legend className="px-1 font-bold">🌟 Les 4 qualités de {who} à ce cours (de 1 à 5, facultatif)</legend>
-      {QUALITIES.map((q) => (
-        <div key={q.key} className="flex flex-wrap items-center justify-between gap-2" role="radiogroup" aria-label={`${q.label} de ${who}`}>
-          <span className="min-w-36 text-sm font-bold" title={q.hint}><span aria-hidden="true">{q.emoji} </span>{q.label}</span>
-          <span className="flex gap-1.5">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" role="radio" aria-checked={value[q.key] === n} aria-label={`${q.label} : ${n} sur 5`} onClick={() => onChange({ ...value, [q.key]: value[q.key] === n ? null : n })}
-                className={"h-10 w-10 rounded-xl border-2 text-base font-bold " + (value[q.key] === n ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{n}</button>
-            ))}
-          </span>
-        </div>
-      ))}
-      <p className="hint m-0">1 = à travailler · 3 = correct · 5 = excellent. Un second clic sur la note l'enlève.</p>
-    </fieldset>
   );
 }
