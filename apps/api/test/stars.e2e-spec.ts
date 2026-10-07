@@ -47,9 +47,9 @@ describe("Étoiles de fin de cours", () => {
     await put({ items: [{ stars: 1, reason: "courage", domain: "mental" }] }).expect(200); // remplace tout le jour
     expect(await prisma.courseStar.count({ where: { playerId: p2 } })).toBe(1);
     // Les 4 qualités sont des étoiles : état d'esprit, motivation, assiduité, attitude (en moins : toujours expliqué)
-    await put({ items: [{ stars: 2, reason: "etat-d-esprit", domain: "mental" }, { stars: 1, reason: "motivation", domain: "mental" }, { stars: 1, reason: "assiduite", domain: "attitude" }, { stars: 3, reason: "attitude", domain: "attitude" }] }).expect(200);
-    await put({ items: [{ stars: -1, reason: "neg-motivation", domain: "mental" }] }).expect(400);
-    await put({ items: [{ stars: -1, reason: "neg-motivation", domain: "mental", comment: "Peu d'envie" }] }).expect(200);
+    await put({ items: [{ stars: 3, reason: "attitude", domain: "attitude" }, { stars: 2, reason: "concentration-objectifs", domain: "mental" }] }).expect(200);
+    await put({ items: [{ stars: -1, reason: "neg-concentration-objectifs", domain: "mental" }] }).expect(400);
+    await put({ items: [{ stars: -1, reason: "neg-concentration-objectifs", domain: "mental", comment: "Peu d'envie" }] }).expect(200);
     await put({ items: [] }).expect(400);
     await put({ items: Array.from({ length: 21 }, () => ({ stars: 1, reason: "effort", domain: "mental" })) }).expect(400);
     await put({ items: [{ stars: 4, reason: "effort", domain: "mental" }] }).expect(400);

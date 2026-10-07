@@ -8,7 +8,7 @@ import { CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIs
 type Row = { lines: StarLine[]; had: boolean; dirty?: boolean };
 const EMPTY: Row = { lines: [], had: false };
 
-// Fin de cours : pour chaque joueur, des étoiles SUR SES MISSIONS (avec une raison et un petit mot) + les 4 qualités du cours (état d'esprit, motivation, assiduité, attitude).
+// Fin de cours : pour chaque joueur, des étoiles SUR SES MISSIONS (avec une raison et un petit mot) + les 2 qualités du cours (attitude, concentration sur ses objectifs).
 export default function FinDeCours() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [day, setDay] = useState(todayIso());
@@ -57,7 +57,7 @@ export default function FinDeCours() {
 
   return (
     <>
-      <PageHead eyebrow="Centre de compétition jeunes" title="⭐ Fin de cours">Pour chaque joueur : <strong>1)</strong> donne des étoiles sur ses missions (1 = bien, 2 = très bien, 3 = exceptionnel ; −1 à −3 si la mission n'est pas en progrès, avec une explication que le joueur verra toujours) ; <strong>2)</strong> note les 4 qualités du cours, de 1 à 5 : état d'esprit, motivation, assiduité, attitude. Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
+      <PageHead eyebrow="Centre de compétition jeunes" title="⭐ Fin de cours">Pour chaque joueur : <strong>1)</strong> donne des étoiles sur ses missions (1 = bien, 2 = très bien, 3 = exceptionnel ; −1 à −3 si la mission n'est pas en progrès, avec une explication que le joueur verra toujours) ; <strong>2)</strong> note les 2 qualités du cours, de 1 à 5 : état d'esprit, motivation, assiduité, attitude. Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
       <Page>
         <div className="flex flex-wrap items-center gap-3">
           <div className="field"><label htmlFor="fc-day">Date du cours</label><input id="fc-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>

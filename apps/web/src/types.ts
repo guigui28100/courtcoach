@@ -135,6 +135,7 @@ export const STAR_REASONS: { id: string; emoji: string; label: string; hint: str
   { id: "motivation", emoji: "🔥", label: "Motivation", hint: "Envie de bien faire et d'avancer" },
   { id: "assiduite", emoji: "⏰", label: "Assiduité", hint: "Présent, à l'heure, régulier" },
   { id: "attitude", emoji: "🤝", label: "Attitude", hint: "Respect, écoute, fair-play" },
+  { id: "concentration-objectifs", emoji: "🎯", label: "Concentration sur ses objectifs", hint: "Reste concentré sur ses missions pendant le cours" },
 ];
 // « Pas en progrès » : ce qui peut faire perdre des étoiles (le jeune voit toujours l'explication)
 export const STAR_NEG_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
@@ -149,6 +150,7 @@ export const STAR_NEG_REASONS: { id: string; emoji: string; label: string; hint:
   { id: "neg-assiduite", emoji: "⏰", label: "Assiduité", hint: "Retard ou absence" },
   { id: "neg-etat-d-esprit", emoji: "🌧️", label: "État d'esprit", hint: "Un état d'esprit à changer" },
   { id: "neg-motivation", emoji: "🪫", label: "Motivation", hint: "Peu d'envie aujourd'hui" },
+  { id: "neg-concentration-objectifs", emoji: "🌫️", label: "Concentration sur ses objectifs", hint: "Peu concentré sur ses missions" },
 ];
 export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id) ?? STAR_NEG_REASONS.find((r) => r.id === id);
 export const isNegReason = (id: string) => id.startsWith("neg-");
@@ -187,13 +189,11 @@ export const missionStars = (stars: Pick<CourseStar, "day" | "stars" | "goalId">
   Math.max(0, stars.filter((x) => x.goalId === goalId && inPeriod(x.day + "T12:00:00", season, t)).reduce((n, x) => n + x.stars, 0));
 export const missionPercent = (earned: number, target = 10) => Math.min(100, Math.round((earned / Math.max(1, target)) * 100));
 
-// ----- Les quatre qualités : des étoiles comme les autres (état d'esprit, motivation, assiduité, attitude) -----
-export type QualityKey = "mindset" | "motivation" | "attendance" | "attitude";
+// ----- Les deux qualités : des étoiles comme les autres (attitude, concentration sur ses objectifs) -----
+export type QualityKey = "attitude" | "objectives";
 export const QUALITIES: { key: QualityKey; label: string; emoji: string; hint: string; reason: string; domain: string }[] = [
-  { key: "mindset", label: "État d'esprit", emoji: "🧠", hint: "Positif, ouvert, prêt à apprendre", reason: "etat-d-esprit", domain: "mental" },
-  { key: "motivation", label: "Motivation", emoji: "🔥", hint: "Envie de bien faire et d'avancer", reason: "motivation", domain: "mental" },
-  { key: "attendance", label: "Assiduité", emoji: "⏰", hint: "Présent, à l'heure, régulier", reason: "assiduite", domain: "attitude" },
   { key: "attitude", label: "Attitude", emoji: "🤝", hint: "Respect, écoute, fair-play", reason: "attitude", domain: "attitude" },
+  { key: "objectives", label: "Concentration sur ses objectifs", emoji: "🎯", hint: "Reste concentré sur ses missions pendant le cours", reason: "concentration-objectifs", domain: "mental" },
 ];
 export const qualityOfReason = (reason: string) => QUALITIES.find((q) => q.reason === reason || "neg-" + q.reason === reason);
 // Étoiles gagnées (en plus ou en moins) pour chaque qualité pendant le trimestre

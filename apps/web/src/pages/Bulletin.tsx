@@ -5,7 +5,7 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { Planet, Stars } from "../components/Galaxy";
 import { Radar } from "../components/Radar";
-import { SkillBars, useFollowUp } from "../components/Suivi";
+import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
@@ -161,7 +161,7 @@ export default function Bulletin() {
 
             {t > 0 && qNow.courses > 0 && (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-qualites">
-                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 4 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
+                <div className="grid gap-1"><h2 id="bul-qualites" className="m-0 text-2xl">🌟 Les 2 qualités du trimestre</h2><p className="m-0 text-sm text-muted">Étoiles gagnées (ou retirées) sur {qNow.courses} cours.</p></div>
                 <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 print:grid-cols-2">
                   {QUALITIES.map((q) => { const v = qNow.sum[q.key]; return (
                     <li key={q.key} className="flex items-baseline justify-between gap-2 rounded-2xl bg-[#f6f4fb] p-3">
@@ -212,7 +212,7 @@ export default function Bulletin() {
               </section>
             )}
 
-            {ms.length > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
+            {t > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
               <li className="grid gap-0.5 rounded-2xl p-4 text-center" style={{ background: bg, color: ink }}><span aria-hidden="true" className="text-2xl">{emoji}</span><strong className="font-display text-3xl font-black leading-tight">{big}</strong><span className="text-sm font-bold">{label}</span></li>); return (
               <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-matchs">
                 <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre</h2>
@@ -222,6 +222,8 @@ export default function Bulletin() {
                   {tile("💪", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
                   {tile("🎯", st.bestBeaten ?? "—", "classement le plus élevé battu", "#fff8d6", "#6b4e00")}
                 </ul>
+                {ms.length === 0 && <p className="m-0 text-sm text-muted">Aucun match enregistré par le coach sur ce trimestre.</p>}
+                {ms.length > 0 && <MatchTable matches={ms} />}
                 {st.wins > 0 && st.rankedWins === 0 && <p className="m-0 text-sm text-muted">Le classement des adversaires battus n'a pas été renseigné.</p>}
               </section>
             ); })()}
