@@ -109,6 +109,8 @@ export class DeclaredMatchDto {
 }
 export class MatchCommentDto { @IsString() @MaxLength(300) comment: string; }
 
+// Classements de tennis, du plus bas au plus haut (pour « le classement le plus élevé battu »)
+export const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export class MatchDto {
   @IsDateString() date: string;
   @Transform(trim) @IsString() @MaxLength(120) tournament: string;
@@ -116,6 +118,7 @@ export class MatchDto {
   @IsIn(["Victoire", "Défaite"]) result: string;
   @IsOptional() @IsString() @MaxLength(40) score?: string;
   @IsOptional() @IsString() @MaxLength(300) remark?: string;
+  @IsOptional() @IsIn(RANKINGS) opponentRanking?: string;
 }
 
 // Auto-évaluation du jeune : surtout des choix pré-enregistrés (identifiants), un mot libre court.
