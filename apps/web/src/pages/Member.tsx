@@ -275,7 +275,8 @@ export function FamilySpace() {
                 {players!.map((x, i) => <button key={x.id} onClick={() => setChosen(i)} aria-pressed={i === chosen} className={"flex min-h-11 items-center gap-2 rounded-full border-2 py-1 pl-1 pr-4 font-bold " + (i === chosen ? "border-ink bg-ink text-white" : "border-line bg-white")}><Avatar name={fullName(x)} size={34} />{x.firstName}</button>)}
               </div>
             )}
-            <div className="tabbar">
+            <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-start md:gap-6">
+            <div className="tabbar side">
               <div role="tablist" aria-label="Sections du suivi">
                 {FTABS.map(([k, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
@@ -317,6 +318,7 @@ export function FamilySpace() {
                   <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement ton compte (le dossier du joueur reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
                 </section>
               )}
+            </div>
             </div>
           </>
         )}

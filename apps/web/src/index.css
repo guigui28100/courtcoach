@@ -167,3 +167,11 @@
   .gal-tabs.side > div { flex-direction: column; overflow: visible; mask-image: none; padding: 2px; gap: 0.4rem; }
   .gal-tabs.side button { justify-content: flex-start; width: 100%; text-align: left; min-height: 3rem; border-radius: 0.9rem; }
 }
+
+/* Espace des parents : onglets en colonne à gauche sur ordinateur (en haut sur téléphone) */
+@media (min-width: 768px) {
+  .tabbar.side { position: sticky; top: 80px; margin-inline: 0; padding: 0.5rem; border: 2px solid var(--color-line); border-radius: 1rem; background: #fff; }
+  .tabbar.side > div { flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.25rem; }
+  .tabbar.side button { width: 100%; text-align: left; border-bottom: 0 !important; border-left: 4px solid transparent; border-radius: 0.6rem; min-height: 3rem; white-space: normal; }
+  .tabbar.side button[aria-selected="true"] { border-left-color: var(--color-clay); background: rgba(0, 0, 0, 0.04); }
+}
