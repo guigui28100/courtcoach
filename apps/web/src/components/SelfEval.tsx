@@ -122,8 +122,9 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
   const cur = t === null ? undefined : list?.find((e) => e.season === season && e.trimester === t);
   const opens = t === null ? null : selfEvalOpensOn(season, t);
   return (
-    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mon-bulletin">
-      <h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2>
+    <details className="glass gal-pop group" aria-labelledby="gal-mon-bulletin">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2><span className="shrink-0 whitespace-nowrap rounded-full bg-[#dcf247] px-3 py-1 text-sm font-bold text-ink"><span className="group-open:hidden">Ouvrir ▾</span><span className="hidden group-open:inline">Fermer ▴</span></span></summary>
+      <div className="mt-4 grid gap-4">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Choisir le trimestre">
         {[1, 2, 3].map((n) => { const e = list?.find((x) => x.season === season && x.trimester === n); return (
           <button key={n} type="button" role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"min-h-11 rounded-full border-2 px-4 font-bold " + (t === n ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white")}>Trimestre {n} · {SELF_EVAL_MONTH[n]}{e?.sentAt ? " ✅" : lockedAt(n) ? " 🔒" : e ? " ✏️" : ""}</button>
@@ -140,7 +141,8 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
           <Form key={`${season}-${t}`} preview={preview} locked={lockedAt(t)} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={() => { load(); onSaved?.(); }} />
         </>
       )}
-    </section>
+      </div>
+    </details>
   );
 }
 
