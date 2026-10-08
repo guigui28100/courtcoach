@@ -324,7 +324,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                 {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span aria-hidden="true">{icon} </span>{label}
-                    {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#0a0d2c] bg-[#ff5d8f]" aria-label="Nouveau" />}
+                    {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
                   </button>
                 ))}
               </div>

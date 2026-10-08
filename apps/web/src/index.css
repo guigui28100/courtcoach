@@ -83,7 +83,7 @@
 .tabbar { min-width: 0; position: sticky; top: 61px; z-index: 30; margin-inline: -1rem; padding-inline: 1rem; background: rgba(251, 247, 241, 0.96); backdrop-filter: blur(8px); }
 .tabbar > div { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--color-line); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
 .tabbar > div::-webkit-scrollbar { display: none; }
-.gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 1.5rem; background: rgba(10, 13, 44, 0.78); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
+.gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 1.5rem; background: rgba(55, 48, 163, 0.88); backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
 .gal-tabs > div { display: flex; gap: 0.5rem; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 24px), transparent); }
 .gal-tabs > div::-webkit-scrollbar { display: none; }
 .hero-court { color: rgba(255, 255, 255, 0.22); }
@@ -93,10 +93,10 @@
   position: relative;
   color: #f4f2ff;
   background:
-    radial-gradient(1100px 560px at 12% -8%, rgba(124, 58, 237, 0.6), transparent 62%),
-    radial-gradient(900px 520px at 98% 8%, rgba(37, 99, 235, 0.5), transparent 58%),
-    radial-gradient(900px 640px at 50% 112%, rgba(219, 39, 119, 0.28), transparent 62%),
-    #0a0d2c;
+    radial-gradient(1100px 560px at 12% -8%, rgba(167, 139, 250, 0.7), transparent 62%),
+    radial-gradient(900px 520px at 98% 8%, rgba(56, 189, 248, 0.55), transparent 58%),
+    radial-gradient(900px 640px at 50% 112%, rgba(244, 114, 182, 0.4), transparent 62%),
+    #4338ca;
 }
 .stars {
   position: absolute; inset: 0; pointer-events: none; opacity: 0.8;
@@ -118,7 +118,7 @@
   .gal-pop { animation: pop 0.5s ease-out both; }
 }
 @layer components {
-  .glass { @apply rounded-3xl border border-white/20 bg-white/10 p-5 text-white backdrop-blur-md; box-shadow: 0 10px 40px rgba(76, 29, 149, 0.35); }
+  .glass { @apply rounded-3xl border border-white/30 bg-white/[0.16] p-5 text-white backdrop-blur-md; box-shadow: 0 10px 32px rgba(49, 46, 129, 0.25); }
   .glass h2, .glass h3 { @apply text-white; }
   .gal-chip { @apply inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white; }
   .gal-btn { @apply btn bg-[#dcf247] text-ink hover:bg-[#eaff6a]; }
@@ -128,9 +128,9 @@
 .bulletin-hero {
   position: relative; overflow: hidden; color: #fff;
   background:
-    radial-gradient(520px 230px at 8% -10%, rgba(124, 58, 237, 0.75), transparent 65%),
-    radial-gradient(420px 260px at 100% 110%, rgba(37, 99, 235, 0.6), transparent 60%),
-    #0a0d2c;
+    radial-gradient(520px 230px at 8% -10%, rgba(167, 139, 250, 0.8), transparent 65%),
+    radial-gradient(420px 260px at 100% 110%, rgba(56, 189, 248, 0.6), transparent 60%),
+    #4338ca;
 }
 .print-exact, .print-exact * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 @media print {
