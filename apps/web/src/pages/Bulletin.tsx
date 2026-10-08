@@ -121,6 +121,12 @@ export default function Bulletin() {
           </header>
 
           <div className="grid gap-6 p-6 sm:p-8">
+            {t === 0 && ev?.appreciation?.trim() && (
+              <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
+                  <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
+                  <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
+                </blockquote>
+            )}
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
                 <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
@@ -138,7 +144,7 @@ export default function Bulletin() {
 
 
 
-            {(rated || t === 0 || !!ev?.appreciation?.trim()) && (
+            {(rated || t === 0 || (t > 0 && !!ev?.appreciation?.trim())) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
                 <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
             {rated ? (
@@ -153,7 +159,7 @@ export default function Bulletin() {
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-              {ev?.appreciation?.trim() && (
+              {t > 0 && ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
