@@ -4,7 +4,7 @@ import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
 import { TournamentsTab } from "../components/Tournaments";
-import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, TabsBar } from "../components/ui";
+import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
 import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
 
@@ -162,7 +162,7 @@ export function AdultsPage() {
     <>
       <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." />
       <Page>
-        <TabsBar label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />
+        <SideLayout nav={<TabsBar label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />}>
         {tab === "demandes" && (
           <ul className="m-0 grid list-none gap-3 p-0">
             {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
@@ -176,6 +176,7 @@ export function AdultsPage() {
             <section className="grid gap-2"><h2 className="m-0 text-lg">Vidéos déjà analysées ({answered.length})</h2><VideoQueue videos={d.adultVideos} label={owner} mode="done" /></section>
           </div>
         )}
+        </SideLayout>
       </Page>
     </>
   );
@@ -243,7 +244,7 @@ export function Centre() {
       />
       <Page>
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
-        <TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />
+        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
 
         {tab === "joueurs" && (
           <>
@@ -315,6 +316,7 @@ export function Centre() {
           </section>
         )}
         <Err msg={err} />
+        </SideLayout>
       </Page>
     </>
   );

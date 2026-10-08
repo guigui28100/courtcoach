@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
-import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { inPeriod, DOMAIN_EMOJI, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
@@ -417,13 +417,15 @@ export default function PlayerDetail() {
         <div className="flex flex-wrap items-center gap-3"><Link to="/coach/centre" className="font-bold text-ink underline">← Tous mes joueurs</Link><Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link></div>
       </PageHead>
       <Page>
-        <div className="tabbar">
+        <SideLayout nav={
+        <div className="tabbar side">
           <div role="tablist" aria-label="Sections du dossier">
             {tabs.map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>{label}</button>
             ))}
           </div>
         </div>
+        }>
         <div role="tabpanel">
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
@@ -434,6 +436,7 @@ export default function PlayerDetail() {
           {tab === "etoiles" && <StarsTab p={p} />}
           {tab === "bulletins" && <Bulletins p={p} />}
         </div>
+        </SideLayout>
       </Page>
     </>
   );
