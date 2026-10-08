@@ -132,7 +132,7 @@ export default function Bulletin() {
 
 
 
-            {(rated || t === 0) && (
+            {(rated || t === 0 || !!ev?.appreciation?.trim()) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
                 <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
             {rated ? (
@@ -147,14 +147,13 @@ export default function Bulletin() {
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-              </section>
-            )}
-
-            {ev?.appreciation?.trim() && (
+              {ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
+              )}
+              </section>
             )}
 
             {startGoals.length > 0 && (
