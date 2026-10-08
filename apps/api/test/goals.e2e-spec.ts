@@ -47,6 +47,19 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     expect(list[0].checkpoints).toMatchObject([{ trimester: 1, status: "IN_PROGRESS", progress: 50, comment: "Bon début, corrigé" }, { trimester: 2, status: "IN_PROGRESS", progress: 70, comment: "Très bien" }]);
   });
 
+  it("le résultat d'une mission (statut, avancement, mot du coach) n'est visible de la famille qu'à l'ouverture du trimestre ; le coach le voit toujours", async () => {
+    // saison lointaine : le trimestre 1 n'est pas ouvert ; saison passée : il l'est
+    const futur = (await A.coach.post(`/api/players/${p1}/goals`).set(ORIGIN).send({ season: "2099-2100", axis: "TECHNIQUE", title: "Futur", trimesters: [1] }).expect(201)).body.id;
+    const passe = (await A.coach.post(`/api/players/${p1}/goals`).set(ORIGIN).send({ season: "2020-2021", axis: "TECHNIQUE", title: "Passé", trimesters: [1] }).expect(201)).body.id;
+    await A.coach.put(`/api/goals/${futur}/checkpoints/1`).set(ORIGIN).send({ progress: 100, status: "ACHIEVED", comment: "Bravo" }).expect(200);
+    await A.coach.put(`/api/goals/${passe}/checkpoints/1`).set(ORIGIN).send({ progress: 100, status: "ACHIEVED", comment: "Bravo" }).expect(200);
+    const famille = (season: string) => A.par1.get(`/api/players/${p1}/goals?season=${season}`).expect(200).then((r) => r.body[0]);
+    const fut = await famille("2099-2100"); expect(fut.title).toBe("Futur"); expect(fut.checkpoints).toHaveLength(0); expect(fut.progress).toBe(0);
+    const pas = await famille("2020-2021"); expect(pas.checkpoints).toHaveLength(1); expect(pas.checkpoints[0].status).toBe("ACHIEVED");
+    const coach = (await A.coach.get(`/api/players/${p1}/goals?season=2099-2100`).expect(200)).body[0]; expect(coach.checkpoints).toHaveLength(1); expect(coach.progress).toBe(100);
+    await A.coach.delete(`/api/goals/${futur}`).set(ORIGIN).expect(204); await A.coach.delete(`/api/goals/${passe}`).set(ORIGIN).expect(204);
+  });
+
   it("chaque point de contrôle a un statut (atteint, en progrès, pas atteint) ; par défaut déduit de l'avancement", async () => {
     const a = await A.coach.put(`/api/goals/${goal}/checkpoints/3`).set(ORIGIN).send({ progress: 100 }).expect(200);
     expect(a.body.status).toBe("ACHIEVED");
@@ -77,7 +90,9 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
 
   it("la famille lit les points de contrôle de son enfant mais ne peut rien modifier ; adultes et autres familles : aucun accès", async () => {
     const mine = (await A.par1.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body;
-    expect(mine[0].checkpoints).toHaveLength(2);
+    // la famille ne voit que les trimestres déjà ouverts (T1 : 1er décembre 2026, T2 : 1er mars 2027) ; le coach les voit tous
+    const ouverts = (Date.now() >= Date.UTC(2026, 11, 1) ? 1 : 0) + (Date.now() >= Date.UTC(2027, 2, 1) ? 1 : 0);
+    expect(mine[0].checkpoints).toHaveLength(ouverts);
     await A.par1.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 100 }).expect(403);
     await A.par1.patch(`/api/goals/${goal}`).set(ORIGIN).send({ trimesters: [1] }).expect(403);
     await A.adulte.put(`/api/goals/${goal}/checkpoints/1`).set(ORIGIN).send({ progress: 100 }).expect(403);
