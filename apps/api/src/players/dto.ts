@@ -173,3 +173,8 @@ export class FamilyInfoDto {
   @IsOptional() @Transform(trim) @IsString() @MaxLength(200) availability?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(1000) health?: string;
 }
+
+// Signature du coach : petite image PNG dessinée à la souris ou au doigt (80 000 caractères au maximum)
+export class SignatureDto {
+  @IsString() @MaxLength(80000) @Matches(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/, { message: "Signature invalide" }) image!: string;
+}

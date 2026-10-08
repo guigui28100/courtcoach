@@ -39,6 +39,7 @@ export default function Bulletin() {
   const [p, setP] = useState<Player | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [missing, setMissing] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
   const [selfEvals, setSelfEvals] = useState<SelfEvaluation[]>([]);
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
@@ -46,6 +47,7 @@ export default function Bulletin() {
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
+    get<{ signature: string | null }>(`/players/${id}/signature`).then((r) => setSignature(r.signature)).catch(() => setSignature(null));
     get<SelfEvaluation[]>(`/players/${id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
   }, [id, season]);
 
@@ -192,7 +194,7 @@ export default function Bulletin() {
             ); })()}
 
 
-            <div className="mt-2 grid grid-cols-2 gap-8 break-inside-avoid text-sm text-muted"><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature du coach</div><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
+            <div className="mt-2 grid grid-cols-2 items-end gap-8 break-inside-avoid text-sm text-muted"><div className="grid content-end">{signature ? <img src={signature} alt="Signature du coach" className="mb-1 h-16 w-auto max-w-full justify-self-start object-contain" /> : <div className="h-16" />}<div className="border-t-2 border-[#10203a] pt-1">Signature du coach</div></div><div className="border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
             <p className="m-0 text-center text-xs text-muted">✦ Tennis Club Houdan · Bulletin généré avec CourtCoach le {fmtDate(new Date().toISOString())} ✦</p>
           </div>
         </article>

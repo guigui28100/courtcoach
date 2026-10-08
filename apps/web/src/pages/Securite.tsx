@@ -4,6 +4,7 @@ import { get, post } from "../api";
 import { useAuth } from "../auth";
 import { Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { fmtMo } from "../types";
+import { SignaturePad } from "../components/SignaturePad";
 
 // Sécurité du compte du coach : double authentification (code à 6 chiffres sur le téléphone).
 export default function Securite() {
@@ -37,6 +38,7 @@ export default function Securite() {
             <p className="hint m-0">Les vidéos sont supprimées automatiquement après 12 mois. Tu peux aussi en supprimer à la main.</p>
           </section>
         )}
+        {me?.role === "COACH" && <SignaturePad />}
         <section className="card grid gap-3" aria-labelledby="s-2fa">
           <h2 id="s-2fa" className="m-0">Double authentification {on ? "✅ activée" : "⚠️ pas encore activée"}</h2>
           <p className="m-0">À chaque connexion, en plus de ton mot de passe, tu entres un code à 6 chiffres qui change toutes les 30 secondes et qui s'affiche sur ton téléphone. Même si quelqu'un devine ton mot de passe, il ne peut pas entrer.</p>

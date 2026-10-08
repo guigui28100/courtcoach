@@ -79,6 +79,15 @@ export class PlayersService {
     return p;
   }
 
+  // Signature du coach (bulletins)
+  async setSignature(user: AuthUser, image: string) { this.assertCoach(user); await this.prisma.user.update({ where: { id: user.id }, data: { signature: image } }); return { signature: image }; }
+  async clearSignature(user: AuthUser) { this.assertCoach(user); await this.prisma.user.update({ where: { id: user.id }, data: { signature: null } }); }
+  async mySignature(user: AuthUser) { this.assertCoach(user); const u = await this.prisma.user.findUnique({ where: { id: user.id }, select: { signature: true } }); return { signature: u?.signature ?? null }; }
+  async signatureFor(user: AuthUser, playerId: string) {
+    await this.assertCanRead(user, playerId);
+    const coach = await this.prisma.user.findFirst({ where: { role: Role.COACH, deletedAt: null, signature: { not: null } }, select: { signature: true }, orderBy: { createdAt: "asc" } });
+    return { signature: coach?.signature ?? null };
+  }
   // Renseignements remplis par les parents : seulement leur enfant, jamais le nom / prénom / date de naissance ni les notes du coach
   async updateFamilyInfo(user: AuthUser, id: string, dto: FamilyInfoDto) {
     if (user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé aux parents");
