@@ -9,7 +9,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { AXES, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -52,6 +52,8 @@ export default function Bulletin() {
   const back = staff ? `/coach/centre/${id}` : "/suivi";
   if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
   if (!p || !evals) return <p className="p-8 text-center text-muted">Chargement…</p>;
+  // Le jeune et sa famille voient le bulletin d'un trimestre seulement à partir du 1er décembre (T1), du 1er mars (T2) et du 1er juin (T3)
+  if (!staff && t > 0 && !selfEvalIsOpen(season, t)) return <div className="mx-auto max-w-3xl p-6 text-center"><Empty>Le bulletin du trimestre {t} sera disponible en {SELF_EVAL_MONTH[t]}.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
 
   const ev = evals.find((e) => e.season === season && e.trimester === t);
   const pp = previousPeriod(season, t);

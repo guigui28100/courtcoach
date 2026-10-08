@@ -49,7 +49,7 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
 }
 
 // Suivi des progrès cours après cours (ancien « radar de tous les jours ») : alimenté par les étoiles de la saison, mis à jour à chaque cours
-export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean }) {
+export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false, start }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean; start?: Record<string, number> }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
   const by = starsByDomain(stars, season, t);
@@ -61,7 +61,24 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
       <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Suivi des progrès cours après cours · trimestre ${t}` : me ? `Mon suivi des progrès cours après cours · trimestre ${t}` : `Le suivi des progrès cours après cours · trimestre ${t}`}</h2>
       <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit ; quand ton coach te dit « pas en progrès » dans un domaine, il perd des étoiles. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
-      {total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le suivi se remplira dès les premiers cours.</p> : (
+      {start ? (
+        // Deux radars côte à côte : le point de départ (fixe) et celui des étoiles (il grandit à chaque cours)
+        <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid justify-items-center gap-1"><strong>📍 Mon point de départ <small className={"font-normal " + sub}>(il ne bouge pas)</small></strong><Radar dark={dark} series={[{ label: "Départ", values: start, color: dark ? "#ffffff" : "#10203a" }]} /></div>
+            <div className="grid justify-items-center gap-1"><strong>🌟 Mes étoiles <small className={"font-normal " + sub}>(il grandit à chaque cours)</small></strong><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
+          </div>
+          {total === 0 && <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le radar de droite se remplira dès les premiers cours.</p>}
+          <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2" aria-label="Étoiles par domaine">
+            {EVAL_AXES.map((a) => (
+              <li key={a.key} className={"flex items-center justify-between gap-3 rounded-xl px-3 py-2 " + (dark ? "bg-white/10" : "bg-sand/60")}>
+                <span className="font-bold"><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</span>
+                <span className="flex items-center gap-2"><small className={sub}>départ {start[a.key] ? `${start[a.key].toFixed(0)}/5` : "–"}</small><strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : total === 0 ? <p className={"m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>Pas encore d'étoile ce trimestre : le suivi se remplira dès les premiers cours.</p> : (
         <div className="grid items-center gap-4 md:grid-cols-[300px_1fr]">
           <div className="grid justify-items-center"><Radar dark={dark} series={[{ label: `Étoiles T${t}`, values, color: dark ? "#dcf247" : "#e0b100" }]} /></div>
           <ul className="m-0 grid list-none gap-2 p-0" aria-label="Étoiles par domaine">
