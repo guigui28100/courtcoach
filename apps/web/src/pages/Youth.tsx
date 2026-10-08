@@ -61,7 +61,6 @@ function StartBilan({ p, base }: { p: Player; base: string }) {
             {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-bold text-clay">💬 Le mot de ton coach</footer></blockquote>}
             {start.strengths && <p className="m-0"><strong className="text-[#dcf247]">⭐ Tes points forts : </strong>{start.strengths}</p>}
             {start.improve && <p className="m-0"><strong className="text-[#dcf247]">🎯 Pour progresser : </strong>{start.improve}</p>}
-            {start.next && <p className="m-0"><strong className="text-[#dcf247]">🚀 Prochaines missions : </strong>{start.next}</p>}
             <div><Link to={`${base}/bulletin/${season}/0`} className="gal-btn btn-sm no-underline">Voir mon bilan de départ en entier</Link></div>
           </div>
         </div>
