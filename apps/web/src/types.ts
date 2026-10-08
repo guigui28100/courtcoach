@@ -173,9 +173,11 @@ export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateS
 
 // ----- Matchs déclarés par le jeune (choix proposés, jamais de nom d'adversaire) -----
 export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; coachComment: string; editable: boolean; editableUntil: string; }
-export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["amical", "🤝 Match amical"], ["entrainement", "🏋️ Match d'entraînement"]];
+export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["entrainement", "🏋️ Match d'entraînement"]];
 export const MATCH_OPPONENTS: [string, string][] = [["plus-fort", "💪 Plus fort que moi"], ["pareil", "⚖️ Du même niveau"], ["moins-fort", "🌱 Moins fort que moi"]];
 export const MATCH_SKILLS: [string, string][] = [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["volee", "Mon jeu au filet"], ["deplacements", "Mes déplacements"], ["calme", "Mon calme"], ["tactique", "Mes choix tactiques"], ["physique", "Mon physique"], ["combativite", "Ma combativité"], ["concentration", "Ma concentration"]];
+// Ancien type de match, plus proposé mais toujours lisible sur les matchs déjà notés
+export const MATCH_KINDS_ALL: [string, string][] = [...MATCH_KINDS, ["amical", "🤝 Match amical"]];
 export const matchLabel = (list: [string, string][], id: string | null) => list.find(([k]) => k === id)?.[1] ?? id ?? "";
 
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »

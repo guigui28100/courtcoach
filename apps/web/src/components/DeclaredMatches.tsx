@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { del, get, post, put } from "../api";
 import { useEffect, useCallback } from "react";
-import { DeclaredMatch, FEELINGS, fmtDate, matchLabel, MATCH_KINDS, MATCH_OPPONENTS, MATCH_SKILLS, Player, RANKINGS, todayIso } from "../types";
+import { DeclaredMatch, FEELINGS, fmtDate, matchLabel, MATCH_KINDS, MATCH_KINDS_ALL, MATCH_OPPONENTS, MATCH_SKILLS, Player, RANKINGS, todayIso } from "../types";
 
 export function useDeclaredMatches(playerId: string | undefined, enabled = true) {
   const [list, setList] = useState<DeclaredMatch[] | null>(null);
@@ -80,7 +80,7 @@ function MatchCard({ m, p, onChanged, preview }: { m: DeclaredMatch; p: Player; 
   const left = Math.max(0, Math.ceil((new Date(m.editableUntil).getTime() - Date.now()) / 86400000));
   return (
     <li className="grid gap-1.5 rounded-2xl bg-white/10 p-3">
-      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
+      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
       <span className="text-sm text-white/85">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire : {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</span>
       {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm text-white/85">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
       {m.coachComment && <span className="rounded-xl bg-[#dcf247] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
@@ -102,7 +102,7 @@ export function DeclaredMatchesSection({ p, preview = false }: { p: Player; prev
   return (
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mes-matchs">
       <h2 id="gal-mes-matchs" className="m-0 text-2xl">🏟️ Mes matchs</h2>
-      <p className="m-0 text-white/85">Note ici tes matchs (tournoi, amical…) : ton résultat, comment tu as joué, ce qui a bien marché. Seuls <strong>toi et ton coach</strong> les voyez. Tu peux corriger un match pendant 7 jours.</p>
+      <p className="m-0 text-white/85">Note ici tes matchs (tournoi, plateau…) : ton résultat, comment tu as joué, ce qui a bien marché. Seuls <strong>toi et ton coach</strong> les voyez. Tu peux corriger un match pendant 7 jours.</p>
       {!open && <div><button type="button" className="gal-btn" onClick={() => setOpen(true)}>+ J'ajoute un match</button></div>}
       {open && <MatchForm p={p} preview={preview} onDone={() => { setOpen(false); reload(); }} />}
       {list === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Aucun match noté pour l'instant. Après ton prochain match, viens le raconter ici !</p> : (
@@ -126,7 +126,7 @@ export function CoachDeclaredMatches({ p }: { p: Player }) {
       <ul className="m-0 grid list-none gap-3 p-0">
         {list.map((m) => (
           <li key={m.id} className="grid gap-1.5 rounded-xl border border-line p-3">
-            <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"badge " + (m.result === "Victoire" ? "!border-ok !text-ok" : "!border-bad !text-bad")}>{m.result}</span></span>
+            <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"badge " + (m.result === "Victoire" ? "!border-ok !text-ok" : "!border-bad !text-bad")}>{m.result}</span></span>
             <small className="hint">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</small>
             {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
             <div className="flex flex-wrap gap-2">

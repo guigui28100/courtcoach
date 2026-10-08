@@ -99,3 +99,4 @@
 - Page « Mes bulletins » du jeune : d'abord « Les bulletins de mon coach », puis « ✍️ Mon bulletin à remplir » en menu déroulant FERMÉ par défaut (clic pour le déplier).
 - Matchs déclarés par le jeune : classement de l'adversaire FACULTATIF (liste des classements, champ `DeclaredMatch.opponentRanking`, jamais de nom) ; visible du jeune et du coach, il ne compte PAS dans les statistiques du bulletin (qui viennent des matchs saisis par le coach).
 - Icône d'une défaite : 😕 (partout : matchs du jeune, bulletin, liste des matchs) ; 💪 reste réservé à « Physique ».
+- Type de match « Match amical » retiré des choix du jeune (restent proposés : tournoi, plateau, championnat par équipes, match d'entraînement) ; les anciens matchs amicaux déjà notés restent lisibles (`MATCH_KINDS_ALL`).
