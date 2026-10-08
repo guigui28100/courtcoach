@@ -159,3 +159,17 @@ export class QualitiesDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(5) attendance?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(5) attitude?: number;
 }
+
+// Fiche de renseignements remplie par les PARENTS : jamais le nom, le prénom ni la date de naissance (créés par le coach), jamais le style de jeu, l'objectif de classement ni les notes du coach
+export class FamilyInfoDto {
+  @IsOptional() @IsString() @MaxLength(10) sex?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(80) club?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(30) licence?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(50) @Max(250) heightCm?: number;
+  @IsOptional() @IsString() @MaxLength(20) ranking?: string;
+  @IsOptional() @IsString() @MaxLength(30) hand?: string;
+  @IsOptional() @IsString() @MaxLength(30) backhand?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(200) training?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(200) availability?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(1000) health?: string;
+}

@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { FamilyInfoDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -77,6 +77,18 @@ export class PlayersService {
     const p = await this.prisma.player.update({ where: { id }, data: { ...rest, ...(birthDate ? { birthDate: new Date(birthDate) } : {}), lastActivityAt: new Date() } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.audit.log(user.id, "update", "Player", id);
     return p;
+  }
+
+  // Renseignements remplis par les parents : seulement leur enfant, jamais le nom / prénom / date de naissance ni les notes du coach
+  async updateFamilyInfo(user: AuthUser, id: string, dto: FamilyInfoDto) {
+    if (user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé aux parents");
+    await this.assertCanRead(user, id);
+    const data: Record<string, unknown> = {};
+    for (const k of ["sex", "club", "licence", "ranking", "hand", "backhand", "training", "availability", "health"] as const) if (dto[k] !== undefined) data[k] = dto[k] === "" ? null : dto[k];
+    if (dto.heightCm !== undefined) data.heightCm = dto.heightCm;
+    const p = await this.prisma.player.update({ where: { id }, data: { ...data, lastActivityAt: new Date() } });
+    await this.audit.log(user.id, "family-update", "Player", id);
+    return this.shape(p, user);
   }
 
   // Droit à l'effacement : la fiche et TOUT ce qui s'y rattache disparaissent (objectifs, évaluations, matchs, analyses, accords).

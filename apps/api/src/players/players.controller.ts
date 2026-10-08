@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -15,6 +15,7 @@ export class PlayersController {
   @Get("players/inactive") inactive(@CurrentUser() u: AuthUser) { return this.svc.inactive(u); }
   @Post("players") create(@CurrentUser() u: AuthUser, @Body() dto: CreatePlayerDto) { return this.svc.create(u, dto); }
   @Get("players/:id") get(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.get(u, id); }
+  @Roles(Role.GUARDIAN) @Put("players/:id/renseignements") familyInfo(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: FamilyInfoDto) { return this.svc.updateFamilyInfo(u, id, dto); }
   @Patch("players/:id") update(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: UpdatePlayerDto) { return this.svc.update(u, id, dto); }
   @Delete("players/:id") @HttpCode(204) remove(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.remove(u, id); }
   @Get("players/:id/export") export(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.export(u, id); }
