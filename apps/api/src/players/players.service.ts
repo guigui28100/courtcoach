@@ -10,6 +10,8 @@ import { QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto,
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
+// Un trimestre « s'ouvre » au jeune et à sa famille le 1er décembre (T1), le 1er mars (T2) et le 1er juin (T3) : avant, ni bulletin ni résultat des missions
+const trimesterOpen = (season: string, t: number, now = new Date()) => { if (t < 1) return true; const y = Number(season.slice(0, 4)); return now >= new Date(Date.UTC(t === 1 ? y : y + 1, t === 1 ? 11 : t === 2 ? 2 : 5, 1)); };
 
 @Injectable()
 export class PlayersService {
@@ -207,7 +209,14 @@ export class PlayersService {
     await this.assertCanRead(user, playerId);
     if (season && !SEASON.test(season)) throw new BadRequestException("Saison invalide");
     const rows = await this.prisma.goal.findMany({ where: { playerId, ...(season ? { season } : {}) }, orderBy: { createdAt: "asc" }, include: { checkpoints: { select: { trimester: true, status: true, progress: true, comment: true, authorId: true, authorName: true, authorRole: true }, orderBy: { trimester: "asc" } } } });
-    return this.hideAuthors(user, rows);
+    if (isStaff(user)) return this.hideAuthors(user, rows);
+    // Le jeune et sa famille ne voient le résultat d'une mission (atteinte / en cours / non atteinte, avancement, mot du coach) qu'à l'ouverture du trimestre
+    const shown = rows.map((g) => {
+      const cps = g.checkpoints.filter((c) => trimesterOpen(g.season, c.trimester));
+      const last = cps.reduce<(typeof cps)[number] | null>((m, c) => (!m || c.trimester > m.trimester ? c : m), null);
+      return { ...g, checkpoints: cps, progress: last ? last.progress : 0 };
+    });
+    return this.hideAuthors(user, shown);
   }
   async addGoal(user: AuthUser, playerId: string, dto: GoalDto) {
     await this.assertStaffFor(user, playerId);
@@ -259,12 +268,7 @@ export class PlayersService {
     await this.assertCanRead(user, playerId);
     const rows = await this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
     // Le bulletin d'un trimestre ne se montre au jeune et à sa famille qu'à partir du 1er décembre (T1), du 1er mars (T2) et du 1er juin (T3)
-    const now = new Date();
-    const visible = isStaff(user) ? rows : rows.filter((e) => {
-      if (e.trimester < 1) return true;
-      const y = Number(e.season.slice(0, 4));
-      return now >= new Date(Date.UTC(e.trimester === 1 ? y : y + 1, e.trimester === 1 ? 11 : e.trimester === 2 ? 2 : 5, 1));
-    });
+    const visible = isStaff(user) ? rows : rows.filter((e) => trimesterOpen(e.season, e.trimester));
     return this.hideAuthors(user, visible);
   }
   async saveEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: EvaluationDto) {

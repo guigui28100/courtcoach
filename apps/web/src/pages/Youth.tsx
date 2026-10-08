@@ -58,9 +58,6 @@ function StartBilan({ p, base }: { p: Player; base: string }) {
           </div>
           <div className="grid content-start gap-3">
             <p className="m-0 text-white/85">C'est ton coach qui l'a rempli : c'est là que tu commences la saison. Tes missions viennent de là, et tu pourras voir ta progression au fil des trimestres.</p>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mon point de départ par domaine">
-              {EVAL_AXES.map((a) => axisAverage(start, a) ? <li key={a.key} className="gal-chip">{a.label} {fmtAvg(axisAverage(start, a))}/5</li> : null)}
-            </ul>
             {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-bold text-clay">💬 Le mot de ton coach</footer></blockquote>}
             {start.strengths && <p className="m-0"><strong className="text-[#dcf247]">⭐ Tes points forts : </strong>{start.strengths}</p>}
             {start.improve && <p className="m-0"><strong className="text-[#dcf247]">🎯 Pour progresser : </strong>{start.improve}</p>}
