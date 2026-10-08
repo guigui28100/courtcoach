@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { checkpointAt, Goal, goalApplies, Evaluation, fmtAvg, overallAverage, ratedCount, SELF_EVAL_MONTH, SelfEvaluation, trimesterOf, currentSeason } from "../types";
+import { checkpointAt, Goal, goalApplies, Evaluation, fmtAvg, overallAverage, ratedCount, SELF_EVAL_MONTH, SelfEvaluation, selfEvalIsOpen, trimesterOf, currentSeason } from "../types";
 
 // Un bulletin existe vraiment quand le coach y a écrit ou noté quelque chose (une ligne vide créée par un point de contrôle ne compte pas)
 export const hasContent = (e: Evaluation | undefined) => !!e && (ratedCount(e) > 0 || !!(e.appreciation || e.strengths || e.improve || e.next));
@@ -24,7 +24,8 @@ export function BulletinShelf({ evals, base, dark = false, selfEvals = [], onSel
           <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-4">
             {[0, 1, 2, 3].map((t) => {
               const e = evals.find((x) => x.season === season && x.trimester === t);
-              const ready = hasContent(e) || missionsDone(goals, season, t);
+              const open = t === 0 || selfEvalIsOpen(season, t); // le bulletin d'un trimestre se montre au jeune et à sa famille à partir du 1er décembre / 1er mars / 1er juin
+              const ready = open && (hasContent(e) || missionsDone(goals, season, t));
               if (!ready && season !== cur) return null; // pas de case vide pour les saisons passées
               const sent = t > 0 && selfEvals.some((s) => s.season === season && s.trimester === t && s.sentAt);
               return (

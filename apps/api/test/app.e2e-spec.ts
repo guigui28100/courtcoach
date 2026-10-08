@@ -148,7 +148,15 @@ describe("CourtCoach API", () => {
     expect(view.body.coachNotes).toBeUndefined();
     expect(view.body.health).toBe("Épaule à surveiller");
     expect((await guardian.get(`/api/players/${playerId}/goals`).expect(200)).body).toHaveLength(1);
-    expect((await guardian.get(`/api/players/${playerId}/evaluations`).expect(200)).body).toHaveLength(1);
+    // Le bulletin du trimestre 1 n'est montré à la famille qu'à partir du 1er décembre (T2 : 1er mars, T3 : 1er juin) ; le coach le voit toujours
+    const t1Open = Date.now() >= Date.UTC(2026, 11, 1);
+    expect((await guardian.get(`/api/players/${playerId}/evaluations`).expect(200)).body).toHaveLength(t1Open ? 1 : 0);
+    expect((await coach.get(`/api/players/${playerId}/evaluations`).expect(200)).body.length).toBeGreaterThanOrEqual(1);
+    await coach.put(`/api/players/${playerId}/evaluations/2099-2100/1`).set(ORIGIN).send({ ratings: { technique: 3 } }).expect(200); // trimestre pas encore ouvert
+    await coach.put(`/api/players/${playerId}/evaluations/2020-2021/1`).set(ORIGIN).send({ ratings: { technique: 3 } }).expect(200); // saison passée : visible
+    await coach.put(`/api/players/${playerId}/evaluations/2099-2100/0`).set(ORIGIN).send({ ratings: { technique: 3 } }).expect(200); // le bilan de départ est toujours visible
+    const famille = (await guardian.get(`/api/players/${playerId}/evaluations`).expect(200)).body.map((e: any) => `${e.season}/${e.trimester}`);
+    expect(famille).toContain("2020-2021/1"); expect(famille).toContain("2099-2100/0"); expect(famille).not.toContain("2099-2100/1");
     await guardian.patch(`/api/players/${playerId}`).set(ORIGIN).send({ firstName: "Piraté" }).expect(403);
     await guardian.post(`/api/players/${playerId}/goals`).set(ORIGIN).send({ season: "2026-2027", axis: "MENTAL", title: "x" }).expect(403);
     const exp = await guardian.get(`/api/players/${playerId}/export`).expect(200);

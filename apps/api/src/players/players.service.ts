@@ -257,7 +257,15 @@ export class PlayersService {
   // ----- Évaluations trimestrielles -----
   async evaluations(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.hideAuthors(user, await this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] }));
+    const rows = await this.prisma.evaluation.findMany({ where: { playerId }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+    // Le bulletin d'un trimestre ne se montre au jeune et à sa famille qu'à partir du 1er décembre (T1), du 1er mars (T2) et du 1er juin (T3)
+    const now = new Date();
+    const visible = isStaff(user) ? rows : rows.filter((e) => {
+      if (e.trimester < 1) return true;
+      const y = Number(e.season.slice(0, 4));
+      return now >= new Date(Date.UTC(e.trimester === 1 ? y : y + 1, e.trimester === 1 ? 11 : e.trimester === 2 ? 2 : 5, 1));
+    });
+    return this.hideAuthors(user, visible);
   }
   async saveEvaluation(user: AuthUser, playerId: string, season: string, trimester: number, dto: EvaluationDto) {
     await this.assertStaffFor(user, playerId);
