@@ -92,3 +92,4 @@
 - Thème « galaxie » (jeunes et bulletins) ÉCLAIRCI : fond violet-bleu lumineux (#4338ca avec lueurs claires), en-tête / barre du bas #3730a3, cartes translucides plus claires, texte toujours blanc (contraste conservé).
 - Bandeaux du thème galaxie bien contrastés : en-tête, barre du bas et onglets en indigo profond (#1b1863) avec bordure claire et ombre ; cartes « verre » plus visibles (bordure 2 px).
 - Le suivi des progrès cours après cours (fiche du coach) n'a plus de boutons « − » par domaine : pour retirer ou corriger des étoiles, le coach passe par la zone « Donner des étoiles » et l'historique juste dessous (la route `PATCH players/:id/stars/line/:lineId` reste côté serveur).
+- Onglets de la fiche du joueur (coach) : Profil · Accords et famille · Évaluations · Objectifs · Étoiles · Vidéos · Matchs · Bulletins (Évaluations est à gauche d'Objectifs).
