@@ -160,3 +160,10 @@
   @page { size: A4; margin: 10mm; }
   body, .galaxy-sky { background: #fff !important; }
 }
+
+/* Espace du jeune : les onglets passent en colonne à gauche sur ordinateur (en haut sur téléphone) */
+@media (min-width: 768px) {
+  .gal-tabs.side { position: sticky; top: 88px; padding: 0.6rem; }
+  .gal-tabs.side > div { flex-direction: column; overflow: visible; mask-image: none; padding: 2px; gap: 0.4rem; }
+  .gal-tabs.side button { justify-content: flex-start; width: 100%; text-align: left; min-height: 3rem; border-radius: 0.9rem; }
+}

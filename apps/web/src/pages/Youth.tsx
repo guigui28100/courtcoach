@@ -274,7 +274,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   return (
     <div className="relative isolate overflow-clip">
       <Stars />
-      <div className="relative z-10 mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
+      <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
         {previewId && (
           <p className="glass m-0 flex flex-wrap items-center justify-between gap-2 !p-3 text-sm" role="note">
             <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {p?.firstName ?? "le jeune"} (sans pouvoir envoyer de vidéo).</span>
@@ -284,8 +284,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
         {p && (
-          <>
-            <nav className="gal-tabs" aria-label="Mon espace">
+          <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-start md:gap-6">
+            <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
@@ -315,7 +315,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                 </section>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
