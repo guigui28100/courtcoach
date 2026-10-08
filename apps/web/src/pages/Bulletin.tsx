@@ -3,13 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { ReactNode, useEffect, useState } from "react";
 import { get } from "../api";
 import { useAuth } from "../auth";
-import { Planet, Stars } from "../components/Galaxy";
+import { CourtMark, Planet, Stars } from "../components/Galaxy";
+import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -48,6 +49,7 @@ export default function Bulletin() {
     get<SelfEvaluation[]>(`/players/${id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
   }, [id, season]);
 
+  useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans
   const staff = me?.role === "COACH" || me?.role === "TRAINER";
   const back = staff ? `/coach/centre/${id}` : "/suivi";
   if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
@@ -113,7 +115,7 @@ export default function Bulletin() {
               <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span></p>
               {facts.length > 0 && <ul className="m-0 mt-1 flex list-none flex-wrap gap-2 p-0">{facts.map(([k, v]) => <li key={k} className="gal-chip"><span className="text-white/70">{k}</span> {v}</li>)}</ul>}
             </div>
-            <Planet className="relative mx-auto max-w-[150px]" />
+            {isTeen(p) ? <CourtMark className="relative mx-auto max-w-[150px]" /> : <Planet className="relative mx-auto max-w-[150px]" />}
           </header>
 
           <div className="grid gap-6 p-6 sm:p-8">

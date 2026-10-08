@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
-import { MissionBar, Planet, Stars } from "../components/Galaxy";
+import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
+import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
@@ -11,7 +12,7 @@ import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
+import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -25,9 +26,9 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
   return (
     <section className="gal-pop grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
-        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">Ma galaxie tennis</p>
-        <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Salut {p.firstName} !</h1>
-        <p className="m-0 max-w-xl text-lg text-white/85">Ici, tu retrouves tes missions du trimestre, tes étoiles, ton bulletin à remplir, tes vidéos (tu en envoies à ton coach, et il peut t'en envoyer) et ton radar de progrès.</p>
+        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
+        <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">{isTeen(p) ? `${p.firstName}` : `Salut ${p.firstName} !`}</h1>
+        <p className="m-0 max-w-xl text-lg text-white/85">{isTeen(p) ? "Tes missions du trimestre, tes étoiles, tes bulletins, tes vidéos et ta progression : tout ton suivi au même endroit." : "Ici, tu retrouves tes missions du trimestre, tes étoiles, ton bulletin à remplir, tes vidéos (tu en envoies à ton coach, et il peut t'en envoyer) et ton radar de progrès."}</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
           {starsTotal > 0 && <li className="gal-chip">⭐ {starsTotal} étoile{starsTotal > 1 ? "s" : ""}</li>}
           {done > 0 && <li className="gal-chip">🎯 {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
@@ -35,7 +36,7 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
           {p.ranking && <li className="gal-chip">🎾 Classement {p.ranking}{p.targetRanking ? ` → objectif ${p.targetRanking}` : ""}</li>}
         </ul>
       </div>
-      <Planet className="mx-auto max-w-[220px]" />
+      {isTeen(p) ? <CourtMark className="mx-auto max-w-[220px]" /> : <Planet className="mx-auto max-w-[220px]" />}
     </section>
   );
 }
@@ -89,7 +90,7 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
                     <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : g.progress > 0 ? `${g.progress} %` : "🎯 À travailler"}</span></div>
                     {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
                     {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
-                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
+                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar teen={isTeen(p)} value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
                     {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
                   </div>
                 ); })}
@@ -260,6 +261,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   }, [previewId, version]);
 
   const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
+  useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans (d'après la date de naissance)
   const tab: Tab = (TABS.find(([k]) => k === (params.get("onglet") === "bulletin" ? "bulletins" : params.get("onglet")))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const stars = useStars(p?.id, version);
