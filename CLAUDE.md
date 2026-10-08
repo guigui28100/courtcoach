@@ -98,3 +98,4 @@
 - Auto-évaluation du jeune : « Ce dont je suis fier » propose aussi « Mes résultats en tournois » ; « Mon projet » ne propose plus que : monter au classement, gagner un tournoi, faire plus de tournois, jouer plus de parties amicales le week-end, continuer comme ça, faire plus de physique (les anciens choix restent lisibles dans les bulletins déjà envoyés : `SELF_LEGACY`).
 - Page « Mes bulletins » du jeune : d'abord « Les bulletins de mon coach », puis « ✍️ Mon bulletin à remplir » en menu déroulant FERMÉ par défaut (clic pour le déplier).
 - Matchs déclarés par le jeune : classement de l'adversaire FACULTATIF (liste des classements, champ `DeclaredMatch.opponentRanking`, jamais de nom) ; visible du jeune et du coach, il ne compte PAS dans les statistiques du bulletin (qui viennent des matchs saisis par le coach).
+- Icône d'une défaite : 😕 (partout : matchs du jeune, bulletin, liste des matchs) ; 💪 reste réservé à « Physique ».

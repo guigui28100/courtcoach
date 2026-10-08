@@ -170,7 +170,7 @@ export default function Bulletin() {
                 <ul className="m-0 grid list-none gap-3 p-0 grid-cols-2 sm:grid-cols-4 print:grid-cols-4">
                   {tile("🎾", String(st.played), st.played > 1 ? "matchs joués" : "match joué", "#f6f4fb", "#10203a")}
                   {tile("🏆", String(st.wins), st.wins > 1 ? "victoires" : "victoire", "#e8f7ee", "#166534")}
-                  {tile("💪", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
+                  {tile("😕", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
                   {tile("🎯", st.bestBeaten ?? "—", "classement le plus élevé battu", "#fff8d6", "#6b4e00")}
                 </ul>
                 {ms.length === 0 && <p className="m-0 text-sm text-muted">Aucun match enregistré par le coach sur ce trimestre.</p>}

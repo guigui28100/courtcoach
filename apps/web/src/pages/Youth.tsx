@@ -159,7 +159,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
           <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
             {matches.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-2xl bg-white/10 p-3">
-                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "💪 Défaite"}</span></span>
+                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
                 <span className="text-sm text-white/80">{fmtDate(m.date)}{m.score && ` · ${m.score}`}</span>
                 {m.remark && <span className="text-sm text-white/80">{m.remark}</span>}
               </li>

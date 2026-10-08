@@ -48,7 +48,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
         </div>
       </div>
       <div className="grid gap-2">{step(2, "Comment ça s'est terminé ?")}
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Résultat">{(["Victoire", "Défaite"] as const).map((r) => <button key={r} type="button" role="radio" aria-checked={result === r} className={pill(result === r)} onClick={() => setResult(r)}>{r === "Victoire" ? "🏆 Victoire" : "💪 Défaite"}</button>)}</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Résultat">{(["Victoire", "Défaite"] as const).map((r) => <button key={r} type="button" role="radio" aria-checked={result === r} className={pill(result === r)} onClick={() => setResult(r)}>{r === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</button>)}</div>
         <label className="grid gap-1 text-sm font-bold">Score (facultatif)<input value={score} maxLength={40} onChange={(e) => setScore(e.target.value)} className="input !w-52 text-ink" placeholder="6/3 4/6 10/8" /></label>
       </div>
       <div className="grid gap-2">{step(3, "Ton adversaire était…")}
@@ -80,7 +80,7 @@ function MatchCard({ m, p, onChanged, preview }: { m: DeclaredMatch; p: Player; 
   const left = Math.max(0, Math.ceil((new Date(m.editableUntil).getTime() - Date.now()) / 86400000));
   return (
     <li className="grid gap-1.5 rounded-2xl bg-white/10 p-3">
-      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "💪 Défaite"}</span></span>
+      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
       <span className="text-sm text-white/85">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire : {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</span>
       {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm text-white/85">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
       {m.coachComment && <span className="rounded-xl bg-[#dcf247] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
