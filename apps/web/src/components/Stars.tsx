@@ -76,7 +76,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
             {EVAL_AXES.map((a) => (
               <li key={a.key} className={"flex items-center justify-between gap-3 rounded-xl px-3 py-2 " + (dark ? "bg-white/10" : "bg-sand/60")}>
                 <span className="font-bold"><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</span>
-                <span className="flex items-center gap-2"><small className={sub}>{start[a.key] ? `${start[a.key].toFixed(0)}/5 au départ → ${now[a.key].toFixed(1).replace(".", ",")}/5` : "–"}</small><strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong></span>
+                <span className="flex items-center gap-2"><strong>⭐ {by[a.key]}{by[a.key] >= STARS_FOR_FULL ? " · plein !" : ""}</strong></span>
               </li>
             ))}
           </ul>
