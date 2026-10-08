@@ -10,7 +10,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { ageOf, isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -80,7 +80,9 @@ export default function Bulletin() {
   const LAB = { ACHIEVED: "Atteinte", NOT_ACHIEVED: "Non atteinte", IN_PROGRESS: "En cours" } as const;
   const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
-  const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
+  const age = ageOf(p.birthDate);
+  // Bilan de départ : l'en-tête montre toujours l'âge, le classement, le style de jeu et l'objectif de l'année (« — » si pas encore renseigné)
+  const facts = (t === 0 ? [["Âge", age !== null ? `${age} ans` : "—"], ["Classement", p.ranking || "—"], ["Style de jeu", p.playStyle || "—"], ["Objectif de l'année", p.targetRanking || "—"], ["Main", p.hand], ["Revers", p.backhand]] : [["Âge", age !== null ? `${age} ans` : null], ["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]]).filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
 
   // Carte d'un domaine de compétences (l'attitude est placée sous le radar, les autres domaines à côté)
