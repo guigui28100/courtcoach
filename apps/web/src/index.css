@@ -128,9 +128,9 @@
 .bulletin-hero {
   position: relative; overflow: hidden; color: #fff;
   background:
-    radial-gradient(520px 230px at 8% -10%, rgba(167, 139, 250, 0.8), transparent 65%),
-    radial-gradient(420px 260px at 100% 110%, rgba(56, 189, 248, 0.6), transparent 60%),
-    #4338ca;
+    radial-gradient(520px 230px at 8% -10%, rgba(124, 58, 237, 0.85), transparent 65%),
+    radial-gradient(420px 260px at 100% 110%, rgba(37, 99, 235, 0.7), transparent 60%),
+    #1b1863;
 }
 .print-exact, .print-exact * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 @media print {

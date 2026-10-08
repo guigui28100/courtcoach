@@ -94,3 +94,4 @@
 - Le suivi des progrès cours après cours (fiche du coach) n'a plus de boutons « − » par domaine : pour retirer ou corriger des étoiles, le coach passe par la zone « Donner des étoiles » et l'historique juste dessous (la route `PATCH players/:id/stars/line/:lineId` reste côté serveur).
 - Onglets de la fiche du joueur (coach) : Profil · Accords et famille · Évaluations · Objectifs · Étoiles · Vidéos · Matchs · Bulletins (Évaluations est à gauche d'Objectifs).
 - Le mot du coach est DANS l'encadré « Image du joueur » du bulletin (sous le radar, les points forts et les axes de progrès).
+- Bulletin affiché à l'écran : bandeau du haut en indigo profond (#1b1863) et liseré blanc autour de la feuille, pour qu'elle ne se confonde pas avec le fond (rien de tout cela à l'impression).

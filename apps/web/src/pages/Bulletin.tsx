@@ -102,7 +102,7 @@ export default function Bulletin() {
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>
         </div>
 
-        <article className="print-exact overflow-hidden rounded-3xl bg-white text-[#1a2233] shadow-[0_20px_60px_rgba(10,13,44,0.55)] print:rounded-none print:shadow-none" aria-label={`Bulletin de ${p.firstName}`}>
+        <article className="print-exact overflow-hidden rounded-3xl bg-white text-[#1a2233] ring-4 ring-white/60 shadow-[0_20px_60px_rgba(20,16,80,0.6)] print:rounded-none print:shadow-none print:ring-0" aria-label={`Bulletin de ${p.firstName}`}>
           <header className="bulletin-hero grid items-center gap-4 p-6 sm:grid-cols-[1fr_150px] sm:p-8">
             <div className="stars" aria-hidden="true" />
             <div className="relative grid gap-2">
