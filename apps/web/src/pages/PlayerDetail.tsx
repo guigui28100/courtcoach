@@ -345,21 +345,6 @@ function StarsTab({ p }: { p: Player }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   useEffect(() => { const d = new Date(day + "T12:00:00"); get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason(d)}`).then((g) => setGoals(g.filter((x) => goalApplies(x, trimesterOf(d))))).catch(() => setGoals([])); }, [p.id, day]);
   const [err, setErr] = useState("");
-  const [msgMinus, setMsgMinus] = useState("");
-  // « − » sur un domaine du radar : on retire une étoile de la saisie la plus récente de ce domaine ce trimestre (la ligne disparaît quand il ne lui en reste plus)
-  async function minus(domain: string) {
-    setErr(""); setMsgMinus("");
-    const season = currentSeason(), tri = trimesterOf();
-    const mine = (stars ?? []).filter((s) => s.stars > 0 && s.domain === domain && inPeriod(s.day + "T12:00:00", season, tri));
-    if (!mine.length) return;
-    const lastDay = mine.reduce((m, s) => (s.day > m ? s.day : m), mine[0].day);
-    const line = mine.filter((s) => s.day === lastDay).slice(-1)[0];
-    try {
-      if (line.stars > 1) await patch(`/players/${p.id}/stars/line/${line.id}`, { stars: line.stars - 1 });
-      else await del(`/players/${p.id}/stars/line/${line.id}`);
-      setVersion((v) => v + 1); setMsgMinus(`1 étoile retirée (${fmtDay(line.day)}).`);
-    } catch (e) { setErr((e as Error).message); }
-  }
   async function save() {
     setErr(""); const bad = starLinesError(lines); if (bad) return setErr(bad);
     const act = activeLines(lines); if (!act.length) return setErr("Choisis un nombre d'étoiles (ou retire la ligne).");
@@ -370,8 +355,7 @@ function StarsTab({ p }: { p: Player }) {
   function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
-      <StarsRadar stars={stars} who="coach" onMinus={minus} />
-      {msgMinus && <p role="status" className="m-0 font-bold text-ok">{msgMinus}</p>}
+      <StarsRadar stars={stars} who="coach" />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
