@@ -96,6 +96,7 @@ export class StarsDayDto {
 }
 
 // Match déclaré par le jeune : des choix proposés, aucun nom d'adversaire
+export const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export const MATCH_KINDS = ["tournoi", "plateau", "equipes", "amical", "entrainement"];
 export const MATCH_OPPONENTS = ["plus-fort", "pareil", "moins-fort"];
 export const MATCH_SKILLS = ["service", "coup-droit", "revers", "retour", "volee", "deplacements", "calme", "tactique", "physique", "combativite", "concentration"];
@@ -109,11 +110,11 @@ export class DeclaredMatchDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(5) feeling: number;
   @IsOptional() @IsArray() @ArrayMaxSize(2) @IsIn(MATCH_SKILLS, { each: true }) wellDone?: string[];
   @IsOptional() @IsIn(MATCH_SKILLS) toImprove?: string;
+  @IsOptional() @IsIn(RANKINGS) opponentRanking?: string; // classement de l'adversaire (facultatif)
 }
 export class MatchCommentDto { @IsString() @MaxLength(300) comment: string; }
 
 // Classements de tennis, du plus bas au plus haut (pour « le classement le plus élevé battu »)
-export const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export class MatchDto {
   @IsDateString() date: string;
   @Transform(trim) @IsString() @MaxLength(120) tournament: string;
