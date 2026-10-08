@@ -90,3 +90,4 @@
 - Bulletin du bilan de départ : le radar « Image du joueur » est en haut, puis le mot du coach, puis les objectifs du trimestre 1.
 - Sur les bulletins, les missions sont regroupées en UNE carte par domaine (technique, tactique, physique, mental) avec dessous ce qu'il y a à travailler (bilan de départ : avec la note du domaine ; trimestre : avec atteinte / en cours / non atteinte et le mot du coach).
 - Thème « galaxie » (jeunes et bulletins) ÉCLAIRCI : fond violet-bleu lumineux (#4338ca avec lueurs claires), en-tête / barre du bas #3730a3, cartes translucides plus claires, texte toujours blanc (contraste conservé).
+- Bandeaux du thème galaxie bien contrastés : en-tête, barre du bas et onglets en indigo profond (#1b1863) avec bordure claire et ombre ; cartes « verre » plus visibles (bordure 2 px).
