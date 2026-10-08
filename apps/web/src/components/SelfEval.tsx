@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
-import { AXES, currentSeason, EVAL_AXES, FEELINGS, fmtDate, Goal, goalApplies, GoalStatus, MOODS, pendingSelfEval, Player, presetLabel, SELF_EVAL_MONTH, SELF_PRESETS, SelfEvaluation, selfEvalIsOpen, selfEvalOpensOn, STATUS } from "../types";
+import { AXES, currentSeason, EVAL_AXES, FEELINGS, fmtDate, Goal, goalApplies, GoalStatus, MOODS, pendingSelfEval, Player, SELF_LEGACY, presetLabel, SELF_EVAL_MONTH, SELF_PRESETS, SelfEvaluation, selfEvalIsOpen, selfEvalOpensOn, STATUS } from "../types";
 
 const GOAL_CHOICES: GoalStatus[] = ["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"];
 const SELF_STATUS: Record<GoalStatus, string> = { ACHIEVED: "✅ J'ai réussi", IN_PROGRESS: "🔄 Je progresse", NOT_ACHIEVED: "💪 Pas encore" };
@@ -13,7 +13,7 @@ export function SelfEvalView({ ev, goals, dark = false }: { ev: SelfEvaluation; 
   const mood = ev.mood ? MOODS[ev.mood - 1] : null;
   const w = (me: string, he: string) => (dark ? me : he); // « mes » pour le jeune, « ses » pour le coach
   const list = (title: string, items: string[], preset: keyof typeof SELF_PRESETS) => items.length > 0 && (
-    <div className={`grid gap-1 rounded-xl p-3 ${box}`}><strong>{title}</strong><ul className="m-0 grid gap-0.5 pl-5">{items.map((id) => <li key={id}>{presetLabel(SELF_PRESETS[preset], id) ?? id}</li>)}</ul></div>
+    <div className={`grid gap-1 rounded-xl p-3 ${box}`}><strong>{title}</strong><ul className="m-0 grid gap-0.5 pl-5">{items.map((id) => <li key={id}>{presetLabel(SELF_PRESETS[preset], id) ?? (preset === "wish" ? presetLabel(SELF_LEGACY, id) : undefined) ?? id}</li>)}</ul></div>
   );
   const mine = goals.filter((g) => ev.goals[g.id]);
   const rated = EVAL_AXES.filter((a) => ev.ratings[a.key]);
@@ -59,7 +59,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
   const [gs, setGs] = useState<Record<string, GoalStatus>>(initial?.goals ?? {});
   const [proud, setProud] = useState<string[]>(initial?.proud ?? []);
   const [improve, setImprove] = useState<string[]>(initial?.improve ?? []);
-  const [wish, setWish] = useState<string[]>(initial?.wish ?? []);
+  const [wish, setWish] = useState<string[]>((initial?.wish ?? []).filter((id) => SELF_PRESETS.wish.some(([k]) => k === id))); // les anciens choix d'un brouillon sont écartés
   const [comment, setComment] = useState(initial?.comment ?? "");
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
   const mine = goals.filter((g) => goalApplies(g, t));
@@ -93,7 +93,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
       </div>
       <div className="grid gap-2">{step(4, "Ce dont je suis fier (3 au maximum)", "Un progrès, un match, un effort, un bon moment : qu'est-ce qui t'a rendu fier ce trimestre ?")}<Chips options={SELF_PRESETS.proud} value={proud} max={3} onChange={setProud} /></div>
       <div className="grid gap-2">{step(5, "Je veux progresser en… (3 au maximum)", "Ce que tu aimerais travailler en priorité au prochain trimestre. Ton coach s'en servira pour choisir tes prochaines missions avec toi.")}<Chips options={SELF_PRESETS.improve} value={improve} max={3} onChange={setImprove} /></div>
-      <div className="grid gap-2">{step(6, "Mon projet : j'aimerais… (3 au maximum)", "Tes envies pour la suite : jouer des matchs, faire un tournoi, t'amuser avec des jeux… Cela aide ton coach à construire ton projet avec toi.")}<Chips options={SELF_PRESETS.wish} value={wish} max={3} onChange={setWish} /></div>
+      <div className="grid gap-2">{step(6, "Mon projet : j'aimerais… (3 au maximum)", "Tes envies pour la suite : monter au classement, gagner un tournoi, jouer plus… Cela aide ton coach à construire ton projet avec toi.")}<Chips options={SELF_PRESETS.wish} value={wish} max={3} onChange={setWish} /></div>
       <div className="grid gap-2">{step(7, "Un petit mot pour mon coach (facultatif)", "Une idée, une question, un merci, ce que tu veux lui dire.")}
         <label htmlFor="se-comment" className="sr-only">Un petit mot pour mon coach</label>
         <textarea id="se-comment" value={comment} maxLength={300} rows={3} onChange={(e) => setComment(e.target.value)} placeholder="Par exemple : merci pour les exercices au filet !" className="w-full rounded-2xl border-2 border-white/40 bg-white p-3 text-ink" />

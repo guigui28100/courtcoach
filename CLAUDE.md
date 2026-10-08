@@ -95,3 +95,4 @@
 - Onglets de la fiche du joueur (coach) : Profil · Accords et famille · Évaluations · Objectifs · Étoiles · Vidéos · Matchs · Bulletins (Évaluations est à gauche d'Objectifs).
 - Le mot du coach est DANS l'encadré « Image du joueur » du bulletin (sous le radar, les points forts et les axes de progrès).
 - Bulletin affiché à l'écran : bandeau du haut en indigo profond (#1b1863) et liseré blanc autour de la feuille, pour qu'elle ne se confonde pas avec le fond (rien de tout cela à l'impression).
+- Auto-évaluation du jeune : « Ce dont je suis fier » propose aussi « Mes résultats en tournois » ; « Mon projet » ne propose plus que : monter au classement, gagner un tournoi, faire plus de tournois, jouer plus de parties amicales le week-end, continuer comme ça, faire plus de physique (les anciens choix restent lisibles dans les bulletins déjà envoyés : `SELF_LEGACY`).
