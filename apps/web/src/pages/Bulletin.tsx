@@ -102,7 +102,7 @@ export default function Bulletin() {
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>
         </div>
 
-        <article className="print-exact overflow-hidden rounded-3xl bg-white text-[#1a2233] shadow-[0_20px_60px_rgba(10,13,44,0.55)] print:rounded-none print:shadow-none" aria-label={`Bulletin de ${p.firstName}`}>
+        <article className="print-exact overflow-hidden rounded-3xl bg-white text-[#1a2233] ring-4 ring-white/60 shadow-[0_20px_60px_rgba(20,16,80,0.6)] print:rounded-none print:shadow-none print:ring-0" aria-label={`Bulletin de ${p.firstName}`}>
           <header className="bulletin-hero grid items-center gap-4 p-6 sm:grid-cols-[1fr_150px] sm:p-8">
             <div className="stars" aria-hidden="true" />
             <div className="relative grid gap-2">
@@ -132,7 +132,7 @@ export default function Bulletin() {
 
 
 
-            {(rated || t === 0) && (
+            {(rated || t === 0 || !!ev?.appreciation?.trim()) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
                 <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
             {rated ? (
@@ -147,14 +147,13 @@ export default function Bulletin() {
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-              </section>
-            )}
-
-            {ev?.appreciation?.trim() && (
+              {ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
+              )}
+              </section>
             )}
 
             {startGoals.length > 0 && (
@@ -171,7 +170,7 @@ export default function Bulletin() {
                 <ul className="m-0 grid list-none gap-3 p-0 grid-cols-2 sm:grid-cols-4 print:grid-cols-4">
                   {tile("🎾", String(st.played), st.played > 1 ? "matchs joués" : "match joué", "#f6f4fb", "#10203a")}
                   {tile("🏆", String(st.wins), st.wins > 1 ? "victoires" : "victoire", "#e8f7ee", "#166534")}
-                  {tile("💪", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
+                  {tile("😕", String(st.losses), st.losses > 1 ? "défaites" : "défaite", "#fdf0ee", "#93371a")}
                   {tile("🎯", st.bestBeaten ?? "—", "classement le plus élevé battu", "#fff8d6", "#6b4e00")}
                 </ul>
                 {ms.length === 0 && <p className="m-0 text-sm text-muted">Aucun match enregistré par le coach sur ce trimestre.</p>}

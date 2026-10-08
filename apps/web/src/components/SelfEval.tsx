@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
-import { AXES, currentSeason, EVAL_AXES, FEELINGS, fmtDate, Goal, goalApplies, GoalStatus, MOODS, pendingSelfEval, Player, presetLabel, SELF_EVAL_MONTH, SELF_PRESETS, SelfEvaluation, selfEvalIsOpen, selfEvalOpensOn, STATUS } from "../types";
+import { AXES, currentSeason, EVAL_AXES, FEELINGS, fmtDate, Goal, goalApplies, GoalStatus, MOODS, pendingSelfEval, Player, SELF_LEGACY, presetLabel, SELF_EVAL_MONTH, SELF_PRESETS, SelfEvaluation, selfEvalIsOpen, selfEvalOpensOn, STATUS } from "../types";
 
 const GOAL_CHOICES: GoalStatus[] = ["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"];
 const SELF_STATUS: Record<GoalStatus, string> = { ACHIEVED: "✅ J'ai réussi", IN_PROGRESS: "🔄 Je progresse", NOT_ACHIEVED: "💪 Pas encore" };
@@ -13,7 +13,7 @@ export function SelfEvalView({ ev, goals, dark = false }: { ev: SelfEvaluation; 
   const mood = ev.mood ? MOODS[ev.mood - 1] : null;
   const w = (me: string, he: string) => (dark ? me : he); // « mes » pour le jeune, « ses » pour le coach
   const list = (title: string, items: string[], preset: keyof typeof SELF_PRESETS) => items.length > 0 && (
-    <div className={`grid gap-1 rounded-xl p-3 ${box}`}><strong>{title}</strong><ul className="m-0 grid gap-0.5 pl-5">{items.map((id) => <li key={id}>{presetLabel(SELF_PRESETS[preset], id) ?? id}</li>)}</ul></div>
+    <div className={`grid gap-1 rounded-xl p-3 ${box}`}><strong>{title}</strong><ul className="m-0 grid gap-0.5 pl-5">{items.map((id) => <li key={id}>{presetLabel(SELF_PRESETS[preset], id) ?? (preset === "wish" ? presetLabel(SELF_LEGACY, id) : undefined) ?? id}</li>)}</ul></div>
   );
   const mine = goals.filter((g) => ev.goals[g.id]);
   const rated = EVAL_AXES.filter((a) => ev.ratings[a.key]);
@@ -59,7 +59,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
   const [gs, setGs] = useState<Record<string, GoalStatus>>(initial?.goals ?? {});
   const [proud, setProud] = useState<string[]>(initial?.proud ?? []);
   const [improve, setImprove] = useState<string[]>(initial?.improve ?? []);
-  const [wish, setWish] = useState<string[]>(initial?.wish ?? []);
+  const [wish, setWish] = useState<string[]>((initial?.wish ?? []).filter((id) => SELF_PRESETS.wish.some(([k]) => k === id))); // les anciens choix d'un brouillon sont écartés
   const [comment, setComment] = useState(initial?.comment ?? "");
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
   const mine = goals.filter((g) => goalApplies(g, t));
@@ -93,7 +93,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
       </div>
       <div className="grid gap-2">{step(4, "Ce dont je suis fier (3 au maximum)", "Un progrès, un match, un effort, un bon moment : qu'est-ce qui t'a rendu fier ce trimestre ?")}<Chips options={SELF_PRESETS.proud} value={proud} max={3} onChange={setProud} /></div>
       <div className="grid gap-2">{step(5, "Je veux progresser en… (3 au maximum)", "Ce que tu aimerais travailler en priorité au prochain trimestre. Ton coach s'en servira pour choisir tes prochaines missions avec toi.")}<Chips options={SELF_PRESETS.improve} value={improve} max={3} onChange={setImprove} /></div>
-      <div className="grid gap-2">{step(6, "Mon projet : j'aimerais… (3 au maximum)", "Tes envies pour la suite : jouer des matchs, faire un tournoi, t'amuser avec des jeux… Cela aide ton coach à construire ton projet avec toi.")}<Chips options={SELF_PRESETS.wish} value={wish} max={3} onChange={setWish} /></div>
+      <div className="grid gap-2">{step(6, "Mon projet : j'aimerais… (3 au maximum)", "Tes envies pour la suite : monter au classement, gagner un tournoi, jouer plus… Cela aide ton coach à construire ton projet avec toi.")}<Chips options={SELF_PRESETS.wish} value={wish} max={3} onChange={setWish} /></div>
       <div className="grid gap-2">{step(7, "Un petit mot pour mon coach (facultatif)", "Une idée, une question, un merci, ce que tu veux lui dire.")}
         <label htmlFor="se-comment" className="sr-only">Un petit mot pour mon coach</label>
         <textarea id="se-comment" value={comment} maxLength={300} rows={3} onChange={(e) => setComment(e.target.value)} placeholder="Par exemple : merci pour les exercices au filet !" className="w-full rounded-2xl border-2 border-white/40 bg-white p-3 text-ink" />
@@ -122,8 +122,9 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
   const cur = t === null ? undefined : list?.find((e) => e.season === season && e.trimester === t);
   const opens = t === null ? null : selfEvalOpensOn(season, t);
   return (
-    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mon-bulletin">
-      <h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2>
+    <details className="glass gal-pop group" aria-labelledby="gal-mon-bulletin">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2><span className="shrink-0 whitespace-nowrap rounded-full bg-[#dcf247] px-3 py-1 text-sm font-bold text-ink"><span className="group-open:hidden">Ouvrir ▾</span><span className="hidden group-open:inline">Fermer ▴</span></span></summary>
+      <div className="mt-4 grid gap-4">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Choisir le trimestre">
         {[1, 2, 3].map((n) => { const e = list?.find((x) => x.season === season && x.trimester === n); return (
           <button key={n} type="button" role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"min-h-11 rounded-full border-2 px-4 font-bold " + (t === n ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white")}>Trimestre {n} · {SELF_EVAL_MONTH[n]}{e?.sentAt ? " ✅" : lockedAt(n) ? " 🔒" : e ? " ✏️" : ""}</button>
@@ -140,7 +141,8 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
           <Form key={`${season}-${t}`} preview={preview} locked={lockedAt(t)} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={() => { load(); onSaved?.(); }} />
         </>
       )}
-    </section>
+      </div>
+    </details>
   );
 }
 

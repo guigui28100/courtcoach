@@ -36,6 +36,9 @@ describe("Matchs déclarés par le jeune", () => {
     const r = await A.jeune.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(match()).expect(201);
     mid = r.body.id; expect(r.body).toMatchObject({ result: "Victoire", opponent: "pareil", feeling: 4, wellDone: ["service", "calme"], toImprove: "revers", editable: true });
     expect((await A.jeune.get(`/api/players/${p1}/declared-matches`).expect(200)).body).toHaveLength(1);
+    // classement de l'adversaire (facultatif) : enregistré, relu, et effaçable
+    const rk = await A.jeune.put(`/api/players/${p1}/declared-matches/${mid}`).set(ORIGIN).send(match({ opponentRanking: "15/2" })).expect(200); expect(rk.body.opponentRanking).toBe("15/2");
+    expect((await A.jeune.put(`/api/players/${p1}/declared-matches/${mid}`).set(ORIGIN).send(match()).expect(200)).body.opponentRanking).toBeNull();
     expect((await A.coach.get(`/api/players/${p1}/declared-matches`).expect(200)).body).toHaveLength(1);
   });
 
@@ -43,6 +46,7 @@ describe("Matchs déclarés par le jeune", () => {
     const post = (b: object) => A.jeune.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(b);
     await post(match({ kind: "bagarre" })).expect(400);
     await post(match({ opponent: "Paul Martin" })).expect(400); // jamais de nom d'adversaire
+    await post(match({ opponentRanking: "Paul Martin" })).expect(400); // le classement vient d'une liste, jamais d'un texte libre
     await post(match({ feeling: 6 })).expect(400);
     await post(match({ wellDone: ["service", "revers", "calme"] })).expect(400);
     await post(match({ wellDone: ["<script>"] })).expect(400);

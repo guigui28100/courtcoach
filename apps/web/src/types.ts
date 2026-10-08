@@ -114,11 +114,13 @@ export interface SelfEvaluation { id: string; playerId: string; season: string; 
 export const MOODS = [["😟", "Très dur"], ["😕", "Pas terrible"], ["🙂", "Plutôt bien"], ["😀", "Très bien"], ["🤩", "Génial"]] as const;
 export type Preset = [id: string, label: string];
 export const SELF_PRESETS: { proud: Preset[]; improve: Preset[]; wish: Preset[] } = {
-  proud: [["service", "Mon service est plus régulier"], ["coup-droit", "Mon coup droit progresse"], ["revers", "Mon revers progresse"], ["filet", "Je suis plus à l'aise au filet"], ["deplacements", "Je me déplace mieux"], ["match", "J'ai bien joué en match"], ["calme", "Je reste calme quand c'est difficile"], ["assidu", "Je suis venu à presque tous les entraînements"], ["equipe", "J'aide mes partenaires"], ["physique", "Je tiens mieux physiquement"]],
+  proud: [["service", "Mon service est plus régulier"], ["coup-droit", "Mon coup droit progresse"], ["revers", "Mon revers progresse"], ["filet", "Je suis plus à l'aise au filet"], ["deplacements", "Je me déplace mieux"], ["match", "J'ai bien joué en match"], ["calme", "Je reste calme quand c'est difficile"], ["assidu", "Je suis venu à presque tous les entraînements"], ["equipe", "J'aide mes partenaires"], ["physique", "Je tiens mieux physiquement"], ["resultats-tournois", "Mes résultats en tournois"]],
   improve: [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["deplacements", "Mes déplacements"], ["tactique", "Mes choix pendant le match"], ["calme", "Rester calme quand je rate"], ["concentration", "Ma concentration"], ["endurance", "Mon endurance"], ["confiance", "Ma confiance en moi"]],
-  wish: [["match", "Jouer plus de matchs"], ["tournoi", "Faire un tournoi"], ["defis", "Faire plus de petits défis"], ["jeux", "Plus de jeux pour s'amuser"], ["video", "Que le coach regarde mes vidéos"], ["physique", "Un peu plus de physique"], ["service", "Travailler encore mon service"], ["copains", "Jouer avec des copains"], ["continuer", "Continuer comme ça"]],
+  wish: [["classement", "Monter au classement"], ["gagner-tournoi", "Gagner un tournoi"], ["plus-tournois", "Faire plus de tournois"], ["amicaux-weekend", "Jouer plus de parties amicales le week-end"], ["continuer", "Continuer comme ça"], ["plus-physique", "Faire plus de physique"]],
 };
 export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂", "Ça va"], ["😀", "Bien"], ["🤩", "Super"]] as const;
+// Anciens choix de « Mon projet » : ils restent lisibles dans les bulletins déjà envoyés
+export const SELF_LEGACY: Preset[] = [["match", "Jouer plus de matchs"], ["tournoi", "Faire un tournoi"], ["defis", "Faire plus de petits défis"], ["jeux", "Plus de jeux pour s'amuser"], ["video", "Que le coach regarde mes vidéos"], ["physique", "Un peu plus de physique"], ["service", "Travailler encore mon service"], ["copains", "Jouer avec des copains"]];
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
 // ----- Étoiles de fin de cours (données par le coach : en plus pour dire bravo, en moins pour dire « pas en progrès », toujours avec un commentaire pour les retraits) -----
@@ -170,10 +172,12 @@ export const todayIso = () => new Date().toISOString().slice(0, 10);
 export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
 // ----- Matchs déclarés par le jeune (choix proposés, jamais de nom d'adversaire) -----
-export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; coachComment: string; editable: boolean; editableUntil: string; }
-export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["amical", "🤝 Match amical"], ["entrainement", "🏋️ Match d'entraînement"]];
+export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; coachComment: string; editable: boolean; editableUntil: string; }
+export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["entrainement", "🏋️ Match d'entraînement"]];
 export const MATCH_OPPONENTS: [string, string][] = [["plus-fort", "💪 Plus fort que moi"], ["pareil", "⚖️ Du même niveau"], ["moins-fort", "🌱 Moins fort que moi"]];
 export const MATCH_SKILLS: [string, string][] = [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["volee", "Mon jeu au filet"], ["deplacements", "Mes déplacements"], ["calme", "Mon calme"], ["tactique", "Mes choix tactiques"], ["physique", "Mon physique"], ["combativite", "Ma combativité"], ["concentration", "Ma concentration"]];
+// Ancien type de match, plus proposé mais toujours lisible sur les matchs déjà notés
+export const MATCH_KINDS_ALL: [string, string][] = [...MATCH_KINDS, ["amical", "🤝 Match amical"]];
 export const matchLabel = (list: [string, string][], id: string | null) => list.find(([k]) => k === id)?.[1] ?? id ?? "";
 
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »

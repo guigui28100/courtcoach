@@ -159,7 +159,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
           <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
             {matches.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-2xl bg-white/10 p-3">
-                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "💪 Défaite"}</span></span>
+                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
                 <span className="text-sm text-white/80">{fmtDate(m.date)}{m.score && ` · ${m.score}`}</span>
                 {m.remark && <span className="text-sm text-white/80">{m.remark}</span>}
               </li>
@@ -180,19 +180,19 @@ function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: 
         <h2 id="gal-bulletins" className="m-0 text-2xl">📄 Mes bulletins</h2>
         <p className="m-0 text-lg text-white/90">Ici, tu retrouves <strong>2 choses</strong> :</p>
         <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
-          <li className="grid gap-1 rounded-2xl border-2 border-[#dcf247] bg-white/10 p-4"><strong className="text-xl">✍️ Mon bulletin à moi</strong><span>Trois fois dans l'année, <strong>c'est toi qui remplis ton propre bulletin</strong> : avec des boutons à toucher, tu dis comment s'est passé ton trimestre.</span></li>
           <li className="grid gap-1 rounded-2xl border border-white/25 bg-white/10 p-4"><strong className="text-xl">📄 Les bulletins de mon coach</strong><span>Son bilan de début d'année et son bulletin de chaque trimestre. Tu peux les relire quand tu veux.</span></li>
+          <li className="grid gap-1 rounded-2xl border-2 border-[#dcf247] bg-white/10 p-4"><strong className="text-xl">✍️ Mon bulletin à moi</strong><span>Trois fois dans l'année, <strong>c'est toi qui remplis ton propre bulletin</strong> : avec des boutons à toucher, tu dis comment s'est passé ton trimestre.</span></li>
         </ul>
         <p className="m-0 rounded-xl bg-white/10 p-3"><strong>💡 Pourquoi remplir mon bulletin ?</strong> Pour réfléchir à mon jeu : ce dont je suis fier, ce que je veux améliorer, ce que j'aimerais faire. Ton coach le lit et ça l'aide à mieux t'aider. <strong>Il n'y a pas de mauvaise réponse</strong>, et ça ne change pas ta note. Compte 10 minutes ; tu peux enregistrer un brouillon et finir plus tard.</p>
         {!preview && (pending !== null
-          ? <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend juste en dessous !</p>
+          ? <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend en bas : clique sur « ✍️ Mon bulletin à remplir » pour l'ouvrir !</p>
           : <p className="m-0 text-white/85">🗓️ Ton bulletin s'ouvre le <strong>1er décembre</strong> (trimestre 1), le <strong>1er mars</strong> (trimestre 2) et le <strong>1er juin</strong> (trimestre 3).</p>)}
       </section>
-      <SelfEvalSection p={p} goals={goals} preview={preview} onSaved={onSaved} />
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins-coach">
         <h2 id="gal-bulletins-coach" className="m-0 text-2xl">📄 Les bulletins de mon coach</h2>
         {!evals ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : <BulletinShelf evals={evals} goals={goals} base={base} dark selfEvals={preview ? [] : selfEvals} onSelf={preview ? undefined : () => undefined} />}
       </section>
+      <SelfEvalSection p={p} goals={goals} preview={preview} onSaved={onSaved} />
     </>
   );
 }

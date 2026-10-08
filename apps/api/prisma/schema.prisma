@@ -244,6 +244,7 @@ model DeclaredMatch {
   result     String   // Victoire | Défaite
   score      String   @default("")
   opponent   String   // plus-fort, pareil, moins-fort
+  opponentRanking String? // classement de l'adversaire déclaré par le jeune (facultatif, liste des classements ; jamais de nom)
   feeling    Int      // 1 à 5
   wellDone   String[] // jusqu'à 2 points forts (identifiants proposés)
   toImprove  String?  // 1 point à améliorer (identifiant proposé)
