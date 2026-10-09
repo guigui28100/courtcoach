@@ -2,11 +2,11 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { activeLines, starItems, StarLine, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { inPeriod, DOMAIN_EMOJI, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -371,7 +371,7 @@ function StarsTab({ p }: { p: Player }) {
           <ul className="m-0 grid list-none gap-2 p-0">{days.map((d) => { const list = stars.filter((s) => s.day === d); return (
             <li key={d} className="grid gap-1 rounded-xl border border-line px-3 py-2">
               <span className="flex flex-wrap items-center justify-between gap-2"><strong>{fmtDay(d)}</strong><span className="flex gap-2"><button className="btn-outline btn-sm" onClick={() => edit(d)}>Corriger</button><button className="btn-danger btn-sm" onClick={async () => { if (confirm("Retirer toutes les étoiles de ce cours ?")) { await del(`/players/${p.id}/stars/${d}`); setVersion((v) => v + 1); } }}>Retirer</button></span></span>
-              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-2"><button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button><span><StarsLine n={s.stars} /> {starReason(s.reason)?.emoji} {starReason(s.reason)?.label}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${s.domain}` : ""}{s.comment ? <small className="hint block">{s.comment}</small> : null} <AuthorBadge a={s} /></span></span>)}
+              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1"><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? s.domain}` : "—"}</strong><span className="text-muted">{starReason(s.reason)?.emoji} {starReason(s.reason)?.label}</span>{s.comment ? <small className="hint">· {s.comment}</small> : null} <AuthorBadge a={s} /><button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button></span>)}
             </li>
           ); })}</ul>
         )}

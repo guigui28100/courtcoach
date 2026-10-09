@@ -205,6 +205,8 @@ export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: S
   );
 }
 
+// Nombre d'étoiles en chiffres (+2, 0, −1…), pour les listes : date d'abord, puis ce nombre, puis le domaine
+export const StarCount = ({ n }: { n: number }) => <b className={"inline-block min-w-14 whitespace-nowrap rounded-full px-2.5 py-0.5 text-center " + (n < 0 ? "bg-[#fde8e6] text-[#b3261e]" : "bg-[#fff3b0] text-[#6b4e00]")} aria-label={n < 0 ? `${-n} étoile${n < -1 ? "s" : ""} en moins` : `${n} étoile${n > 1 ? "s" : ""}`}>{n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0"} ⭐</b>;
 export const StarsLine = ({ n }: { n: number }) => n < 0 ? <span className="font-black text-[#b3261e]" aria-label={`${-n} étoile${n < -1 ? "s" : ""} en moins`}>📉 −{-n} ⭐</span> : <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
 
 // Carte « Mes étoiles » (lecture seule) pour le jeune (fond sombre) et pour sa famille
@@ -224,7 +226,7 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
           <ul className="m-0 grid list-none gap-2 p-0">
             {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); const neg = s.stars < 0; return (
               <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row + (neg ? " border-l-4 border-[#ff8a80]" : "")}>
-                <span className="flex flex-wrap items-center justify-between gap-2"><strong><StarsLine n={s.stars} /> {r ? `${r.emoji} ${r.label}` : ""}{s.domain ? ` · ${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : ""}</strong><small className={sub}>{fmtDay(s.day)}</small></span>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><strong className="min-w-28">{fmtDay(s.day)}</strong><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : "—"}</strong>{r && <span className={sub}>{r.emoji} {r.label}</span>}</span>
                 {neg && <small className={sub}>Pas en progrès cette fois : ce n'est pas grave, c'est pour t'aider à progresser.</small>}
                 {s.comment && <span className="text-sm">💬 {s.comment}</span>}
               </li>
