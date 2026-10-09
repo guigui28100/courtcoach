@@ -208,7 +208,7 @@ function Todo({ icon, title, text, onClick, hot = false, children }: { icon: str
   );
 }
 
-function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; stars: CourseStar[]; go: (t: Tab) => void }) {
+function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go, base }: { base: string; p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; stars: CourseStar[]; go: (t: Tab) => void }) {
   const { evals } = useFollowUp(p.id);
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
@@ -229,6 +229,7 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p:
         {fresh + sent === 0 && <Todo icon="🎬" title="Mes vidéos" text="Envoie tes vidéos à ton coach. Il peut aussi t'en envoyer." onClick={() => go("videos")} />}
         {word && <Todo icon="💬" title="Le mot de ton coach" text={`« ${word.length > 120 ? word.slice(0, 117) + "…" : word} »`} onClick={() => go("progres")} />}
       </section>
+      <StartBilan p={p} base={base} />
     </>
   );
 }
@@ -295,8 +296,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
-              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
-              {tab === "missions" && <><StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
+              {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
