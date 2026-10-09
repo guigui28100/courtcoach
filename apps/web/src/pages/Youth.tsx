@@ -116,20 +116,22 @@ function MissionProgress({ goals, stars, playerId, preview }: { goals: Goal[]; s
   const here = (["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
   const root = useRef<HTMLElement>(null);
   const rows = useRef<Record<string, HTMLLIElement | null>>({});
-  const started = useRef(false);
+  const ran = useRef(-1); // dernier « lancement » de l'animation (0 = à l'ouverture, puis +1 à chaque « Revoir »)
+  const [replay, setReplay] = useState(0);
   const [pending, setPending] = useState<Record<string, number>>({}); // étoiles qui n'ont pas encore atterri, par mission
   const [drops, setDrops] = useState<{ key: string; goalId: string; x: number; dy: number; delay: number }[]>([]);
   const [flash, setFlash] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    if (started.current || !stars || !here.length) return;
-    started.current = true;
+    if (!stars || !here.length || ran.current === replay) return;
+    ran.current = replay;
     const storeKey = `cc-stars-seen-${playerId}`;
     let seen = new Set<string>(); try { seen = new Set(JSON.parse(localStorage.getItem(storeKey) || "[]")); } catch { /* stockage indisponible : on anime tout */ }
     if (!preview) { try { localStorage.setItem(storeKey, JSON.stringify(stars.slice(0, 400).map(starSig))); } catch { /* ignoré */ } }
     const reduced = typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (preview || reduced || !root.current) return;
-    const fresh = stars.filter((s) => s.goalId && s.stars > 0 && here.some((g) => g.id === s.goalId) && !seen.has(starSig(s))).reverse(); // les plus anciennes d'abord
+    if (reduced || !root.current) return;
+    // aperçu du coach : rien n'est mémorisé, toutes les étoiles sur missions retombent à chaque ouverture (ou à chaque « Revoir »)
+    const fresh = stars.filter((s) => s.goalId && s.stars > 0 && here.some((g) => g.id === s.goalId) && (preview || !seen.has(starSig(s)))).reverse(); // les plus anciennes d'abord
     if (!fresh.length) return;
     const base = root.current.getBoundingClientRect();
     const pend: Record<string, number> = {}; const list: typeof drops = [];
@@ -143,9 +145,10 @@ function MissionProgress({ goals, stars, playerId, preview }: { goals: Goal[]; s
     if (!list.length) return;
     // une étoile qui tombe vaut ce qu'elle a rapporté : on retire du total affiché ce qui va « tomber »
     const worth: Record<string, number> = {}; for (const s of fresh) if (s.goalId) worth[s.goalId] = (worth[s.goalId] ?? 0) + s.stars;
+    setFlash(null);
     setPending(Object.fromEntries(Object.keys(pend).map((k) => [k, Math.min(pend[k], worth[k])])));
     setDrops(list);
-  }, [stars, here.length, playerId, preview]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stars, here.length, playerId, preview, replay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function landed(goalId: string, key: string) {
     setDrops((d) => d.filter((x) => x.key !== key));
@@ -157,6 +160,7 @@ function MissionProgress({ goals, stars, playerId, preview }: { goals: Goal[]; s
     <section ref={root} className="glass gal-pop relative grid gap-4" aria-labelledby="gal-mp">
       <h2 id="gal-mp" className="m-0 text-2xl">🚀 Mes missions, une par une</h2>
       <p className="m-0 text-white/85">Chaque étoile que ton coach te donne sur une mission la fait avancer. <span className="whitespace-nowrap">🔴 → 🟠 → 🟡 → 🟢</span> : plus la couleur devient verte, plus tu es proche d'avoir réussi !</p>
+      {preview && here.length > 0 && <div><button type="button" className="gal-btn btn-sm" onClick={() => { setDrops([]); setPending({}); setReplay((n) => n + 1); }}>🔁 Revoir l'animation des étoiles (aperçu du coach)</button></div>}
       {here.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Ton coach va bientôt te donner tes missions du trimestre.</p> : (
         <ol className="m-0 grid list-none gap-3 p-0">
           {here.map((g) => {
