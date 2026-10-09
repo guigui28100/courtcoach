@@ -102,11 +102,50 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
 }
 
 // Onglet « Progrès » : le point de départ (fixe) à côté du radar des étoiles (qui grandit à chaque cours), puis le détail des étoiles
-function ProgressTab({ p, stars }: { p: Player; stars: CourseStar[] | null }) {
+// Couleur d'une mission selon ses étoiles : rouge vif → orange → jaune → vert foncé → vert clair (mission terminée)
+const BANDS = [
+  { max: 20, color: "#ff2d2d", word: "On démarre !" },
+  { max: 40, color: "#ff8a1f", word: "Ça avance" },
+  { max: 60, color: "#ffd21f", word: "À mi-chemin" },
+  { max: 80, color: "#1f8f3f", word: "Presque !" },
+  { max: 101, color: "#8bf06b", word: "Tu y es presque !" },
+];
+const bandOf = (pct: number) => BANDS.find((b) => pct < b.max) ?? BANDS[BANDS.length - 1];
+
+// Onglet « Progrès » : chaque mission du trimestre, une par une, qui change de couleur à mesure que les étoiles arrivent
+function MissionProgress({ goals, stars }: { goals: Goal[]; stars: CourseStar[] | null }) {
+  const t = trimesterOf();
+  const here = (["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
+  return (
+    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mp">
+      <h2 id="gal-mp" className="m-0 text-2xl">🚀 Mes missions, une par une</h2>
+      <p className="m-0 text-white/85">Chaque étoile que ton coach te donne sur une mission la fait avancer. <span className="whitespace-nowrap">🔴 → 🟠 → 🟡 → 🟢</span> : plus la couleur devient verte, plus tu es proche d'avoir réussi !</p>
+      {here.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Ton coach va bientôt te donner tes missions du trimestre.</p> : (
+        <ol className="m-0 grid list-none gap-3 p-0">
+          {here.map((g) => {
+            const m = MISSION[g.axis], earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10, pct = missionPercent(earned, target), band = bandOf(pct);
+            return (
+              <li key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-4">
+                <span className="flex flex-wrap items-center justify-between gap-2"><strong className="text-lg leading-snug">{m.emoji} {g.title}</strong><span className="text-sm font-bold">⭐ {earned} sur {target}</span></span>
+                <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="h-5 overflow-hidden rounded-full bg-black/25">
+                  <div className="h-full rounded-full transition-[width,background-color] duration-700" style={{ width: `${Math.max(pct, 4)}%`, background: band.color }} />
+                </div>
+                <small className="font-bold text-white">{pct >= 100 ? "Bravo, tu as toutes les étoiles !" : band.word}</small>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+// Onglet « Progrès » : les missions une à une, puis le point de départ (fixe) à côté du radar des étoiles, puis le détail des étoiles
+function ProgressTab({ p, stars, goals }: { p: Player; stars: CourseStar[] | null; goals: Goal[] }) {
   const { evals } = useFollowUp(p.id);
   const bilan = evals?.find((e) => e.season === currentSeason() && e.trimester === 0 && ratedCount(e) > 0);
   const start = bilan ? Object.fromEntries(EVAL_AXES.map((a) => [a.key, axisAverage(bilan, a)])) : undefined;
-  return <><StarsRadar stars={stars} dark start={start} /><StarsCard stars={stars} dark /></>;
+  return <><MissionProgress goals={goals} stars={stars} /><StarsRadar stars={stars} dark start={start} /><StarsCard stars={stars} dark /></>;
 }
 
 // Onglet « Matchs » : ceux que le jeune déclare + ceux que son coach a enregistrés
@@ -292,7 +331,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
               {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
-              {tab === "progres" && <ProgressTab p={p} stars={stars} />}
+              {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "compte" && !previewId && (
