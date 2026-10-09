@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, GoalTemplateDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
@@ -36,11 +36,6 @@ export class PlayersController {
 
   @Post("players/:id/access/:userId/reset-password") @HttpCode(200) resetPassword(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("userId") uid: string) { return this.svc.resetPassword(u, id, uid); }
 
-  // Bibliothèque d'objectifs « modèles » : lue par le coach et les entraîneurs, gérée par le coach seul
-  @Roles(Role.COACH, Role.TRAINER) @Get("goal-templates") templates() { return this.svc.templates(); }
-  @Roles(Role.COACH) @Post("goal-templates") addTemplate(@CurrentUser() u: AuthUser, @Body() dto: GoalTemplateDto) { return this.svc.addTemplate(u, dto); }
-  @Roles(Role.COACH) @Patch("goal-templates/:tid") updateTemplate(@Param("tid") tid: string, @Body() dto: GoalTemplateDto) { return this.svc.updateTemplate(tid, dto); }
-  @Roles(Role.COACH) @Delete("goal-templates/:tid") @HttpCode(204) removeTemplate(@Param("tid") tid: string) { return this.svc.removeTemplate(tid); }
   @Get("players/:id/goals") goals(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("season") season?: string) { return this.svc.goals(u, id, season); }
   @Post("players/:id/goals") addGoal(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: GoalDto) { return this.svc.addGoal(u, id, dto); }
   @Patch("goals/:goalId") updateGoal(@CurrentUser() u: AuthUser, @Param("goalId") gid: string, @Body() dto: UpdateGoalDto) { return this.svc.updateGoal(u, gid, dto); }
