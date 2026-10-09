@@ -4,6 +4,7 @@ import { Err } from "./ui";
 import { useVideos } from "./Videos";
 import { VideoDetail } from "../types";
 import { PoseOverlay } from "./PoseOverlay";
+import { AudioRecorder } from "./AudioNote";
 import { createLandmarker, defaultSkeleton, drawSkeleton, JOINT_LABEL, Joint, measures, nearestJoint, Skeleton, toSkeleton } from "./skeleton";
 
 type Pt = [number, number];
@@ -471,6 +472,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           </ul>
         )}
       </section>
+      <AudioRecorder v={v} onChanged={onChanged} />
     </div>
   );
 }

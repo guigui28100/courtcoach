@@ -189,6 +189,35 @@ describe("Vidéos et analyses", () => {
     for (const who of ["adultA", "adultB", "par2"]) await A[who].get(`/api/videos/${playerVideo}/images/${r.body.id}`).expect(404);
   });
 
+  it("commentaire audio : seul le coach l'ajoute ; la personne concernée l'entend une fois l'analyse envoyée ; cloisonné", async () => {
+    const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(3000, 5)]);
+    const put = (who: any, id: string, body: Buffer, seconds = 12) => who.put(`/api/videos/${id}/audio`).query({ seconds }).set(ORIGIN).set("Content-Type", "application/octet-stream").send(body);
+    const draft = await upload(A.adultB, {}, fakeMp4(5000)); const vid = (draft as any).vid as string;
+    await put(A.adultB, vid, webm).expect(403); await put(A.par1, vid, webm).expect(403);
+    await put(A.coach, vid, Buffer.alloc(500, 1)).expect(400); // pas un audio
+    await put(A.coach, vid, Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(2.1 * 1024 * 1024)])).expect(413); // trop lourd
+    await put(A.coach, vid, webm).expect(200);
+    expect((await A.coach.get(`/api/videos/${vid}`).expect(200)).body.audio).toEqual({ seconds: 12 });
+    // brouillon : invisible pour l'adhérent
+    await A.adultB.get(`/api/videos/${vid}/audio`).expect(404);
+    expect((await A.adultB.get(`/api/videos/${vid}`).expect(200)).body.audio).toBeNull();
+    await A.coach.put(`/api/videos/${vid}/analysis`).set(ORIGIN).send({ observation: "Écoute mon audio" }).expect(200);
+    await A.coach.post(`/api/videos/${vid}/analysis/send`).set(ORIGIN).expect(204);
+    const r = await A.adultB.get(`/api/videos/${vid}/audio`).expect(200);
+    expect(r.headers["content-type"]).toBe("audio/webm"); expect(r.headers["cache-control"]).toMatch(/no-store/); expect(r.body.length).toBe(webm.length);
+    const part = await A.adultB.get(`/api/videos/${vid}/audio`).set("Range", "bytes=0-9").expect(206); expect(part.headers["content-range"]).toBe(`bytes 0-9/${webm.length}`);
+    expect((await A.adultB.get(`/api/videos/${vid}`).expect(200)).body.audio).toEqual({ seconds: 12 });
+    for (const who of ["adultA", "par1", "par2"]) await A[who].get(`/api/videos/${vid}/audio`).expect(404);
+    await A.adultB.delete(`/api/videos/${vid}/audio`).set(ORIGIN).expect(403);
+    await put(A.coach, vid, webm, 20).expect(200); // remplace : un seul audio par vidéo
+    expect(await prisma.videoAudio.count({ where: { videoId: vid } })).toBe(1);
+    await A.coach.delete(`/api/videos/${vid}/audio`).set(ORIGIN).expect(204);
+    await A.coach.get(`/api/videos/${vid}/audio`).expect(404);
+    await put(A.coach, vid, webm).expect(200);
+    await A.adultB.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204); // l'audio part avec la vidéo
+    expect(await prisma.videoAudio.count({ where: { videoId: vid } })).toBe(0);
+  });
+
   it("envoyer une analyse vide est refusé", async () => {
     const r = await upload(A.adultB, {}, fakeMp4(5000)); expect(r.status).toBe(201);
     await A.coach.post(`/api/videos/${(r as any).vid}/analysis/send`).set(ORIGIN).expect(400);
