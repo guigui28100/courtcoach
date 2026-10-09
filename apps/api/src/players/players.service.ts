@@ -254,8 +254,10 @@ export class PlayersService {
   async updateGoal(user: AuthUser, goalId: string, dto: UpdateGoalDto) {
     await this.goalOwner(user, goalId);
     const { deadline, trimesters, ...rest } = dto;
+    // On ne masque (à partir d'un trimestre) qu'une mission VALIDÉE (atteinte) à un trimestre plus tôt
+    if (dto.hiddenFrom && !(await this.prisma.goalCheckpoint.findFirst({ where: { goalId, status: GoalStatus.ACHIEVED, trimester: { lt: dto.hiddenFrom } } }))) throw new BadRequestException("Seule une mission atteinte peut être masquée pour la suite.");
     const who = await this.who(user);
-    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...who, ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
+    const g = await this.prisma.goal.update({ where: { id: goalId }, data: { ...(Object.keys(dto).every((k) => k === "hiddenFrom") ? {} : who), ...rest, ...(deadline ? { deadline: new Date(deadline) } : {}), ...(trimesters ? { trimesters: this.trimesters(trimesters) } : {}) } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
     await this.touch(g.playerId);
     return g;
   }

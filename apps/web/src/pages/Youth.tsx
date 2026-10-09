@@ -102,11 +102,50 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
 }
 
 // Onglet « Progrès » : le point de départ (fixe) à côté du radar des étoiles (qui grandit à chaque cours), puis le détail des étoiles
-function ProgressTab({ p, stars }: { p: Player; stars: CourseStar[] | null }) {
+// Couleur d'une mission selon ses étoiles : rouge vif → orange → jaune → vert foncé → vert clair (mission terminée)
+const BANDS = [
+  { max: 20, color: "#ff2d2d", word: "On démarre !" },
+  { max: 40, color: "#ff8a1f", word: "Ça avance" },
+  { max: 60, color: "#ffd21f", word: "À mi-chemin" },
+  { max: 80, color: "#1f8f3f", word: "Presque !" },
+  { max: 101, color: "#8bf06b", word: "Tu y es presque !" },
+];
+const bandOf = (pct: number) => BANDS.find((b) => pct < b.max) ?? BANDS[BANDS.length - 1];
+
+// Onglet « Progrès » : chaque mission du trimestre, une par une, qui change de couleur à mesure que les étoiles arrivent
+function MissionProgress({ goals, stars }: { goals: Goal[]; stars: CourseStar[] | null }) {
+  const t = trimesterOf();
+  const here = (["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
+  return (
+    <section className="glass gal-pop grid gap-4" aria-labelledby="gal-mp">
+      <h2 id="gal-mp" className="m-0 text-2xl">🚀 Mes missions, une par une</h2>
+      <p className="m-0 text-white/85">Chaque étoile que ton coach te donne sur une mission la fait avancer. <span className="whitespace-nowrap">🔴 → 🟠 → 🟡 → 🟢</span> : plus la couleur devient verte, plus tu es proche d'avoir réussi !</p>
+      {here.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Ton coach va bientôt te donner tes missions du trimestre.</p> : (
+        <ol className="m-0 grid list-none gap-3 p-0">
+          {here.map((g) => {
+            const m = MISSION[g.axis], earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10, pct = missionPercent(earned, target), band = bandOf(pct);
+            return (
+              <li key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-4">
+                <span className="flex flex-wrap items-center justify-between gap-2"><strong className="text-lg leading-snug">{m.emoji} {g.title}</strong><span className="text-sm font-bold">⭐ {earned} sur {target}</span></span>
+                <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="h-5 overflow-hidden rounded-full bg-black/25">
+                  <div className="h-full rounded-full transition-[width,background-color] duration-700" style={{ width: `${Math.max(pct, 4)}%`, background: band.color }} />
+                </div>
+                <small className="font-bold text-white">{pct >= 100 ? "Bravo, tu as toutes les étoiles !" : band.word}</small>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+// Onglet « Progrès » : les missions une à une, puis le point de départ (fixe) à côté du radar des étoiles, puis le détail des étoiles
+function ProgressTab({ p, stars, goals }: { p: Player; stars: CourseStar[] | null; goals: Goal[] }) {
   const { evals } = useFollowUp(p.id);
   const bilan = evals?.find((e) => e.season === currentSeason() && e.trimester === 0 && ratedCount(e) > 0);
   const start = bilan ? Object.fromEntries(EVAL_AXES.map((a) => [a.key, axisAverage(bilan, a)])) : undefined;
-  return <><StarsRadar stars={stars} dark start={start} /><StarsCard stars={stars} dark /></>;
+  return <><MissionProgress goals={goals} stars={stars} /><StarsRadar stars={stars} dark start={start} /><StarsCard stars={stars} dark /></>;
 }
 
 // Onglet « Matchs » : ceux que le jeune déclare + ceux que son coach a enregistrés
@@ -196,39 +235,33 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
 type Tab = "accueil" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
 
 // Carte cliquable de l'accueil (« à faire » ou « nouveau »)
-function Todo({ icon, title, text, onClick, hot = false, children }: { icon: string; title: string; text?: string; onClick: () => void; hot?: boolean; children?: React.ReactNode }) {
+// Petite tuile de l'accueil du jeune : une image, un titre court, une ligne. Rien d'autre, pour que ce soit simple à lire.
+function Tile({ icon, title, line, onClick, hot = false }: { icon: string; title: string; line: string; onClick: () => void; hot?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className={"lift grid content-start gap-1 rounded-3xl border p-4 text-left text-white backdrop-blur-md transition-colors " + (hot ? "border-[#dcf247] bg-[#dcf247]/15" : "border-white/20 bg-white/10 hover:bg-white/15")}>
-      <span className="text-3xl" aria-hidden="true">{icon}</span>
-      <strong className="text-lg">{title}</strong>
-      {text && <span className="text-sm text-white/85">{text}</span>}
-      {children}
-      <span className="mt-1 text-sm font-bold text-[#dcf247]">Ouvrir →</span>
+    <button type="button" onClick={onClick} className={"lift relative grid content-start justify-items-center gap-1 rounded-3xl border-2 p-4 text-center text-white backdrop-blur-md transition-colors " + (hot ? "border-[#dcf247] bg-[#dcf247]/20" : "border-white/20 bg-white/10 hover:bg-white/15")}>
+      {hot && <span aria-hidden="true" className="absolute right-3 top-3 h-3.5 w-3.5 rounded-full bg-[#dcf247] shadow-[0_0_0_4px_rgba(220,242,71,0.3)]" />}
+      <span className="text-5xl" aria-hidden="true">{icon}</span>
+      <strong className="text-lg leading-tight">{title}</strong>
+      <span className={"text-sm " + (hot ? "font-bold text-[#dcf247]" : "text-white/85")}>{line}</span>
     </button>
   );
 }
 
-function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go }: { p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; stars: CourseStar[]; go: (t: Tab) => void }) {
-  const { evals } = useFollowUp(p.id);
+function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go, base }: { base: string; p: Player; goals: Goal[]; done: number; wins: number; fresh: number; sent: number; pending: number | null; stars: CourseStar[]; go: (t: Tab) => void }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t));
   const achieved = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const evaluated = here.some((g) => statusAt(g, t)); // le coach fait le point à la fin du trimestre
-  const word = evals?.find((e) => e.appreciation)?.appreciation;
   return (
     <>
       <Hero p={p} done={done} wins={wins} starsTotal={totalStars(stars)} />
-      <section className="grid gap-3 sm:grid-cols-2" aria-label="Pour toi aujourd'hui">
-        {stars.length > 0 && <Todo icon="⭐" title={`${totalStars(stars)} étoile${totalStars(stars) > 1 ? "s" : ""}`} text={`Dernier cours : ${stars[0].stars > 0 ? `+${stars[0].stars} ⭐` : `📉 −${-stars[0].stars} ⭐ à retravailler :`} ${starReason(stars[0].reason)?.label ?? ""}${stars[0].comment ? ` · « ${stars[0].comment} »` : ""}`} onClick={() => go("progres")} />}
-        {sent > 0 && <Todo hot icon="🎓" title={`Ton coach t'a envoyé ${sent > 1 ? `${sent} vidéos` : "une vidéo"} !`} text="Regarde-la, elle est faite pour toi." onClick={() => go("videos")} />}
-        {fresh > 0 && <Todo hot icon="🎬" title={`Ton coach a analysé ${fresh > 1 ? `${fresh} vidéos` : "une vidéo"} !`} text="Va voir ses conseils et les images annotées." onClick={() => go("videos")} />}
-        <Todo hot={pending !== null} icon={pending !== null ? "✍️" : "📝"} title={pending !== null ? `Remplis ton bulletin du trimestre ${pending}` : "Mon bulletin du trimestre"} text={pending !== null ? "C'est le moment de réfléchir à ton jeu et à ton projet : réponds avec les boutons, ton coach le lira." : "Ton auto-évaluation : en décembre (T1), en mars (T2) et en juin (T3). Pour réfléchir à ton jeu et à ton projet."} onClick={() => go("bulletins")} />
-        <Todo icon="🚀" title={here.length ? (evaluated ? `${achieved} mission${achieved > 1 ? "s" : ""} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} mission${here.length > 1 ? "s" : ""} à travailler`) : "Tes missions"} text={here.length ? (evaluated ? `Trimestre ${t}` : `Trimestre ${t} : ton coach fera le point à la fin du trimestre.`) : "Ton coach va bientôt te donner tes missions."} onClick={() => go("missions")}>
-          {here.length > 0 && evaluated && <MissionBar value={Math.round((achieved / here.length) * 100)} color="#dcf247" label="Missions réussies" />}
-        </Todo>
-        {fresh + sent === 0 && <Todo icon="🎬" title="Mes vidéos" text="Envoie tes vidéos à ton coach. Il peut aussi t'en envoyer." onClick={() => go("videos")} />}
-        {word && <Todo icon="💬" title="Le mot de ton coach" text={`« ${word.length > 120 ? word.slice(0, 117) + "…" : word} »`} onClick={() => go("progres")} />}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Pour toi aujourd'hui">
+        <Tile icon="⭐" title="Mes étoiles" line={stars.length ? `${totalStars(stars)} en tout` : "Bientôt !"} onClick={() => go("progres")} />
+        <Tile icon="🚀" title="Mes missions" line={here.length ? (evaluated ? `${achieved} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} à travailler`) : "Bientôt !"} onClick={() => go("missions")} />
+        <Tile icon={sent > 0 ? "🎓" : "🎬"} title="Mes vidéos" line={sent > 0 ? "Une vidéo de ton coach !" : fresh > 0 ? "Une analyse t'attend !" : "Envoie-en une"} hot={fresh + sent > 0} onClick={() => go("videos")} />
+        <Tile icon={pending !== null ? "✍️" : "📝"} title="Mon bulletin" line={pending !== null ? "À remplir !" : "Bientôt"} hot={pending !== null} onClick={() => go("bulletins")} />
       </section>
+      <StartBilan p={p} base={base} />
     </>
   );
 }
@@ -295,10 +328,10 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
-              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} />}
-              {tab === "missions" && <><StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
+              {tab === "accueil" && <HomeTab p={p} goals={goals[p.id] ?? []} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} go={go} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
+              {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
-              {tab === "progres" && <ProgressTab p={p} stars={stars} />}
+              {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "compte" && !previewId && (

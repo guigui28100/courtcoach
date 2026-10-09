@@ -21,7 +21,7 @@ export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: stri
   NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
-export interface Goal { targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
+export interface Goal { hiddenFrom?: number | null; targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
@@ -97,7 +97,8 @@ export const fmtMo = (b: number) => `${(b / 1024 / 1024).toFixed(b < 10 * 1024 *
 
 // ----- Objectifs par trimestre -----
 // Un objectif est « à travailler » au trimestre t s'il n'est pas limité à d'autres trimestres (vide = toute la saison).
-export const goalApplies = (g: Pick<Goal, "trimesters">, t: number) => !g.trimesters?.length || g.trimesters.includes(t);
+// Une mission validée que le coach a masquée « à partir du trimestre N » ne s'affiche plus à partir de N (les trimestres passés et leurs bulletins restent comme avant)
+export const goalApplies = (g: Pick<Goal, "trimesters"> & { hiddenFrom?: number | null }, t: number) => (!g.trimesters?.length || g.trimesters.includes(t)) && !(g.hiddenFrom && t >= g.hiddenFrom);
 export const checkpointAt = (g: Pick<Goal, "checkpoints">, t: number) => g.checkpoints?.find((c) => c.trimester === t);
 // Où en est l'objectif à la fin du trimestre t : le point de contrôle de ce trimestre, sinon le dernier avant (rien n'a bougé depuis) ; null = pas encore suivi.
 export function progressAt(g: Pick<Goal, "checkpoints" | "progress">, t: number): number | null {
@@ -112,7 +113,7 @@ export function progressBefore(g: Pick<Goal, "checkpoints" | "progress">, t: num
 // Bilan de l'objectif au trimestre t (atteint / en progrès / pas atteint) ; null = pas encore évalué
 export const statusAt = (g: Pick<Goal, "checkpoints">, t: number): GoalStatus | null => checkpointAt(g, t)?.status ?? null;
 // Objectif reconduit : déjà à travailler au trimestre d'avant, où il n'avait pas été atteint
-export const isCarriedOver = (g: Pick<Goal, "trimesters" | "checkpoints">, t: number) => t > 1 && goalApplies(g, t) && goalApplies(g, t - 1) && !!checkpointAt(g, t - 1) && statusAt(g, t - 1) !== "ACHIEVED";
+export const isCarriedOver = (g: Pick<Goal, "trimesters" | "checkpoints" | "hiddenFrom">, t: number) => t > 1 && goalApplies(g, t) && goalApplies(g, t - 1) && !!checkpointAt(g, t - 1) && statusAt(g, t - 1) !== "ACHIEVED";
 // Les trimestres où un objectif est à travailler, écrits en toutes lettres (vide = toute la saison = 1, 2 et 3)
 export const trimestersOf = (g: Pick<Goal, "trimesters">) => (g.trimesters?.length ? g.trimesters : [1, 2, 3]);
 
