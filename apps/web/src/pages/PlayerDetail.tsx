@@ -321,7 +321,12 @@ function Objectifs({ p }: { p: Player }) {
                       {isCarriedOver(g, t) && <span className="font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
                       <span className="badge" style={statusAt(g, t) ? { background: STATUS[statusAt(g, t)!].bg, color: STATUS[statusAt(g, t)!].ink } : undefined}>{statusAt(g, t) ? `${STATUS[statusAt(g, t)!].emoji} ${STATUS[statusAt(g, t)!].label} au T${t}` : `Pas encore évalué au T${t}`}</span>
                     </p>
-                  ) : <p className="hint m-0">Cet objectif n'est pas prévu au trimestre {t}.</p>}
+                  ) : g.hiddenFrom && t >= g.hiddenFrom ? null : <p className="hint m-0">Cet objectif n'est pas prévu au trimestre {t}.</p>}
+                  {g.hiddenFrom ? (
+                    <p className="m-0 flex flex-wrap items-center gap-2 rounded-xl bg-sand p-2 text-sm"><span>🙈 Masquée à partir du trimestre {g.hiddenFrom} : le jeune et sa famille ne la voient plus à partir de là (bulletins déjà faits inchangés).</span><button className="btn-outline btn-sm" onClick={() => upd(g, { hiddenFrom: null })}>Réafficher</button></p>
+                  ) : goalApplies(g, t) && statusAt(g, t) === "ACHIEVED" && t < 3 ? (
+                    <button className="btn-outline btn-sm self-start" onClick={() => upd(g, { hiddenFrom: t + 1 })}>🙈 Mission réussie : ne plus l'afficher à partir du trimestre {t + 1}</button>
+                  ) : null}
                   <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer cet objectif et son historique ?")) { await del(`/goals/${g.id}`); load(); } }}>Supprimer</button>
                 </article>
               ))}

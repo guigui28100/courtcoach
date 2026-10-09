@@ -113,6 +113,18 @@ describe("Objectifs par trimestre (points de contrôle)", () => {
     await A.par2.get(`/api/players/${p1}/evaluations`).expect(404);
   });
 
+  it("une mission atteinte peut être masquée à partir du trimestre suivant (le coach seul) ; une mission non atteinte, non", async () => {
+    const r = await A.coach.post(`/api/players/${p1}/goals`).set(ORIGIN).send({ season: "2026-2027", axis: "TACTIQUE", title: "Varier", trimesters: [] }).expect(201);
+    const g = r.body.id as string;
+    await A.coach.patch(`/api/goals/${g}`).set(ORIGIN).send({ hiddenFrom: 2 }).expect(400); // pas encore validée
+    await A.coach.put(`/api/goals/${g}/checkpoints/1`).set(ORIGIN).send({ progress: 100, status: "ACHIEVED" }).expect(200);
+    await A.par1.patch(`/api/goals/${g}`).set(ORIGIN).send({ hiddenFrom: 2 }).expect(403);
+    await A.coach.patch(`/api/goals/${g}`).set(ORIGIN).send({ hiddenFrom: 1 }).expect(400); // « à partir du T1 » n'a pas de sens
+    expect((await A.coach.patch(`/api/goals/${g}`).set(ORIGIN).send({ hiddenFrom: 2 }).expect(200)).body.hiddenFrom).toBe(2);
+    expect((await A.par1.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body.find((x: any) => x.id === g).hiddenFrom).toBe(2);
+    expect((await A.coach.patch(`/api/goals/${g}`).set(ORIGIN).send({ hiddenFrom: null }).expect(200)).body.hiddenFrom).toBeNull(); // on peut la réafficher
+  });
+
   it("l'export du dossier contient les points de contrôle ; supprimer l'objectif les supprime", async () => {
     const exp = (await A.coach.get(`/api/players/${p1}/export`).expect(200)).body;
     expect(exp.goals[0].checkpoints).toHaveLength(2);

@@ -187,6 +187,7 @@ model Goal {
   createdAt  DateTime @default(now())
   analyses   AnalysisGoal[]
   checkpoints GoalCheckpoint[]
+  hiddenFrom Int?     // mission validée que le coach ne veut plus voir À PARTIR de ce trimestre (2, 3…) : les trimestres déjà passés et leurs bulletins ne changent pas
   targetStars Int     @default(10) // nombre d'étoiles à gagner sur cette mission pour la considérer atteinte (aide à décider)
   stars      CourseStar[]
 

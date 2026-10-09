@@ -61,6 +61,7 @@ export class UpdateGoalDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) progress?: number;
   @IsOptional() @IsArray() @ArrayMaxSize(3) @IsInt({ each: true }) @Min(1, { each: true }) @Max(3, { each: true }) trimesters?: number[];
   @IsOptional() @Type(() => Number) @IsInt() @Min(3) @Max(60) targetStars?: number;
+  @ValidateIf((_, v) => v !== null) @IsOptional() @Type(() => Number) @IsInt() @Min(2) @Max(4) hiddenFrom?: number | null;
 }
 
 // Où en est l'objectif à la fin d'un trimestre, et la note du coach
