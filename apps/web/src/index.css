@@ -171,10 +171,13 @@
 
 /* Espace des parents : onglets en colonne à gauche sur ordinateur (en haut sur téléphone) */
 @media (min-width: 768px) {
-  .tabbar.side { position: static; align-self: stretch; margin-inline: 0; padding: 0.5rem; border: 2px solid var(--color-line); border-radius: 1rem; background: #fff; }
-  .tabbar.side > div { position: sticky; top: 80px; flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.25rem; }
-  .tabbar.side button { width: 100%; text-align: left; border-bottom: 0 !important; border-left: 4px solid transparent; border-radius: 0.6rem; min-height: 3rem; white-space: normal; }
-  .tabbar.side button[aria-selected="true"] { border-left-color: var(--color-clay); background: rgba(0, 0, 0, 0.04); }
+  /* Menu de gauche (coach, parents) : panneau bleu nuit, boutons bien séparés, l'onglet ouvert en orange vif */
+  .tabbar.side { position: static; align-self: stretch; margin-inline: 0; padding: 0.7rem; border: 0; border-radius: 1.4rem; background: radial-gradient(260px 160px at 0% 0%, rgba(255, 255, 255, 0.14), transparent 70%), linear-gradient(180deg, #14284a 0%, #0c1830 100%); box-shadow: 0 12px 28px rgba(16, 32, 58, 0.28); backdrop-filter: none; }
+  .tabbar.side > div { position: sticky; top: 80px; flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.4rem; }
+  .tabbar.side button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; border: 0 !important; border-radius: 0.95rem; min-height: 3.1rem; padding: 0.55rem 0.9rem; white-space: normal; color: rgba(255, 255, 255, 0.88) !important; background: rgba(255, 255, 255, 0.07); font-size: 1rem; }
+  .tabbar.side button:hover { background: rgba(255, 255, 255, 0.16); color: #fff !important; }
+  .tabbar.side button[aria-selected="true"] { background: linear-gradient(135deg, #ee7b3f, #c4491a); color: #fff !important; font-weight: 800; box-shadow: 0 6px 16px rgba(196, 73, 26, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.55); }
+  .tabbar.side button b { background: #fff !important; color: #10203a !important; }
 }
 
 /* Progrès du jeune : l'étoile reçue tombe du haut vers sa mission, puis la barre « fait pop » quand elle arrive */
