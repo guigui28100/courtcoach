@@ -176,3 +176,14 @@
   .tabbar.side button { width: 100%; text-align: left; border-bottom: 0 !important; border-left: 4px solid transparent; border-radius: 0.6rem; min-height: 3rem; white-space: normal; }
   .tabbar.side button[aria-selected="true"] { border-left-color: var(--color-clay); background: rgba(0, 0, 0, 0.04); }
 }
+
+/* Progrès du jeune : l'étoile reçue tombe du haut vers sa mission, puis la barre « fait pop » quand elle arrive */
+@keyframes star-fall {
+  0% { transform: translate(var(--x), -6px) scale(0.5) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate(var(--x), var(--dy)) scale(1.1) rotate(360deg); opacity: 1; }
+}
+.star-drop { animation: star-fall 900ms cubic-bezier(0.45, 0, 0.9, 0.55) both; filter: drop-shadow(0 0 8px rgba(255, 224, 70, 0.9)); }
+@keyframes bar-pop { 0% { transform: scale(1); } 40% { transform: scale(1.03); box-shadow: 0 0 0 3px rgba(220, 242, 71, 0.8); } 100% { transform: scale(1); } }
+.bar-pop { animation: bar-pop 600ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .star-drop { display: none; } .bar-pop { animation: none; } }
