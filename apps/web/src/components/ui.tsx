@@ -126,9 +126,9 @@ export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: str
 }
 
 // Barre d'onglets collée sous l'en-tête (avec pastille de nombre)
-export function TabsBar({ tabs, active, onChange, label }: { tabs: [string, string, number?][]; active: string; onChange: (k: string) => void; label: string }) {
+export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: [string, string, number?][]; active: string; onChange: (k: string) => void; label: string; side?: boolean }) {
   return (
-    <div className="tabbar side">
+    <div className={side ? "tabbar side" : "tabbar"}>
       <div role="tablist" aria-label={label}>
         {tabs.map(([k, l, n]) => (
           <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (active === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>

@@ -162,7 +162,7 @@ export function AdultsPage() {
     <>
       <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." />
       <Page>
-        <SideLayout nav={<TabsBar label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />}>
+        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />
         {tab === "demandes" && (
           <ul className="m-0 grid list-none gap-3 p-0">
             {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
@@ -176,7 +176,6 @@ export function AdultsPage() {
             <section className="grid gap-2"><h2 className="m-0 text-lg">Vidéos déjà analysées ({answered.length})</h2><VideoQueue videos={d.adultVideos} label={owner} mode="done" /></section>
           </div>
         )}
-        </SideLayout>
       </Page>
     </>
   );
