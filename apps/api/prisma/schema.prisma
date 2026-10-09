@@ -498,3 +498,14 @@ model VideoAudio {
   authorId  String?
   createdAt DateTime @default(now())
 }
+
+// Objectif « modèle » défini par le coach : une bibliothèque d'objectifs qu'on peut donner à des jeunes (ils deviennent alors leurs missions du trimestre)
+model GoalTemplate {
+  id          String   @id @default(cuid())
+  axis        Axis
+  title       String
+  indicator   String   @default("")
+  targetStars Int      @default(10)
+  createdAt   DateTime @default(now())
+  authorId    String?
+}

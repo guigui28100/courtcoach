@@ -6,7 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { FamilyInfoDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -78,6 +78,17 @@ export class PlayersService {
     await this.audit.log(user.id, "update", "Player", id);
     return p;
   }
+
+  // Bibliothèque d'objectifs modèles
+  templates() { return this.prisma.goalTemplate.findMany({ orderBy: [{ axis: "asc" }, { createdAt: "asc" }], select: { id: true, axis: true, title: true, indicator: true, targetStars: true } }); }
+  async addTemplate(user: AuthUser, dto: GoalTemplateDto) {
+    this.assertCoach(user);
+    return this.prisma.goalTemplate.create({ data: { axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", ...(dto.targetStars ? { targetStars: dto.targetStars } : {}), authorId: user.id }, select: { id: true, axis: true, title: true, indicator: true, targetStars: true } });
+  }
+  async updateTemplate(id: string, dto: GoalTemplateDto) {
+    return this.prisma.goalTemplate.update({ where: { id }, data: { axis: dto.axis, title: dto.title, indicator: dto.indicator ?? "", ...(dto.targetStars ? { targetStars: dto.targetStars } : {}) }, select: { id: true, axis: true, title: true, indicator: true, targetStars: true } }).catch(() => { throw new NotFoundException("Objectif introuvable"); });
+  }
+  async removeTemplate(id: string) { const r = await this.prisma.goalTemplate.deleteMany({ where: { id } }); if (!r.count) throw new NotFoundException("Objectif introuvable"); }
 
   // Signature du coach (bulletins)
   async setSignature(user: AuthUser, image: string) { this.assertCoach(user); await this.prisma.user.update({ where: { id: user.id }, data: { signature: image } }); return { signature: image }; }
