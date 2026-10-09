@@ -131,7 +131,7 @@ export default function Bulletin() {
                 </blockquote>
             )}
             {here.length > 0 && (
-              <section className="grid gap-3" aria-labelledby="bul-missions">
+              <section className="bul-card grid gap-3" aria-labelledby="bul-missions">
                 <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
                 <DomainMissions goals={here} render={(g) => { const st = statusAt(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                   <li key={g.id} className="grid gap-1">
@@ -172,7 +172,7 @@ export default function Bulletin() {
             )}
 
             {startGoals.length > 0 && (
-              <section className="grid gap-3" aria-labelledby="bul-t1">
+              <section className="bul-card grid gap-3" aria-labelledby="bul-t1">
                 <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 À travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison, domaine par domaine.</p></div>
                 <DomainMissions goals={startGoals} rating={(k) => ev?.ratings?.[k]} render={(g) => <li key={g.id}>{g.title}</li>} />
               </section>
@@ -180,7 +180,7 @@ export default function Bulletin() {
 
             {t > 0 && (() => { const st = matchStats(ms); const tile = (emoji: string, big: string, label: string, bg: string, ink: string) => (
               <li className="grid gap-0.5 rounded-2xl p-4 text-center" style={{ background: bg, color: ink }}><span aria-hidden="true" className="text-2xl">{emoji}</span><strong className="font-display text-3xl font-black leading-tight">{big}</strong><span className="text-sm font-bold">{label}</span></li>); return (
-              <section className="grid gap-3 break-inside-avoid" aria-labelledby="bul-matchs">
+              <section className="bul-card grid gap-3 break-inside-avoid" aria-labelledby="bul-matchs">
                 <h2 id="bul-matchs" className="m-0 text-2xl">🏟️ Compétition du trimestre</h2>
                 <ul className="m-0 grid list-none gap-3 p-0 grid-cols-2 sm:grid-cols-4 print:grid-cols-4">
                   {tile("🎾", String(st.played), st.played > 1 ? "matchs joués" : "match joué", "#f6f4fb", "#10203a")}
@@ -195,7 +195,7 @@ export default function Bulletin() {
             ); })()}
 
 
-            <div className="mt-2 grid grid-cols-2 items-end gap-8 break-inside-avoid text-sm text-muted"><div className="grid content-end">{signature ? <img src={signature} alt="Signature du coach" className="mb-1 h-16 w-auto max-w-full justify-self-start object-contain" /> : <div className="h-16" />}<div className="border-t-2 border-[#10203a] pt-1">Signature du coach</div></div><div className="border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
+            <div className="bul-card mt-2 grid grid-cols-2 items-end gap-8 break-inside-avoid text-sm text-muted"><div className="grid content-end">{signature ? <img src={signature} alt="Signature du coach" className="mb-1 h-16 w-auto max-w-full justify-self-start object-contain" /> : <div className="h-16" />}<div className="border-t-2 border-[#10203a] pt-1">Signature du coach</div></div><div className="border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
             <p className="m-0 text-center text-xs text-muted">✦ Tennis Club Houdan · Bulletin généré avec CourtCoach le {fmtDate(new Date().toISOString())} ✦</p>
           </div>
         </article>
@@ -209,7 +209,7 @@ function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: 
   return (
     <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
       {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase()); return (
-        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl p-4 shadow-sm" style={{ borderTop: `6px solid ${a.color}`, background: `linear-gradient(180deg, ${a.color}26, #ffffff 70%)` }} aria-label={a.label}>
+        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl p-4 shadow-sm" style={{ borderTop: `6px solid ${a.color}`, backgroundColor: "#ffffff", backgroundImage: `linear-gradient(180deg, ${a.color}26, #ffffff 70%)` }} aria-label={a.label}>
           <h3 className="m-0 flex items-center justify-between gap-2 text-lg" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
           <ul className="m-0 grid list-disc gap-1.5 pl-5">{list.map(render)}</ul>
         </section>

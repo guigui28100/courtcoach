@@ -209,3 +209,4 @@
 .bul-court::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 90% 8%, rgba(220, 242, 71, 0.55), transparent 30%); }
 .bul-court::after { content: "🎾"; position: absolute; right: 14px; bottom: 8px; font-size: 3.2rem; line-height: 1; transform: rotate(-18deg); opacity: 0.95; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3)); pointer-events: none; }
 .bul-word { background: linear-gradient(135deg, #e9ff5a, #bfe627); color: #10203a; box-shadow: 0 8px 22px rgba(144, 180, 20, 0.45); }
+.bul-card { background: #fff; border-radius: 1.5rem; padding: 1.1rem; box-shadow: 0 6px 18px rgba(16, 32, 58, 0.12); }

@@ -422,7 +422,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["accords", "👨‍👩‍👧 Accords et famille"], ["depart", "📍 Évaluation de départ"], ["evaluations", "📊 Évaluations"], ["objectifs", "🎯 Définition des objectifs"], ["etoiles", "⭐ Étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
+  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de départ"], ["objectifs", "🎯 Définition des objectifs"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>

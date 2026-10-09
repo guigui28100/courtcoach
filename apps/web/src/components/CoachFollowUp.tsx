@@ -94,19 +94,11 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
   );
 }
 
-// Bilan de départ, version simple : une note par domaine, deux phrases, et des missions créées en un clic
+// Bilan de départ, version simple : une note par domaine, deux phrases et un mot du coach (les missions se donnent dans « Définition des objectifs »)
 export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [rt, setRt] = useState<Record<string, number>>(() => Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)));
   const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? ""), [word, setWord] = useState(saved?.appreciation ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [missions, setMissions] = useState<Goal[]>([]);
-  const [mTitle, setMTitle] = useState(""), [mAxis, setMAxis] = useState("TECHNIQUE");
-  const loadMissions = () => get<Goal[]>(`/players/${p.id}/goals?season=${season}`).then((g) => setMissions(g.filter((x) => goalApplies(x, 1)))).catch(() => setMissions([]));
-  useEffect(() => { if (t === 0) loadMissions(); }, [p.id, season, t]); // eslint-disable-line react-hooks/exhaustive-deps
-  async function addMission(title: string, axis: string) {
-    if (title.trim().length < 3) { setMsg({ ok: false, text: "Écris la mission (3 lettres au moins)." }); return; }
-    try { await post(`/players/${p.id}/goals`, { season, axis, title: title.trim(), trimesters: [1] }); setMTitle(""); setMsg(null); await loadMissions(); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
-  }
   async function save(e: FormEvent) {
     e.preventDefault();
     try {
@@ -116,7 +108,7 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
   }
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
-      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine, deux phrases, puis les missions à travailler.</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
+      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine, deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définition des objectifs ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
       <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "1. Où en est" : "Où en est"} {p.firstName} ?</legend>
         {EVAL_AXES.map((a) => (
           <div key={a.key} className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-white p-3" style={{ borderLeftColor: a.color }}>
@@ -138,25 +130,10 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
         <Field label="Points forts" id="b-strengths"><textarea id="b-strengths" className="input" maxLength={3000} value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="Ce qu'il fait déjà bien" /></Field>
         <Field label="À progresser" id="b-improve"><textarea id="b-improve" className="input" maxLength={3000} value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Ce qu'il doit travailler en priorité" /></Field>
       </fieldset>}
-      {t === 0 && <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">3. Les missions à travailler (trimestre 1)</legend>
-        <p className="hint m-0">Elles apparaissent tout de suite dans l'onglet « Mes missions » de {p.firstName}.</p>
-        {missions.length > 0 && <ul className="m-0 grid list-none gap-2 p-0">{missions.map((g) => { const a = AXES.find((x) => x.key === g.axis); return (
-          <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line border-l-[6px] bg-white px-3 py-2" style={{ borderLeftColor: a?.color }}>
-            <span><strong>{g.title}</strong> <small className="hint">{a?.label}</small></span>
-            <button type="button" className="btn-danger btn-sm" onClick={async () => { try { await del(`/goals/${g.id}`); await loadMissions(); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } }}>Retirer</button>
-          </li>
-        ); })}</ul>}
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-          <Field label="Nouvelle mission" id="b-mission"><input id="b-mission" className="input" maxLength={160} value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder="Ex. : Mettre plus de longueur sur le revers" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMission(mTitle, mAxis); } }} /></Field>
-          <Field label="Domaine" id="b-axis"><select id="b-axis" className="input" value={mAxis} onChange={(e) => setMAxis(e.target.value)}>{AXES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select></Field>
-          <button type="button" className="btn-clay" onClick={() => addMission(mTitle, mAxis)}>➕ Ajouter</button>
-        </div>
-        {EVAL_AXES.some((a) => a.key !== "attitude" && rt[a.key] > 0 && rt[a.key] <= 3) && <div className="flex flex-wrap items-center gap-2"><span className="hint">Idées d'après tes notes :</span>{EVAL_AXES.filter((a) => a.key !== "attitude" && rt[a.key] > 0 && rt[a.key] <= 3).map((a) => <button key={a.key} type="button" className="btn-outline btn-sm" onClick={() => { setMTitle(`Progresser en : ${a.label}`); setMAxis(a.key.toUpperCase()); }}>{a.label}</button>)}</div>}
-      </fieldset>}
-      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "4. " : ""}Le mot du coach</legend>
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "3. " : ""}Le mot du coach</legend>
         <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Beau trimestre, continue comme ça !" /></Field>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{t === 0 && onGoto && <button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Modifier les missions en détail →</button>}{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{t === 0 && onGoto && <button type="button" className="btn-outline btn-sm" onClick={() => onGoto("objectifs")}>Aller à la définition des objectifs →</button>}{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
 }
