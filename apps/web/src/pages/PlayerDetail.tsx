@@ -1,3 +1,4 @@
+import { useGoalTemplates } from "../components/GoalLibrary";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
@@ -271,8 +272,9 @@ function Objectifs({ p }: { p: Player }) {
   const seasons = [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`];
   const here = goals.filter((g) => goalApplies(g, t));
 
-  const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [newTitle, setNewTitle] = useState("");
-  async function addQuick(e: FormEvent) { e.preventDefault(); if (!newTitle.trim()) return; await post(`/players/${p.id}/goals`, { season, axis: newAxis, title: newTitle.trim(), trimesters: [t] }); setNewTitle(""); load(); }
+  const { list: library } = useGoalTemplates();
+  const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [newTitle, setNewTitle] = useState(""), [newExtra, setNewExtra] = useState<{ indicator: string; targetStars: number } | null>(null);
+  async function addQuick(e: FormEvent) { e.preventDefault(); if (!newTitle.trim()) return; await post(`/players/${p.id}/goals`, { season, axis: newAxis, title: newTitle.trim(), trimesters: [t], ...(newExtra ?? {}) }); setNewTitle(""); setNewExtra(null); load(); }
   async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif", trimesters: [t] }); load(); }
   async function upd(g: Goal, body: Partial<Goal>) { setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, ...body } : x))); await patch(`/goals/${g.id}`, body); }
   return (
@@ -288,8 +290,9 @@ function Objectifs({ p }: { p: Player }) {
         <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
         <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
         <div className="flex flex-wrap gap-2">
+          {library && library.length > 0 && <select className="input !w-auto max-w-full" aria-label="Choisir dans la bibliothèque" value="" onChange={(e) => { const x = library.find((l) => l.id === e.target.value); if (x) { setNewAxis(x.axis); setNewTitle(x.title); setNewExtra({ indicator: x.indicator, targetStars: x.targetStars }); } }}><option value="">📚 Choisir dans ma bibliothèque…</option>{library.map((l) => <option key={l.id} value={l.id}>{AXES.find((a) => a.key === l.axis)?.label} · {l.title}</option>)}</select>}
           <select className="input !w-auto" aria-label="Domaine" value={newAxis} onChange={(e) => setNewAxis(e.target.value)}>{AXES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select>
-          <input className="input min-w-52 flex-1" aria-label="Nouvel objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+          <input className="input min-w-52 flex-1" aria-label="Nouvel objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={newTitle} onChange={(e) => { setNewTitle(e.target.value); setNewExtra(null); }} />
           <button className="btn-clay" disabled={!newTitle.trim()}>+ Ajouter l'objectif</button>
         </div>
         <p className="hint m-0">Tu peux ensuite modifier chaque objectif, le rendre à travailler sur d'autres trimestres, ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
