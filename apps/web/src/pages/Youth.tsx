@@ -9,7 +9,7 @@ import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
-import { StarsCard, StarsRadar, useStars } from "../components/Stars";
+import { StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
