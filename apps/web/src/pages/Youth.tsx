@@ -138,7 +138,7 @@ function ProgressTab({ p, stars, goals }: { p: Player; stars: CourseStar[] | nul
   const { evals } = useFollowUp(p.id);
   const bilan = evals?.find((e) => e.season === currentSeason() && e.trimester === 0 && ratedCount(e) > 0);
   const start = bilan ? Object.fromEntries(EVAL_AXES.map((a) => [a.key, axisAverage(bilan, a)])) : undefined;
-  return <><MissionProgress goals={goals} stars={stars} /><StarsRadar stars={stars} dark start={start} /><StarsCard stars={stars} dark /></>;
+  return <><MissionProgress goals={goals} stars={stars} /><StarsRadar stars={stars} dark start={start} /></>;
 }
 
 // Onglet « Matchs » : ceux que le jeune déclare + ceux que son coach a enregistrés
