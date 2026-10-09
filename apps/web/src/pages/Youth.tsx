@@ -79,19 +79,12 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
       {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
         <ol className="m-0 grid list-none gap-3 p-0">
           {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => here.filter((g) => g.axis === axis)).map((g) => {
-            const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"], st = statusAt(g, t), note = checkpointAt(g, t)?.comment.trim();
-            const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10;
+            const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"];
             return (
-              <li key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-4" style={{ borderLeft: `6px solid ${m.color}` }}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-bold" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
-                  <span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : "🎯 À travailler"}</span>
-                </div>
+              <li key={g.id} className="grid gap-1 rounded-2xl bg-white/10 p-4" style={{ borderLeft: `6px solid ${m.color}` }}>
+                <span className="text-sm font-bold" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
                 <strong className="text-xl leading-snug text-white">{g.title}</strong>
-                {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite : on la reprend !</small>}
-                <MissionBar teen={isTeen(p)} value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} />
-                <small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target}</small>
-                {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
+                {g.indicator && <span className="text-white/85">{g.indicator}</span>}
               </li>
             );
           })}
