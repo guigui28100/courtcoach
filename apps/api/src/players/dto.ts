@@ -1,6 +1,6 @@
 import { Axis, ConsentKind, GoalStatus, Role } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
-import { ArrayMaxSize, ArrayMinSize, ValidateIf, ValidateNested, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
+import { ArrayMaxSize, ArrayMinSize, ValidateIf, ValidateNested, IsArray, IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, MinLength, Min } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 const lower = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim().toLowerCase() : value);
@@ -51,6 +51,14 @@ export class GoalDto {
   @IsOptional() @IsDateString() deadline?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) progress?: number;
   @IsOptional() @IsArray() @ArrayMaxSize(3) @IsInt({ each: true }) @Min(1, { each: true }) @Max(3, { each: true }) trimesters?: number[];
+  @IsOptional() @Type(() => Number) @IsInt() @Min(3) @Max(60) targetStars?: number;
+}
+
+// Objectif « modèle » de la bibliothèque du coach
+export class GoalTemplateDto {
+  @IsEnum(Axis) axis: Axis;
+  @Transform(trim) @IsString() @MinLength(2) @MaxLength(200) title: string;
+  @IsOptional() @IsString() @MaxLength(200) indicator?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(3) @Max(60) targetStars?: number;
 }
 

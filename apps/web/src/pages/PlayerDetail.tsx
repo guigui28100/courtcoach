@@ -1,3 +1,5 @@
+import { GoalLibraryTab } from "../components/GoalLibrary";
+import { StartEvalPanel } from "../components/StartEvalTab";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
@@ -8,7 +10,7 @@ import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
-type Tab = "profil" | "accords" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
+type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
@@ -262,6 +264,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
 }
 
 function Objectifs({ p }: { p: Player }) {
+  const isCoach = useAuth().me?.role === "COACH";
   const [season, setSeason] = useState(currentSeason());
   const [t, setT] = useState(trimesterOf());
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -284,6 +287,10 @@ function Objectifs({ p }: { p: Player }) {
           {[1, 2, 3].map((n) => <button key={n} role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"btn btn-sm " + (t === n ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Trimestre {n}{season === currentSeason() && n === trimesterOf() ? " · en cours" : ""}</button>)}
         </div>
       </div>
+      <details className="card group grid gap-3">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">📚 Ma bibliothèque d'objectifs <small className="font-normal text-muted">· en donner un à {p.firstName} en un clic</small></h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
+        <GoalLibraryTab players={[p]} isCoach={isCoach} only={p} trimester={t} onGiven={load} />
+      </details>
       <form onSubmit={addQuick} className="card grid gap-3 border-2 !border-clay" aria-labelledby="obj-add">
         <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
         <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
@@ -415,7 +422,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["accords", "👨‍👩‍👧 Accords et famille"], ["evaluations", "📊 Évaluations"], ["objectifs", "🎯 Objectifs"], ["etoiles", "⭐ Étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
+  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["accords", "👨‍👩‍👧 Accords et famille"], ["depart", "📍 Évaluation de départ"], ["evaluations", "📊 Évaluations"], ["objectifs", "🎯 Définition des objectifs"], ["etoiles", "⭐ Étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
@@ -434,6 +441,7 @@ export default function PlayerDetail() {
         <div role="tabpanel">
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
+          {tab === "depart" && <StartEvalPanel p={p} onGoto={(x) => setTab(x)} />}
           {tab === "objectifs" && <Objectifs p={p} />}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
