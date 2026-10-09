@@ -29,7 +29,7 @@ function Gauge({ value }: { value: number }) {
 }
 
 const Tint = ({ emoji, title, text, bg, ink }: { emoji: string; title: string; text?: string; bg: string; ink: string }) =>
-  text?.trim() ? <section className="min-w-0 break-inside-avoid rounded-2xl p-4" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null;
+  text?.trim() ? <section className="min-w-0 break-inside-avoid rounded-2xl p-4 text-[#1a2233] shadow-md" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null;
 
 // Bulletin d'un trimestre : même page pour le coach et la famille, à imprimer ou à enregistrer en PDF.
 export default function Bulletin() {
@@ -110,7 +110,7 @@ export default function Bulletin() {
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>
         </div>
 
-        <article className="print-exact overflow-hidden rounded-3xl bg-white text-[#1a2233] ring-4 ring-white/60 shadow-[0_20px_60px_rgba(20,16,80,0.6)] print:rounded-none print:shadow-none print:ring-0" aria-label={`Bulletin de ${p.firstName}`}>
+        <article className="print-exact bul-body overflow-hidden rounded-3xl text-[#1a2233] ring-4 ring-white/60 shadow-[0_20px_60px_rgba(20,16,80,0.6)] print:rounded-none print:shadow-none print:ring-0" aria-label={`Bulletin de ${p.firstName}`}>
           <header className="bulletin-hero grid items-center gap-4 p-6 sm:grid-cols-[1fr_150px] sm:p-8">
             <div className="stars" aria-hidden="true" />
             <div className="relative grid gap-2">
@@ -124,9 +124,10 @@ export default function Bulletin() {
 
           <div className="grid gap-6 p-6 sm:p-8">
             {t === 0 && ev?.appreciation?.trim() && (
-              <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
+              <blockquote className="bul-word relative m-0 break-inside-avoid rounded-3xl p-5 pr-16">
+                  <span aria-hidden="true" className="absolute right-4 top-3 text-4xl">🎾</span>
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
-                  <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
+                  <footer className="mt-2 text-sm font-black uppercase tracking-wide text-[#1d4ed8]">💬 Le mot du coach</footer>
                 </blockquote>
             )}
             {here.length > 0 && (
@@ -147,10 +148,10 @@ export default function Bulletin() {
 
 
             {(rated || t === 0 || (t > 0 && !!ev?.appreciation?.trim())) && (
-              <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
-                <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
+              <section className="bul-court grid gap-5 rounded-3xl p-4 sm:p-6" aria-labelledby="bul-image">
+                <h2 id="bul-image" className="m-0 text-3xl font-black text-white drop-shadow">📸 Image du joueur</h2>
             {rated ? (
-                <div className="grid justify-items-center gap-1 break-inside-avoid rounded-2xl border border-line p-3 sm:mx-auto sm:max-w-md">
+                <div className="grid justify-items-center gap-1 break-inside-avoid rounded-3xl bg-white p-3 shadow-[0_10px_28px_rgba(10,30,90,0.35)] ring-4 ring-white/40 sm:mx-auto sm:max-w-md">
                   <Radar series={series} />
                 </div>
               ) : t === 0 ? <Empty>Les notes du bilan de départ ne sont pas encore saisies.</Empty> : null}
@@ -208,7 +209,7 @@ function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: 
   return (
     <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
       {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase()); return (
-        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl border border-line p-3" style={{ borderTop: `5px solid ${a.color}` }} aria-label={a.label}>
+        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl p-4 shadow-sm" style={{ borderTop: `6px solid ${a.color}`, background: `linear-gradient(180deg, ${a.color}26, #ffffff 70%)` }} aria-label={a.label}>
           <h3 className="m-0 flex items-center justify-between gap-2 text-lg" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
           <ul className="m-0 grid list-disc gap-1.5 pl-5">{list.map(render)}</ul>
         </section>
