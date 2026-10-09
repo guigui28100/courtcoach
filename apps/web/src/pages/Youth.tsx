@@ -248,13 +248,13 @@ function HomeTab({ p, goals, done, wins, fresh, sent, pending, stars, go, base }
   return (
     <>
       <Hero p={p} done={done} wins={wins} starsTotal={totalStars(stars)} />
+      <StartBilan p={p} base={base} />
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Pour toi aujourd'hui">
         <Tile icon="⭐" title="Mes étoiles" line={stars.length ? `${totalStars(stars)} en tout` : "Bientôt !"} onClick={() => go("progres")} />
         <Tile icon="🚀" title="Mes missions" line={here.length ? (evaluated ? `${achieved} réussie${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} à travailler`) : "Bientôt !"} onClick={() => go("missions")} />
         <Tile icon={sent > 0 ? "🎓" : "🎬"} title="Mes vidéos" line={sent > 0 ? "Une vidéo de ton coach !" : fresh > 0 ? "Une analyse t'attend !" : "Envoie-en une"} hot={fresh + sent > 0} onClick={() => go("videos")} />
         <Tile icon={pending !== null ? "✍️" : "📝"} title="Mon bulletin" line={pending !== null ? "À remplir !" : "Bientôt"} hot={pending !== null} onClick={() => go("bulletins")} />
       </section>
-      <StartBilan p={p} base={base} />
     </>
   );
 }
