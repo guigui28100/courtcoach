@@ -171,10 +171,13 @@
 
 /* Espace des parents : onglets en colonne à gauche sur ordinateur (en haut sur téléphone) */
 @media (min-width: 768px) {
-  .tabbar.side { position: static; align-self: stretch; margin-inline: 0; padding: 0.5rem; border: 2px solid var(--color-line); border-radius: 1rem; background: #fff; }
-  .tabbar.side > div { position: sticky; top: 80px; flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.25rem; }
-  .tabbar.side button { width: 100%; text-align: left; border-bottom: 0 !important; border-left: 4px solid transparent; border-radius: 0.6rem; min-height: 3rem; white-space: normal; }
-  .tabbar.side button[aria-selected="true"] { border-left-color: var(--color-clay); background: rgba(0, 0, 0, 0.04); }
+  /* Menu de gauche (coach, parents) : panneau bleu nuit, boutons bien séparés, l'onglet ouvert en orange vif */
+  .tabbar.side { position: static; align-self: stretch; margin-inline: 0; padding: 0.7rem; border: 0; border-radius: 1.4rem; background: radial-gradient(260px 160px at 0% 0%, rgba(255, 255, 255, 0.14), transparent 70%), linear-gradient(180deg, #14284a 0%, #0c1830 100%); box-shadow: 0 12px 28px rgba(16, 32, 58, 0.28); backdrop-filter: none; }
+  .tabbar.side > div { position: sticky; top: 80px; flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.4rem; }
+  .tabbar.side button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: left; border: 0 !important; border-radius: 0.95rem; min-height: 3.1rem; padding: 0.55rem 0.9rem; white-space: normal; color: rgba(255, 255, 255, 0.88) !important; background: rgba(255, 255, 255, 0.07); font-size: 1rem; }
+  .tabbar.side button:hover { background: rgba(255, 255, 255, 0.16); color: #fff !important; }
+  .tabbar.side button[aria-selected="true"] { background: linear-gradient(135deg, #ee7b3f, #c4491a); color: #fff !important; font-weight: 800; box-shadow: 0 6px 16px rgba(196, 73, 26, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.55); }
+  .tabbar.side button b { background: #fff !important; color: #10203a !important; }
 }
 
 /* Progrès du jeune : l'étoile reçue tombe du haut vers sa mission, puis la barre « fait pop » quand elle arrive */
@@ -187,3 +190,22 @@
 @keyframes bar-pop { 0% { transform: scale(1); } 40% { transform: scale(1.03); box-shadow: 0 0 0 3px rgba(220, 242, 71, 0.8); } 100% { transform: scale(1); } }
 .bar-pop { animation: bar-pop 600ms ease-out; }
 @media (prefers-reduced-motion: reduce) { .star-drop { display: none; } .bar-pop { animation: none; } }
+
+/* ---------- Bulletin de départ : fond clair « terrain » + panneau « court » pour l'image du joueur ---------- */
+.bul-body {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none' stroke='%232f7d4a' stroke-width='2.5' stroke-opacity='0.12'%3E%3Crect vector-effect='non-scaling-stroke' x='30' y='20' width='340' height='200'/%3E%3Cline vector-effect='non-scaling-stroke' x1='30' y1='45' x2='370' y2='45'/%3E%3Cline vector-effect='non-scaling-stroke' x1='30' y1='195' x2='370' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='120' y1='45' x2='120' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='280' y1='45' x2='280' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='120' y1='120' x2='280' y2='120'/%3E%3Cline vector-effect='non-scaling-stroke' x1='200' y1='10' x2='200' y2='230' stroke-dasharray='7 7'/%3E%3C/svg%3E") center top / 760px auto repeat-y,
+    radial-gradient(600px 300px at 0% 0%, rgba(220, 242, 71, 0.22), transparent 70%),
+    linear-gradient(180deg, #f6fbf3 0%, #eaf3ff 100%);
+}
+.bul-court {
+  position: relative; overflow: hidden; isolation: isolate; color: #fff;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' fill='none' stroke='white' stroke-width='2.5' stroke-opacity='0.5'%3E%3Crect vector-effect='non-scaling-stroke' x='30' y='20' width='340' height='200'/%3E%3Cline vector-effect='non-scaling-stroke' x1='30' y1='45' x2='370' y2='45'/%3E%3Cline vector-effect='non-scaling-stroke' x1='30' y1='195' x2='370' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='120' y1='45' x2='120' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='280' y1='45' x2='280' y2='195'/%3E%3Cline vector-effect='non-scaling-stroke' x1='120' y1='120' x2='280' y2='120'/%3E%3Cline vector-effect='non-scaling-stroke' x1='200' y1='10' x2='200' y2='230' stroke-dasharray='7 7'/%3E%3C/svg%3E") center / 100% 100% no-repeat,
+    radial-gradient(520px 260px at 10% 0%, rgba(255, 255, 255, 0.28), transparent 65%),
+    linear-gradient(135deg, #1d4ed8 0%, #2f78d6 55%, #14958f 100%);
+  box-shadow: 0 14px 32px rgba(29, 78, 216, 0.35);
+}
+.bul-court::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 90% 8%, rgba(220, 242, 71, 0.55), transparent 30%); }
+.bul-court::after { content: "🎾"; position: absolute; right: 14px; bottom: 8px; font-size: 3.2rem; line-height: 1; transform: rotate(-18deg); opacity: 0.95; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3)); pointer-events: none; }
+.bul-word { background: linear-gradient(135deg, #e9ff5a, #bfe627); color: #10203a; box-shadow: 0 8px 22px rgba(144, 180, 20, 0.45); }
