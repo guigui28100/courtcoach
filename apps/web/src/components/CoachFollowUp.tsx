@@ -95,7 +95,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 }
 
 // Bilan de départ, version simple : une note par domaine, deux phrases, et des missions créées en un clic
-export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
+function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [rt, setRt] = useState<Record<string, number>>(() => Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)));
   const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? ""), [word, setWord] = useState(saved?.appreciation ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
