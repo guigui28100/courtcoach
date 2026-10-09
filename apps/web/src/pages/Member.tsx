@@ -275,7 +275,7 @@ export function FamilySpace() {
                 {players!.map((x, i) => <button key={x.id} onClick={() => setChosen(i)} aria-pressed={i === chosen} className={"flex min-h-11 items-center gap-2 rounded-full border-2 py-1 pl-1 pr-4 font-bold " + (i === chosen ? "border-ink bg-ink text-white" : "border-line bg-white")}><Avatar name={fullName(x)} size={34} />{x.firstName}</button>)}
               </div>
             )}
-            <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-start md:gap-6">
+            <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <div className="tabbar side">
               <div role="tablist" aria-label="Sections du suivi">
                 {FTABS.map(([k, label]) => (
