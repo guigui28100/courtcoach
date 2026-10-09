@@ -27,3 +27,4 @@
 **Entraîneurs de comité** : comptes créés par le coach (e-mail, prénom, mot de passe chiffré). Chacun ne voit que les jeunes que le coach coche ; ni santé, ni notes privées ; aucun accès aux adultes. Ouvertures de fiche et de vidéo inscrites au journal (12 mois). Compte supprimable à tout moment par le coach ; double authentification possible.
 
 **Programmations de tournoi** : document déposé par le coach ou un entraîneur de comité pour des jeunes précis (titre, fichier, jeunes concernés, auteur). Visible du coach et des entraîneurs concernés ; de la famille et du jeune seulement si le déposant l'a partagé. Conservation 12 mois, suppression avec la fiche.
+- Renseignements saisis par les parents (club, licence, classement, main, revers, entraînement, disponibilités, santé facultative) : base légale = consentement des responsables légaux ; modifiables à tout moment ; visibles du coach et des entraîneurs (santé : coach et parents seulement) ; effacés avec la fiche.

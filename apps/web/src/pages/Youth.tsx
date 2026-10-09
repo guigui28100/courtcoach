@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
-import { MissionBar, Planet, Stars } from "../components/Galaxy";
+import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
+import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
@@ -11,7 +12,7 @@ import { SelfEvalSection } from "../components/SelfEval";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
+import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -25,9 +26,9 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
   return (
     <section className="gal-pop grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
-        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">Ma galaxie tennis</p>
-        <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Salut {p.firstName} !</h1>
-        <p className="m-0 max-w-xl text-lg text-white/85">Ici, tu retrouves tes missions du trimestre, tes étoiles, ton bulletin à remplir, tes vidéos (tu en envoies à ton coach, et il peut t'en envoyer) et ton radar de progrès.</p>
+        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
+        <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">{isTeen(p) ? `${p.firstName}` : `Salut ${p.firstName} !`}</h1>
+        <p className="m-0 max-w-xl text-lg text-white/85">{isTeen(p) ? "Tes missions du trimestre, tes étoiles, tes bulletins, tes vidéos et ta progression : tout ton suivi au même endroit." : "Ici, tu retrouves tes missions du trimestre, tes étoiles, ton bulletin à remplir, tes vidéos (tu en envoies à ton coach, et il peut t'en envoyer) et ton radar de progrès."}</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
           {starsTotal > 0 && <li className="gal-chip">⭐ {starsTotal} étoile{starsTotal > 1 ? "s" : ""}</li>}
           {done > 0 && <li className="gal-chip">🎯 {done} mission{done > 1 ? "s" : ""} accomplie{done > 1 ? "s" : ""}</li>}
@@ -35,7 +36,7 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
           {p.ranking && <li className="gal-chip">🎾 Classement {p.ranking}{p.targetRanking ? ` → objectif ${p.targetRanking}` : ""}</li>}
         </ul>
       </div>
-      <Planet className="mx-auto max-w-[220px]" />
+      {isTeen(p) ? <CourtMark className="mx-auto max-w-[220px]" /> : <Planet className="mx-auto max-w-[220px]" />}
     </section>
   );
 }
@@ -89,7 +90,7 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
                     <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : g.progress > 0 ? `${g.progress} %` : "🎯 À travailler"}</span></div>
                     {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
                     {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
-                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
+                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar teen={isTeen(p)} value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
                     {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
                   </div>
                 ); })}
@@ -260,6 +261,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   }, [previewId, version]);
 
   const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
+  useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans (d'après la date de naissance)
   const tab: Tab = (TABS.find(([k]) => k === (params.get("onglet") === "bulletin" ? "bulletins" : params.get("onglet")))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const stars = useStars(p?.id, version);
@@ -272,7 +274,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   return (
     <div className="relative isolate overflow-clip">
       <Stars />
-      <div className="relative z-10 mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
+      <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
         {previewId && (
           <p className="glass m-0 flex flex-wrap items-center justify-between gap-2 !p-3 text-sm" role="note">
             <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {p?.firstName ?? "le jeune"} (sans pouvoir envoyer de vidéo).</span>
@@ -282,8 +284,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
         {p && (
-          <>
-            <nav className="gal-tabs" aria-label="Mon espace">
+          <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-start md:gap-6">
+            <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
@@ -313,7 +315,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                 </section>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

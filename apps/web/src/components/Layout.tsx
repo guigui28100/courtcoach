@@ -54,7 +54,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
-      <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "border-white/30 bg-[#1b1863] shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
+      <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
           <Brand light={galaxy} />
           <nav aria-label="Menu principal" className="hidden items-center gap-6 md:flex">
@@ -72,7 +72,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <main id="contenu" className={"flex-1 " + (galaxy ? "galaxy-sky" : "")}><div key={pathname} className="page-in">{children}</div></main>
 
       {me && (
-        <nav aria-label="Menu principal" className={"print:hidden sticky bottom-0 z-40 grid border-t md:hidden " + (galaxy ? "border-white/30 bg-[#1b1863]" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
+        <nav aria-label="Menu principal" className={"print:hidden sticky bottom-0 z-40 grid border-t md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
           {items.map((i) => (
             <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-bold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#dcf247]" : "text-white/80") : (isActive ? "bg-[#fdf1ea] text-clay" : "text-muted"))}>
               <Icon name={i.icon} />{i.short ?? i.label}

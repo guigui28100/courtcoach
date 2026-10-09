@@ -86,6 +86,7 @@
 .gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 1.5rem; background: rgba(27, 24, 99, 0.96); backdrop-filter: blur(12px); box-shadow: 0 10px 28px rgba(20, 16, 80, 0.55); }
 .gal-tabs > div { display: flex; gap: 0.5rem; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 24px), transparent); }
 .gal-tabs > div::-webkit-scrollbar { display: none; }
+.gal-bar { background: #1b1863; }
 .hero-court { color: rgba(255, 255, 255, 0.22); }
 
 /* ---------- Univers « galaxie » : espace des comptes jeunes (aucune image ni police extérieure) ---------- */
@@ -117,6 +118,28 @@
   .planet-float { animation: float 7s ease-in-out infinite; }
   .gal-pop { animation: pop 0.5s ease-out both; }
 }
+/* ---------- Thème « ados » (plus de 10 ans) : sobre, graphite, lignes de court — choisi d'après la date de naissance ---------- */
+[data-gal="teen"] .galaxy-sky {
+  color: #eef1f6;
+  background:
+    radial-gradient(900px 420px at 85% -10%, rgba(45, 212, 191, 0.16), transparent 60%),
+    radial-gradient(800px 480px at 0% 110%, rgba(124, 92, 255, 0.2), transparent 60%),
+    linear-gradient(180deg, #121a2b 0%, #0b1220 100%);
+}
+[data-gal="teen"] .galaxy-sky::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.55;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px; mask-image: linear-gradient(180deg, #000, transparent 85%);
+}
+[data-gal="teen"] .stars { display: none; }
+[data-gal="teen"] .gal-bar { background: #0a0f1c; border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+[data-gal="teen"] .bulletin-hero { background: radial-gradient(520px 230px at 8% -10%, rgba(45, 212, 191, 0.3), transparent 65%), radial-gradient(420px 260px at 100% 110%, rgba(124, 92, 255, 0.35), transparent 60%), #0b1220; }
+[data-gal="teen"] .gal-tabs { border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 0.9rem; background: rgba(10, 15, 28, 0.94); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+[data-gal="teen"] .gal-tabs button { border-radius: 0.6rem; }
+@layer components {
+  [data-gal="teen"] .glass { border-width: 1px; border-color: rgba(255, 255, 255, 0.14); border-radius: 1rem; background: rgba(255, 255, 255, 0.06); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.25); }
+  [data-gal="teen"] .gal-chip { border-radius: 0.5rem; background: rgba(255, 255, 255, 0.09); font-weight: 600; }
+}
 @layer components {
   .glass { @apply rounded-3xl border-2 border-white/45 bg-white/[0.24] p-5 text-white backdrop-blur-md; box-shadow: 0 10px 32px rgba(49, 46, 129, 0.25); }
   .glass h2, .glass h3 { @apply text-white; }
@@ -136,4 +159,19 @@
 @media print {
   @page { size: A4; margin: 10mm; }
   body, .galaxy-sky { background: #fff !important; }
+}
+
+/* Espace du jeune : les onglets passent en colonne à gauche sur ordinateur (en haut sur téléphone) */
+@media (min-width: 768px) {
+  .gal-tabs.side { position: sticky; top: 88px; padding: 0.6rem; }
+  .gal-tabs.side > div { flex-direction: column; overflow: visible; mask-image: none; padding: 2px; gap: 0.4rem; }
+  .gal-tabs.side button { justify-content: flex-start; width: 100%; text-align: left; min-height: 3rem; border-radius: 0.9rem; }
+}
+
+/* Espace des parents : onglets en colonne à gauche sur ordinateur (en haut sur téléphone) */
+@media (min-width: 768px) {
+  .tabbar.side { position: sticky; top: 80px; margin-inline: 0; padding: 0.5rem; border: 2px solid var(--color-line); border-radius: 1rem; background: #fff; }
+  .tabbar.side > div { flex-direction: column; overflow: visible; mask-image: none; border-bottom: 0; gap: 0.25rem; }
+  .tabbar.side button { width: 100%; text-align: left; border-bottom: 0 !important; border-left: 4px solid transparent; border-radius: 0.6rem; min-height: 3rem; white-space: normal; }
+  .tabbar.side button[aria-selected="true"] { border-left-color: var(--color-clay); background: rgba(0, 0, 0, 0.04); }
 }

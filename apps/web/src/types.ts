@@ -24,6 +24,13 @@ export interface GoalCheckpoint { authorId?: string | null; authorName?: string 
 export interface Goal { targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
 
+// Âge en années pleines d'après la date de naissance (null si inconnue)
+export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
+  if (!birthDate) return null; const b = new Date(birthDate); if (Number.isNaN(b.getTime())) return null;
+  let a = now.getFullYear() - b.getFullYear(); const m = now.getMonth() - b.getMonth(); if (m < 0 || (m === 0 && now.getDate() < b.getDate())) a--; return a;
+}
+// Thème « ados » à partir de 11 ans (plus de 10 ans) ; sans date de naissance : le thème « galaxie » des plus jeunes
+export const isTeen = (p: Pick<Player, "birthDate"> | null | undefined) => { const a = ageOf(p?.birthDate); return a !== null && a > 10; };
 export const fullName = (p: Pick<Player, "firstName" | "lastName">) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Joueur";
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 // Saison sportive : de septembre à août (ex. « 2026-2027 »)

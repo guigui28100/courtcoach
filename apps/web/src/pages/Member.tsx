@@ -7,6 +7,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { CourseStar, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
+import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
@@ -217,8 +218,8 @@ function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]
   );
 }
 
-type FTab = "accueil" | "objectifs" | "evaluations" | "etoiles" | "matchs" | "videos" | "compte";
-const FTABS: [FTab, string][] = [["accueil", "🏠 Accueil"], ["objectifs", "🎯 Objectifs"], ["evaluations", "📊 Évaluations"], ["etoiles", "⭐ Étoiles"], ["matchs", "🏟️ Matchs"], ["videos", "🎬 Vidéos"], ["compte", "🔒 Compte"]];
+type FTab = "accueil" | "renseignements" | "objectifs" | "evaluations" | "etoiles" | "matchs" | "videos" | "compte";
+const FTABS: [FTab, string][] = [["accueil", "🏠 Accueil"], ["renseignements", "📝 Renseignements"], ["objectifs", "🎯 Objectifs"], ["evaluations", "📊 Évaluations"], ["etoiles", "⭐ Étoiles"], ["matchs", "🏟️ Matchs"], ["videos", "🎬 Vidéos"], ["compte", "🔒 Compte"]];
 
 // Carte cliquable de l'accueil
 function Shortcut({ icon, title, text, hot = false, onClick }: { icon: string; title: string; text: string; hot?: boolean; onClick: () => void }) {
@@ -274,7 +275,8 @@ export function FamilySpace() {
                 {players!.map((x, i) => <button key={x.id} onClick={() => setChosen(i)} aria-pressed={i === chosen} className={"flex min-h-11 items-center gap-2 rounded-full border-2 py-1 pl-1 pr-4 font-bold " + (i === chosen ? "border-ink bg-ink text-white" : "border-line bg-white")}><Avatar name={fullName(x)} size={34} />{x.firstName}</button>)}
               </div>
             )}
-            <div className="tabbar">
+            <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-start md:gap-6">
+            <div className="tabbar side">
               <div role="tablist" aria-label="Sections du suivi">
                 {FTABS.map(([k, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
@@ -291,6 +293,7 @@ export function FamilySpace() {
                     <Avatar name={fullName(p)} size={64} />
                     <div className="min-w-0"><h2 className="m-0">{fullName(p)}</h2><p className="m-0 text-muted">{[p.ranking && `Classement ${p.ranking}`, p.targetRanking && `objectif ${p.targetRanking}`].filter(Boolean).join(" · ") || "Suivi de la saison"}</p></div>
                   </section>
+                  {infoMissing(p) > 0 && <button type="button" className="card grid gap-1 border-2 !border-clay text-left" onClick={() => go("renseignements")}><strong>📝 Merci de compléter la fiche de renseignements de {p.firstName}</strong><span className="text-sm text-muted">Club, licence, classement, disponibilités… Cela prend 2 minutes et aide le coach. Cliquez ici pour la remplir.</span></button>}
                   <div className="grid gap-3 sm:grid-cols-2">
                     {fresh.length > 0 && <Shortcut hot icon="🎬" title={fresh.every((v) => v.fromCoach) ? `Le coach a envoyé ${fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"}` : `Du nouveau dans les vidéos (${fresh.length})`} text="Regarder la vidéo du coach, lire ses conseils et les images annotées." onClick={() => go("videos")} />}
                     <Shortcut icon="🎯" title={here.length ? (evaluated ? `${achieved} objectif${achieved > 1 ? "s" : ""} atteint${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler`) : "Objectifs"} text={here.length ? (evaluated ? `Bilan du trimestre ${t}` : `Trimestre ${t} : le coach fera le point à la fin.`) : "Le coach n'a pas encore fixé d'objectifs pour ce trimestre."} onClick={() => go("objectifs")} />
@@ -301,6 +304,7 @@ export function FamilySpace() {
                   </div>
                 </>
               )}
+              {tab === "renseignements" && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
               {tab === "objectifs" && <GoalsTab goals={list} stars={stars} />}
               {tab === "evaluations" && <EvalTab p={p} goals={list} />}
               {tab === "etoiles" && <><StarsRadar stars={stars} who="famille" /><StarsCard stars={stars} who="famille" /></>}
@@ -314,6 +318,7 @@ export function FamilySpace() {
                   <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement ton compte (le dossier du joueur reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
                 </section>
               )}
+            </div>
             </div>
           </>
         )}

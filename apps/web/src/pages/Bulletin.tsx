@@ -3,13 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { ReactNode, useEffect, useState } from "react";
 import { get } from "../api";
 import { useAuth } from "../auth";
-import { Planet, Stars } from "../components/Galaxy";
+import { CourtMark, Planet, Stars } from "../components/Galaxy";
+import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { ageOf, isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -38,6 +39,7 @@ export default function Bulletin() {
   const [p, setP] = useState<Player | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [missing, setMissing] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
   const [selfEvals, setSelfEvals] = useState<SelfEvaluation[]>([]);
   const { evals, matches } = useFollowUp(id);
   const allVideos = useVideos();
@@ -45,9 +47,11 @@ export default function Bulletin() {
   useEffect(() => {
     get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true));
     get<Goal[]>(`/players/${id}/goals?season=${season}`).then(setGoals).catch(() => setGoals([]));
+    get<{ signature: string | null }>(`/players/${id}/signature`).then((r) => setSignature(r.signature)).catch(() => setSignature(null));
     get<SelfEvaluation[]>(`/players/${id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
   }, [id, season]);
 
+  useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans
   const staff = me?.role === "COACH" || me?.role === "TRAINER";
   const back = staff ? `/coach/centre/${id}` : "/suivi";
   if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
@@ -78,7 +82,9 @@ export default function Bulletin() {
   const LAB = { ACHIEVED: "Atteinte", NOT_ACHIEVED: "Non atteinte", IN_PROGRESS: "En cours" } as const;
   const done = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
-  const facts = [["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]].filter(([, v]) => v);
+  const age = ageOf(p.birthDate);
+  // Bilan de départ : l'en-tête montre toujours l'âge, le classement, le style de jeu et l'objectif de l'année (« — » si pas encore renseigné)
+  const facts = (t === 0 ? [["Âge", age !== null ? `${age} ans` : "—"], ["Classement", p.ranking || "—"], ["Style de jeu", p.playStyle || "—"], ["Objectif de l'année", p.targetRanking || "—"], ["Main", p.hand], ["Revers", p.backhand]] : [["Âge", age !== null ? `${age} ans` : null], ["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]]).filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
 
   // Carte d'un domaine de compétences (l'attitude est placée sous le radar, les autres domaines à côté)
@@ -113,10 +119,16 @@ export default function Bulletin() {
               <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span></p>
               {facts.length > 0 && <ul className="m-0 mt-1 flex list-none flex-wrap gap-2 p-0">{facts.map(([k, v]) => <li key={k} className="gal-chip"><span className="text-white/70">{k}</span> {v}</li>)}</ul>}
             </div>
-            <Planet className="relative mx-auto max-w-[150px]" />
+            {isTeen(p) ? <CourtMark className="relative mx-auto max-w-[150px]" /> : <Planet className="relative mx-auto max-w-[150px]" />}
           </header>
 
           <div className="grid gap-6 p-6 sm:p-8">
+            {t === 0 && ev?.appreciation?.trim() && (
+              <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
+                  <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
+                  <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
+                </blockquote>
+            )}
             {here.length > 0 && (
               <section className="grid gap-3" aria-labelledby="bul-missions">
                 <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
@@ -134,7 +146,7 @@ export default function Bulletin() {
 
 
 
-            {(rated || t === 0 || !!ev?.appreciation?.trim()) && (
+            {(rated || t === 0 || (t > 0 && !!ev?.appreciation?.trim())) && (
               <section className="grid gap-5 rounded-3xl border-2 border-[#d9ccff] p-4 sm:p-5" aria-labelledby="bul-image">
                 <h2 id="bul-image" className="m-0 text-2xl">📸 Image du joueur</h2>
             {rated ? (
@@ -149,7 +161,7 @@ export default function Bulletin() {
                   <Tint emoji="🎯" title={t === 0 ? "Axes de progrès" : "À travailler"} text={ev.improve} bg="#fff6dc" ink="#8a5a00" />
                 </div>
               )}
-              {ev?.appreciation?.trim() && (
+              {t > 0 && ev?.appreciation?.trim() && (
                 <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
@@ -182,7 +194,7 @@ export default function Bulletin() {
             ); })()}
 
 
-            <div className="mt-2 grid grid-cols-2 gap-8 break-inside-avoid text-sm text-muted"><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature du coach</div><div className="min-h-20 border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
+            <div className="mt-2 grid grid-cols-2 items-end gap-8 break-inside-avoid text-sm text-muted"><div className="grid content-end">{signature ? <img src={signature} alt="Signature du coach" className="mb-1 h-16 w-auto max-w-full justify-self-start object-contain" /> : <div className="h-16" />}<div className="border-t-2 border-[#10203a] pt-1">Signature du coach</div></div><div className="border-t-2 border-[#10203a] pt-1">Signature des parents</div></div>
             <p className="m-0 text-center text-xs text-muted">✦ Tennis Club Houdan · Bulletin généré avec CourtCoach le {fmtDate(new Date().toISOString())} ✦</p>
           </div>
         </article>

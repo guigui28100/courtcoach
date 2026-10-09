@@ -256,11 +256,23 @@ const SPEEDS = [0.25, 0.5, 1];
 const fmtS = (t: number) => `${t.toFixed(2).replace(".", ",")} s`;
 const frDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-// Enregistre une image annotée dans l'analyse d'une vidéo (30 secondes maximum d'attente).
+// Enregistre une image annotée dans l'analyse d'une vidéo.
+// 1) un petit appel « réveille » le serveur (il peut dormir quelques secondes) et compte les images déjà là ;
+// 2) l'envoi attend 30 secondes ; 3) en cas de silence, on vérifie si l'image est quand même arrivée, sinon on réessaie UNE fois (jamais de doublon).
 async function saveImage(videoId: string, blob: Blob, note: string) {
-  const stop = new AbortController(), timer = setTimeout(() => stop.abort(), 30000);
-  try { await api(`/videos/${videoId}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
-  finally { clearTimeout(timer); }
+  const count = async () => { try { return ((await api<{ images?: unknown[] }>(`/videos/${videoId}`)).images ?? []).length; } catch { return null; } };
+  const send = async (ms: number) => {
+    const stop = new AbortController(), timer = setTimeout(() => stop.abort(), ms);
+    try { await api(`/videos/${videoId}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
+    finally { clearTimeout(timer); }
+  };
+  const before = await count();
+  try { await send(30000); return; } catch (x) {
+    if ((x as Error).name !== "AbortError") throw x;
+    const now = await count();
+    if (before !== null && now !== null && now > before) return; // l'image était bien arrivée, seule la réponse s'est perdue
+  }
+  await send(45000); // deuxième et dernier essai
 }
 
 // Un lecteur de la comparaison : image par image, curseur, et « le geste démarre ici ».
