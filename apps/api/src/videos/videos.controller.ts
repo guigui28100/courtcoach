@@ -34,6 +34,18 @@ export class VideosController {
   }
   @Roles(Role.COACH, Role.TRAINER) @Delete("videos/:id/images/:imageId") @HttpCode(204) removeImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.removeImage(u, id, imageId); }
 
+  // Commentaire audio du coach (un par vidéo)
+  @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/audio") putAudio(@CurrentUser() u: AuthUser, @Param("id") id: string, @Query("seconds") seconds: string | undefined, @Req() req: Request) { return this.svc.putAudio(u, id, req.body, seconds); }
+  @Get("videos/:id/audio")
+  async audio(@CurrentUser() u: AuthUser, @Param("id") id: string, @Headers("range") range: string | undefined, @Res() res: Response) {
+    const r = await this.svc.audioFile(u, id, range);
+    res.status(r.partial ? 206 : 200).set({
+      "Content-Type": r.mime, "Content-Length": String(r.data.length), "Accept-Ranges": "bytes", ...(r.partial ? { "Content-Range": `bytes ${r.start}-${r.end}/${r.total}` } : {}),
+      "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline",
+    }).end(r.data);
+  }
+  @Roles(Role.COACH, Role.TRAINER) @Delete("videos/:id/audio") @HttpCode(204) removeAudio(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.removeAudio(u, id); }
+
   @Get("videos/:id") detail(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.detail(u, id); }
   @Delete("videos/:id") @HttpCode(204) remove(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.remove(u, id); }
   @Post("videos/:id/seen") @HttpCode(204) seen(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.markSeen(u, id); }

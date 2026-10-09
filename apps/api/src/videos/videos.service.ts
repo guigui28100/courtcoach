@@ -25,6 +25,17 @@ function sniffImage(b: Buffer): string | null {
   return null;
 }
 
+// Commentaire audio : 2 Mo au maximum, le vrai format est vérifié (webm / ogg / mp4 / wav)
+const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
+const MAX_AUDIO_SECONDS = 300;
+function sniffAudio(b: Buffer): string | null {
+  if (b.length > 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return "audio/webm";
+  if (b.length > 4 && b.subarray(0, 4).toString("latin1") === "OggS") return "audio/ogg";
+  if (b.length > 12 && b.subarray(4, 8).toString("latin1") === "ftyp") return "audio/mp4";
+  if (b.length > 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WAVE") return "audio/wav";
+  return null;
+}
+
 @Injectable()
 export class VideosService {
   constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
@@ -45,8 +56,8 @@ export class VideosService {
   }
 
   private async usedBytes() {
-    const [v, i] = await Promise.all([this.prisma.video.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoImage.aggregate({ _sum: { sizeBytes: true } })]);
-    return (v._sum.sizeBytes ?? 0) + (i._sum.sizeBytes ?? 0);
+    const [v, i, a] = await Promise.all([this.prisma.video.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoImage.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoAudio.aggregate({ _sum: { sizeBytes: true } })]);
+    return (v._sum.sizeBytes ?? 0) + (i._sum.sizeBytes ?? 0) + (a._sum.sizeBytes ?? 0);
   }
 
   // ----- Envoi en trois temps : annoncer, envoyer les morceaux, terminer -----
@@ -117,7 +128,7 @@ export class VideosService {
   }
 
   // ----- Listes -----
-  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; _count?: { messages: number } }, user?: AuthUser) {
+  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
     const coach = !!user && isStaff(user);
     const visible = a && (coach || a.sentAt);
@@ -130,13 +141,14 @@ export class VideosService {
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
       images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
+      audio: v.audio && (coach || a?.sentAt || v.fromCoach) ? { seconds: v.audio.seconds } : null,
       messageCount: v._count?.messages ?? 0,
     };
   }
   private analysisOut(a: any, staff = false) {
     return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId), ...(staff ? { authorName: a.authorName, authorRole: a.authorRole } : {}) };
   }
-  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, _count: { select: { messages: true } } };
+  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
 
   async list(user: AuthUser) {
     if (user.role === Role.COACH) await this.purgeExpired();
@@ -250,6 +262,50 @@ export class VideosService {
     await this.load(user, id);
     const r = await this.prisma.videoImage.deleteMany({ where: { id: imageId, videoId: id } });
     if (!r.count) throw new NotFoundException("Image introuvable");
+  }
+
+  // ----- Commentaire audio du coach : visible par la personne concernée une fois l'analyse envoyée (ou tout de suite si le coach envoie une vidéo au joueur) -----
+  private async audioVisible(user: AuthUser, videoId: string) {
+    const video = await this.load(user, videoId);
+    if (isStaff(user) || video.fromCoach) return;
+    if (!(await this.prisma.analysis.findFirst({ where: { videoId, sentAt: { not: null } } }))) throw new NotFoundException("Audio introuvable");
+  }
+  async putAudio(user: AuthUser, id: string, body: unknown, seconds?: string) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const v = await this.prisma.video.findUnique({ where: { id } });
+    if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Audio invalide");
+    if (body.length > MAX_AUDIO_BYTES) throw new BadRequestException("Audio trop lourd (2 Mo maximum, environ 5 minutes).");
+    const mime = sniffAudio(body);
+    if (!mime) throw new BadRequestException("Audio invalide (format non reconnu).");
+    const old = await this.prisma.videoAudio.findUnique({ where: { videoId: id }, select: { sizeBytes: true } });
+    const used = (await this.usedBytes()) - (old?.sizeBytes ?? 0);
+    if (used + body.length > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein.", 507);
+    const secs = Math.max(0, Math.min(MAX_AUDIO_SECONDS, Math.round(Number(seconds) || 0)));
+    const data = { data: Uint8Array.from(body), mimeType: mime, sizeBytes: body.length, seconds: secs, authorId: user.id, createdAt: new Date() };
+    await this.prisma.videoAudio.upsert({ where: { videoId: id }, create: { videoId: id, ...data }, update: data });
+    await this.audit.log(user.id, "audio-add", "Video", id);
+    return { seconds: secs };
+  }
+  async audioFile(user: AuthUser, id: string, range?: string) {
+    await this.audioVisible(user, id);
+    const a = await this.prisma.videoAudio.findUnique({ where: { videoId: id } });
+    if (!a) throw new NotFoundException("Audio introuvable");
+    const all = Buffer.from(a.data); const total = all.length;
+    const m = /^bytes=(\d*)-(\d*)$/.exec(range ?? "");
+    if (!m) return { data: all, start: 0, end: total - 1, total, mime: a.mimeType, partial: false };
+    let start = m[1] === "" ? Math.max(0, total - Number(m[2])) : Number(m[1]);
+    let end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), total - 1) : total - 1;
+    if (start >= total || start > end) start = 0, end = total - 1;
+    return { data: all.subarray(start, end + 1), start, end, total, mime: a.mimeType, partial: true };
+  }
+  async removeAudio(user: AuthUser, id: string) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const r = await this.prisma.videoAudio.deleteMany({ where: { videoId: id } });
+    if (!r.count) throw new NotFoundException("Audio introuvable");
+    await this.audit.log(user.id, "audio-delete", "Video", id);
   }
 
   // ----- Suppression -----

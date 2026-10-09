@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { AudioPlayer } from "./AudioNote";
 import { api, del, get, post } from "../api";
 import { Err, Field } from "./ui";
 import { fmtDate, fmtMo, MAX_VIDEO_BYTES, SHOTS, VideoDetail, VideoRow } from "../types";
@@ -108,6 +109,7 @@ export function VideoPanel({ id, onChanged, onSeen }: { id: string; onChanged: (
       <video controls playsInline preload="metadata" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
       {v.fromCoach && <p className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3"><strong>🎓 Vidéo envoyée par ton coach.</strong>{v.question ? <> Son message : « {v.question} »</> : " Regarde-la bien !"}</p>}
       {!v.fromCoach && v.question && <p className="m-0"><strong>Ta question :</strong> {v.question}</p>}
+      <AudioPlayer v={v} />
       {v.analysis?.sentAt ? <Analysis v={v} /> : !v.fromCoach && <p className="m-0 rounded-xl bg-sand p-3">Le coach n'a pas encore analysé cette vidéo. Tu seras prévenu ici dès que ce sera fait.</p>}
       {v.analysis?.sentAt && (
         <section className="grid gap-2" aria-label="Discussion avec le coach">

@@ -339,6 +339,7 @@ model Video {
   messages Message[]
   chunks   VideoChunk[]
   images   VideoImage[]
+  audio    VideoAudio?
 
   @@index([ownerId])
   @@index([playerId])
@@ -482,4 +483,17 @@ model CourseQuality {
   authorRole String?
 
   @@unique([playerId, day])
+}
+
+// Commentaire audio du coach sur une vidéo (un seul par vidéo) : suit la vidéo, donc supprimé avec elle (12 mois, retrait de l'accord image…).
+model VideoAudio {
+  id        String   @id @default(cuid())
+  videoId   String   @unique
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  data      Bytes
+  mimeType  String
+  sizeBytes Int
+  seconds   Int      @default(0)
+  authorId  String?
+  createdAt DateTime @default(now())
 }

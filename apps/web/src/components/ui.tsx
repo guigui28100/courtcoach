@@ -142,7 +142,7 @@ export function TabsBar({ tabs, active, onChange, label }: { tabs: [string, stri
 
 // Page à deux colonnes sur ordinateur : menu à gauche, contenu à droite (menu en haut sur téléphone)
 export const SideLayout = ({ nav, children }: { nav: ReactNode; children: ReactNode }) => (
-  <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-start md:gap-6">{nav}<div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">{children}</div></div>
+  <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-stretch md:gap-6">{nav}<div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">{children}</div></div>
 );
 
 // Qui a saisi : le coach est orange, chaque entraîneur de comité a sa propre couleur (stable, tirée de son identifiant)

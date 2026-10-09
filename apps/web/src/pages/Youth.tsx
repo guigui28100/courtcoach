@@ -77,27 +77,25 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-missions">
       <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions du trimestre {t}</h2>
       {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).map((axis) => {
-            const mine = here.filter((g) => g.axis === axis);
-            if (!mine.length) return null;
-            const m = MISSION[axis];
+        <ol className="m-0 grid list-none gap-3 p-0">
+          {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => here.filter((g) => g.axis === axis)).map((g) => {
+            const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"], st = statusAt(g, t), note = checkpointAt(g, t)?.comment.trim();
+            const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10;
             return (
-              <div key={axis} className="grid content-start gap-3 rounded-2xl bg-white/10 p-4" style={{ borderTop: `4px solid ${m.color}` }}>
-                <h3 className="m-0 text-lg" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</h3>
-                {mine.map((g) => { const st = statusAt(g, t), note = checkpointAt(g, t)?.comment.trim(); return (
-                  <div key={g.id} className="grid gap-1">
-                    <div className="flex items-start justify-between gap-2"><strong className="text-white">{g.title}</strong><span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : g.progress > 0 ? `${g.progress} %` : "🎯 À travailler"}</span></div>
-                    {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite depuis le trimestre {t - 1} : on la reprend !</small>}
-                    {g.indicator && <small className="text-white/75">Comment on le mesure : {g.indicator}</small>}
-                    {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><MissionBar teen={isTeen(p)} value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} /><small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
-                    {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
-                  </div>
-                ); })}
-              </div>
+              <li key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-4" style={{ borderLeft: `6px solid ${m.color}` }}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-bold" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
+                  <span className="gal-chip shrink-0" style={st ? { background: STATUS[st].bg, color: STATUS[st].ink } : undefined}>{st ? `${STATUS[st].emoji} ${STATUS[st].label}` : "🎯 À travailler"}</span>
+                </div>
+                <strong className="text-xl leading-snug text-white">{g.title}</strong>
+                {isCarriedOver(g, t) && <small className="font-bold text-[#dcf247]">🔁 Mission reconduite : on la reprend !</small>}
+                <MissionBar teen={isTeen(p)} value={missionPercent(earned, target)} color={m.color} label={`Mission : ${g.title}`} />
+                <small className="font-bold text-white/90">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target}</small>
+                {note && <small className="rounded-lg bg-white/10 p-2 text-white/90"><span aria-hidden="true">💬 </span>{note}</small>}
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
     </section>
   );
@@ -284,7 +282,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
         {p && (
-          <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-start md:gap-6">
+          <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
