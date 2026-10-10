@@ -21,6 +21,13 @@
   avant de publier.
 - À la fin, résumer en 2 ou 3 phrases ce qui a été changé.
 
+## Ne pas me faire bloquer par Vercel (formule gratuite : environ 100 publications par jour)
+- Chaque envoi (`git push`) d'un changement dans `apps/web` ou `apps/api` lance une publication d'aperçu chez Vercel, et chaque fusion de PR en lance une autre. Au-delà de la limite, Vercel bloque 24 h (« Deployment rate limited ») et je ne vois plus mes changements.
+- Donc : regrouper les modifications et ne faire qu'UN envoi par lot (jamais un envoi par petite retouche) ; faire tous les essais en local avant d'envoyer ; quand je demande plusieurs retouches à la suite, les faire toutes, puis envoyer une seule fois ; ne pas envoyer pour une simple réponse ou une vérification.
+- Une PR déjà ouverte reçoit tout le lot d'un coup. Les changements seulement dans des fichiers `.md` (comme celui-ci) ne lancent aucune publication.
+- UNE SEULE PR OUVERTE À LA FOIS : tant qu'une PR n'est pas fusionnée, toute nouvelle retouche s'ajoute À CETTE PR (même branche) ; on n'en ouvre une nouvelle que si la précédente est déjà fusionnée (vérifier son état à chaque fois). Ne pas ouvrir de PR pour une simple réponse, une vérification ou un changement de règles : on le glisse dans la prochaine PR. Ne remettre le lien d'une PR en fin de réponse que si quelque chose a changé dans cette PR (sinon : « rien à fusionner de nouveau »).
+- Si un envoi doit absolument être refait (erreur), le dire et regrouper avec le reste. En fin de réponse, rappeler s'il y a eu plusieurs publications dans la journée.
+
 ## État de l'application (démonstration)
 - Les pages `espace`, `profil`, `videos`, `analyse` et `messages` fonctionnent en **démonstration** :
   tout est enregistré dans le navigateur de la personne (aucun envoi sur Internet).
@@ -135,3 +142,4 @@
 - Onglets de la fiche du joueur (coach) : « 👨‍👩‍👧 Accords et famille » est TOUT EN BAS de la liste : Profil · Évaluation de départ · Définition des objectifs · Évaluations trimestrielles · Étoiles · Vidéos · Matchs · Bulletins · Accords et famille. Cela remplace les listes plus haut.
 - Bulletin : les cartes du BAS (missions par domaine, « À travailler au trimestre 1 », compétition, signatures) sont sur des fonds blancs PLEINS (`.bul-card` dans `index.css`) : on ne voit plus les lignes de court derrière elles ; seuls le fond de la page et le panneau « Image du joueur » montrent le décor.
 - Fiche du joueur (coach) : l’onglet « Étoiles » s’appelle « ⭐ Donner des étoiles » (même contenu). Cela remplace le nom dans les listes plus haut.
+- Évaluation de départ : plus aucun bouton ni création d'objectif dans cet onglet (le bouton « Aller à la définition des objectifs → » est retiré) ; les missions se donnent uniquement dans l'onglet « Définition des objectifs ».
