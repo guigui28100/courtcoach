@@ -10,7 +10,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { ageOf, isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { ageOf, isTeen, AXES, START_ITEMS, itemKey, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -168,6 +168,22 @@ export default function Bulletin() {
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
               )}
+              </section>
+            )}
+
+            {t === 0 && ev && Object.keys(START_ITEMS).some((k) => START_ITEMS[k].some(([i]) => ev.ratings[itemKey(k, i)])) && (
+              <section className="bul-card grid gap-3" aria-labelledby="bul-detail">
+                <h2 id="bul-detail" className="m-0 text-2xl">🔍 Le détail du bilan</h2>
+                <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+                  {AXES.map((a) => { const its = (START_ITEMS[a.key.toLowerCase()] ?? []).filter(([i]) => ev.ratings[itemKey(a.key.toLowerCase(), i)]); if (!its.length) return null; return (
+                    <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-1.5" aria-label={a.label}>
+                      <h3 className="m-0 border-b-2 pb-1 text-base" style={{ color: a.color, borderColor: `${a.color}55` }}>{EMOJI[a.key.toLowerCase()]} {a.label}</h3>
+                      <ul className="m-0 grid list-none gap-1.5 p-0">{its.map(([i, label]) => { const v = ev.ratings[itemKey(a.key.toLowerCase(), i)]; return (
+                        <li key={i} className="flex items-center justify-between gap-2 text-sm"><span className="font-bold text-[#1f2937]">{label}</span><span className="flex items-center gap-2"><span className="flex gap-0.5" aria-hidden="true">{[1, 2, 3, 4, 5].map((n) => <span key={n} className="h-2.5 w-5 rounded-full" style={{ background: n <= v ? a.color : "#e5e7eb" }} />)}</span><span className="w-7 text-right font-bold text-[#1f2937]">{v}/5</span></span></li>
+                      ); })}</ul>
+                    </section>
+                  ); })}
+                </div>
               </section>
             )}
 
