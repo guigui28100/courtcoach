@@ -45,6 +45,14 @@ export const EVAL_AXES: EvalAxis[] = [
   { key: "mental", label: "Mental", color: "#7a4cc2", skills: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["combativite", "Combativité"], ["confiance", "Confiance et autonomie"]] },
   { key: "attitude", label: "Attitude", color: "#8a6200", skills: [["assiduite", "Assiduité et ponctualité"], ["etat_esprit", "État d'esprit à l'entraînement"], ["esprit_equipe", "Esprit d'équipe et fair-play"]] },
 ];
+// Bilan de départ : le détail à noter dans chaque domaine (clé enregistrée : d_<domaine>_<point>)
+export const START_ITEMS: Record<string, [string, string][]> = {
+  technique: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["volee", "Volée"], ["smash", "Smash"]],
+  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"]],
+  mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
+  physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
+};
+export const itemKey = (axis: string, k: string) => `d_${axis}_${k}`;
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
 export interface Evaluation { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
 export interface MatchRow { opponentRanking?: string | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; date: string; tournament: string; round: string; result: "Victoire" | "Défaite"; score: string; remark: string; }
@@ -70,15 +78,16 @@ export const inPeriod = (iso: string, season: string, t: number) => { const d = 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 // Bilan de départ simple : une note par domaine (rangée sous la clé du domaine) ; sinon moyenne des compétences notées
 export const axisAverage = (ev: Pick<Evaluation, "ratings"> | undefined, axis: EvalAxis) => ev?.ratings?.[axis.key] || mean(axis.skills.map(([k]) => ev?.ratings?.[k]).filter((v): v is number => !!v));
-export const overallAverage = (ev: Pick<Evaluation, "ratings"> | undefined) => mean(Object.values(ev?.ratings ?? {}).filter((v) => v > 0));
-export const ratedCount = (ev: Pick<Evaluation, "ratings"> | undefined) => Object.values(ev?.ratings ?? {}).filter((v) => v > 0).length;
+const notDetail = ([k, v]: [string, number]) => v > 0 && !k.startsWith("d_"); // le détail du bilan de départ ne compte pas dans les moyennes
+export const overallAverage = (ev: Pick<Evaluation, "ratings"> | undefined) => mean(Object.entries(ev?.ratings ?? {}).filter(notDetail).map(([, v]) => v));
+export const ratedCount = (ev: Pick<Evaluation, "ratings"> | undefined) => Object.entries(ev?.ratings ?? {}).filter(notDetail).length;
 export const TOTAL_SKILLS = EVAL_AXES.reduce((n, a) => n + a.skills.length, 0);
 export const fmtAvg = (v: number) => (v ? v.toFixed(1).replace(".", ",") : "–");
 export const trend = (now: number, before: number) => (!now || !before ? "" : now > before + 0.05 ? "▲" : now < before - 0.05 ? "▼" : "=");
 // Tendance honnête : on ne compare que les compétences notées aux DEUX trimestres (sinon une évaluation partielle fausse la flèche).
 export function trendCommon(ev: Pick<Evaluation, "ratings"> | undefined, prev: Pick<Evaluation, "ratings"> | undefined, axis?: EvalAxis) {
   if (!ev || !prev) return "";
-  const keys = (axis ? axis.skills.map(([k]) => k) : Object.keys(ev.ratings)).filter((k) => ev.ratings[k] && prev.ratings[k]);
+  const keys = (axis ? axis.skills.map(([k]) => k) : Object.keys(ev.ratings).filter((k) => !k.startsWith("d_"))).filter((k) => ev.ratings[k] && prev.ratings[k]);
   if (!keys.length) return "";
   return trend(mean(keys.map((k) => ev.ratings[k])), mean(keys.map((k) => prev.ratings[k])));
 }

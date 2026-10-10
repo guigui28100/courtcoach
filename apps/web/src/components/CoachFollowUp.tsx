@@ -9,7 +9,7 @@ import { hasContent } from "./BulletinShelf";
 import { useStars } from "./Stars";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { AuthorBadge, Err, Field } from "./ui";
-import { RANKINGS, AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { RANKINGS, AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, START_ITEMS, itemKey, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -96,7 +96,9 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 
 // Bilan de départ, version simple : une note par domaine, deux phrases et un mot du coach (les missions se donnent dans « Définition des objectifs »)
 export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
-  const [rt, setRt] = useState<Record<string, number>>(() => Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)));
+  const [rt, setRt] = useState<Record<string, number>>(() => ({ ...Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)), ...Object.fromEntries(Object.entries(saved?.ratings ?? {}).filter(([k]) => k.startsWith("d_"))) }));
+  // Noter un point du détail : la note du domaine devient la moyenne des points notés (elle reste modifiable ensuite)
+  const setItem = (axis: string, key: string, n: number) => setRt((r) => { const next = { ...r, [key]: n }; const vals = (START_ITEMS[axis] ?? []).map(([k]) => next[itemKey(axis, k)]).filter(Boolean); if (vals.length) next[axis] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length); return next; });
   const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? ""), [word, setWord] = useState(saved?.appreciation ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   async function save(e: FormEvent) {
@@ -108,7 +110,7 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
   }
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
-      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine, deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définition des objectifs ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
+      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine (avec le détail si vous voulez), deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définition des objectifs ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
       <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "1. Où en est" : "Où en est"} {p.firstName} ?</legend>
         {EVAL_AXES.map((a) => (
           <div key={a.key} className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-white p-3" style={{ borderLeftColor: a.color }}>
@@ -122,6 +124,24 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
                 ))}
               </div>
             </div>
+            {t === 0 && START_ITEMS[a.key] && (
+              <div className="grid gap-1.5 border-t border-line pt-2" aria-label={`Détail ${a.label}`}>
+                <small className="hint">Le détail (facultatif) : la note du domaine se calcule toute seule.</small>
+                {START_ITEMS[a.key].map(([k, label]) => (
+                  <div key={k} role="radiogroup" aria-label={label} className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-bold">{label}</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <label key={n} className={"flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 text-sm font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink " + (rt[itemKey(a.key, k)] === n ? "border-transparent text-white" : "border-line bg-white text-muted")} style={rt[itemKey(a.key, k)] === n ? { background: a.color } : undefined}>
+                          <input type="radio" name={`d-${a.key}-${k}`} className="sr-only" checked={rt[itemKey(a.key, k)] === n} onChange={() => setItem(a.key, itemKey(a.key, k), n)} aria-label={`${label} : ${n} sur 5, ${RATING_LABELS[n]}`} />
+                          {n}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         <p className="hint m-0">1 = à travailler · 3 = acquis · 5 = point fort.</p>

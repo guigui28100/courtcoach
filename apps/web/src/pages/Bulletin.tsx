@@ -10,7 +10,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { ageOf, isTeen, AXES, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { ageOf, isTeen, AXES, START_ITEMS, itemKey, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -134,9 +134,9 @@ export default function Bulletin() {
               <section className="bul-card grid gap-3" aria-labelledby="bul-missions">
                 <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
                 <DomainMissions goals={here} render={(g) => { const st = statusAt(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
-                  <li key={g.id} className="grid gap-1">
-                    <div className="flex items-start justify-between gap-2"><span>{g.title}</span><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
-                    {note && <p className="m-0 rounded-xl bg-[#f3efff] p-2 text-sm"><span aria-hidden="true">💬 </span>{note}</p>}
+                  <li key={g.id} className="pl-1">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"><strong className="font-bold">{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#4b5566" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
+                    {note && <p className="m-0 mt-1 border-l-4 border-[#7c3aed] pl-2 text-sm italic text-[#4c1d95]"><strong className="not-italic">💬 Mot du coach : </strong>{note}</p>}
                   </li>
                 ); }} />
               </section>
@@ -163,11 +163,27 @@ export default function Bulletin() {
                 </div>
               )}
               {t > 0 && ev?.appreciation?.trim() && (
-                <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5">
+                <blockquote className="m-0 break-inside-avoid rounded-2xl border-l-8 border-[#7c3aed] bg-[#f3efff] p-5 text-[#1f2937]">
                   <p className="m-0 text-xl font-semibold leading-snug">« {ev.appreciation.trim()} »</p>
                   <footer className="mt-2 text-sm font-bold text-[#5b21b6]">💬 Le mot du coach</footer>
                 </blockquote>
               )}
+              </section>
+            )}
+
+            {t === 0 && ev && Object.keys(START_ITEMS).some((k) => START_ITEMS[k].some(([i]) => ev.ratings[itemKey(k, i)])) && (
+              <section className="bul-card grid gap-3" aria-labelledby="bul-detail">
+                <h2 id="bul-detail" className="m-0 text-2xl">🔍 Le détail du bilan</h2>
+                <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+                  {AXES.map((a) => { const its = (START_ITEMS[a.key.toLowerCase()] ?? []).filter(([i]) => ev.ratings[itemKey(a.key.toLowerCase(), i)]); if (!its.length) return null; return (
+                    <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-1.5" aria-label={a.label}>
+                      <h3 className="m-0 border-b-2 pb-1 text-base" style={{ color: a.color, borderColor: `${a.color}55` }}>{EMOJI[a.key.toLowerCase()]} {a.label}</h3>
+                      <ul className="m-0 grid list-none gap-1.5 p-0">{its.map(([i, label]) => { const v = ev.ratings[itemKey(a.key.toLowerCase(), i)]; return (
+                        <li key={i} className="flex items-center justify-between gap-2 text-sm"><span className="font-bold text-[#1f2937]">{label}</span><span className="flex items-center gap-2"><span className="flex gap-0.5" aria-hidden="true">{[1, 2, 3, 4, 5].map((n) => <span key={n} className="h-2.5 w-5 rounded-full" style={{ background: n <= v ? a.color : "#e5e7eb" }} />)}</span><span className="w-7 text-right font-bold text-[#1f2937]">{v}/5</span></span></li>
+                      ); })}</ul>
+                    </section>
+                  ); })}
+                </div>
               </section>
             )}
 
@@ -204,14 +220,14 @@ export default function Bulletin() {
   );
 }
 
-// Une seule carte par domaine (technique, tactique, physique, mental), avec dessous ce qu'il y a à travailler
+// Liste compacte : un titre par domaine (technique, tactique, physique, mental), puis une puce par mission
 function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: Goal) => ReactNode; rating?: (axisKey: string) => number | undefined }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
+    <div className="grid gap-3">
       {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase()); return (
-        <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-2 rounded-2xl p-4 shadow-sm" style={{ borderTop: `6px solid ${a.color}`, backgroundColor: "#ffffff", backgroundImage: `linear-gradient(180deg, ${a.color}26, #ffffff 70%)` }} aria-label={a.label}>
-          <h3 className="m-0 flex items-center justify-between gap-2 text-lg" style={{ color: a.color }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
-          <ul className="m-0 grid list-disc gap-1.5 pl-5">{list.map(render)}</ul>
+        <section key={a.key} className="grid min-w-0 break-inside-avoid gap-1" aria-label={a.label}>
+          <h3 className="m-0 flex items-center justify-between gap-2 border-b-2 pb-1 text-base" style={{ color: a.color, borderColor: `${a.color}55` }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
+          <ul className="bul-list m-0 grid list-disc gap-2 pl-6 text-[#1f2937]" style={{ ["--mk" as string]: a.color }}>{list.map(render)}</ul>
         </section>
       ); })}
     </div>
