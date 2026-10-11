@@ -3,7 +3,7 @@ import { del, get, post, put } from "../api";
 import { Avatar, Empty, Err, Field, hueOf } from "./ui";
 import { fmtDate, fullName, Player } from "../types";
 
-interface Trainer { id: string; email: string; firstName: string | null; mustChangePassword: boolean; lastLoginAt: string | null; twoFactor: boolean; playerIds: string[]; }
+interface Trainer { id: string; email: string; firstName: string | null; kind?: "COMITE" | "CLUB"; mustChangePassword: boolean; lastLoginAt: string | null; twoFactor: boolean; playerIds: string[]; }
 
 // Cases à cocher : les jeunes que l'entraîneur pourra voir (et eux seulement)
 export function PlayerPicker({ players, value, onChange, name, label }: { players: Player[]; value: string[]; onChange: (ids: string[]) => void; name: string; label?: string }) {
@@ -49,7 +49,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
   async function create(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); const form = e.currentTarget; const f = new FormData(form); setErr("");
     try {
-      const r = await post<{ id: string; email: string; temporaryPassword: string }>("/trainers", { firstName: String(f.get("firstName")), email: String(f.get("email")), playerIds: picked });
+      const r = await post<{ id: string; email: string; temporaryPassword: string }>("/trainers", { firstName: String(f.get("firstName")), email: String(f.get("email")), kind: String(f.get("kind")), playerIds: picked });
       setSecret({ email: r.email, password: r.temporaryPassword }); setAdding(false); setPicked([]); form.reset(); load();
     } catch (x) { setErr((x as Error).message); }
   }
@@ -69,8 +69,8 @@ export function TrainersTab({ players }: { players: Player[] }) {
   return (
     <section className="grid gap-4" aria-labelledby="tr-h">
       <div className="grid gap-1">
-        <h2 id="tr-h" className="m-0 text-xl">👥 Entraîneurs du comité</h2>
-        <p className="hint m-0">Un entraîneur de comité a son propre compte. Il ne voit <strong>que les jeunes que tu coches</strong> (les autres n'existent pas pour lui), n'a <strong>aucun accès</strong> aux demandes de coaching des adultes, et peut saisir objectifs, missions, bilans, bulletins, étoiles, matchs et analyses de vidéos de ses jeunes. Il ne voit pas la santé ni tes notes privées, et ne peut ni créer ni supprimer un jeune, ni gérer les accords et les comptes des familles.</p>
+        <h2 id="tr-h" className="m-0 text-xl">👥 Entraîneurs (comité et club)</h2>
+        <p className="hint m-0">Un entraîneur (de comité ou de club) a son propre compte. Il ne voit <strong>que les jeunes que tu coches</strong> (les autres n'existent pas pour lui), n'a <strong>aucun accès</strong> aux demandes de coaching des adultes, et peut saisir objectifs, missions, bilans, bulletins, étoiles, matchs et analyses de vidéos de ses jeunes. Il ne voit pas la santé ni tes notes privées, et ne peut ni créer ni supprimer un jeune, ni gérer les accords et les comptes des familles.</p>
       </div>
       {secret && <Secret email={secret.email} password={secret.password} onClose={() => setSecret(null)} />}
       {!adding ? <div><button className="btn-clay" onClick={() => setAdding(true)}>+ Ajouter un entraîneur</button></div> : (
@@ -80,18 +80,26 @@ export function TrainersTab({ players }: { players: Player[] }) {
             <Field label="Prénom" id="tr-first"><input id="tr-first" name="firstName" required maxLength={60} className="input" autoFocus /></Field>
             <Field label="Adresse e-mail (son identifiant)" id="tr-mail"><input id="tr-mail" name="email" type="email" required maxLength={200} className="input" autoComplete="off" /></Field>
           </div>
+          <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-bold">Type d'entraîneur</legend>
+            <div className="flex flex-wrap gap-2">
+              {([["COMITE", "🏛️ Entraîneur de comité"], ["CLUB", "🎾 Entraîneur de club"]] as const).map(([v, l], i) => (
+                <label key={v} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-4 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="radio" name="kind" value={v} defaultChecked={i === 0} className="h-5 w-5 accent-clay" />{l}</label>
+              ))}
+            </div>
+            <small className="hint">Dans les deux cas, il ne verra que les jeunes que tu coches ci-dessous.</small>
+          </fieldset>
           <PlayerPicker players={players} value={picked} onChange={setPicked} name="cet entraîneur" />
           <div className="flex flex-wrap gap-2"><button className="btn-clay">Créer le compte</button><button type="button" className="btn-outline" onClick={() => { setAdding(false); setErr(""); }}>Annuler</button></div>
         </form>
       )}
       <Err msg={err} />
       {saved && <p role="status" className="m-0 font-bold text-ok">{saved}</p>}
-      {list === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <Empty>Aucun entraîneur de comité pour l'instant.</Empty> : (
+      {list === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <Empty>Aucun entraîneur pour l'instant.</Empty> : (
         <ul className="m-0 grid list-none gap-4 p-0">
           {list.map((t) => { const sel = edits[t.id] ?? t.playerIds; const dirty = !!edits[t.id]; return (
             <li key={t.id} className="card grid gap-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
+                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-bold text-muted">{t.kind === "CLUB" ? "🎾 Club" : "🏛️ Comité"}</span></strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
                 <span className="flex flex-wrap gap-2"><button className="btn-outline btn-sm" onClick={() => reset(t)}>Nouveau mot de passe</button><button className="btn-danger btn-sm" onClick={() => remove(t)}>Supprimer le compte</button></span>
               </div>
               <PlayerPicker players={players} value={sel} onChange={(ids) => setEdits((o) => ({ ...o, [t.id]: ids }))} name={t.firstName ?? "lui"} />

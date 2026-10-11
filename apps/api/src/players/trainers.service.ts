@@ -7,7 +7,7 @@ import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { TrainerDto } from "./dto";
 
-// Entraîneurs de comité : comptes créés par le coach, qui ne voient QUE les jeunes que le coach leur confie.
+// Entraîneurs de comité ou de club (même compte, mêmes droits) : comptes créés par le coach, qui ne voient QUE les jeunes que le coach leur confie.
 // Le contrôleur est réservé au coach : un entraîneur ne peut ni créer un compte ni changer ses propres jeunes.
 @Injectable()
 export class TrainersService {
@@ -30,7 +30,7 @@ export class TrainersService {
 
   async list() {
     const rows = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null }, orderBy: { createdAt: "asc" }, include: { accesses: { select: { playerId: true } } } });
-    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
+    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, kind: u.trainerKind === "CLUB" ? "CLUB" : "COMITE", mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
   }
 
   async create(user: AuthUser, dto: TrainerDto) {
@@ -38,7 +38,7 @@ export class TrainersService {
     if (await this.prisma.user.findUnique({ where: { email } })) throw new ConflictException("Cet e-mail est déjà utilisé par un autre compte.");
     const ids = await this.checkPlayers(dto.playerIds ?? []);
     const temporaryPassword = this.generatePassword();
-    const u = await this.prisma.user.create({ data: { email, role: Role.TRAINER, firstName: dto.firstName.trim(), passwordHash: await hash(temporaryPassword), mustChangePassword: true } });
+    const u = await this.prisma.user.create({ data: { email, role: Role.TRAINER, firstName: dto.firstName.trim(), trainerKind: dto.kind === "CLUB" ? "CLUB" : "COMITE", passwordHash: await hash(temporaryPassword), mustChangePassword: true } });
     if (ids.length) await this.prisma.playerAccess.createMany({ data: ids.map((playerId) => ({ userId: u.id, playerId, relation: "entraineur" })) });
     await this.audit.log(user.id, "create-trainer", "User", u.id);
     return { id: u.id, email, temporaryPassword }; // montré une seule fois
