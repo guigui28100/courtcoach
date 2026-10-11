@@ -59,6 +59,7 @@ export class PlayersController {
   @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/stars/:day") saveStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string, @Body() dto: StarsDayDto) { return this.svc.saveStars(u, id, day, dto); }
   @Roles(Role.COACH, Role.TRAINER) @Patch("players/:id/stars/line/:lineId") updateStarLine(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("lineId") lid: string, @Body() dto: StarLineDto) { return this.svc.updateStarLine(u, id, lid, dto); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/line/:lineId") @HttpCode(204) removeStarLine(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("lineId") lid: string) { return this.svc.removeStarLine(u, id, lid); }
+  @Roles(Role.COACH) @Delete("players/:id/stars") @HttpCode(204) resetStars(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.resetStars(u, id); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("players/:id/stars/:day") @HttpCode(204) removeStar(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("day") day: string) { return this.svc.removeStar(u, id, day); }
 
   @Get("players/:id/qualities") qualities(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.qualities(u, id); }
