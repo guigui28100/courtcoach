@@ -190,7 +190,7 @@ export default function Bulletin() {
             {startGoals.length > 0 && (
               <section className="bul-card grid gap-3" aria-labelledby="bul-t1">
                 <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 À travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison, domaine par domaine.</p></div>
-                <DomainMissions goals={startGoals} rating={(k) => ev?.ratings?.[k]} render={(g) => <li key={g.id}>{g.title}</li>} />
+                <DomainMissions goals={startGoals} render={(g) => <li key={g.id}>{g.title}</li>} />
               </section>
             )}
 
