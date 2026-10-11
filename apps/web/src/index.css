@@ -365,3 +365,13 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 .mdesc-how b { color: #fff; }
 .mdesc-wm { position: absolute; right: -0.9rem; bottom: -1.4rem; color: var(--d); opacity: 0.12; pointer-events: none; }
 .mdesc .mc-pill { position: relative; z-index: 1; }
+
+/* Menu de gauche du jeune : la pastille « nouveau » reste FIXE, à droite de la ligne, centrée en hauteur */
+.gal-tabs.side button > span.absolute { top: 50%; right: 0.85rem; transform: translateY(-50%); width: 0.7rem; height: 0.7rem; border-width: 2px; }
+@media (max-width: 767px) { .gal-tabs.side button > span.absolute { top: 0.35rem; right: 0.45rem; transform: none; } }
+
+/* Menu de gauche du jeune : un point jaune apparaît à côté de la rubrique quand on passe la souris dessus */
+@media (hover: hover) {
+  .gal-tabs.side button::before { content: ""; position: absolute; left: 0.45rem; top: 50%; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #ffd447; box-shadow: 0 0 10px rgba(255, 212, 71, 0.9); transform: translateY(-50%) scale(0); transition: transform 0.18s ease-out; pointer-events: none; }
+  .gal-tabs.side button:not([aria-selected="true"]):hover::before { transform: translateY(-50%) scale(1); }
+}

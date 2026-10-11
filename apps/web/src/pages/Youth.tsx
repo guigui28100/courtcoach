@@ -410,7 +410,7 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Missions"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Mon compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
