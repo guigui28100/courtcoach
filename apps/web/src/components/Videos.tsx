@@ -49,7 +49,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
-            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. Elle apparaît dans l'onglet « Vidéos » de {toPlayer} et de sa famille, marquée <strong>« De ton coach »</strong>, avec ton message. Ils peuvent la regarder mais pas la supprimer. Pour la commenter avec des dessins (traits, cercles…), ouvre-la ensuite dans ton studio et envoie une analyse : {toPlayer} la recevra avec tes images annotées. Pas de nom ni de téléphone dans le titre. Elle est supprimée automatiquement après 12 mois.</p>
+            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. <strong>Elle reste en brouillon : {toPlayer} et sa famille ne la voient pas</strong> tant que tu ne l'as pas envoyée. Ouvre-la ensuite dans ton studio pour la commenter (traits, cercles, voix…), puis envoie-la : soit avec le bouton « Envoyer la vidéo », soit en envoyant ton analyse (la vidéo part alors avec). Elle apparaîtra dans l'onglet « Vidéos » de {toPlayer}, marquée <strong>« De ton coach »</strong>, avec ton message. Ils pourront la regarder mais pas la supprimer. Elle est supprimée automatiquement après 12 mois.</p>
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}
@@ -85,7 +85,9 @@ export function VideosIntro({ who = "jeune", dark = false }: { who?: keyof typeo
   );
 }
 
-export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: boolean }) => v.fromCoach
+export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: boolean }) => v.fromCoach && v.draft
+  ? <span className="badge !border-[#c08a00] !bg-[#fff3cd] !text-[#7a5a00]">📝 Brouillon : pas encore envoyée</span>
+  : v.fromCoach
   ? <span className={"badge " + (!forCoach && !v.seenAt ? "!border-ok !bg-[#e6f5ec] !text-ok" : "")}>{forCoach ? "🎬 Envoyée par toi" : v.seenAt ? "🎓 De ton coach" : "🎓 De ton coach · nouveau"}</span>
   : v.analysis?.sentAt
   ? <span className={"badge " + (v.seenAt ? "" : "!border-ok !bg-[#e6f5ec] !text-ok")}>{v.seenAt ? "Analyse lue" : "✅ Analyse reçue"}</span>

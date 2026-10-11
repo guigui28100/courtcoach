@@ -26,6 +26,11 @@ export default function VideoReview() {
   if (!v) return <Skeleton lines={2} />;
   const centre = v.kind === "centre";
   const sent = !!v.analysis?.sentAt;
+  const draft = !!v.draft; // vidéo déposée par le coach : le joueur ne la voit pas encore
+  async function sendVideo() {
+    setMsg(null);
+    try { await post(`/videos/${id}/send-to-player`); setMsg({ ok: true, text: `Vidéo envoyée à ${v!.player?.firstName ?? "le joueur"} ✓` }); load(); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+  }
 
   async function save(thenSend: boolean) {
     const f = new FormData(formRef.current!);
@@ -33,7 +38,7 @@ export default function VideoReview() {
     try {
       await put(`/videos/${id}/analysis`, { observation: String(f.get("observation") || ""), strengths: String(f.get("strengths") || ""), improve: String(f.get("improve") || ""), ...(centre ? { goalIds } : { exercises: exercises.filter((x) => x.trim()) }) });
       if (thenSend) await post(`/videos/${id}/analysis/send`);
-      setMsg({ ok: true, text: thenSend ? (sent ? "Analyse mise à jour ✓" : "Analyse envoyée ✓ : l'élève est prévenu dans son espace.") : "Brouillon enregistré ✓" }); load();
+      setMsg({ ok: true, text: thenSend ? (sent ? "Analyse mise à jour ✓" : draft ? "Vidéo et analyse envoyées ✓ : le joueur les voit dans son espace." : "Analyse envoyée ✓ : l'élève est prévenu dans son espace.") : "Brouillon enregistré ✓" }); load();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function say(e: FormEvent) { e.preventDefault(); await post(`/videos/${id}/messages`, { text }); setText(""); load(); }
@@ -46,6 +51,13 @@ export default function VideoReview() {
         <Link to={centre && v.player ? `/coach/centre/${v.player.id}` : "/coach"} className="font-bold text-ink underline">← Retour</Link>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
+            {draft && (
+              <div className="alert grid gap-2" role="status">
+                <strong>📝 Brouillon : {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</strong>
+                <span>Prends ton temps : commente-la dans le studio, puis envoie-la. Tu peux aussi l'envoyer telle quelle.</span>
+                <button type="button" className="btn-clay btn-sm self-start" onClick={sendVideo}>📤 Envoyer la vidéo à {v.player?.firstName}</button>
+              </div>
+            )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
             <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>

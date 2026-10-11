@@ -263,6 +263,15 @@ describe("Vidéos et analyses", () => {
     const r = await upload(A.coach, { playerId: p1, title: "Modèle de service", question: "Regarde bien le lancer de balle" }, data);
     expect(r.status).toBe(201); const vid = (r as any).vid;
     expect((await prisma.video.findUniqueOrThrow({ where: { id: vid } })).fromCoach).toBe(true);
+    // BROUILLON : tant que le coach ne l'a pas envoyée, ni la famille ni le jeune ne la voient (ni la liste, ni la fiche, ni le fichier)
+    expect((await A.par1.get("/api/videos").expect(200)).body.some((v: any) => v.id === vid)).toBe(false);
+    await A.par1.get(`/api/videos/${vid}`).expect(404);
+    await A.par1.get(`/api/videos/${vid}/file`).set("Range", "bytes=0-99").expect(404);
+    expect((await A.coach.get(`/api/videos/${vid}`).expect(200)).body.draft).toBe(true);
+    await A.par1.post(`/api/videos/${vid}/send-to-player`).set(ORIGIN).expect(403); // la famille ne peut pas l'envoyer
+    await A.coach.post(`/api/videos/${vid}/send-to-player`).set(ORIGIN).expect(204);
+    await A.coach.post(`/api/videos/${vid}/send-to-player`).set(ORIGIN).expect(204); // sans effet la 2e fois
+    expect((await A.coach.get(`/api/videos/${vid}`).expect(200)).body.draft).toBe(false);
     const mine = (await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid);
     expect(mine).toMatchObject({ fromCoach: true, seenAt: null, question: "Regarde bien le lancer de balle", analysis: null });
     await A.par1.get(`/api/videos/${vid}/file`).set("Range", "bytes=0-99").expect(206);
@@ -275,6 +284,18 @@ describe("Vidéos et analyses", () => {
     expect((await A.adulteX.get("/api/videos").expect(200)).body.some((v: any) => v.id === vid)).toBe(false);
     // une vidéo envoyée par la famille n'est PAS « de ton coach »
     const fam = await upload(A.par1, { playerId: p1 }, data); expect((await prisma.video.findUniqueOrThrow({ where: { id: (fam as any).vid } })).fromCoach).toBe(false);
+    await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
+  });
+
+  it("une vidéo du coach reste en brouillon pendant qu'il l'analyse ; envoyer l'analyse l'envoie aussi au joueur", async () => {
+    const r = await upload(A.coach, { playerId: p1, title: "À analyser d'abord" }, data); const vid = (r as any).vid;
+    expect((await A.par1.get("/api/videos").expect(200)).body.some((v: any) => v.id === vid)).toBe(false);
+    await A.coach.put(`/api/videos/${vid}/analysis`).set(ORIGIN).send({ observation: "Bonne rotation d'épaules." }).expect(200);
+    expect((await A.par1.get("/api/videos").expect(200)).body.some((v: any) => v.id === vid)).toBe(false); // l'analyse écrite ne suffit pas
+    await A.coach.post(`/api/videos/${vid}/analysis/send`).set(ORIGIN).expect(204);
+    const seen = (await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid);
+    expect(seen).toMatchObject({ draft: false, fromCoach: true });
+    expect(seen.analysis.observation).toBe("Bonne rotation d'épaules.");
     await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
   });
 });
