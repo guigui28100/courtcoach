@@ -144,13 +144,9 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   }
   return (
     <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
-      <div className="flex flex-wrap items-center gap-4">
-        {l.finalSlot && <DateBadge slot={l.finalSlot} tone="blue" />}
-        <div className="grid min-w-0 gap-0.5">
-          <small className="font-bold uppercase tracking-wide">À confirmer</small>
-          <strong className="font-display text-2xl leading-tight">{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>
-          <span>{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
-        </div>
+      <div className="grid min-w-0 gap-0.5">
+        <strong className="font-display text-2xl leading-tight">{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>
+        <span>{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
       </div>
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
