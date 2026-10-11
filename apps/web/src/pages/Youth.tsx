@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
 import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
+import { CourtArt, TeenIcon } from "../components/TeenIcons";
 import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
@@ -23,6 +24,26 @@ const MISSION: Record<string, { label: string; emoji: string; color: string }> =
 };
 
 function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: number; starsTotal: number }) {
+  if (isTeen(p)) {
+    return (
+      <section className="teen-hero glass gal-pop" aria-labelledby="gal-titre">
+        <div className="teen-hero-text">
+          <p className="teen-kicker">Mon espace joueur</p>
+          <h1 id="gal-titre" className="teen-title">Bonjour<br /><span>{p.firstName} !</span></h1>
+          <p className="teen-sub">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
+        </div>
+        <CourtArt className="teen-art" />
+        {(starsTotal > 0 || done > 0 || wins > 0 || p.ranking) && (
+          <ul className="teen-strip" aria-label="Mes repères">
+            {starsTotal > 0 && <li><small>Étoiles</small><b>{starsTotal}<em>★</em></b></li>}
+            {done > 0 && <li><small>Missions accomplies</small><b>{done}</b></li>}
+            {wins > 0 && <li><small>Victoires</small><b>{wins}<em>🏆</em></b></li>}
+            {p.ranking && <li><small>Classement</small><b>{p.ranking}{p.targetRanking ? <em>→ objectif {p.targetRanking}</em> : null}</b></li>}
+          </ul>
+        )}
+      </section>
+    );
+  }
   return (
     <section className="gal-pop glass hero-card grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
@@ -228,9 +249,15 @@ function MissionProgress({ goals, stars, playerId, preview, name, teen }: { goal
             return (
               <li key={g.id} ref={(el) => { rows.current[g.id] = el; }} className={"grid gap-2 rounded-2xl bg-white/10 p-4 " + (flash === g.id ? "bar-pop" : "")}>
                 <span className="flex flex-wrap items-center justify-between gap-2"><strong className="text-lg leading-snug">{m.emoji} {g.title}</strong><span className="text-sm font-bold">⭐ {earned} sur {target}</span></span>
+                {teen ? (
+                  <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="teen-seg" style={{ gridTemplateColumns: `repeat(${Math.min(target, 20)}, 1fr)`, ["--c" as string]: band.color }}>
+                    {Array.from({ length: Math.min(target, 20) }, (_, i) => <i key={i} className={i < Math.round((pct / 100) * Math.min(target, 20)) ? "on" : ""} />)}
+                  </div>
+                ) : (
                 <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="h-5 overflow-hidden rounded-full bg-black/25">
                   <div className="h-full rounded-full transition-[width,background-color] duration-700" style={{ width: `${Math.max(pct, 4)}%`, background: band.color }} />
                 </div>
+                )}
                 <small className="font-bold text-white">{pct >= 100 ? "Bravo, tu as toutes les étoiles !" : band.word}</small>
               </li>
             );
@@ -342,12 +369,12 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
 type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
 
 // Étape de la page de présentation : un titre, deux phrases, un bouton vers la page concernée
-function Step({ n, icon, title, text, to, go, hot = false }: { n: number; icon: string; title: string; text: string; to: Tab; go: (t: Tab) => void; hot?: boolean }) {
+function Step({ n, icon, title, text, to, go, hot = false, teen = false }: { n: number; icon: string; title: string; text: string; to: Tab; go: (t: Tab) => void; hot?: boolean; teen?: boolean }) {
   return (
     <li className="list-none">
       <button type="button" onClick={() => go(to)} className={"step-card lift relative grid h-full w-full content-start gap-2 text-left text-white " + (hot ? "hot" : "")}>
         {hot && <span className="step-new">Nouveau !</span>}
-        <span className="flex items-center gap-3"><span aria-hidden="true" className="step-ico"><em>{n}</em>{icon}</span><strong className="text-lg leading-tight">{title}</strong></span>
+        <span className="flex items-center gap-3"><span aria-hidden="true" className="step-ico"><em>{teen ? `0${n}` : n}</em>{teen ? <TeenIcon e={icon} size={24} /> : icon}</span><strong className="text-lg leading-tight">{title}</strong></span>
         <span className="step-text">{text}</span>
         <span className="step-go">Ouvrir →</span>
       </button>
@@ -367,13 +394,13 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
       <section className="grid gap-3" aria-labelledby="gal-comment">
         <h2 id="gal-comment" className="m-0 text-2xl text-white">🧭 Comment ça marche ?</h2>
         <ol className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
-          <Step n={1} icon="📍" title="Mon point de départ" text="Au début de l'année, ton coach regarde ton jeu et dessine ton « araignée » : tes points forts et ce que tu peux améliorer." to="depart" go={go} />
-          <Step n={2} icon="🚀" title="Mes missions" text="À partir de ton point de départ, ton coach te donne quelques missions pour le trimestre : des choses précises à travailler." to="missions" go={go} />
-          <Step n={3} icon="⭐" title="Les étoiles" text="À chaque cours, ton coach te donne des étoiles quand tu avances sur une mission, pour ton attitude ou ta concentration. Plus tu en as, plus ta mission est proche d'être réussie." to="progres" go={go} hot={newStars > 0} />
-          <Step n={4} icon="📡" title="Mes progrès" text="Tu vois tes missions passer du rouge au vert, étoile après étoile. Quand une étoile tombe, c'est que tu progresses !" to="progres" go={go} />
-          <Step n={5} icon="🎬" title="Mes vidéos" text="Envoie une vidéo de ton jeu à ton coach : il te répond avec des conseils, des images dessinées et parfois sa voix. Il peut aussi t'en envoyer." to="videos" go={go} hot={fresh + sent > 0} />
-          <Step n={6} icon="🏟️" title="Mes matchs" text="Note tes matchs : c'est ton journal de compétition, pour voir tes résultats avancer." to="matchs" go={go} />
-          <Step n={7} icon="📄" title="Mes bulletins" text="À la fin de chaque trimestre (décembre, mars, juin), ton coach fait le point sur tes missions. Toi aussi, tu remplis ton bulletin pour dire comment tu te sens." to="bulletins" go={go} hot={pending !== null} />
+          <Step teen={isTeen(p)} n={1} icon="📍" title="Mon point de départ" text="Au début de l'année, ton coach regarde ton jeu et dessine ton « araignée » : tes points forts et ce que tu peux améliorer." to="depart" go={go} />
+          <Step teen={isTeen(p)} n={2} icon="🚀" title="Mes missions" text="À partir de ton point de départ, ton coach te donne quelques missions pour le trimestre : des choses précises à travailler." to="missions" go={go} />
+          <Step teen={isTeen(p)} n={3} icon="⭐" title="Les étoiles" text="À chaque cours, ton coach te donne des étoiles quand tu avances sur une mission, pour ton attitude ou ta concentration. Plus tu en as, plus ta mission est proche d'être réussie." to="progres" go={go} hot={newStars > 0} />
+          <Step teen={isTeen(p)} n={4} icon="📡" title="Mes progrès" text="Tu vois tes missions passer du rouge au vert, étoile après étoile. Quand une étoile tombe, c'est que tu progresses !" to="progres" go={go} />
+          <Step teen={isTeen(p)} n={5} icon="🎬" title="Mes vidéos" text="Envoie une vidéo de ton jeu à ton coach : il te répond avec des conseils, des images dessinées et parfois sa voix. Il peut aussi t'en envoyer." to="videos" go={go} hot={fresh + sent > 0} />
+          <Step teen={isTeen(p)} n={6} icon="🏟️" title="Mes matchs" text="Note tes matchs : c'est ton journal de compétition, pour voir tes résultats avancer." to="matchs" go={go} />
+          <Step teen={isTeen(p)} n={7} icon="📄" title="Mes bulletins" text="À la fin de chaque trimestre (décembre, mars, juin), ton coach fait le point sur tes missions. Toi aussi, tu remplis ton bulletin pour dire comment tu te sens." to="bulletins" go={go} hot={pending !== null} />
         </ol>
       </section>
       <p className="glass m-0 text-sm" role="note">🔒 <strong>Ton espace est privé.</strong> Seuls toi, ta famille et l'équipe du club qui t'entraîne peuvent le voir. Les autres joueurs ne voient rien de toi.</p>
@@ -436,7 +463,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               <div role="tablist">
                 {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
-                    <span className="tab-ico" aria-hidden="true">{icon}</span><span className="tab-txt">{label}</span>
+                    <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
                     {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
                   </button>
                 ))}
