@@ -338,3 +338,30 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 .teen-seg { display: grid; gap: 4px; }
 .teen-seg i { height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.09); transform: skewX(-16deg); }
 .teen-seg i.on { background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), var(--c) 40%, var(--c)); box-shadow: 0 0 12px var(--c); }
+
+/* ---------- Missions : cartes « défi » (anneau, étoiles, gros chiffre) pour les DEUX thèmes ---------- */
+.mcard { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.1rem; padding: 1.1rem 1.4rem 1.1rem 1.1rem; border-radius: 1.5rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15); }
+.mcard::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--c); box-shadow: 0 0 22px var(--c); }
+.mcard.done { border-color: rgba(198, 255, 61, 0.7); background: linear-gradient(160deg, rgba(198, 255, 61, 0.16), rgba(255, 255, 255, 0.04)); box-shadow: 0 0 0 1px rgba(198, 255, 61, 0.2), 0 0 40px rgba(198, 255, 61, 0.15); }
+.mc-ring { position: relative; width: 92px; height: 92px; flex: none; }
+.mc-ring-in { position: absolute; inset: 0; display: grid; place-items: center; }
+.mcard-body { display: grid; gap: 0.5rem; min-width: 0; }
+.mcard-top { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.mc-pill { justify-self: start; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; color: var(--d); background: color-mix(in srgb, var(--d) 16%, transparent); border: 1px solid color-mix(in srgb, var(--d) 50%, transparent); }
+.mc-ok { padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; background: #c6ff3d; color: #05070b; box-shadow: 0 0 18px rgba(198, 255, 61, 0.6); }
+.mcard-title { font-size: 1.3rem; line-height: 1.2; font-weight: 800; color: #fff; }
+.mcard-stars { display: flex; flex-wrap: wrap; gap: 3px; }
+.mcard-word { font-size: 0.8rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c); }
+.mcard-num { display: grid; justify-items: end; line-height: 1; }
+.mcard-num b { font-size: 3.2rem; font-weight: 900; font-style: italic; letter-spacing: -0.04em; color: var(--c); text-shadow: 0 0 26px color-mix(in srgb, var(--c) 55%, transparent); font-variant-numeric: tabular-nums; }
+.mcard-num span { margin-top: 0.3rem; color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; font-weight: 700; }
+.mcard .teen-seg i.on { background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), var(--c) 40%, var(--c)); }
+@media (max-width: 640px) { .mcard { grid-template-columns: auto 1fr; padding: 1rem; } .mcard-num { grid-column: 1 / -1; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 0.5rem; } .mcard-num b { font-size: 2.4rem; } }
+.mdesc { position: relative; overflow: hidden; display: grid; align-content: start; gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
+.mdesc::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--d), transparent); }
+.mdesc-title { position: relative; z-index: 1; max-width: 85%; font-size: 1.35rem; line-height: 1.2; font-weight: 800; color: #fff; }
+.mdesc-how { position: relative; z-index: 1; display: flex; gap: 0.6rem; align-items: flex-start; padding-top: 0.7rem; border-top: 1px dashed rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.85); line-height: 1.45; }
+.mdesc-how svg { flex: none; margin-top: 0.15rem; color: var(--d); }
+.mdesc-how b { color: #fff; }
+.mdesc-wm { position: absolute; right: -0.9rem; bottom: -1.4rem; color: var(--d); opacity: 0.12; pointer-events: none; }
+.mdesc .mc-pill { position: relative; z-index: 1; }

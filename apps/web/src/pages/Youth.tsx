@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
 import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
-import { CourtArt, TeenIcon } from "../components/TeenIcons";
+import { AxisIcon, CourtArt, MissionRing, RulerIcon, StarShape, TeenIcon } from "../components/TeenIcons";
 import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
@@ -98,14 +98,15 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-missions">
       <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions du trimestre {t}</h2>
       {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
-        <ol className="m-0 grid list-none gap-3 p-0">
+        <ol className="m-0 grid list-none gap-4 p-0 md:grid-cols-2">
           {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => here.filter((g) => g.axis === axis)).map((g) => {
             const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"];
             return (
-              <li key={g.id} className="grid gap-1 rounded-2xl bg-white/10 p-4" style={{ borderLeft: `6px solid ${m.color}` }}>
-                <span className="text-sm font-bold" style={{ color: m.color }}><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
-                <strong className="text-xl leading-snug text-white">{g.title}</strong>
-                {g.indicator && <span className="text-white/85">{g.indicator}</span>}
+              <li key={g.id} className="mdesc" style={{ ["--d" as string]: m.color }}>
+                <span className="mc-pill"><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
+                <strong className="mdesc-title">{g.title}</strong>
+                {g.indicator && <span className="mdesc-how"><RulerIcon /><span><b>Comment on le mesure :</b> {g.indicator}</span></span>}
+                <span className="mdesc-wm" aria-hidden="true"><AxisIcon axis={g.axis} size={120} /></span>
               </li>
             );
           })}
@@ -245,20 +246,21 @@ function MissionProgress({ goals, stars, playerId, preview, name, teen }: { goal
       {here.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Ton coach va bientôt te donner tes missions du trimestre.</p> : (
         <ol className="m-0 grid list-none gap-3 p-0">
           {here.map((g) => {
-            const m = MISSION[g.axis], target = g.targetStars ?? 10, earned = Math.max(0, missionStars(stars ?? [], g.id, currentSeason(), t) - (pending[g.id] ?? 0)), pct = missionPercent(earned, target), band = bandOf(pct);
+            const m = MISSION[g.axis], target = g.targetStars ?? 10, earned = Math.max(0, missionStars(stars ?? [], g.id, currentSeason(), t) - (pending[g.id] ?? 0)), pct = missionPercent(earned, target), band = bandOf(pct), bright = band.color === "#1f8f3f" ? "#46d36e" : band.color;
             return (
-              <li key={g.id} ref={(el) => { rows.current[g.id] = el; }} className={"grid gap-2 rounded-2xl bg-white/10 p-4 " + (flash === g.id ? "bar-pop" : "")}>
-                <span className="flex flex-wrap items-center justify-between gap-2"><strong className="text-lg leading-snug">{m.emoji} {g.title}</strong><span className="text-sm font-bold">⭐ {earned} sur {target}</span></span>
-                {teen ? (
-                  <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="teen-seg" style={{ gridTemplateColumns: `repeat(${Math.min(target, 20)}, 1fr)`, ["--c" as string]: band.color }}>
-                    {Array.from({ length: Math.min(target, 20) }, (_, i) => <i key={i} className={i < Math.round((pct / 100) * Math.min(target, 20)) ? "on" : ""} />)}
+              <li key={g.id} ref={(el) => { rows.current[g.id] = el; }} className={"mcard " + (pct >= 100 ? "done " : "") + (flash === g.id ? "bar-pop" : "")} style={{ ["--c" as string]: bright, ["--d" as string]: m.color }}>
+                <MissionRing pct={pct} color={bright}>{teen ? <AxisIcon axis={g.axis} /> : <span className="text-3xl">{m.emoji}</span>}</MissionRing>
+                <div className="mcard-body">
+                  <span className="mcard-top"><span className="mc-pill">{m.label}</span>{pct >= 100 && <span className="mc-ok">✔ Mission réussie</span>}</span>
+                  <strong className="mcard-title">{g.title}</strong>
+                  <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className={target <= 12 ? "mcard-stars" : "teen-seg"} style={target <= 12 ? undefined : { gridTemplateColumns: "repeat(20, 1fr)" }}>
+                    {target <= 12
+                      ? Array.from({ length: target }, (_, i) => <StarShape key={i} filled={i < earned} color={bright} />)
+                      : Array.from({ length: 20 }, (_, i) => <i key={i} className={i < Math.round((pct / 100) * 20) ? "on" : ""} />)}
                   </div>
-                ) : (
-                <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${g.title} : ${earned} étoiles sur ${target}`} className="h-5 overflow-hidden rounded-full bg-black/25">
-                  <div className="h-full rounded-full transition-[width,background-color] duration-700" style={{ width: `${Math.max(pct, 4)}%`, background: band.color }} />
+                  <small className="mcard-word">{pct >= 100 ? "Bravo, tu as toutes les étoiles !" : band.word}</small>
                 </div>
-                )}
-                <small className="font-bold text-white">{pct >= 100 ? "Bravo, tu as toutes les étoiles !" : band.word}</small>
+                <div className="mcard-num"><b>{earned}</b><span>sur {target} ★</span></div>
               </li>
             );
           })}
