@@ -444,6 +444,14 @@ export class PlayersService {
     if (!r.count) throw new NotFoundException("Ligne d'étoiles introuvable");
     await this.touch(playerId);
   }
+  // Remet TOUTES les étoiles du joueur à zéro (coach seulement, journalisé)
+  async resetStars(user: AuthUser, playerId: string) {
+    this.assertCoach(user);
+    await this.assertStaffFor(user, playerId);
+    await this.prisma.courseStar.deleteMany({ where: { playerId } });
+    await this.touch(playerId);
+    await this.audit.log(user.id, "reset-stars", "Player", playerId);
+  }
   async removeStar(user: AuthUser, playerId: string, day: string) {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);

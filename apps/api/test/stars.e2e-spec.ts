@@ -56,6 +56,15 @@ describe("Étoiles de fin de cours", () => {
     await A.coach.delete(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).expect(204);
   });
 
+  it("le coach remet toutes les étoiles d'un joueur à zéro ; ni la famille ni un autre joueur ne sont touchés", async () => {
+    await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }] }).expect(200);
+    const before = (await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body.length;
+    await A.parent.delete(`/api/players/${p1}/stars`).set(ORIGIN).expect(403);
+    await A.coach.delete(`/api/players/${p2}/stars`).set(ORIGIN).expect(204);
+    expect((await A.coach.get(`/api/players/${p2}/stars`).expect(200)).body).toHaveLength(0);
+    expect((await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body).toHaveLength(before);
+  });
+
   it("le coach retire une seule ligne d'étoiles ; les autres lignes du cours restent ; la famille ne le peut pas", async () => {
     const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique" }] }).expect(200)).body;
     await A.parent.delete(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).expect(403);

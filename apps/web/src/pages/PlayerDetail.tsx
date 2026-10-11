@@ -355,6 +355,7 @@ function Objectifs({ p }: { p: Player }) {
 
 // Étoiles de fin de cours d'un joueur : historique + ajout (la même chose en une fois pour tout le groupe : « ⭐ Fin de cours » dans le Centre)
 function StarsTab({ p }: { p: Player }) {
+  const isCoach = useAuth().me?.role === "COACH";
   const [version, setVersion] = useState(0);
   const stars = useStars(p.id, version);
   const [day, setDay] = useState(todayIso());
@@ -394,6 +395,12 @@ function StarsTab({ p }: { p: Player }) {
           ); })}</ul>
         )}
       </details>
+      {isCoach && stars && stars.length > 0 && (
+        <section className="card grid gap-2" aria-label="Remettre les étoiles à zéro">
+          <p className="hint m-0">Pour recommencer à zéro (nouveau trimestre, essai…), tu peux effacer toutes les étoiles de {p.firstName}. Les bulletins déjà faits ne changent pas.</p>
+          <div><button className="btn-danger btn-sm" onClick={async () => { if (confirm(`Remettre à zéro TOUTES les étoiles de ${p.firstName} ? Cette action est définitive.`)) { try { await del(`/players/${p.id}/stars`); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); } } }}>↺ Remettre toutes les étoiles à zéro</button></div>
+        </section>
+      )}
     </div>
   );
 }

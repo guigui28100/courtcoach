@@ -238,3 +238,47 @@
 .gal-tabs.side .tab-ico { flex: none; width: 1.6rem; text-align: center; }
 .gal-tabs.side .tab-txt { min-width: 0; text-align: left; text-wrap: balance; }
 .gal-tabs.side button { display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem; }
+
+
+/* ---------- Espace du jeune « galaxie » : graphisme plus travaillé (fond profond, verre dépoli, menu en panneau, étapes en cartes). Le thème « ados » n'est pas touché. ---------- */
+html:not([data-gal="teen"]) .galaxy-sky {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(109, 75, 255, 0.45), transparent),
+    radial-gradient(700px 500px at -10% 40%, rgba(24, 182, 255, 0.22), transparent),
+    radial-gradient(600px 400px at 70% 100%, rgba(255, 111, 181, 0.22), transparent),
+    linear-gradient(170deg, #2a1b8f, #0b0a3a 72%);
+}
+html:not([data-gal="teen"]) .glass {
+  border: 1.5px solid rgba(255, 255, 255, 0.22); border-radius: 1.6rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+html:not([data-gal="teen"]) .hero-card { padding: 1.75rem; }
+html:not([data-gal="teen"]) .gal-bar { background: #0f0c4a; }
+html:not([data-gal="teen"]) .gal-chip { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); backdrop-filter: blur(8px); }
+html:not([data-gal="teen"]) .gal-btn { background: linear-gradient(180deg, #e9ff5c, #b9dd18); box-shadow: 0 5px 0 #7a9a0a, 0 12px 24px rgba(0, 0, 0, 0.35); }
+/* Menu */
+html:not([data-gal="teen"]) .gal-tabs { background: linear-gradient(180deg, rgba(27, 24, 99, 0.97), rgba(18, 15, 74, 0.97)); border: 1.5px solid rgba(255, 255, 255, 0.22); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5); }
+html:not([data-gal="teen"]) .gal-tabs button { border: 0; background: transparent; color: #e4e1ff; font-weight: 700; }
+html:not([data-gal="teen"]) .gal-tabs button:hover { background: rgba(255, 255, 255, 0.1); }
+html:not([data-gal="teen"]) .gal-tabs button .tab-ico { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 0.65rem; background: rgba(255, 255, 255, 0.1); font-size: 1.05rem; }
+html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] { background: linear-gradient(180deg, #e9ff5c, #b9dd18); color: #10203a; box-shadow: 0 5px 0 #7a9a0a; }
+html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { background: rgba(255, 255, 255, 0.5); }
+@media (min-width: 768px) { html:not([data-gal="teen"]) .gal-tabs.side { padding: 0.8rem; } }
+/* Étapes « Comment ça marche ? » */
+.step-card { padding: 1.1rem; border-radius: 1.6rem; border: 1.5px solid rgba(255, 255, 255, 0.22); background: linear-gradient(160deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05)); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2); backdrop-filter: blur(14px); }
+.step-card.hot { border-color: #dcf247; box-shadow: 0 0 0 2px rgba(220, 242, 71, 0.35), 0 14px 30px rgba(0, 0, 0, 0.4); }
+.step-ico { position: relative; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; flex: none; border-radius: 1rem; font-size: 1.5rem; background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07)); border: 1.5px solid rgba(255, 255, 255, 0.28); }
+.step-ico em { position: absolute; top: -0.5rem; left: -0.5rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: #ffd447; color: #3b2a00; font: 800 0.75rem/1.4rem system-ui, sans-serif; text-align: center; }
+.step-text { color: rgba(255, 255, 255, 0.9); line-height: 1.45; }
+.step-go { justify-self: start; margin-top: 0.25rem; padding: 0.5rem 1rem; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.11); font-size: 0.875rem; font-weight: 800; }
+.step-new { position: absolute; top: 0.85rem; right: 0.85rem; padding: 0.15rem 0.65rem; border-radius: 999px; background: #ff6fb5; color: #fff; font-size: 0.75rem; font-weight: 800; }
+[data-gal="teen"] .step-card { border-radius: 1rem; border-width: 1px; background: rgba(255, 255, 255, 0.06); box-shadow: none; backdrop-filter: none; }
+[data-gal="teen"] .step-ico { border-radius: 0.6rem; }
+[data-gal="teen"] .step-new { background: #7bd33a; color: #0b1220; }
+/* Téléphone : les onglets du jeune restent sur une ligne (chaque bouton garde sa largeur, on fait défiler) */
+@media (max-width: 767px) {
+  .gal-tabs.side > div { align-items: center; }
+  .gal-tabs.side button { flex: none; width: auto; }
+  .gal-tabs.side .tab-txt { white-space: nowrap; flex: none; }
+}
