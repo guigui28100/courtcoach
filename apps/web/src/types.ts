@@ -1,5 +1,5 @@
 export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH";
-export interface Me { id: string; email: string; role: Role; firstName: string | null; mustChangePassword?: boolean; twoFactor?: boolean; accesses: { playerId: string; relation: string }[]; }
+export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; mustChangePassword?: boolean; twoFactor?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },
@@ -22,7 +22,7 @@ export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: stri
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
 export interface Goal { hiddenFrom?: number | null; targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: { id: string; firstName: string | null; email: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -97,7 +97,7 @@ export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "V
 export interface AnalysisOut { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
-  kind: "coaching" | "centre"; fromCoach: boolean; images: { id: string; note: string }[]; audio: { seconds: number } | null; player: { id: string; firstName: string } | null; owner: { id: string; firstName: string | null; email: string } | null; analysis: AnalysisOut | null; messageCount: number;
+  kind: "coaching" | "centre"; fromCoach: boolean; images: { id: string; note: string }[]; audio: { seconds: number } | null; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }
@@ -198,6 +198,13 @@ export const MATCH_KINDS_ALL: [string, string][] = [...MATCH_KINDS, ["amical", "
 export const matchLabel = (list: [string, string][], id: string | null) => list.find(([k]) => k === id)?.[1] ?? id ?? "";
 
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »
+// Adulte qui demande un cours : ce que le coach voit (nom, âge, classement ou niveau)
+export interface AdultInfo { firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; }
+export const ADULT_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
+export const adultAge = (birthYear: number | null | undefined, now = new Date()) => (birthYear ? now.getFullYear() - birthYear : null);
+export const adultName = (a: (AdultInfo & { email?: string }) | null | undefined, fallback = "Adhérent") => [a?.firstName, a?.lastName].filter(Boolean).join(" ") || a?.email || fallback;
+// « 34 ans · 30/2 » (ce qui est renseigné, sinon vide)
+export const adultFacts = (a: AdultInfo | null | undefined) => [adultAge(a?.birthYear) !== null ? `${adultAge(a?.birthYear)} ans` : "", a?.level ? `niveau ${a.level}` : ""].filter(Boolean).join(" · ");
 export const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export function matchStats(ms: { result: string; opponentRanking?: string | null }[]) {
   const wins = ms.filter((m) => m.result === "Victoire");

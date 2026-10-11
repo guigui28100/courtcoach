@@ -6,7 +6,7 @@ import { TrainersTab } from "../components/Trainers";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 
@@ -20,7 +20,8 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
   return (
     <li className="card flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
-        <strong>{l.member?.firstName || l.member?.email} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
+        <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
+        <p className="m-0 text-sm font-bold text-ink">🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</p>
         <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
         {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
       </div>
@@ -99,8 +100,8 @@ export function CoachHome() {
   const adultWait = waitingOf(d.adultVideos), youthWait = waitingOf(d.youthVideos);
   type Todo = { space: "Adultes" | "Jeunes" | "Compte"; text: string; to: string; cta: string };
   const todos: Todo[] = [
-    ...d.pending.map((l) => ({ space: "Adultes" as const, text: `${l.member?.firstName || l.member?.email || "Un adhérent"} te demande un cours`, to: "/coach/adultes", cta: "Répondre" })),
-    ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${v.owner?.firstName || v.owner?.email || "Un adhérent"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
+    ...d.pending.map((l) => ({ space: "Adultes" as const, text: `${adultName(l.member, "Un adhérent")} te demande un cours`, to: "/coach/adultes", cta: "Répondre" })),
+    ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...d.selfEvals.map((x) => ({ space: "Jeunes" as const, text: `${x.player.firstName} a envoyé son bulletin du trimestre ${x.ev.trimester}`, to: `/coach/centre/${x.player.id}?onglet=evaluations`, cta: "Lire" })),
     ...(d.inactive.length ? [{ space: "Jeunes" as const, text: `${d.inactive.length} dossier${d.inactive.length > 1 ? "s" : ""} inactif${d.inactive.length > 1 ? "s" : ""} depuis plus de 12 mois`, to: "/coach/centre?onglet=dossiers", cta: "Voir" }] : []),
@@ -157,7 +158,7 @@ export function AdultsPage() {
   const done = d.lessons.filter((l) => l.status !== "PENDING");
   const waiting = waitingOf(d.adultVideos);
   const answered = d.adultVideos.filter((v) => v.analysis?.sentAt);
-  const owner = (v: VideoRow) => v.owner?.firstName || v.owner?.email || "Adhérent";
+  const owner = (v: VideoRow) => [adultName(v.owner), adultFacts(v.owner)].filter(Boolean).join(" · ");
   return (
     <>
       <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link>} />

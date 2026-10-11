@@ -1,10 +1,10 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { get, post, del } from "../api";
+import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { CourseStar, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { ADULT_LEVELS, CourseStar, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
@@ -30,6 +30,37 @@ function MyVideos() {
       <VideoUpload onDone={refresh} />
       <VideoList videos={videos ?? []} onChanged={refresh} empty="Tu n'as pas encore envoyé de vidéo." />
     </section>
+  );
+}
+
+// Profil de l'adulte : le coach voit ces informations (nom, âge, classement ou niveau) sur ses demandes
+function ProfileCard({ preview }: { preview: boolean }) {
+  const { me, reload } = useAuth();
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const missing = !preview && (!me?.lastName || !me?.birthYear || !me?.level);
+  async function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (preview) { setMsg({ ok: false, text: "Aperçu : rien n'est enregistré." }); return; }
+    const f = new FormData(e.currentTarget);
+    try {
+      await put("/auth/me/profile", { firstName: String(f.get("firstName") || ""), lastName: String(f.get("lastName") || ""), birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || "") });
+      await reload(); setMsg({ ok: true, text: "Enregistré ✓" });
+    } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+  }
+  return (
+    <details className="card grid gap-3" open={missing}>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 className="m-0 text-xl">🙋 Mon profil{missing && <span className="ml-2 rounded-full bg-[#fff3cd] px-3 py-0.5 align-middle text-sm font-bold text-[#7a5a00]">à compléter</span>}</h2><span aria-hidden="true">▾</span></summary>
+      <p className="hint m-0">Ton coach voit ces informations sur tes demandes, pour préparer ton cours. Tout est facultatif.</p>
+      <form onSubmit={save} className="grid gap-4" noValidate>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Prénom" id="p-first"><input id="p-first" name="firstName" className="input" maxLength={60} defaultValue={preview ? "Marie" : me?.firstName ?? ""} /></Field>
+          <Field label="Nom" id="p-last"><input id="p-last" name="lastName" className="input" maxLength={60} defaultValue={preview ? "Durand" : me?.lastName ?? ""} /></Field>
+          <Field label="Année de naissance" id="p-year"><input id="p-year" name="birthYear" type="number" inputMode="numeric" min={1920} max={2030} className="input" defaultValue={preview ? 1985 : me?.birthYear ?? ""} /></Field>
+          <Field label="Classement ou niveau" id="p-level"><select id="p-level" name="level" className="input" defaultValue={preview ? "30/2" : me?.level ?? ""}><option value="">Je ne sais pas</option>{ADULT_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
+        </div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      </form>
+    </details>
   );
 }
 
@@ -90,6 +121,8 @@ export function AdultSpace({ preview = false }: { preview?: boolean }) {
             ))}
           </div>
         )}
+
+        <ProfileCard preview={preview} />
 
         {lessons.length > 0 && (
           <section aria-labelledby="t-dem" className="grid gap-3">

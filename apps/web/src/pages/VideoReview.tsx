@@ -4,7 +4,7 @@ import { del, get, post, put } from "../api";
 import { AuthorBadge, Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
 import { Compare, VideoStudio } from "../components/Studio";
 import { Thread } from "../components/Videos";
-import { AXES, fmtDate, fmtMo, VideoDetail } from "../types";
+import { adultFacts, adultName, AXES, fmtDate, fmtMo, VideoDetail } from "../types";
 
 // Page du coach : regarder une vidéo, écrire l'analyse, l'envoyer, discuter.
 export default function VideoReview() {
@@ -38,7 +38,7 @@ export default function VideoReview() {
   }
   async function say(e: FormEvent) { e.preventDefault(); await post(`/videos/${id}/messages`, { text }); setText(""); load(); }
 
-  const who = centre ? `${v.player?.firstName} · Centre de compétition jeunes` : `${v.owner?.firstName || v.owner?.email} · Demande de coaching`;
+  const who = centre ? `${v.player?.firstName} · Centre de compétition jeunes` : `${adultName(v.owner)}${adultFacts(v.owner) ? " · " + adultFacts(v.owner) : ""} · Demande de coaching`;
   return (
     <>
       <PageHead eyebrow={centre ? "Centre de compétition jeunes" : "Demandes de coaching"} title={v.title}>{who} · {v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</PageHead>

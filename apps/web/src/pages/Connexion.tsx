@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { AuthShell, PasswordInput } from "../components/AuthShell";
 import { Err, Field } from "../components/ui";
+import { ADULT_LEVELS } from "../types";
 
 export default function Connexion() {
   const { me, login, signup } = useAuth();
@@ -22,7 +23,7 @@ export default function Connexion() {
     setError(""); setBusy(true);
     try {
       if (mode === "connexion") await login(String(f.get("email")), String(f.get("password")), String(f.get("code") || "") || undefined);
-      else await signup({ email: String(f.get("email")), password: String(f.get("password")), firstName: String(f.get("firstName") || "") || undefined, acceptPolicy: f.get("policy") === "on" });
+      else await signup({ email: String(f.get("email")), password: String(f.get("password")), firstName: String(f.get("firstName") || "") || undefined, lastName: String(f.get("lastName") || "") || undefined, birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || "") || undefined, acceptPolicy: f.get("policy") === "on" });
     } catch (err) { if ((err as ApiError).code === "TOTP_REQUIRED") setNeedCode(true); setError((err as Error).message); } finally { setBusy(false); }
   }
 
@@ -39,7 +40,13 @@ export default function Connexion() {
         {mode === "inscription" && (
           <>
             <p className="alert m-0">Inscription réservée aux <strong>adultes</strong>. Pour un jeune du Centre de compétition, c'est le coach qui crée la fiche puis donne l'accès à la famille.</p>
-            <Field label="Prénom (facultatif)" id="firstName"><input id="firstName" name="firstName" className="input" autoComplete="given-name" maxLength={60} /></Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Prénom" id="firstName"><input id="firstName" name="firstName" className="input" autoComplete="given-name" maxLength={60} /></Field>
+              <Field label="Nom" id="lastName"><input id="lastName" name="lastName" className="input" autoComplete="family-name" maxLength={60} /></Field>
+              <Field label="Année de naissance" id="birthYear" hint="Pour que ton coach connaisse ton âge"><input id="birthYear" name="birthYear" type="number" inputMode="numeric" min={1920} max={2030} className="input" placeholder="Ex. : 1985" /></Field>
+              <Field label="Classement ou niveau" id="level" hint="Ton classement FFT ou ton niveau"><select id="level" name="level" className="input" defaultValue=""><option value="">Je ne sais pas</option>{ADULT_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
+            </div>
+            <p className="hint m-0">Ces informations sont facultatives. Seul ton coach les voit, pour préparer ton cours.</p>
           </>
         )}
         <Field label="Adresse e-mail" id="email"><input id="email" name="email" type="email" required className="input" autoComplete="email" maxLength={254} placeholder="prenom@exemple.fr" /></Field>

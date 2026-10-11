@@ -128,7 +128,7 @@ export class VideosService {
   }
 
   // ----- Listes -----
-  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
+  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
     const coach = !!user && isStaff(user);
     const visible = a && (coach || a.sentAt);
@@ -138,7 +138,7 @@ export class VideosService {
       kind: v.playerId ? "centre" : "coaching",
       fromCoach: v.fromCoach,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
-      owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, email: v.owner.email } : null,
+      owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
       images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
       audio: v.audio && (coach || a?.sentAt || v.fromCoach) ? { seconds: v.audio.seconds } : null,
@@ -148,7 +148,7 @@ export class VideosService {
   private analysisOut(a: any, staff = false) {
     return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId), ...(staff ? { authorName: a.authorName, authorRole: a.authorRole } : {}) };
   }
-  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
+  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
 
   async list(user: AuthUser) {
     if (user.role === Role.COACH) await this.purgeExpired();
