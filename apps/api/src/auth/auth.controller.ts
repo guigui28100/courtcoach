@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { Response } from "express";
 import { AuthService } from "./auth.service";
-import { AcceptInvitationDto, ChangePasswordDto, LoginDto, SignupDto, TotpCodeDto, TotpDisableDto } from "./dto";
+import { AcceptInvitationDto, AdultProfileDto, ChangePasswordDto, LoginDto, SignupDto, TotpCodeDto, TotpDisableDto } from "./dto";
 import { Role } from "@prisma/client";
 import { COOKIE_ACCESS, COOKIE_REFRESH, AuthUser } from "../common/auth.types";
 import { AllowMustChange, CurrentUser, Public, Roles } from "../common/decorators";
@@ -70,6 +70,8 @@ export class AuthController {
   @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/setup") twoFactorSetup(@CurrentUser() u: AuthUser) { return this.auth.twoFactorSetup(u.id); }
   @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(200) @Post("2fa/enable") twoFactorEnable(@CurrentUser() u: AuthUser, @Body() dto: TotpCodeDto) { return this.auth.twoFactorEnable(u.id, dto.code); }
   @Roles(Role.COACH, Role.TRAINER) @Throttle({ default: { limit: 10, ttl: 60_000 } }) @HttpCode(204) @Post("2fa/disable") twoFactorDisable(@CurrentUser() u: AuthUser, @Body() dto: TotpDisableDto) { return this.auth.twoFactorDisable(u.id, dto.password, dto.code); }
+
+  @Roles(Role.ADULT) @Put("me/profile") updateProfile(@CurrentUser() u: AuthUser, @Body() dto: AdultProfileDto) { return this.auth.updateAdultProfile(u.id, dto); }
 
   @Get("me/export") exportMine(@CurrentUser() u: AuthUser) { return this.auth.exportAccount(u.id); }
 

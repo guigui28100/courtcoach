@@ -5,7 +5,7 @@ import { Me } from "./types";
 interface AuthCtx {
   me: Me | null; loading: boolean;
   login(email: string, password: string, code?: string): Promise<void>;
-  signup(v: { email: string; password: string; firstName?: string; acceptPolicy: boolean }): Promise<void>;
+  signup(v: { email: string; password: string; firstName?: string; lastName?: string; birthYear?: number; level?: string; acceptPolicy: boolean }): Promise<void>;
   acceptInvitation(v: { token: string; password: string; firstName?: string; acceptPolicy: boolean }): Promise<void>;
   logout(): Promise<void>;
   eraseAccount(): Promise<void>;

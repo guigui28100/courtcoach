@@ -7,7 +7,7 @@
 
 | Traitement | Pourquoi (finalité) | Qui est concerné | Données | Qui y accède | Combien de temps | Base légale |
 |---|---|---|---|---|---|---|
-| Comptes adhérents adultes (demandes de coaching) | Recevoir et traiter des demandes de cours, analyser des vidéos | Adultes du club | E-mail, prénom, mot de passe chiffré, demandes, vidéos et analyses | Le coach et la personne | Tant que le compte existe ; vidéos 12 mois | Consentement |
+| Comptes adhérents adultes (demandes de coaching) | Recevoir et traiter des demandes de cours, analyser des vidéos | Adultes du club | E-mail, prénom, nom, année de naissance, classement ou niveau (facultatifs), mot de passe chiffré, demandes, vidéos et analyses | Le coach et la personne | Tant que le compte existe ; vidéos 12 mois | Consentement |
 | Centre de compétition jeunes : fiche joueur | Suivre la progression des jeunes compétiteurs | Jeunes (mineurs) | Prénom, nom, naissance, classement, profil de jeu, santé (facultatif), notes du coach | Le coach ; la famille (sauf notes privées) | Saison en cours puis 12 mois après le départ | Accord des parents, mission du club |
 | Objectifs, évaluations, bulletins, matchs | Bilan de début d'année, objectifs par trimestre, bulletins | Jeunes | Notes, commentaires, résultats | Le coach ; le jeune et sa famille (lecture seule) | Idem fiche | Idem |
 | Matchs déclarés par le jeune | Réfléchir à ses matchs, informer le coach | Jeunes | Date, type de match, résultat, score, niveau de l'adversaire (jamais de nom), ressenti, 2 points forts et 1 point à améliorer, réponse du coach | Le jeune (écriture 7 jours) et le coach ; **pas les parents** | Idem fiche | Idem |

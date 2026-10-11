@@ -16,7 +16,7 @@ export class LessonsService {
   // Un adulte voit les siennes ; le coach voit toutes les demandes (avec le prénom de la personne).
   async list(user: AuthUser) {
     if (user.role === Role.COACH) {
-      return this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, email: true } } } });
+      return this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, email: true } } } });
     }
     return this.prisma.lessonRequest.findMany({ where: { memberId: user.id }, orderBy: { createdAt: "desc" } });
   }
