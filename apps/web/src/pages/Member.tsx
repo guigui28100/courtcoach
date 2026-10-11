@@ -181,14 +181,17 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const latest = (a: Lesson, b: Lesson) => b.createdAt.localeCompare(a.createdAt);
   const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort(soonest);
   const confirmed = lessons.filter((l) => l.status === "ACCEPTED").sort(soonest);
-  const next = confirmed.find((l) => l.finalSlot && l.finalSlot.date >= todayIso());
+  const upcoming = confirmed.filter((l) => !l.finalSlot || l.finalSlot.date >= todayIso()); // les cours passés ne sont plus affichés
+  const next = upcoming.find((l) => l.finalSlot); const others = upcoming.filter((l) => l !== next);
   const waiting = lessons.filter((l) => l.status === "PENDING").sort(latest);
   const refused = lessons.filter((l) => l.status === "REFUSED").sort(latest);
   const folds = [
-    { title: "✅ Mes cours confirmés", list: confirmed },
     { title: "⏳ En attente de réponse", list: waiting },
     { title: "Demandes refusées", list: refused },
   ].filter((g) => g.list.length > 0);
+  // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
+  const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
+  useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
   const ask = () => { setOpen(true); setSent(false); };
   return (
     <section aria-labelledby="t-cours" className="grid gap-5">
@@ -200,6 +203,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
       {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {next && <NextCourse l={next} />}
+      {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} />)}</ul>}
       {folds.map((g) => (
         <Fold key={g.title} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length} onOpen={() => g.list.filter(isNew).forEach(onSeen)}>
           <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-xl bg-white p-0 ring-1 ring-line">{g.list.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
@@ -261,7 +265,7 @@ const EXAMPLE_LESSONS: Lesson[] = [
 
 type AdultTab = "cours" | "videos" | "profil";
 
-// Espace de l'adulte : 3 rubriques (cours particuliers · vidéos à analyser · profil)
+// Espace de l'adulte : 3 rubriques (cours particuliers · coaching vidéo · profil)
 function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, onRespond, videos, onVideosChanged }: {
   preview: boolean; lessons: Lesson[]; seenLocal: string[]; onLessonsChanged: () => void; onSeen: (l: Lesson) => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void>; videos: VideoRow[] | null; onVideosChanged: () => void;
 }) {
@@ -294,12 +298,12 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, onRe
       )}
       <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Tes cours particuliers, tes vidéos et ton profil, au même endroit.</PageHead>
       <Page>
-        <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mes vidéos", fresh.length], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
+        <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mon coaching vidéo", fresh.length], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
           {tab === "cours" && <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} onRespond={onRespond} />}
 
           {tab === "videos" && (
             <section aria-labelledby="t-vid" className="grid gap-5">
-              <div className="grid gap-0.5"><h2 id="t-vid" className="m-0">🎬 Mes vidéos à analyser</h2><p className="m-0 text-muted">Envoie une vidéo de quelques coups : ton coach la reçoit, l'analyse puis te la renvoie. Vous pouvez ensuite discuter ensemble, à partir de l'analyse, par messages.</p></div>
+              <div className="grid gap-0.5"><h2 id="t-vid" className="m-0">🎬 Mon coaching vidéo</h2><p className="m-0 text-muted">Envoie une vidéo de quelques coups : ton coach la reçoit, l'analyse puis te la renvoie. Vous pouvez ensuite discuter ensemble, à partir de l'analyse, par messages.</p></div>
               {fresh.length > 0 && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} de tes vidéos` : "une de tes vidéos"} : ouvre-la ci-dessous.</p>}
               <div className="card grid gap-3">
                 <h3 className="m-0 text-lg">📤 Envoyer une vidéo</h3>
