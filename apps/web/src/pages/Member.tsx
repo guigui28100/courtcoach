@@ -9,28 +9,12 @@ import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
-import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, TabLabel } from "../components/ui";
+import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, SideLayout, TabLabel, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
-function MyVideos() {
-  const [version, setVersion] = useState(0);
-  const videos = useVideos(version);
-  const refresh = useCallback(() => setVersion((n) => n + 1), []);
-  const fresh = (videos ?? []).filter((v) => v.analysis?.sentAt && !v.seenAt);
-  return (
-    <section aria-labelledby="t-vid" className="card grid gap-3">
-      <h2 id="t-vid" className="m-0">Mes vidéos</h2>
-      {fresh.length > 0 && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} de tes vidéos` : "une de tes vidéos"} : ouvre-la ci-dessous.</p>}
-      <p className="m-0 text-muted">Envoie une vidéo de quelques coups : le coach l'analyse et te répond ici.</p>
-      <VideoUpload onDone={refresh} />
-      <VideoList videos={videos ?? []} onChanged={refresh} empty="Tu n'as pas encore envoyé de vidéo." />
-    </section>
-  );
-}
-
 // ----- Mes demandes de cours : une liste claire (une carte par demande) et un formulaire en 4 petites étapes -----
 const STATUS_UI = {
   PENDING: { icon: "⏳", label: "En attente", bar: "#c08a00", soft: "#fff8e1", ink: "#7a5a00" },
@@ -123,26 +107,34 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const isNew = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
-  const order = (l: Lesson) => (isNew(l) ? 0 : l.status === "PENDING" ? 1 : 2);
-  const sorted = [...lessons].sort((a, b) => order(a) - order(b) || b.createdAt.localeCompare(a.createdAt));
-  const news = lessons.filter(isNew).length, waiting = lessons.filter((l) => l.status === "PENDING").length;
-  const summary = lessons.length === 0 ? "Tu n'as pas encore fait de demande." : [news ? `${news} nouvelle${news > 1 ? "s" : ""} réponse${news > 1 ? "s" : ""}` : "", waiting ? `${waiting} en attente` : ""].filter(Boolean).join(" · ") || "Toutes tes demandes ont reçu une réponse.";
+  const byDate = (a: Lesson, b: Lesson) => (isNew(b) ? 1 : 0) - (isNew(a) ? 1 : 0) || b.createdAt.localeCompare(a.createdAt);
+  const groups: { key: Lesson["status"]; title: string; list: Lesson[] }[] = [
+    { key: "ACCEPTED", title: "✅ Mes cours confirmés", list: lessons.filter((l) => l.status === "ACCEPTED").sort(byDate) },
+    { key: "PENDING", title: "⏳ En attente de réponse", list: lessons.filter((l) => l.status === "PENDING").sort(byDate) },
+    { key: "REFUSED", title: "Demandes refusées", list: lessons.filter((l) => l.status === "REFUSED").sort(byDate) },
+  ];
+  const news = lessons.filter(isNew).length;
+  const summary = lessons.length === 0 ? "Tu n'as pas encore de cours particulier." : [news ? `${news} nouvelle${news > 1 ? "s" : ""} réponse${news > 1 ? "s" : ""}` : "", `${groups[0].list.length} confirmé${groups[0].list.length > 1 ? "s" : ""}`, groups[1].list.length ? `${groups[1].list.length} en attente` : ""].filter(Boolean).join(" · ");
+  const ask = () => { setOpen(true); setSent(false); };
   return (
-    <section aria-labelledby="t-dem" className="grid gap-4">
+    <section aria-labelledby="t-dem" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid gap-0.5"><h2 id="t-dem" className="m-0">📨 Mes demandes de cours</h2><p className="m-0 text-muted">{summary}</p></div>
-        {!open && <button className="btn-clay" onClick={() => { setOpen(true); setSent(false); }}>+ Nouvelle demande</button>}
+        <div className="grid gap-0.5"><h2 id="t-dem" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">{summary}</p></div>
+        {!open && <button className="btn-clay" onClick={ask}>+ Demander un cours</button>}
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.</p>}
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
-      {sorted.length > 0 ? (
-        <ul className="m-0 grid list-none gap-3 p-0">{sorted.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} />)}</ul>
-      ) : !open && (
+      {lessons.length > 0 ? groups.filter((g) => g.list.length > 0).map((g) => (
+        <div key={g.key} className="grid gap-3">
+          <h3 className="m-0 text-lg">{g.title} <span className="font-body text-base font-normal text-muted">({g.list.length})</span></h3>
+          <ul className="m-0 grid list-none gap-3 p-0">{g.list.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} />)}</ul>
+        </div>
+      )) : !open && (
         <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
           <span aria-hidden="true" className="text-5xl">🎾</span>
           <p className="m-0 text-lg font-bold">Envie de progresser avec ton coach ?</p>
           <p className="m-0 max-w-md text-muted">Choisis un cours, dis-nous sur quoi travailler et quand : il te répond ici.</p>
-          <button className="btn-clay mt-1" onClick={() => { setOpen(true); setSent(false); }}>Demander mon premier cours</button>
+          <button className="btn-clay mt-1" onClick={ask}>Demander mon premier cours</button>
         </div>
       )}
     </section>
@@ -164,8 +156,8 @@ function ProfileCard({ preview }: { preview: boolean }) {
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
-    <details className="card grid gap-3" open={missing}>
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 className="m-0 text-xl">🙋 Mon profil{missing && <span className="ml-2 rounded-full bg-[#fff3cd] px-3 py-0.5 align-middle text-sm font-bold text-[#7a5a00]">à compléter</span>}</h2><span aria-hidden="true">▾</span></summary>
+    <section aria-labelledby="t-prof" className="card grid gap-3">
+      <h2 id="t-prof" className="m-0 text-xl">🙋 Mon profil{missing && <span className="ml-2 rounded-full bg-[#fff3cd] px-3 py-0.5 align-middle text-sm font-bold text-[#7a5a00]">à compléter</span>}</h2>
       <p className="hint m-0">Ton coach voit ces informations sur tes demandes, pour préparer ton cours et te joindre. Tout est facultatif.</p>
       <form onSubmit={save} className="grid gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -177,7 +169,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
         </div>
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
-    </details>
+    </section>
   );
 }
 
@@ -189,12 +181,20 @@ const EXAMPLE_LESSONS: Lesson[] = [
   { id: "ex3", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
 ];
 
-export function AdultSpace({ preview = false }: { preview?: boolean }) {
+type AdultTab = "cours" | "videos" | "profil";
+
+// Espace de l'adulte : 3 rubriques (cours particuliers · vidéos à analyser · profil)
+function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, videos, onVideosChanged }: {
+  preview: boolean; lessons: Lesson[]; seenLocal: string[]; onLessonsChanged: () => void; onSeen: (l: Lesson) => void; videos: VideoRow[] | null; onVideosChanged: () => void;
+}) {
   const { me, eraseAccount } = useAuth();
-  const [lessons, setLessons] = useState<Lesson[]>(preview ? EXAMPLE_LESSONS : []);
-  const [seenLocal, setSeenLocal] = useState<string[]>([]);
-  const load = useCallback(() => { if (!preview) get<Lesson[]>("/lessons").then(setLessons); }, [preview]);
-  useEffect(load, [load]);
+  const [params, setParams] = useSearchParams();
+  const tab: AdultTab = (["cours", "videos", "profil"] as const).find((k) => k === params.get("onglet")) ?? "cours";
+  const go = (k: string) => { setParams(k === "cours" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const newAnswers = lessons.filter((l) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id)).length;
+  const fresh = (videos ?? []).filter((v) => v.analysis?.sentAt && !v.seenAt);
+  const waiting = (videos ?? []).filter((v) => !v.analysis?.sentAt), done = (videos ?? []).filter((v) => v.analysis?.sentAt);
+  const missing = !preview && (!me?.lastName || !me?.birthYear || !me?.level || !me?.phone);
 
   async function exportData() {
     const data = await get("/auth/me/export");
@@ -213,33 +213,62 @@ export function AdultSpace({ preview = false }: { preview?: boolean }) {
           </div>
         </div>
       )}
-      <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Demande un cours à ton coach et retrouve ici ses réponses.</PageHead>
+      <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Tes cours particuliers, tes vidéos et ton profil, au même endroit.</PageHead>
       <Page>
-        <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={load} onSeen={async (l) => { if (preview) { setSeenLocal((s) => [...s, l.id]); return; } await post(`/lessons/${l.id}/seen`); load(); }} />
+        <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mes vidéos", fresh.length], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
+          {tab === "cours" && <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} />}
 
-        {preview ? (
-          <section aria-labelledby="t-vid" className="card grid gap-3">
-            <h2 id="t-vid" className="m-0">Mes vidéos</h2>
-            <p className="m-0 text-muted">Envoie une vidéo de quelques coups : le coach l'analyse et te répond ici.</p>
-            <p className="m-0 rounded-xl border-2 border-dashed border-line p-3 text-sm text-muted">Dans l'aperçu, l'envoi de vidéo est désactivé. Un adulte voit ici un bouton pour choisir sa vidéo, puis la liste de ses vidéos et tes analyses.</p>
-            <p className="m-0 text-sm">Tu n'as pas encore envoyé de vidéo.</p>
-          </section>
-        ) : <MyVideos />}
+          {tab === "videos" && (
+            <section aria-labelledby="t-vid" className="grid gap-5">
+              <div className="grid gap-0.5"><h2 id="t-vid" className="m-0">🎬 Mes vidéos à analyser</h2><p className="m-0 text-muted">Envoie une vidéo de quelques coups : ton coach l'analyse et te répond ici.</p></div>
+              {fresh.length > 0 && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} de tes vidéos` : "une de tes vidéos"} : ouvre-la ci-dessous.</p>}
+              <div className="card grid gap-3">
+                <h3 className="m-0 text-lg">📤 Envoyer une vidéo</h3>
+                {preview ? <p className="m-0 rounded-xl border-2 border-dashed border-line p-3 text-sm text-muted">Dans l'aperçu, l'envoi de vidéo est désactivé. Un adulte voit ici un bouton pour choisir sa vidéo.</p> : <VideoUpload onDone={onVideosChanged} />}
+              </div>
+              {preview ? <Empty>Tu n'as pas encore envoyé de vidéo.</Empty> : (
+                <>
+                  <div className="grid gap-3"><h3 className="m-0 text-lg">⏳ En attente d'analyse <span className="font-body text-base font-normal text-muted">({waiting.length})</span></h3><VideoList videos={waiting} onChanged={onVideosChanged} empty="Aucune vidéo en attente." /></div>
+                  <div className="grid gap-3"><h3 className="m-0 text-lg">✅ Analysées par ton coach <span className="font-body text-base font-normal text-muted">({done.length})</span></h3><VideoList videos={done} onChanged={onVideosChanged} empty="Pas encore de vidéo analysée." /></div>
+                </>
+              )}
+            </section>
+          )}
 
-        <ProfileCard preview={preview} />
-
-        <section className="card grid gap-3 border-dashed">
-          <h2 className="m-0 text-lg">Mes données</h2>
-          <p className="hint m-0">Tu peux récupérer ou effacer tes données quand tu veux. <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link></p>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/mot-de-passe" className="btn-outline btn-sm no-underline">Changer mon mot de passe</Link>
-            <button className="btn-outline btn-sm" disabled={preview} onClick={exportData}>Télécharger mes données</button>
-            <button className="btn-danger btn-sm" disabled={preview} onClick={async () => { if (confirm("Supprimer définitivement ton compte et tes données ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
-          </div>
-        </section>
+          {tab === "profil" && (
+            <>
+              <ProfileCard preview={preview} />
+              <section className="card grid gap-3 border-dashed">
+                <h2 className="m-0 text-lg">Mes données</h2>
+                <p className="hint m-0">Tu peux récupérer ou effacer tes données quand tu veux. <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link></p>
+                <div className="flex flex-wrap gap-2">
+                  <Link to="/mot-de-passe" className="btn-outline btn-sm no-underline">Changer mon mot de passe</Link>
+                  <button className="btn-outline btn-sm" disabled={preview} onClick={exportData}>Télécharger mes données</button>
+                  <button className="btn-danger btn-sm" disabled={preview} onClick={async () => { if (confirm("Supprimer définitivement ton compte et tes données ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
+                </div>
+              </section>
+            </>
+          )}
+        </SideLayout>
       </Page>
     </>
   );
+}
+
+export function AdultSpace() {
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const load = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons); }, []);
+  useEffect(load, [load]);
+  const [version, setVersion] = useState(0);
+  const videos = useVideos(version);
+  const refresh = useCallback(() => setVersion((n) => n + 1), []);
+  return <AdultView preview={false} lessons={lessons} seenLocal={[]} onLessonsChanged={load} onSeen={async (l) => { await post(`/lessons/${l.id}/seen`); load(); }} videos={videos} onVideosChanged={refresh} />;
+}
+
+// Aperçu du coach : exemples inventés, aucun appel au serveur
+export function AdultPreview() {
+  const [seen, setSeen] = useState<string[]>([]);
+  return <AdultView preview lessons={EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} />;
 }
 
 // Objectifs du trimestre : « À travailler » tant que le coach n'a pas fait le point (le statut n'apparaît qu'après son évaluation)
