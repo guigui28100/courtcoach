@@ -181,14 +181,17 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const latest = (a: Lesson, b: Lesson) => b.createdAt.localeCompare(a.createdAt);
   const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort(soonest);
   const confirmed = lessons.filter((l) => l.status === "ACCEPTED").sort(soonest);
-  const next = confirmed.find((l) => l.finalSlot && l.finalSlot.date >= todayIso());
+  const upcoming = confirmed.filter((l) => !l.finalSlot || l.finalSlot.date >= todayIso()); // les cours passés ne sont plus affichés
+  const next = upcoming.find((l) => l.finalSlot); const others = upcoming.filter((l) => l !== next);
   const waiting = lessons.filter((l) => l.status === "PENDING").sort(latest);
   const refused = lessons.filter((l) => l.status === "REFUSED").sort(latest);
   const folds = [
-    { title: "✅ Mes cours confirmés", list: confirmed },
     { title: "⏳ En attente de réponse", list: waiting },
     { title: "Demandes refusées", list: refused },
   ].filter((g) => g.list.length > 0);
+  // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
+  const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
+  useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
   const ask = () => { setOpen(true); setSent(false); };
   return (
     <section aria-labelledby="t-cours" className="grid gap-5">
@@ -200,6 +203,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
       {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {next && <NextCourse l={next} />}
+      {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} />)}</ul>}
       {folds.map((g) => (
         <Fold key={g.title} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length} onOpen={() => g.list.filter(isNew).forEach(onSeen)}>
           <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-xl bg-white p-0 ring-1 ring-line">{g.list.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
