@@ -10,6 +10,29 @@ const P: Record<string, string> = {
   "📄": "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
   "🔒": "M7 11h10a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2zM8 11V8a4 4 0 018 0v3",
 };
+const AXIS: Record<string, string> = {
+  TECHNIQUE: "M14 2a6 7 0 110 14 6 7 0 010-14zM10 13l-6 7M14 4v10M9 9h10",
+  TACTIQUE: "M12 3a9 9 0 110 18 9 9 0 010-18zM12 7a5 5 0 110 10 5 5 0 010-10zM12 11a1 1 0 110 2 1 1 0 010-2z",
+  PHYSIQUE: "M13 2L5 14h6l-1 8 8-12h-6z",
+  MENTAL: "M9 18h6M10 21h4M12 3a6 6 0 00-4 10c1 1 1 2 1 3h6c0-1 0-2 1-3a6 6 0 00-4-10z",
+};
+export function AxisIcon({ axis, size = 28 }: { axis: string; size?: number }) {
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={AXIS[axis] ?? AXIS.TECHNIQUE} /></svg>;
+}
+export const RulerIcon = ({ size = 18 }: { size?: number }) => <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17L17 3l4 4L7 21zM8 12l2 2M11 9l2 2M14 6l2 2" /></svg>;
+export function StarShape({ filled, color, size = 22 }: { filled: boolean; color: string; size?: number }) {
+  const d = "M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z";
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24"><path d={d} fill={filled ? color : "none"} stroke={filled ? "none" : "rgba(255,255,255,.3)"} strokeWidth="1.6" style={filled ? { filter: `drop-shadow(0 0 5px ${color})` } : undefined} /></svg>;
+}
+export function MissionRing({ pct, color, children }: { pct: number; color: string; children: React.ReactNode }) {
+  const r = 34, C = 2 * Math.PI * r;
+  return (
+    <div className="mc-ring" aria-hidden="true">
+      <svg width="92" height="92" viewBox="0 0 92 92"><circle cx="46" cy="46" r={r} fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="8" /><circle cx="46" cy="46" r={r} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(100, pct) / 100)} transform="rotate(-90 46 46)" style={{ filter: `drop-shadow(0 0 7px ${color})`, transition: "stroke-dashoffset .7s ease, stroke .7s ease" }} /></svg>
+      <div className="mc-ring-in" style={{ color }}>{children}</div>
+    </div>
+  );
+}
 export function TeenIcon({ e, size = 20 }: { e: string; size?: number }) {
   const d = P[e];
   if (!d) return <>{e}</>;
