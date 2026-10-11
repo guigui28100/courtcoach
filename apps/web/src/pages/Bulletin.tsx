@@ -29,7 +29,7 @@ function Gauge({ value }: { value: number }) {
 }
 
 const Tint = ({ emoji, title, text, bg, ink }: { emoji: string; title: string; text?: string; bg: string; ink: string }) =>
-  text?.trim() ? <section className="min-w-0 break-inside-avoid rounded-2xl p-4 text-[#1a2233] shadow-md" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><p className="m-0 whitespace-pre-line">{text.trim()}</p></section> : null;
+  text?.trim() ? <section className="min-w-0 break-inside-avoid rounded-2xl p-4 text-[#1a2233] shadow-md" style={{ background: bg }}><h3 className="m-0 mb-1 text-base" style={{ color: ink }}><span aria-hidden="true">{emoji} </span>{title}</h3><ul className="m-0 grid list-disc gap-1 pl-5 marker:text-current" style={{ color: ink }}>{text.split(/\n|;/).map((x) => x.replace(/^\s*[-•*]\s*/, "").trim()).filter(Boolean).map((x, i) => <li key={i}><span className="text-[#1a2233]">{x}</span></li>)}</ul></section> : null;
 
 // Bulletin d'un trimestre : même page pour le coach et la famille, à imprimer ou à enregistrer en PDF.
 export default function Bulletin() {
@@ -116,7 +116,7 @@ export default function Bulletin() {
             <div className="relative grid gap-2">
               <p className="m-0 text-xs font-bold uppercase tracking-[0.2em] text-[#dcf247]">{t === 0 ? "Bilan de départ" : "Bulletin"} · Tennis Club Houdan</p>
               <h1 className="m-0 text-4xl font-black text-white sm:text-5xl">{fullName(p)}</h1>
-              <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span></p>
+              <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} {t > 0 && <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span>}</p>
               {facts.length > 0 && <ul className="m-0 mt-1 flex list-none flex-wrap gap-2 p-0">{facts.map(([k, v]) => <li key={k} className="gal-chip"><span className="text-white/70">{k}</span> {v}</li>)}</ul>}
             </div>
             {isTeen(p) ? <CourtMark className="relative mx-auto max-w-[150px]" /> : <Planet className="relative mx-auto max-w-[150px]" />}
