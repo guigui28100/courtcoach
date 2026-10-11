@@ -4,7 +4,7 @@ import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { ADULT_LEVELS, CourseStar, fmtSlot, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { ADULT_LEVELS, CourseStar, fmtSlot, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
@@ -16,9 +16,9 @@ const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
 // Menu repliable, FERMÉ par défaut (on clique pour voir) ; une pastille rappelle le nombre de nouveautés
-function Fold({ title, count, hot = 0, children }: { title: string; count: number; hot?: number; children: ReactNode }) {
+function Fold({ title, count, hot = 0, onOpen, children }: { title: string; count: number; hot?: number; onOpen?: () => void; children: ReactNode }) {
   return (
-    <details className="group rounded-2xl border-2 border-line bg-white">
+    <details className="group rounded-2xl border-2 border-line bg-white" onToggle={(e) => { if (e.currentTarget.open) onOpen?.(); }}>
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 [&::-webkit-details-marker]:hidden">
         <h3 className="m-0 text-lg">{title} <span className="font-body text-base font-normal text-muted">({count})</span>{hot > 0 && <span className="ml-2 rounded-full bg-clay px-2.5 py-0.5 align-middle text-sm font-bold text-white">{hot} nouveau{hot > 1 ? "x" : ""}</span>}</h3>
         <span aria-hidden="true" className="text-xl transition-transform group-open:rotate-180">▾</span>
@@ -87,62 +87,85 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
   );
 }
 
-function LessonCard({ l, isNew, onSeen, onRespond }: { l: Lesson; isNew: boolean; onSeen: () => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void> }) {
-  const ui = STATUS_UI[l.status]; const type = TYPE_UI[l.type] ?? ["🎾", "Cours", ""];
+const TYPE_SHORT: Record<string, string> = { individuel: "Individuel", duo: "À deux" };
+const MONTH_SHORT = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+// Petite pastille de calendrier : le jour en gros, le mois en petit
+function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" }) {
+  const d = new Date(`${slot.date}T12:00:00`);
+  return (
+    <span aria-hidden="true" className={"grid h-14 w-14 shrink-0 place-items-center rounded-xl text-center leading-none " + (tone === "green" ? "bg-[#eef8f1] text-[#1d6b43]" : "bg-[#eaf2fb] text-[#1f5a96]")}>
+      <span className="grid"><small className="text-[0.7rem] font-bold uppercase">{MONTH_SHORT[d.getMonth()]}</small><strong className="font-display text-2xl">{d.getDate()}</strong></span>
+    </span>
+  );
+}
+
+// Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
+function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
+  const title = `${l.objective} · ${TYPE_SHORT[l.type] ?? "Cours"}`;
+  const state = { PENDING: ["⏳ En attente", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
+  const sub = l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
+    : l.status === "PENDING" ? `Tes disponibilités : ${l.days.length ? l.days.join(", ").toLowerCase() : "à définir"} · ${l.moment.toLowerCase()}`
+    : l.coachReply ? `« ${l.coachReply} »` : "";
+  return (
+    <li className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[auto_1fr_auto]">
+      {l.status === "ACCEPTED" && l.finalSlot ? <DateBadge slot={l.finalSlot} tone="green" /> : <span aria-hidden="true" className="grid h-14 w-14 place-items-center rounded-xl bg-sand text-2xl">{l.status === "PENDING" ? "⏳" : "🎾"}</span>}
+      <div className="grid min-w-0 gap-0.5">
+        <strong className="leading-tight">{title}{isNew && <span className="ml-2 rounded-full bg-clay px-2 py-0.5 align-middle text-xs font-bold text-white">nouveau</span>}</strong>
+        {sub && <span className="text-sm text-muted">{sub}</span>}
+        {l.status === "ACCEPTED" && l.coachReply && <span className="text-sm text-muted">💬 « {l.coachReply} »</span>}
+        {l.status === "PENDING" && l.declinedSlot && <span className="text-sm text-muted">Tu n'étais pas disponible le {fmtSlot(l.declinedSlot)} : ton coach te proposera une autre date.</span>}
+      </div>
+      <span className="col-span-2 text-sm font-bold sm:col-span-1" style={{ color: state[1] }}>{state[0]}</span>
+    </li>
+  );
+}
+
+// Grand encadré : le prochain cours confirmé
+function NextCourse({ l }: { l: Lesson }) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-3xl bg-[#1d6b43] p-5 text-white shadow-sm">
+      <DateBadge slot={l.finalSlot!} tone="green" />
+      <div className="grid min-w-0 gap-0.5">
+        <small className="font-bold uppercase tracking-wide text-white/80">Ton prochain cours</small>
+        <strong className="font-display text-2xl leading-tight">{fmtSlot(l.finalSlot!)}</strong>
+        <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
+      </div>
+    </div>
+  );
+}
+
+// Encadré à traiter : le coach propose une date, l'adulte confirme ou non
+function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void> }) {
   const [no, setNo] = useState(false); const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function reply(action: "confirm" | "decline") {
     setErr(""); setBusy(true);
     try { await onRespond(l, action, action === "decline" ? msg || undefined : undefined); setNo(false); } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
   }
   return (
-    <li className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-line" style={{ borderLeft: `6px solid ${ui.bar}` }}>
-      <div className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-        <span aria-hidden="true" className="grid h-12 w-12 place-items-center rounded-2xl text-2xl" style={{ background: ui.soft }}>{type[0]}</span>
-        <div className="grid min-w-0 gap-1">
-          <strong className="text-lg leading-tight">{l.objective} <span className="font-normal text-muted">· {type[1]}</span></strong>
-          <p className="m-0 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted">
-            <span>📅 {l.days.length ? l.days.join(", ") : "Jours à définir"}</span><span>🕒 {l.moment}</span><span>Demandée le {shortDate(l.createdAt)}</span>
-          </p>
+    <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
+      <div className="flex flex-wrap items-center gap-4">
+        {l.finalSlot && <DateBadge slot={l.finalSlot} tone="blue" />}
+        <div className="grid min-w-0 gap-0.5">
+          <small className="font-bold uppercase tracking-wide">À confirmer</small>
+          <strong className="font-display text-2xl leading-tight">{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>
+          <span>{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
         </div>
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold" style={{ background: ui.soft, color: ui.ink }}><span aria-hidden="true">{ui.icon}</span>{ui.label}</span>
       </div>
-      {l.status === "PROPOSED" && l.finalSlot && (
-        <div className="mx-4 mb-4 grid gap-3 rounded-2xl p-3" style={{ background: ui.soft, color: ui.ink }}>
-          <div><small className="font-bold">💬 Ton coach te propose ce cours</small><p className="m-0 text-lg font-extrabold">{fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p></div>
-          <p className="m-0 text-sm">Ton coach ne se déplacera que si tu confirmes. Confirme seulement si tu es sûr d'être disponible.</p>
-          {!no ? (
-            <div className="flex flex-wrap gap-2"><button className="btn-clay btn-sm" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline btn-sm !bg-white" onClick={() => setNo(true)}>❌ Je ne suis pas disponible</button></div>
-          ) : (
-            <div className="grid gap-2 text-ink">
-              <input className="input !min-h-11" maxLength={200} aria-label="Message pour ton coach (facultatif)" placeholder="Un mot pour ton coach (facultatif), ex. : je travaille ce jour-là" value={msg} onChange={(e) => setMsg(e.target.value)} />
-              <div className="flex flex-wrap gap-2"><button className="btn-danger btn-sm" disabled={busy} onClick={() => reply("decline")}>Envoyer : je ne suis pas disponible</button><button className="btn-outline btn-sm !bg-white" onClick={() => setNo(false)}>Annuler</button></div>
-            </div>
-          )}
-          <Err msg={err} />
+      {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
+      {!no ? (
+        <div className="grid gap-2">
+          <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline !bg-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
+          <small>Ton coach ne se déplacera que si tu confirmes.</small>
+        </div>
+      ) : (
+        <div className="grid gap-2 text-ink">
+          <input className="input !min-h-11" maxLength={200} aria-label="Message pour ton coach (facultatif)" placeholder="Un mot pour ton coach (facultatif)" value={msg} onChange={(e) => setMsg(e.target.value)} />
+          <div className="flex flex-wrap gap-2"><button className="btn-danger" disabled={busy} onClick={() => reply("decline")}>Envoyer : pas disponible</button><button className="btn-outline !bg-white" onClick={() => setNo(false)}>Retour</button></div>
         </div>
       )}
-      {l.status === "ACCEPTED" && l.finalSlot && (
-        <div className="mx-4 mb-4 rounded-2xl bg-[#eef8f1] p-3 text-[#1d6b43]">
-          <small className="font-bold">📅 Ton cours est confirmé</small>
-          <p className="m-0 text-lg font-extrabold">{fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>
-        </div>
-      )}
-      {l.status === "PENDING" && l.declinedSlot && (
-        <p className="mx-4 mb-4 mt-0 rounded-xl bg-sand p-3 text-sm">Tu as répondu que tu n'étais pas disponible le {fmtSlot(l.declinedSlot)}. Ton coach va te proposer une autre date.</p>
-      )}
-      {l.coachReply && (
-        <div className="mx-4 mb-4 grid gap-0.5 rounded-2xl rounded-tl-sm bg-[#f3f6fb] p-3">
-          <small className="font-bold text-muted">💬 Réponse de ton coach</small>
-          <p className="m-0 font-semibold">« {l.coachReply} »</p>
-        </div>
-      )}
-      {isNew && l.status !== "PROPOSED" && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5" style={{ background: ui.soft, color: ui.ink }}>
-          <strong>🔔 {l.status === "ACCEPTED" ? "Ton cours est confirmé !" : "Ton coach a répondu à ta demande."}</strong>
-          <button className="btn-outline btn-sm !bg-white" onClick={onSeen}>J'ai vu</button>
-        </div>
-      )}
-    </li>
+      <Err msg={err} />
+    </div>
   );
 }
 
@@ -152,33 +175,37 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const c = COPY;
-  const isNew = (l: Lesson) => l.status === "PROPOSED" || (l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id));
+  const isNew = (l: Lesson) => l.status !== "PENDING" && l.status !== "PROPOSED" && !l.seenByMemberAt && !seenLocal.includes(l.id);
   const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
   const soonest = (a: Lesson, b: Lesson) => stamp(a).localeCompare(stamp(b)); // le prochain cours d'abord
   const latest = (a: Lesson, b: Lesson) => b.createdAt.localeCompare(a.createdAt);
-  const groups: { key: Lesson["status"]; title: string; list: Lesson[] }[] = [
-    { key: "PROPOSED", title: "💬 À confirmer", list: lessons.filter((l) => l.status === "PROPOSED").sort(soonest) },
-    { key: "ACCEPTED", title: c.groups[0], list: lessons.filter((l) => l.status === "ACCEPTED").sort(soonest) },
-    { key: "PENDING", title: c.groups[1], list: lessons.filter((l) => l.status === "PENDING").sort(latest) },
-    { key: "REFUSED", title: c.groups[2], list: lessons.filter((l) => l.status === "REFUSED").sort(latest) },
-  ];
-  const [toConfirm, fixed, waiting] = [groups[0].list.length, groups[1].list.length, groups[2].list.length];
-  const summary = lessons.length === 0 ? c.none : [toConfirm ? `${toConfirm} à confirmer` : "", `${fixed} confirmé${fixed > 1 ? "s" : ""}`, waiting ? `${waiting} en attente` : ""].filter(Boolean).join(" · ");
+  const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort(soonest);
+  const confirmed = lessons.filter((l) => l.status === "ACCEPTED").sort(soonest);
+  const next = confirmed.find((l) => l.finalSlot && l.finalSlot.date >= todayIso());
+  const waiting = lessons.filter((l) => l.status === "PENDING").sort(latest);
+  const refused = lessons.filter((l) => l.status === "REFUSED").sort(latest);
+  const folds = [
+    { title: "✅ Mes cours confirmés", list: confirmed },
+    { title: "⏳ En attente de réponse", list: waiting },
+    { title: "Demandes refusées", list: refused },
+  ].filter((g) => g.list.length > 0);
   const ask = () => { setOpen(true); setSent(false); };
-  const hid = "t-cours";
   return (
-    <section aria-labelledby={hid} className="grid gap-5">
+    <section aria-labelledby="t-cours" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid gap-0.5"><h2 id={hid} className="m-0">{c.icon} {c.title}</h2><p className="m-0 text-muted">{summary}</p></div>
+        <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
         {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
-      {lessons.length > 0 ? groups.filter((g) => g.list.length > 0).map((g) => (
-        <Fold key={g.key} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length}>
-          <ul className="m-0 grid list-none gap-3 p-0">{g.list.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} onRespond={onRespond} />)}</ul>
+      {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
+      {next && <NextCourse l={next} />}
+      {folds.map((g) => (
+        <Fold key={g.title} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length} onOpen={() => g.list.filter(isNew).forEach(onSeen)}>
+          <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-xl bg-white p-0 ring-1 ring-line">{g.list.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
         </Fold>
-      )) : !open && (
+      ))}
+      {lessons.length === 0 && !open && (
         <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
           <span aria-hidden="true" className="text-5xl">🎾</span>
           <p className="m-0 text-lg font-bold">{c.emptyTitle}</p>
