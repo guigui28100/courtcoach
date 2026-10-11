@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { LessonStatus, Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthUser } from "../common/auth.types";
-import { AnswerLessonDto, CreateLessonDto, SlotDto } from "./lessons.dto";
+import { AnswerLessonDto, CreateLessonDto, RespondLessonDto, SlotDto } from "./lessons.dto";
 
 // Une date réelle (pas le 31 février), aujourd'hui ou plus tard, dans les 18 mois
 function checkSlot(s: SlotDto) {
@@ -30,17 +30,32 @@ export class LessonsService {
     return this.prisma.lessonRequest.findMany({ where: { memberId: user.id }, orderBy: { createdAt: "desc" } });
   }
 
-  // Le coach accepte en fixant une date et une heure précises (et le lieu), ou refuse
+  // Le coach propose une date et une heure précises (l'adulte doit la confirmer), ou refuse. Il peut aussi changer la date, ou annuler, tant que le cours n'a pas eu lieu.
   async answer(user: AuthUser, id: string, dto: AnswerLessonDto) {
     if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
-    let finalSlot: Prisma.InputJsonValue | undefined;
-    if (dto.status === LessonStatus.ACCEPTED) {
+    const l = await this.prisma.lessonRequest.findUnique({ where: { id } });
+    if (!l || l.status === LessonStatus.REFUSED) throw new NotFoundException("Demande introuvable ou déjà traitée");
+    let finalSlot: Prisma.InputJsonValue | typeof Prisma.JsonNull = Prisma.JsonNull;
+    if (dto.status === LessonStatus.PROPOSED) {
       if (!dto.slot) throw new BadRequestException("Indique la date et l'heure du cours.");
       checkSlot(dto.slot);
       finalSlot = { date: dto.slot.date, time: dto.slot.time };
     } else if (dto.slot) throw new BadRequestException("Un refus n'a pas de date.");
-    const r = await this.prisma.lessonRequest.updateMany({ where: { id, status: LessonStatus.PENDING }, data: { status: dto.status, coachReply: dto.reply ?? "", answeredAt: new Date(), seenByMemberAt: null, finalSlot, place: dto.status === LessonStatus.ACCEPTED ? dto.place ?? "" : "" } });
-    if (!r.count) throw new NotFoundException("Demande introuvable ou déjà traitée");
+    const proposing = dto.status === LessonStatus.PROPOSED;
+    await this.prisma.lessonRequest.update({ where: { id }, data: { status: dto.status, coachReply: dto.reply ?? "", answeredAt: new Date(), seenByMemberAt: null, finalSlot: proposing ? finalSlot : Prisma.JsonNull, place: proposing ? dto.place ?? "" : "", confirmedAt: null, adultReply: "", declinedSlot: Prisma.JsonNull } });
+    return this.prisma.lessonRequest.findUnique({ where: { id } });
+  }
+
+  // L'adulte confirme la date proposée, ou répond qu'il n'est pas disponible (la demande repart chez le coach)
+  async respond(user: AuthUser, id: string, dto: RespondLessonDto) {
+    if (user.role !== Role.ADULT) throw new ForbiddenException("Réservé à l'adhérent");
+    const l = await this.prisma.lessonRequest.findFirst({ where: { id, memberId: user.id, status: LessonStatus.PROPOSED } });
+    if (!l) throw new NotFoundException("Aucune date à confirmer pour cette demande");
+    if (dto.action === "confirm") {
+      await this.prisma.lessonRequest.update({ where: { id }, data: { status: LessonStatus.ACCEPTED, confirmedAt: new Date(), seenByMemberAt: new Date() } });
+    } else {
+      await this.prisma.lessonRequest.update({ where: { id }, data: { status: LessonStatus.PENDING, declinedSlot: (l.finalSlot ?? Prisma.JsonNull) as Prisma.InputJsonValue, adultReply: dto.message ?? "", finalSlot: Prisma.JsonNull, place: "", coachReply: "", answeredAt: null, seenByMemberAt: null } });
+    }
     return this.prisma.lessonRequest.findUnique({ where: { id } });
   }
 

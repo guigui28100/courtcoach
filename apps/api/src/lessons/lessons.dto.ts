@@ -21,8 +21,14 @@ export class SlotDto {
 }
 
 export class AnswerLessonDto {
-  @IsIn([LessonStatus.ACCEPTED, LessonStatus.REFUSED]) status: LessonStatus;
+  @IsIn([LessonStatus.PROPOSED, LessonStatus.REFUSED]) status: LessonStatus; // PROPOSED : le coach propose une date, l'adulte doit la confirmer
   @IsOptional() @Transform(trim) @IsString() @MaxLength(200) reply?: string;
-  @IsOptional() @ValidateNested() @Type(() => SlotDto) slot?: SlotDto; // obligatoire pour accepter
+  @IsOptional() @ValidateNested() @Type(() => SlotDto) slot?: SlotDto; // obligatoire pour proposer
   @IsOptional() @Transform(trim) @IsString() @MaxLength(60) place?: string;
+}
+
+// Réponse de l'adulte à la date proposée : il la confirme, ou dit qu'il n'est pas disponible
+export class RespondLessonDto {
+  @IsIn(["confirm", "decline"]) action: "confirm" | "decline";
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(200) message?: string;
 }

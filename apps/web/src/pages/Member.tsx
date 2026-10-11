@@ -31,7 +31,8 @@ function Fold({ title, count, hot = 0, children }: { title: string; count: numbe
 // ----- Mes demandes de cours : une liste claire (une carte par demande) et un formulaire en 4 petites étapes -----
 const STATUS_UI = {
   PENDING: { icon: "⏳", label: "En attente", bar: "#c08a00", soft: "#fff8e1", ink: "#7a5a00" },
-  ACCEPTED: { icon: "✅", label: "Acceptée", bar: "#2f8f5b", soft: "#eef8f1", ink: "#1d6b43" },
+  PROPOSED: { icon: "💬", label: "À confirmer", bar: "#2a6fb0", soft: "#eaf2fb", ink: "#1f5a96" },
+  ACCEPTED: { icon: "✅", label: "Confirmé", bar: "#2f8f5b", soft: "#eef8f1", ink: "#1d6b43" },
   REFUSED: { icon: "❌", label: "Refusée", bar: "#c0392b", soft: "#fdf0ee", ink: "#9a2a1f" },
 } as const;
 const TYPE_UI: Record<string, [string, string, string]> = { individuel: ["🎾", "Cours individuel", "Sur le court, toi et ton coach"], duo: ["👥", "Cours à deux", "Avec un partenaire"] };
@@ -86,8 +87,13 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
   );
 }
 
-function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: () => void }) {
+function LessonCard({ l, isNew, onSeen, onRespond }: { l: Lesson; isNew: boolean; onSeen: () => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void> }) {
   const ui = STATUS_UI[l.status]; const type = TYPE_UI[l.type] ?? ["🎾", "Cours", ""];
+  const [no, setNo] = useState(false); const [msg, setMsg] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  async function reply(action: "confirm" | "decline") {
+    setErr(""); setBusy(true);
+    try { await onRespond(l, action, action === "decline" ? msg || undefined : undefined); setNo(false); } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
+  }
   return (
     <li className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-line" style={{ borderLeft: `6px solid ${ui.bar}` }}>
       <div className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
@@ -100,11 +106,29 @@ function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: (
         </div>
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold" style={{ background: ui.soft, color: ui.ink }}><span aria-hidden="true">{ui.icon}</span>{ui.label}</span>
       </div>
+      {l.status === "PROPOSED" && l.finalSlot && (
+        <div className="mx-4 mb-4 grid gap-3 rounded-2xl p-3" style={{ background: ui.soft, color: ui.ink }}>
+          <div><small className="font-bold">💬 Ton coach te propose ce cours</small><p className="m-0 text-lg font-extrabold">{fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p></div>
+          <p className="m-0 text-sm">Ton coach ne se déplacera que si tu confirmes. Confirme seulement si tu es sûr d'être disponible.</p>
+          {!no ? (
+            <div className="flex flex-wrap gap-2"><button className="btn-clay btn-sm" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline btn-sm !bg-white" onClick={() => setNo(true)}>❌ Je ne suis pas disponible</button></div>
+          ) : (
+            <div className="grid gap-2 text-ink">
+              <input className="input !min-h-11" maxLength={200} aria-label="Message pour ton coach (facultatif)" placeholder="Un mot pour ton coach (facultatif), ex. : je travaille ce jour-là" value={msg} onChange={(e) => setMsg(e.target.value)} />
+              <div className="flex flex-wrap gap-2"><button className="btn-danger btn-sm" disabled={busy} onClick={() => reply("decline")}>Envoyer : je ne suis pas disponible</button><button className="btn-outline btn-sm !bg-white" onClick={() => setNo(false)}>Annuler</button></div>
+            </div>
+          )}
+          <Err msg={err} />
+        </div>
+      )}
       {l.status === "ACCEPTED" && l.finalSlot && (
         <div className="mx-4 mb-4 rounded-2xl bg-[#eef8f1] p-3 text-[#1d6b43]">
-          <small className="font-bold">📅 Ton cours est fixé</small>
+          <small className="font-bold">📅 Ton cours est confirmé</small>
           <p className="m-0 text-lg font-extrabold">{fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>
         </div>
+      )}
+      {l.status === "PENDING" && l.declinedSlot && (
+        <p className="mx-4 mb-4 mt-0 rounded-xl bg-sand p-3 text-sm">Tu as répondu que tu n'étais pas disponible le {fmtSlot(l.declinedSlot)}. Ton coach va te proposer une autre date.</p>
       )}
       {l.coachReply && (
         <div className="mx-4 mb-4 grid gap-0.5 rounded-2xl rounded-tl-sm bg-[#f3f6fb] p-3">
@@ -112,9 +136,9 @@ function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: (
           <p className="m-0 font-semibold">« {l.coachReply} »</p>
         </div>
       )}
-      {isNew && (
+      {isNew && l.status !== "PROPOSED" && (
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5" style={{ background: ui.soft, color: ui.ink }}>
-          <strong>🔔 {l.status === "ACCEPTED" ? "Ton coach a accepté ta demande !" : "Ton coach a répondu à ta demande."}</strong>
+          <strong>🔔 {l.status === "ACCEPTED" ? "Ton cours est confirmé !" : "Ton coach a répondu à ta demande."}</strong>
           <button className="btn-outline btn-sm !bg-white" onClick={onSeen}>J'ai vu</button>
         </div>
       )}
@@ -124,19 +148,22 @@ function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: (
 
 const COPY = { icon: "📅", title: "Mes cours particuliers", button: "+ Demander un cours", first: "Demander mon premier cours", none: "Tu n'as pas encore de cours particulier.", ok: "✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.", groups: ["✅ Mes cours confirmés", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Envie de progresser avec ton coach ?", emptyText: "Un cours particulier, c'est un vrai cours sur le court avec ton coach. Choisis le type, dis-nous sur quoi travailler et quand : il te répond ici." };
 
-function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void }) {
+function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond }: { lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const c = COPY;
-  const isNew = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
-  const byDate = (a: Lesson, b: Lesson) => (isNew(b) ? 1 : 0) - (isNew(a) ? 1 : 0) || b.createdAt.localeCompare(a.createdAt);
+  const isNew = (l: Lesson) => l.status === "PROPOSED" || (l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id));
+  const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
+  const soonest = (a: Lesson, b: Lesson) => stamp(a).localeCompare(stamp(b)); // le prochain cours d'abord
+  const latest = (a: Lesson, b: Lesson) => b.createdAt.localeCompare(a.createdAt);
   const groups: { key: Lesson["status"]; title: string; list: Lesson[] }[] = [
-    { key: "ACCEPTED", title: c.groups[0], list: lessons.filter((l) => l.status === "ACCEPTED").sort(byDate) },
-    { key: "PENDING", title: c.groups[1], list: lessons.filter((l) => l.status === "PENDING").sort(byDate) },
-    { key: "REFUSED", title: c.groups[2], list: lessons.filter((l) => l.status === "REFUSED").sort(byDate) },
+    { key: "PROPOSED", title: "💬 À confirmer", list: lessons.filter((l) => l.status === "PROPOSED").sort(soonest) },
+    { key: "ACCEPTED", title: c.groups[0], list: lessons.filter((l) => l.status === "ACCEPTED").sort(soonest) },
+    { key: "PENDING", title: c.groups[1], list: lessons.filter((l) => l.status === "PENDING").sort(latest) },
+    { key: "REFUSED", title: c.groups[2], list: lessons.filter((l) => l.status === "REFUSED").sort(latest) },
   ];
-  const news = lessons.filter(isNew).length;
-  const summary = lessons.length === 0 ? c.none : [news ? `${news} nouvelle${news > 1 ? "s" : ""} réponse${news > 1 ? "s" : ""}` : "", `${groups[0].list.length} confirmé${groups[0].list.length > 1 ? "s" : ""}`, groups[1].list.length ? `${groups[1].list.length} en attente` : ""].filter(Boolean).join(" · ");
+  const [toConfirm, fixed, waiting] = [groups[0].list.length, groups[1].list.length, groups[2].list.length];
+  const summary = lessons.length === 0 ? c.none : [toConfirm ? `${toConfirm} à confirmer` : "", `${fixed} confirmé${fixed > 1 ? "s" : ""}`, waiting ? `${waiting} en attente` : ""].filter(Boolean).join(" · ");
   const ask = () => { setOpen(true); setSent(false); };
   const hid = "t-cours";
   return (
@@ -149,7 +176,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
       {lessons.length > 0 ? groups.filter((g) => g.list.length > 0).map((g) => (
         <Fold key={g.key} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length}>
-          <ul className="m-0 grid list-none gap-3 p-0">{g.list.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} />)}</ul>
+          <ul className="m-0 grid list-none gap-3 p-0">{g.list.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} onRespond={onRespond} />)}</ul>
         </Fold>
       )) : !open && (
         <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
@@ -197,23 +224,25 @@ function ProfileCard({ preview }: { preview: boolean }) {
 
 // Espace de l'adhérent adulte : demandes de cours et réponse du coach, visibles tout de suite.
 // Exemples FICTIFS montrés au coach dans « Voir comme un adulte » (aucune vraie demande, aucune donnée de personne)
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const EXAMPLE_LESSONS: Lesson[] = [
-  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", finalSlot: { date: new Date(Date.now() + 4 * 86_400_000).toISOString().slice(0, 10), time: "18:00" }, place: "Court 2", coachReply: "Parfait, à mardi !", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-03T09:00:00Z" },
-  { id: "ex2", type: "individuel", objective: "Revers", days: [], moment: "Peu importe", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-08T09:00:00Z" },
-  { id: "ex3", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", finalSlot: { date: inDays(4), time: "18:00" }, place: "Court 2", confirmedAt: "2026-10-05T12:00:00Z", coachReply: "Parfait, à mardi !", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: "2026-10-05T12:00:00Z", createdAt: "2026-10-03T09:00:00Z" },
+  { id: "ex2", type: "individuel", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "PROPOSED", finalSlot: { date: inDays(7), time: "10:30" }, place: "Court 1", coachReply: "Samedi matin, ça te va ?", answeredAt: "2026-10-08T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-07T09:00:00Z" },
+  { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-09T09:00:00Z" },
+  { id: "ex4", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
 ];
 
 type AdultTab = "cours" | "videos" | "profil";
 
 // Espace de l'adulte : 3 rubriques (cours particuliers · vidéos à analyser · profil)
-function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, videos, onVideosChanged }: {
-  preview: boolean; lessons: Lesson[]; seenLocal: string[]; onLessonsChanged: () => void; onSeen: (l: Lesson) => void; videos: VideoRow[] | null; onVideosChanged: () => void;
+function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, onRespond, videos, onVideosChanged }: {
+  preview: boolean; lessons: Lesson[]; seenLocal: string[]; onLessonsChanged: () => void; onSeen: (l: Lesson) => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void>; videos: VideoRow[] | null; onVideosChanged: () => void;
 }) {
   const { me, eraseAccount } = useAuth();
   const [params, setParams] = useSearchParams();
   const tab: AdultTab = (["cours", "videos", "profil"] as const).find((k) => k === params.get("onglet")) ?? "cours";
   const go = (k: string) => { setParams(k === "cours" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const unseen = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
+  const unseen = (l: Lesson) => l.status === "PROPOSED" || (l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id));
   const newAnswers = lessons.filter(unseen).length;
   const fresh = (videos ?? []).filter((v) => v.analysis?.sentAt && !v.seenAt);
   const waiting = (videos ?? []).filter((v) => !v.analysis?.sentAt), done = (videos ?? []).filter((v) => v.analysis?.sentAt);
@@ -239,7 +268,7 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
       <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Tes cours particuliers, tes vidéos et ton profil, au même endroit.</PageHead>
       <Page>
         <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mes vidéos", fresh.length], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
-          {tab === "cours" && <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} />}
+          {tab === "cours" && <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} onRespond={onRespond} />}
 
           {tab === "videos" && (
             <section aria-labelledby="t-vid" className="grid gap-5">
@@ -285,13 +314,13 @@ export function AdultSpace() {
   const [version, setVersion] = useState(0);
   const videos = useVideos(version);
   const refresh = useCallback(() => setVersion((n) => n + 1), []);
-  return <AdultView preview={false} lessons={lessons} seenLocal={[]} onLessonsChanged={load} onSeen={async (l) => { await post(`/lessons/${l.id}/seen`); load(); }} videos={videos} onVideosChanged={refresh} />;
+  return <AdultView preview={false} lessons={lessons} seenLocal={[]} onLessonsChanged={load} onSeen={async (l) => { await post(`/lessons/${l.id}/seen`); load(); }} onRespond={async (l, action, message) => { await post(`/lessons/${l.id}/respond`, { action, message }); load(); }} videos={videos} onVideosChanged={refresh} />;
 }
 
 // Aperçu du coach : exemples inventés, aucun appel au serveur
 export function AdultPreview() {
   const [seen, setSeen] = useState<string[]>([]);
-  return <AdultView preview lessons={EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} />;
+  return <AdultView preview lessons={EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} onRespond={async () => { throw new Error("Aperçu : rien n'est envoyé."); }} videos={[]} onVideosChanged={() => {}} />;
 }
 
 // Objectifs du trimestre : « À travailler » tant que le coach n'a pas fait le point (le statut n'apparaît qu'après son évaluation)

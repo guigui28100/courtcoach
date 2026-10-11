@@ -26,7 +26,7 @@ export interface Goal { hiddenFrom?: number | null; targetStars?: number; author
 export interface Slot { date: string; time: string; }
 export const fmtTime = (t: string) => { const [h, m] = t.split(":"); return `${Number(h)} h${m === "00" ? "" : " " + m}`; };
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
