@@ -23,19 +23,20 @@ describe("Profil de l'adulte (nom, âge, classement ou niveau)", () => {
 
   it("l'inscription accepte nom, année de naissance et niveau (facultatifs), et le coach les voit sur la demande", async () => {
     const a = request.agent(app.getHttpServer());
-    const r = await a.post("/api/auth/signup").set(ORIGIN).send({ email: "marie@exemple.fr", password: PASSWORD, firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2", acceptPolicy: true }).expect(201);
+    const r = await a.post("/api/auth/signup").set(ORIGIN).send({ email: "marie@exemple.fr", password: PASSWORD, firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78", acceptPolicy: true }).expect(201);
     expect(r.body.id).toBeTruthy();
     await a.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: [], moment: "Peu importe" }).expect(201);
     const list = (await A.coach.get("/api/lessons").expect(200)).body;
-    expect(list[0].member).toMatchObject({ firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2" });
+    expect(list[0].member).toMatchObject({ firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" });
     await request(app.getHttpServer()).post("/api/auth/signup").set(ORIGIN).send({ email: "x@exemple.fr", password: PASSWORD, birthYear: 1800, acceptPolicy: true }).expect(400);
   });
 
   it("l'adulte modifie son profil ; les autres rôles ne peuvent pas", async () => {
-    const r = await A.adulte.put("/api/auth/me/profile").set(ORIGIN).send({ firstName: "Paul", lastName: "Martin", birthYear: 1990, level: "Débutant" }).expect(200);
+    const r = await A.adulte.put("/api/auth/me/profile").set(ORIGIN).send({ firstName: "Paul", lastName: "Martin", birthYear: 1990, level: "Débutant", phone: "+33 6 98 76 54 32" }).expect(200);
     expect(r.body).toMatchObject({ firstName: "Paul", lastName: "Martin", birthYear: 1990, level: "Débutant" });
     expect((await A.adulte.get("/api/auth/me").expect(200)).body).toMatchObject({ lastName: "Martin", level: "Débutant" });
     await A.adulte.put("/api/auth/me/profile").set(ORIGIN).send({ birthYear: 2200 }).expect(400);
+    await A.adulte.put("/api/auth/me/profile").set(ORIGIN).send({ phone: "<script>" }).expect(400);
     for (const k of ["coach", "trainer", "parent"]) await A[k].put("/api/auth/me/profile").set(ORIGIN).send({ firstName: "x" }).expect(403);
     const exp = (await A.adulte.get("/api/auth/me/export").expect(200)).body;
     expect(JSON.stringify(exp)).toContain("Martin");

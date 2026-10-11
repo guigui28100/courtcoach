@@ -12,9 +12,7 @@ import { StarsCard, StarsRadar, useStars } from "../components/Stars";
 import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, TabLabel } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
-const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-const STATUS = { PENDING: ["En attente", "!border-[#c08a00] !text-[#7a5a00] !bg-[#fff3cd]"], ACCEPTED: ["Acceptée", "!border-ok !text-ok !bg-[#e6f5ec]"], REFUSED: ["Refusée", "!border-bad !text-bad !bg-[#fdf0ee]"] } as const;
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
 function MyVideos() {
@@ -33,30 +31,149 @@ function MyVideos() {
   );
 }
 
+// ----- Mes demandes de cours : une liste claire (une carte par demande) et un formulaire en 4 petites étapes -----
+const STATUS_UI = {
+  PENDING: { icon: "⏳", label: "En attente", bar: "#c08a00", soft: "#fff8e1", ink: "#7a5a00" },
+  ACCEPTED: { icon: "✅", label: "Acceptée", bar: "#2f8f5b", soft: "#eef8f1", ink: "#1d6b43" },
+  REFUSED: { icon: "❌", label: "Refusée", bar: "#c0392b", soft: "#fdf0ee", ink: "#9a2a1f" },
+} as const;
+const TYPE_UI: Record<string, [string, string, string]> = { individuel: ["🎾", "Cours individuel", "Toi et ton coach"], duo: ["👥", "Cours à deux", "Avec un partenaire"], video: ["🎬", "Reprise d'une vidéo", "On revoit une analyse"] };
+const GOALS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
+const MOMENTS = ["Peu importe", "Matin", "Après-midi", "Soirée"];
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+// Pastille à cocher (choix unique ou multiple)
+function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox"; name: string; value: string; defaultChecked?: boolean }) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-center rounded-full border-2 border-line bg-white px-4 font-semibold transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:checked]:text-clay has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
+      <input type={type} name={name} value={value} defaultChecked={defaultChecked} className="sr-only" />{value}
+    </label>
+  );
+}
+
+function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose: () => void; onSent: () => void }) {
+  const [err, setErr] = useState("");
+  async function send(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
+    const f = new FormData(e.currentTarget); setErr("");
+    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+  }
+  const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
+  const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
+  return (
+    <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
+            <label key={k} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
+              <input type="radio" name="type" value={k} defaultChecked={i === 0} className="sr-only" />
+              <span aria-hidden="true" className="text-3xl">{icon}</span><span className="grid"><strong>{title}</strong><small className="text-muted">{sub}</small></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
+        <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
+      </fieldset>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>3</span>Quels jours t'arrangent ? <small className="font-body font-normal text-muted">(facultatif)</small></legend>
+        <div className="flex flex-wrap gap-2">{DAYS.map((d) => <Chip key={d} type="checkbox" name="days" value={d} />)}</div>
+      </fieldset>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>4</span>À quel moment de la journée ?</legend>
+        <div className="flex flex-wrap gap-2">{MOMENTS.map((x, i) => <Chip key={x} type="radio" name="moment" value={x} defaultChecked={i === 0} />)}</div>
+      </fieldset>
+      <Field label="Un message pour ton coach (facultatif)" id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
+      <Err msg={err} />
+      <div className="flex flex-wrap gap-2"><button className="btn-clay">Envoyer ma demande</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
+    </form>
+  );
+}
+
+function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: () => void }) {
+  const ui = STATUS_UI[l.status]; const type = TYPE_UI[l.type] ?? ["🎾", "Cours", ""];
+  return (
+    <li className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-line" style={{ borderLeft: `6px solid ${ui.bar}` }}>
+      <div className="grid gap-3 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+        <span aria-hidden="true" className="grid h-12 w-12 place-items-center rounded-2xl text-2xl" style={{ background: ui.soft }}>{type[0]}</span>
+        <div className="grid min-w-0 gap-1">
+          <strong className="text-lg leading-tight">{l.objective} <span className="font-normal text-muted">· {type[1]}</span></strong>
+          <p className="m-0 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted">
+            <span>📅 {l.days.length ? l.days.join(", ") : "Jours à définir"}</span><span>🕒 {l.moment}</span><span>Demandée le {shortDate(l.createdAt)}</span>
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold" style={{ background: ui.soft, color: ui.ink }}><span aria-hidden="true">{ui.icon}</span>{ui.label}</span>
+      </div>
+      {l.coachReply && (
+        <div className="mx-4 mb-4 grid gap-0.5 rounded-2xl rounded-tl-sm bg-[#f3f6fb] p-3">
+          <small className="font-bold text-muted">💬 Réponse de ton coach</small>
+          <p className="m-0 font-semibold">« {l.coachReply} »</p>
+        </div>
+      )}
+      {isNew && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5" style={{ background: ui.soft, color: ui.ink }}>
+          <strong>🔔 {l.status === "ACCEPTED" ? "Ton coach a accepté ta demande !" : "Ton coach a répondu à ta demande."}</strong>
+          <button className="btn-outline btn-sm !bg-white" onClick={onSeen}>J'ai vu</button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void }) {
+  const [open, setOpen] = useState(false);
+  const [sent, setSent] = useState(false);
+  const isNew = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
+  const order = (l: Lesson) => (isNew(l) ? 0 : l.status === "PENDING" ? 1 : 2);
+  const sorted = [...lessons].sort((a, b) => order(a) - order(b) || b.createdAt.localeCompare(a.createdAt));
+  const news = lessons.filter(isNew).length, waiting = lessons.filter((l) => l.status === "PENDING").length;
+  const summary = lessons.length === 0 ? "Tu n'as pas encore fait de demande." : [news ? `${news} nouvelle${news > 1 ? "s" : ""} réponse${news > 1 ? "s" : ""}` : "", waiting ? `${waiting} en attente` : ""].filter(Boolean).join(" · ") || "Toutes tes demandes ont reçu une réponse.";
+  return (
+    <section aria-labelledby="t-dem" className="grid gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid gap-0.5"><h2 id="t-dem" className="m-0">📨 Mes demandes de cours</h2><p className="m-0 text-muted">{summary}</p></div>
+        {!open && <button className="btn-clay" onClick={() => { setOpen(true); setSent(false); }}>+ Nouvelle demande</button>}
+      </div>
+      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.</p>}
+      {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
+      {sorted.length > 0 ? (
+        <ul className="m-0 grid list-none gap-3 p-0">{sorted.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} />)}</ul>
+      ) : !open && (
+        <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
+          <span aria-hidden="true" className="text-5xl">🎾</span>
+          <p className="m-0 text-lg font-bold">Envie de progresser avec ton coach ?</p>
+          <p className="m-0 max-w-md text-muted">Choisis un cours, dis-nous sur quoi travailler et quand : il te répond ici.</p>
+          <button className="btn-clay mt-1" onClick={() => { setOpen(true); setSent(false); }}>Demander mon premier cours</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 // Profil de l'adulte : le coach voit ces informations (nom, âge, classement ou niveau) sur ses demandes
 function ProfileCard({ preview }: { preview: boolean }) {
   const { me, reload } = useAuth();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const missing = !preview && (!me?.lastName || !me?.birthYear || !me?.level);
+  const missing = !preview && (!me?.lastName || !me?.birthYear || !me?.level || !me?.phone);
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preview) { setMsg({ ok: false, text: "Aperçu : rien n'est enregistré." }); return; }
     const f = new FormData(e.currentTarget);
     try {
-      await put("/auth/me/profile", { firstName: String(f.get("firstName") || ""), lastName: String(f.get("lastName") || ""), birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || "") });
+      await put("/auth/me/profile", { firstName: String(f.get("firstName") || ""), lastName: String(f.get("lastName") || ""), birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || ""), phone: String(f.get("phone") || "") });
       await reload(); setMsg({ ok: true, text: "Enregistré ✓" });
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
     <details className="card grid gap-3" open={missing}>
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 className="m-0 text-xl">🙋 Mon profil{missing && <span className="ml-2 rounded-full bg-[#fff3cd] px-3 py-0.5 align-middle text-sm font-bold text-[#7a5a00]">à compléter</span>}</h2><span aria-hidden="true">▾</span></summary>
-      <p className="hint m-0">Ton coach voit ces informations sur tes demandes, pour préparer ton cours. Tout est facultatif.</p>
+      <p className="hint m-0">Ton coach voit ces informations sur tes demandes, pour préparer ton cours et te joindre. Tout est facultatif.</p>
       <form onSubmit={save} className="grid gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" id="p-first"><input id="p-first" name="firstName" className="input" maxLength={60} defaultValue={preview ? "Marie" : me?.firstName ?? ""} /></Field>
           <Field label="Nom" id="p-last"><input id="p-last" name="lastName" className="input" maxLength={60} defaultValue={preview ? "Durand" : me?.lastName ?? ""} /></Field>
           <Field label="Année de naissance" id="p-year"><input id="p-year" name="birthYear" type="number" inputMode="numeric" min={1920} max={2030} className="input" defaultValue={preview ? 1985 : me?.birthYear ?? ""} /></Field>
           <Field label="Classement ou niveau" id="p-level"><select id="p-level" name="level" className="input" defaultValue={preview ? "30/2" : me?.level ?? ""}><option value="">Je ne sais pas</option>{ADULT_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
+          <Field label="Téléphone" id="p-phone"><input id="p-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={20} className="input" placeholder="06 12 34 56 78" defaultValue={preview ? "06 12 34 56 78" : me?.phone ?? ""} /></Field>
         </div>
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
@@ -76,19 +193,9 @@ export function AdultSpace({ preview = false }: { preview?: boolean }) {
   const { me, eraseAccount } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>(preview ? EXAMPLE_LESSONS : []);
   const [seenLocal, setSeenLocal] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
-  const [err, setErr] = useState("");
   const load = useCallback(() => { if (!preview) get<Lesson[]>("/lessons").then(setLessons); }, [preview]);
   useEffect(load, [load]);
-  const fresh = lessons.filter((l) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id));
 
-  async function send(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
-    const f = new FormData(e.currentTarget);
-    setErr("");
-    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); setOpen(false); load(); } catch (x) { setErr((x as Error).message); }
-  }
   async function exportData() {
     const data = await get("/auth/me/export");
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
@@ -108,60 +215,7 @@ export function AdultSpace({ preview = false }: { preview?: boolean }) {
       )}
       <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Demande un cours à ton coach et retrouve ici ses réponses.</PageHead>
       <Page>
-        {fresh.length > 0 && (
-          <div className="grid gap-2" role="status" aria-live="polite">
-            {fresh.map((l) => (
-              <div key={l.id} className={"flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 p-4 " + (l.status === "ACCEPTED" ? "border-ok bg-[#eef8f1]" : "border-bad bg-[#fdf0ee]")}>
-                <div>
-                  <strong>{l.status === "ACCEPTED" ? "✅ Ton coach a accepté ta demande de cours" : "❌ Ton coach ne peut pas donner suite à ta demande"}</strong>
-                  <p className="m-0">{TYPES[l.type]} · {l.objective}{l.coachReply && ` — « ${l.coachReply} »`}</p>
-                </div>
-                <button className="btn-outline btn-sm" onClick={async () => { if (preview) { setSeenLocal((s) => [...s, l.id]); return; } await post(`/lessons/${l.id}/seen`); load(); }}>J'ai vu</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <ProfileCard preview={preview} />
-
-        {lessons.length > 0 && (
-          <section aria-labelledby="t-dem" className="grid gap-3">
-            <h2 id="t-dem" className="m-0">Mes demandes de cours</h2>
-            <ul className="m-0 grid list-none gap-3 p-0">
-              {lessons.map((l) => (
-                <li key={l.id} className="card flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <strong>{TYPES[l.type]} · {l.objective}</strong>
-                    <p className="m-0 text-sm text-muted">{(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment} — demandé le {fmtDate(l.createdAt)}</p>
-                    {l.coachReply && <p className="m-0 text-sm font-bold">💬 Réponse du coach : « {l.coachReply} »</p>}
-                  </div>
-                  <span className={"badge " + STATUS[l.status][1]}>{STATUS[l.status][0]}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        <section className="card grid gap-3">
-          <h2 className="m-0">Demander un cours particulier</h2>
-          <p className="m-0 text-muted">Tu veux travailler avec ton coach en direct ? Envoie ta demande en quelques secondes.</p>
-          <button className="btn-clay self-start" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Masquer le formulaire" : "Demander un cours"}</button>
-          {open && (
-            <form onSubmit={send} className="grid gap-4" noValidate>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Type de cours" id="type"><select id="type" name="type" className="input">{Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Field>
-                <Field label="Sur quoi veux-tu travailler ?" id="objective"><select id="objective" name="objective" className="input">{["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"].map((o) => <option key={o}>{o}</option>)}</select></Field>
-              </div>
-              <fieldset className="field"><legend>Jours qui t'arrangent</legend>
-                <div className="flex flex-wrap gap-2">{DAYS.map((d) => <label key={d} className="flex min-h-11 items-center gap-2 rounded-full border-2 border-line bg-white px-4 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="checkbox" name="days" value={d} className="accent-clay" />{d.slice(0, 3)}.</label>)}</div>
-              </fieldset>
-              <Field label="Moment de la journée" id="moment"><select id="moment" name="moment" className="input">{["Peu importe", "Matin", "Après-midi", "Soirée"].map((m) => <option key={m}>{m}</option>)}</select></Field>
-              <Field label="Un message pour ton coach (facultatif)" id="message"><textarea id="message" name="message" className="input" maxLength={500} /></Field>
-              <Err msg={err} />
-              <button className="btn-clay self-start">Envoyer ma demande</button>
-            </form>
-          )}
-        </section>
+        <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={load} onSeen={async (l) => { if (preview) { setSeenLocal((s) => [...s, l.id]); return; } await post(`/lessons/${l.id}/seen`); load(); }} />
 
         {preview ? (
           <section aria-labelledby="t-vid" className="card grid gap-3">
@@ -171,6 +225,8 @@ export function AdultSpace({ preview = false }: { preview?: boolean }) {
             <p className="m-0 text-sm">Tu n'as pas encore envoyé de vidéo.</p>
           </section>
         ) : <MyVideos />}
+
+        <ProfileCard preview={preview} />
 
         <section className="card grid gap-3 border-dashed">
           <h2 className="m-0 text-lg">Mes données</h2>

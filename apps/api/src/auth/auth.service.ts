@@ -36,13 +36,13 @@ export class AuthService {
     return { access, refresh, accessMaxAgeMs: ACCESS_TTL_S * 1000, refreshMaxAgeMs: REFRESH_TTL_MS };
   }
 
-  async signup(dto: { email: string; password: string; firstName?: string; lastName?: string; birthYear?: number; level?: string }) {
+  async signup(dto: { email: string; password: string; firstName?: string; lastName?: string; birthYear?: number; level?: string; phone?: string }) {
     checkStrength(dto.password, dto.email);
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new ConflictException("Un compte existe déjà avec cet e-mail.");
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email, role: Role.ADULT, firstName: dto.firstName || null, lastName: dto.lastName || null, birthYear: dto.birthYear ?? null, level: dto.level || null,
+        email: dto.email, role: Role.ADULT, firstName: dto.firstName || null, lastName: dto.lastName || null, birthYear: dto.birthYear ?? null, level: dto.level || null, phone: dto.phone || null,
         passwordHash: await hash(dto.password),
         consents: { create: { kind: ConsentKind.PRIVACY_POLICY, givenBy: dto.firstName || dto.email, policyVersion: POLICY_VERSION } },
       },
@@ -178,17 +178,17 @@ export class AuthService {
   }
 
   // L'adulte complète son profil (nom, année de naissance, classement ou niveau) : vu par le coach sur ses demandes
-  async updateAdultProfile(userId: string, dto: { firstName?: string; lastName?: string; birthYear?: number; level?: string }) {
+  async updateAdultProfile(userId: string, dto: { firstName?: string; lastName?: string; birthYear?: number; level?: string; phone?: string }) {
     const u = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (u.role !== Role.ADULT) throw new ForbiddenException("Réservé aux comptes adultes.");
-    await this.prisma.user.update({ where: { id: userId }, data: { firstName: dto.firstName?.trim() || null, lastName: dto.lastName?.trim() || null, birthYear: dto.birthYear ?? null, level: dto.level?.trim() || null } });
+    await this.prisma.user.update({ where: { id: userId }, data: { firstName: dto.firstName?.trim() || null, lastName: dto.lastName?.trim() || null, birthYear: dto.birthYear ?? null, level: dto.level?.trim() || null, phone: dto.phone?.trim() || null } });
     await this.audit.log(userId, "update-profile", "User", userId);
     return this.me(userId);
   }
 
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { accesses: { select: { playerId: true, relation: true } } } });
-    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, accesses: user.accesses };
+    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, phone: user.phone, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, accesses: user.accesses };
   }
 
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.
@@ -200,7 +200,7 @@ export class AuthService {
       this.prisma.lessonRequest.deleteMany({ where: { memberId: userId } }),
       this.prisma.refreshToken.deleteMany({ where: { userId } }),
       this.prisma.playerAccess.deleteMany({ where: { userId } }),
-      this.prisma.user.update({ where: { id: userId }, data: { email: `supprime-${userId}@invalid`, firstName: null, lastName: null, birthYear: null, level: null, passwordHash: "-", deletedAt: new Date() } }),
+      this.prisma.user.update({ where: { id: userId }, data: { email: `supprime-${userId}@invalid`, firstName: null, lastName: null, birthYear: null, level: null, phone: null, passwordHash: "-", deletedAt: new Date() } }),
     ]);
     await this.audit.log(userId, "erase-account", "User", userId);
   }

@@ -60,6 +60,7 @@ model User {
   lastName      String?   // adulte : nom (demandes de coaching), facultatif
   birthYear     Int?      // adulte : année de naissance (pour connaître l'âge), facultatif
   level         String?   // adulte : classement ou niveau, facultatif
+  phone         String?   // adulte : numéro de téléphone (facultatif), vu du coach seulement
   createdAt     DateTime  @default(now())
   lastLoginAt   DateTime?
   failedLogins  Int       @default(0)

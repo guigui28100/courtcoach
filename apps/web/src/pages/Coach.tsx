@@ -21,7 +21,7 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
     <li className="card flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
         <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
-        <p className="m-0 text-sm font-bold text-ink">🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</p>
+        <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
         <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
         {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
       </div>
