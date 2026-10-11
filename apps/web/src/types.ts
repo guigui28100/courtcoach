@@ -22,7 +22,11 @@ export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: stri
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
 export interface Goal { hiddenFrom?: number | null; targetStars?: number; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; axis: Axis; title: string; indicator: string; deadline: string | null; progress: number; trimesters: number[]; checkpoints: GoalCheckpoint[]; }
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "ACCEPTED" | "REFUSED"; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
+// Date (AAAA-MM-JJ) et heure de début (HH:MM) d'un cours fixé par le coach
+export interface Slot { date: string; time: string; }
+export const fmtTime = (t: string) => { const [h, m] = t.split(":"); return `${Number(h)} h${m === "00" ? "" : " " + m}`; };
+export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {

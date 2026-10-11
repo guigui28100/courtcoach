@@ -34,7 +34,8 @@ enum ConsentKind {
 
 enum LessonStatus {
   PENDING
-  ACCEPTED
+  PROPOSED // le coach a proposé une date : en attente de la confirmation de l'adulte
+  ACCEPTED // date confirmée par l'adulte (les anciennes demandes acceptées restent ACCEPTED)
   REFUSED
 }
 
@@ -428,6 +429,11 @@ model LessonRequest {
   coachReply    String       @default("")
   answeredAt    DateTime?
   seenByMemberAt DateTime?
+  finalSlot     Json?        // date et heure du cours fixées par le coach : { date: "2026-10-20", time: "18:00" }
+  place         String       @default("") // lieu / court, saisi par le coach
+  confirmedAt   DateTime?    // quand l'adulte a confirmé la date
+  adultReply    String       @default("") // message de l'adulte s'il n'est pas disponible
+  declinedSlot  Json?        // dernière date refusée par l'adulte
   createdAt     DateTime     @default(now())
 
   @@index([memberId])
