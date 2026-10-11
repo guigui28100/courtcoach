@@ -34,17 +34,26 @@ function MyVideos() {
 }
 
 // Espace de l'adhérent adulte : demandes de cours et réponse du coach, visibles tout de suite.
-export function AdultSpace() {
+// Exemples FICTIFS montrés au coach dans « Voir comme un adulte » (aucune vraie demande, aucune donnée de personne)
+const EXAMPLE_LESSONS: Lesson[] = [
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", coachReply: "Parfait, rendez-vous mardi à 18 h.", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-03T09:00:00Z" },
+  { id: "ex2", type: "video", objective: "Revers", days: [], moment: "Peu importe", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-08T09:00:00Z" },
+  { id: "ex3", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
+];
+
+export function AdultSpace({ preview = false }: { preview?: boolean }) {
   const { me, eraseAccount } = useAuth();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>(preview ? EXAMPLE_LESSONS : []);
+  const [seenLocal, setSeenLocal] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
-  const load = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons); }, []);
+  const load = useCallback(() => { if (!preview) get<Lesson[]>("/lessons").then(setLessons); }, [preview]);
   useEffect(load, [load]);
-  const fresh = lessons.filter((l) => l.status !== "PENDING" && !l.seenByMemberAt);
+  const fresh = lessons.filter((l) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id));
 
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
     const f = new FormData(e.currentTarget);
     setErr("");
     try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); setOpen(false); load(); } catch (x) { setErr((x as Error).message); }
@@ -58,7 +67,15 @@ export function AdultSpace() {
 
   return (
     <>
-      <PageHead eyebrow="Mon espace" title={me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Demande un cours à ton coach et retrouve ici ses réponses.</PageHead>
+      {preview && (
+        <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <p className="m-0"><strong>👀 Aperçu : voici ce que voit un adulte.</strong> Les demandes ci-dessous sont des exemples inventés, rien n'est envoyé ni enregistré.</p>
+            <Link to="/coach/adultes" className="btn-ink btn-sm no-underline">← Retour aux demandes</Link>
+          </div>
+        </div>
+      )}
+      <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Demande un cours à ton coach et retrouve ici ses réponses.</PageHead>
       <Page>
         {fresh.length > 0 && (
           <div className="grid gap-2" role="status" aria-live="polite">
@@ -68,7 +85,7 @@ export function AdultSpace() {
                   <strong>{l.status === "ACCEPTED" ? "✅ Ton coach a accepté ta demande de cours" : "❌ Ton coach ne peut pas donner suite à ta demande"}</strong>
                   <p className="m-0">{TYPES[l.type]} · {l.objective}{l.coachReply && ` — « ${l.coachReply} »`}</p>
                 </div>
-                <button className="btn-outline btn-sm" onClick={async () => { await post(`/lessons/${l.id}/seen`); load(); }}>J'ai vu</button>
+                <button className="btn-outline btn-sm" onClick={async () => { if (preview) { setSeenLocal((s) => [...s, l.id]); return; } await post(`/lessons/${l.id}/seen`); load(); }}>J'ai vu</button>
               </div>
             ))}
           </div>
@@ -113,15 +130,22 @@ export function AdultSpace() {
           )}
         </section>
 
-        <MyVideos />
+        {preview ? (
+          <section aria-labelledby="t-vid" className="card grid gap-3">
+            <h2 id="t-vid" className="m-0">Mes vidéos</h2>
+            <p className="m-0 text-muted">Envoie une vidéo de quelques coups : le coach l'analyse et te répond ici.</p>
+            <p className="m-0 rounded-xl border-2 border-dashed border-line p-3 text-sm text-muted">Dans l'aperçu, l'envoi de vidéo est désactivé. Un adulte voit ici un bouton pour choisir sa vidéo, puis la liste de ses vidéos et tes analyses.</p>
+            <p className="m-0 text-sm">Tu n'as pas encore envoyé de vidéo.</p>
+          </section>
+        ) : <MyVideos />}
 
         <section className="card grid gap-3 border-dashed">
           <h2 className="m-0 text-lg">Mes données</h2>
           <p className="hint m-0">Tu peux récupérer ou effacer tes données quand tu veux. <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link></p>
           <div className="flex flex-wrap gap-2">
             <Link to="/mot-de-passe" className="btn-outline btn-sm no-underline">Changer mon mot de passe</Link>
-            <button className="btn-outline btn-sm" onClick={exportData}>Télécharger mes données</button>
-            <button className="btn-danger btn-sm" onClick={async () => { if (confirm("Supprimer définitivement ton compte et tes données ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
+            <button className="btn-outline btn-sm" disabled={preview} onClick={exportData}>Télécharger mes données</button>
+            <button className="btn-danger btn-sm" disabled={preview} onClick={async () => { if (confirm("Supprimer définitivement ton compte et tes données ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
           </div>
         </section>
       </Page>
