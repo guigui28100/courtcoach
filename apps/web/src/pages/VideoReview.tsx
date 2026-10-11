@@ -38,7 +38,7 @@ export default function VideoReview() {
   }
   async function say(e: FormEvent) { e.preventDefault(); await post(`/videos/${id}/messages`, { text }); setText(""); load(); }
 
-  const who = centre ? `${v.player?.firstName} · Centre de compétition jeunes` : `${adultName(v.owner)}${adultFacts(v.owner) ? " · " + adultFacts(v.owner) : ""} · Demande de coaching`;
+  const who = centre ? `${v.player?.firstName} · Centre de compétition jeunes` : `${adultName(v.owner)}${adultFacts(v.owner) ? " · " + adultFacts(v.owner) : ""}${v.owner?.phone ? " · 📞 " + v.owner.phone : ""} · Demande de coaching`;
   return (
     <>
       <PageHead eyebrow={centre ? "Centre de compétition jeunes" : "Demandes de coaching"} title={v.title}>{who} · {v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</PageHead>

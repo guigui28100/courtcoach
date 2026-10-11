@@ -1,5 +1,5 @@
 export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH";
-export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; mustChangePassword?: boolean; twoFactor?: boolean; accesses: { playerId: string; relation: string }[]; }
+export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; mustChangePassword?: boolean; twoFactor?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },
@@ -199,7 +199,7 @@ export const matchLabel = (list: [string, string][], id: string | null) => list.
 
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »
 // Adulte qui demande un cours : ce que le coach voit (nom, âge, classement ou niveau)
-export interface AdultInfo { firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; }
+export interface AdultInfo { firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; }
 export const ADULT_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export const adultAge = (birthYear: number | null | undefined, now = new Date()) => (birthYear ? now.getFullYear() - birthYear : null);
 export const adultName = (a: (AdultInfo & { email?: string }) | null | undefined, fallback = "Adhérent") => [a?.firstName, a?.lastName].filter(Boolean).join(" ") || a?.email || fallback;
