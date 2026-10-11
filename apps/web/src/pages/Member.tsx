@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
@@ -15,6 +15,19 @@ import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Vi
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
+// Menu repliable, FERMÉ par défaut (on clique pour voir) ; une pastille rappelle le nombre de nouveautés
+function Fold({ title, count, hot = 0, children }: { title: string; count: number; hot?: number; children: ReactNode }) {
+  return (
+    <details className="group rounded-2xl border-2 border-line bg-white">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 [&::-webkit-details-marker]:hidden">
+        <h3 className="m-0 text-lg">{title} <span className="font-body text-base font-normal text-muted">({count})</span>{hot > 0 && <span className="ml-2 rounded-full bg-clay px-2.5 py-0.5 align-middle text-sm font-bold text-white">{hot} nouveau{hot > 1 ? "x" : ""}</span>}</h3>
+        <span aria-hidden="true" className="text-xl transition-transform group-open:rotate-180">▾</span>
+      </summary>
+      <div className="grid gap-3 px-4 pb-4">{children}</div>
+    </details>
+  );
+}
+
 // ----- Mes demandes de cours : une liste claire (une carte par demande) et un formulaire en 4 petites étapes -----
 const STATUS_UI = {
   PENDING: { icon: "⏳", label: "En attente", bar: "#c08a00", soft: "#fff8e1", ink: "#7a5a00" },
@@ -135,10 +148,9 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
       {lessons.length > 0 ? groups.filter((g) => g.list.length > 0).map((g) => (
-        <div key={g.key} className="grid gap-3">
-          <h3 className="m-0 text-lg">{g.title} <span className="font-body text-base font-normal text-muted">({g.list.length})</span></h3>
+        <Fold key={g.key} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length}>
           <ul className="m-0 grid list-none gap-3 p-0">{g.list.map((l) => <LessonCard key={l.id} l={l} isNew={isNew(l)} onSeen={() => onSeen(l)} />)}</ul>
-        </div>
+        </Fold>
       )) : !open && (
         <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
           <span aria-hidden="true" className="text-5xl">🎾</span>
@@ -239,8 +251,8 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
               </div>
               {preview ? <Empty>Tu n'as pas encore envoyé de vidéo.</Empty> : (
                 <>
-                  <div className="grid gap-3"><h3 className="m-0 text-lg">⏳ En attente d'analyse <span className="font-body text-base font-normal text-muted">({waiting.length})</span></h3><VideoList videos={waiting} onChanged={onVideosChanged} empty="Aucune vidéo en attente." /></div>
-                  <div className="grid gap-3"><h3 className="m-0 text-lg">✅ Analysées par ton coach <span className="font-body text-base font-normal text-muted">({done.length})</span></h3><VideoList videos={done} onChanged={onVideosChanged} empty="Pas encore de vidéo analysée." /></div>
+                  <Fold title="⏳ En attente d'analyse" count={waiting.length}><VideoList videos={waiting} onChanged={onVideosChanged} empty="Aucune vidéo en attente." /></Fold>
+                  <Fold title="✅ Analysées par ton coach" count={done.length} hot={fresh.length}><VideoList videos={done} onChanged={onVideosChanged} empty="Pas encore de vidéo analysée." /></Fold>
                 </>
               )}
             </section>
