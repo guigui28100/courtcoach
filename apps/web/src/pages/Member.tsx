@@ -144,10 +144,9 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   }
   return (
     <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
-      <div className="grid min-w-0 gap-0.5">
-        <strong className="font-display text-2xl leading-tight">{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>
-        <span>{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
-      </div>
+      <p className="m-0 text-lg leading-snug">
+        Ton coach te propose un cours <strong>le {l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong> pour travailler <strong>{l.objective}</strong>{l.place ? <> sur le terrain <strong>{l.place}</strong></> : ""}.
+      </p>
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
@@ -181,10 +180,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const next = upcoming.find((l) => l.finalSlot); const others = upcoming.filter((l) => l !== next);
   const waiting = lessons.filter((l) => l.status === "PENDING").sort(latest);
   const refused = lessons.filter((l) => l.status === "REFUSED").sort(latest);
-  const folds = [
-    { title: "⏳ En attente de réponse", list: waiting },
-    { title: "Demandes refusées", list: refused },
-  ].filter((g) => g.list.length > 0);
+  const folds = [{ title: "Cours annulés ou refusés", list: refused }].filter((g) => g.list.length > 0);
   // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
   const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
   useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -197,9 +193,15 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
       {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
-      {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {next && <NextCourse l={next} />}
+      {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} />)}</ul>}
+      {waiting.length > 0 && (
+        <div className="grid gap-2">
+          <h3 className="m-0 font-display text-lg">⏳ Mes demandes en attente</h3>
+          <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line">{waiting.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
+        </div>
+      )}
       {folds.map((g) => (
         <Fold key={g.title} title={g.title} count={g.list.length} hot={g.list.filter(isNew).length} onOpen={() => g.list.filter(isNew).forEach(onSeen)}>
           <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-xl bg-white p-0 ring-1 ring-line">{g.list.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
