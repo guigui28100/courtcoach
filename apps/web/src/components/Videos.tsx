@@ -28,7 +28,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
     if (blob.size < 1024) return setErr("Ce fichier est vide.");
     setPct(0);
     try {
-      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
+      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? String(f.get("shot")) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
       for (let i = 0; i < c.chunkCount; i++) {
         const part = blob.slice(i * c.chunkSize, (i + 1) * c.chunkSize);
         for (let attempt = 1; ; attempt++) {
@@ -53,8 +53,8 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder={toPlayer ? "Un service à imiter" : "Mon service de ce matin"} /></Field>
+          <div className={"grid gap-4 " + (toPlayer ? "" : "sm:grid-cols-2")}>
+            {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
             <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>
           </div>
           <Field label={toPlayer ? `Ton message pour ${toPlayer} (facultatif)` : "Une question pour le coach ? (facultatif)"} id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>
