@@ -213,3 +213,13 @@
 
 /* Bulletin : puces de missions de la couleur du domaine */
 .bul-list li::marker { color: var(--mk); font-size: 1.25em; }
+
+/* Onglets : icône à part, texte aligné à gauche sur une colonne propre (plus de retour à la ligne sous l'icône) */
+.tabbar.side .tab-ico { flex: none; width: 1.6rem; text-align: center; }
+.tabbar.side .tab-txt { flex: 1; min-width: 0; text-align: left; text-wrap: balance; }
+.tabbar.side button { gap: 0.6rem; justify-content: flex-start; }
+.tabbar.side button b { margin-left: auto; }
+.tabbar:not(.side) .tab-ico { margin-right: 0.4rem; }
+.gal-tabs.side .tab-ico { flex: none; width: 1.6rem; text-align: center; }
+.gal-tabs.side .tab-txt { min-width: 0; text-align: left; text-wrap: balance; }
+.gal-tabs.side button { display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem; }

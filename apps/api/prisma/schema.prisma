@@ -67,6 +67,7 @@ model User {
   totpEnabled   Boolean   @default(false)
   totpLastStep  Int?      // dernier code utilisé (un code ne sert qu'une fois)
   recoveryCodes String[]  // codes de secours (empreintes)
+  trainerKind   String?   // entraîneur : "COMITE" (par défaut) ou "CLUB" ; mêmes droits (seulement les jeunes confiés par le coach)
   signature     String?   // signature du coach (image PNG dessinée), affichée en bas des bulletins
 
   refreshTokens RefreshToken[]

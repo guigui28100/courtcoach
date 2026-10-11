@@ -143,4 +143,17 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
     await agent().post("/api/auth/login").set(ORIGIN).send({ email: "julie@exemple.fr", password: r.body.temporaryPassword }).expect(401);
     expect((await A.coach.get("/api/trainers").expect(200)).body).toEqual([]);
   });
+
+  it("entraîneur de CLUB : même compte, ne voit que les jeunes choisis par le coach", async () => {
+    const r = await A.coach.post("/api/trainers").set(ORIGIN).send({ firstName: "Marc", email: "marc@exemple.fr", kind: "CLUB", playerIds: [p2] }).expect(201);
+    await A.coach.post("/api/trainers").set(ORIGIN).send({ firstName: "Zed", email: "zed@exemple.fr", kind: "AUTRE", playerIds: [] }).expect(400);
+    const list = (await A.coach.get("/api/trainers").expect(200)).body as { email: string; kind: string }[];
+    expect(list.find((x) => x.email === "marc@exemple.fr")?.kind).toBe("CLUB");
+    await prisma.user.update({ where: { id: r.body.id }, data: { passwordHash: await hash(PASSWORD), mustChangePassword: false } });
+    const m = agent(); await m.post("/api/auth/login").set(ORIGIN).send({ email: "marc@exemple.fr", password: PASSWORD }).expect(200);
+    const mine = (await m.get("/api/players").expect(200)).body as { id: string }[];
+    expect(mine.map((x) => x.id)).toEqual([p2]);
+    await m.get(`/api/players/${p1}`).expect(404);
+    await m.get("/api/trainers").expect(403);
+  });
 });
