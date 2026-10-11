@@ -6,7 +6,7 @@ const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? val
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 export class CreateLessonDto {
-  @IsIn(["individuel", "duo", "video"]) type: string;
+  @IsIn(["individuel", "duo"]) type: string;
   @Transform(trim) @IsString() @MaxLength(60) objective: string;
   @IsOptional() @IsArray() @ArrayMaxSize(7) @IsIn(DAYS, { each: true }) days?: string[];
   @IsOptional() @IsIn(["Peu importe", "Matin", "Après-midi", "Soirée"]) moment?: string;
