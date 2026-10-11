@@ -24,7 +24,7 @@ const MISSION: Record<string, { label: string; emoji: string; color: string }> =
 
 function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: number; starsTotal: number }) {
   return (
-    <section className="gal-pop grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
+    <section className="gal-pop glass hero-card grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
         <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
         <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Bonjour {p.firstName} !</h1>
@@ -345,11 +345,11 @@ type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "progres" |
 function Step({ n, icon, title, text, to, go, hot = false }: { n: number; icon: string; title: string; text: string; to: Tab; go: (t: Tab) => void; hot?: boolean }) {
   return (
     <li className="list-none">
-      <button type="button" onClick={() => go(to)} className={"lift relative grid h-full w-full content-start gap-1 rounded-3xl border-2 p-4 text-left text-white backdrop-blur-md transition-colors " + (hot ? "border-[#dcf247] bg-[#dcf247]/20" : "border-white/20 bg-white/10 hover:bg-white/15")}>
-        {hot && <span className="absolute right-3 top-3 rounded-full bg-[#dcf247] px-2.5 py-0.5 text-xs font-black text-ink">Nouveau !</span>}
-        <span className="flex items-center gap-3"><span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 font-black">{n}</span><span aria-hidden="true" className="text-3xl">{icon}</span><strong className="text-lg leading-tight">{title}</strong></span>
-        <span className="text-white/90">{text}</span>
-        <span className="mt-1 text-sm font-bold text-[#dcf247]">Aller voir →</span>
+      <button type="button" onClick={() => go(to)} className={"step-card lift relative grid h-full w-full content-start gap-2 text-left text-white " + (hot ? "hot" : "")}>
+        {hot && <span className="step-new">Nouveau !</span>}
+        <span className="flex items-center gap-3"><span aria-hidden="true" className="step-ico"><em>{n}</em>{icon}</span><strong className="text-lg leading-tight">{title}</strong></span>
+        <span className="step-text">{text}</span>
+        <span className="step-go">Ouvrir →</span>
       </button>
     </li>
   );
@@ -381,7 +381,7 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Missions"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Missions"], ["videos", "🎬", "Vidéos"], ["matchs", "🏟️", "Matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
