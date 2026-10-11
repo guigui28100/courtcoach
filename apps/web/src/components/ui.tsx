@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
@@ -125,6 +125,13 @@ export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: str
   return to.startsWith("#") ? <a href={to} className={cls} style={{ background: bg }}>{inner}</a> : <Link to={to} className={cls} style={{ background: bg }}>{inner}</Link>;
 }
 
+// Sépare l'icône (emoji) du texte d'un onglet : le texte revenu à la ligne reste aligné proprement, sous le texte et non sous l'icône
+export function TabLabel({ text }: { text: string }) {
+  const m = text.match(/^((?:\p{Extended_Pictographic}\ufe0f?(?:\u200d\p{Extended_Pictographic}\ufe0f?)*)+)\s+(.*)$/u);
+  if (!m) return <span className="tab-txt">{text}</span>;
+  return <><span className="tab-ico" aria-hidden="true">{m[1]}</span><span className="tab-txt">{m[2]}</span></>;
+}
+
 // Barre d'onglets collée sous l'en-tête (avec pastille de nombre)
 export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: [string, string, number?][]; active: string; onChange: (k: string) => void; label: string; side?: boolean }) {
   return (
@@ -132,7 +139,7 @@ export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: 
       <div role="tablist" aria-label={label}>
         {tabs.map(([k, l, n]) => (
           <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (active === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
-            {l}{!!n && <b className="ml-1.5 rounded-full bg-clay px-2 py-0.5 text-xs text-white">{n}</b>}
+            <TabLabel text={l} />{!!n && <b className="ml-1.5 rounded-full bg-clay px-2 py-0.5 text-xs text-white">{n}</b>}
           </button>
         ))}
       </div>
@@ -157,4 +164,26 @@ export function authorColor(a: Authored | null | undefined) {
 export function AuthorBadge({ a, prefix = "Saisi par" }: { a: Authored | null | undefined; prefix?: string }) {
   const c = authorColor(a); if (!c || !a) return null;
   return <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ borderColor: c, color: c, background: `${c}14` }}><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />{prefix} {a.authorName}{a.authorRole === "COACH" ? " (coach)" : ""}</span>;
+}
+
+// Menu déroulant à choix multiples (cases à cocher) ; la valeur est envoyée dans un champ caché, séparée par des virgules
+export function MultiSelect({ id, name, options, value }: { id: string; name: string; options: string[]; value?: string | null }) {
+  const [chosen, setChosen] = useState<string[]>(() => (value ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  const all = [...options, ...chosen.filter((c) => !options.includes(c))]; // une ancienne valeur libre reste cochée
+  const toggle = (o: string) => setChosen((c) => (c.includes(o) ? c.filter((x) => x !== o) : [...c, o]));
+  return (
+    <details className="relative">
+      <summary id={id} className="input flex min-h-12 cursor-pointer list-none items-center justify-between gap-2">
+        <span className={chosen.length ? "" : "text-muted"}>{chosen.length ? chosen.join(", ") : "Choisir…"}</span><span aria-hidden="true">▾</span>
+      </summary>
+      <div className="absolute left-0 right-0 z-20 mt-1 grid gap-1 rounded-2xl border-2 border-line bg-white p-2 shadow-lg">
+        {all.map((o) => (
+          <label key={o} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-sand">
+            <input type="checkbox" className="h-5 w-5" checked={chosen.includes(o)} onChange={() => toggle(o)} />{o}
+          </label>
+        ))}
+      </div>
+      <input type="hidden" name={name} value={chosen.join(", ")} />
+    </details>
+  );
 }

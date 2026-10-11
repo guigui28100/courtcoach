@@ -84,7 +84,7 @@ export default function Bulletin() {
   const progress = here.length ? Math.round(here.reduce((s, g) => s + (at(g) ?? 0), 0) / here.length) : null;
   const age = ageOf(p.birthDate);
   // Bilan de départ : l'en-tête montre toujours l'âge, le classement, le style de jeu et l'objectif de l'année (« — » si pas encore renseigné)
-  const facts = (t === 0 ? [["Âge", age !== null ? `${age} ans` : "—"], ["Classement", p.ranking || "—"], ["Style de jeu", p.playStyle || "—"], ["Objectif de l'année", p.targetRanking || "—"], ["Main", p.hand], ["Revers", p.backhand]] : [["Âge", age !== null ? `${age} ans` : null], ["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]]).filter(([, v]) => v);
+  const facts = (t === 0 ? [["Âge", age !== null ? `${age} ans` : "—"], ["Classement", p.ranking || "—"], ["Style de jeu", p.playStyle || "—"], ["Objectif fin d'année", p.targetRanking || "—"], ["Main", p.hand], ["Revers", p.backhand]] : [["Âge", age !== null ? `${age} ans` : null], ["Classement", p.ranking], ["Objectif", p.targetRanking], ["Main", p.hand], ["Revers", p.backhand], ["Style de jeu", p.playStyle]]).filter(([, v]) => v);
   const rated = !!ev && ratedCount(ev) > 0;
 
   // Carte d'un domaine de compétences (l'attitude est placée sous le radar, les autres domaines à côté)

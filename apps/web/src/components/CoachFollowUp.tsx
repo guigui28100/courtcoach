@@ -110,7 +110,7 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
   }
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
-      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine (avec le détail si vous voulez), deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définition des objectifs ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
+      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine (avec le détail si vous voulez), deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définir les objectifs de travail ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
       <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "1. Où en est" : "Où en est"} {p.firstName} ?</legend>
         {EVAL_AXES.map((a) => (
           <div key={a.key} className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-white p-3" style={{ borderLeftColor: a.color }}>

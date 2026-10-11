@@ -9,7 +9,7 @@ import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
 import { StarsCard, StarsRadar, useStars } from "../components/Stars";
-import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
+import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, TabLabel } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
@@ -280,7 +280,7 @@ export function FamilySpace() {
               <div role="tablist" aria-label="Sections du suivi">
                 {FTABS.map(([k, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
-                    {label}{k === "videos" && fresh.length > 0 && tab !== k && <span className="absolute right-1 top-2 h-3 w-3 rounded-full bg-clay" aria-label="Nouveau" />}
+                    <TabLabel text={label} />{k === "videos" && fresh.length > 0 && tab !== k && <span className="absolute right-1 top-2 h-3 w-3 rounded-full bg-clay" aria-label="Nouveau" />}
                   </button>
                 ))}
               </div>

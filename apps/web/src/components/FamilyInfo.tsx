@@ -4,7 +4,7 @@ import { fmtDate, Player, RANKINGS } from "../types";
 import { Field } from "./ui";
 
 // Les renseignements qui manquent encore sur la fiche (pour guider les parents)
-export const infoMissing = (p: Player) => [p.sex, p.club, p.licence, p.heightCm, p.ranking, p.hand, p.backhand, p.training, p.availability].filter((v) => v === null || v === undefined || v === "").length;
+export const infoMissing = (p: Player) => [p.sex, p.club, p.licence, p.heightCm, p.ranking, p.hand, p.backhand, p.training].filter((v) => v === null || v === undefined || v === "").length;
 
 // Fiche de renseignements remplie par les PARENTS : le coach a créé le compte (prénom, nom, date de naissance) ; le reste est à compléter ici.
 export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => void }) {
@@ -39,7 +39,7 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
       </fieldset>
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Tennis</legend>
         {choice("ranking", "Classement actuel", RANKINGS)}{choice("hand", "Main", ["Droitier", "Gaucher"])}{choice("backhand", "Revers", ["À une main", "À deux mains"])}
-        {text("training", "Entraînement et compétitions", { placeholder: "Ex. : mardi et jeudi, quelques tournois" })}{text("availability", "Disponibilités", { placeholder: "Ex. : mercredi après-midi, week-end" })}
+        {text("training", "Volume d'entraînement", { placeholder: "Ex. : 3 h par semaine" })}
       </fieldset>
       <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et par vous.">

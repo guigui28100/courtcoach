@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
-import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, SideLayout } from "../components/ui";
+import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
 import { inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
@@ -15,6 +15,7 @@ const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
 };
+const PLAY_STYLES = ["Offensif", "Défensif", "Contre-attaquant", "Fond de court", "Serveur-volleyeur", "Joueur complet", "Régulier", "Puissant", "Joueur d'instinct"];
 const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6"];
 
 function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
@@ -39,11 +40,11 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
       </fieldset>
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Tennis et compétition</legend>
         {(["ranking", "targetRanking"] as const).map((k) => (
-          <Field key={k} label={k === "ranking" ? "Classement actuel" : "Objectif de classement"} id={k}>
+          <Field key={k} label={k === "ranking" ? "Classement actuel" : "Objectif de classement en fin d'année"} id={k}>
             <select id={k} name={k} className="input" defaultValue={p[k] ?? ""}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r}>{r}</option>)}</select>
           </Field>
         ))}
-        {t("hand", "Main")}{t("backhand", "Revers")}{t("playStyle", "Style de jeu")}{t("training", "Entraînement et compétitions")}{t("availability", "Disponibilités")}
+        {t("hand", "Main")}{t("backhand", "Revers")}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} /></Field>{t("training", "Volume d'entraînement", { hint: "Ex. : 3 h par semaine" })}
       </fieldset>
       {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et les parents.">
@@ -422,7 +423,7 @@ export default function PlayerDetail() {
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de départ"], ["objectifs", "🎯 Définition des objectifs"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
+  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de début d'année"], ["objectifs", "🎯 Définir les objectifs de travail"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
@@ -433,7 +434,7 @@ export default function PlayerDetail() {
         <div className="tabbar side">
           <div role="tablist" aria-label="Sections du dossier">
             {tabs.map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>{label}</button>
+              <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}><TabLabel text={label} /></button>
             ))}
           </div>
         </div>
