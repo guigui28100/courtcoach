@@ -33,6 +33,7 @@ export default function App() {
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/autorisation" element={<Authorization />} />
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
+        <Route path="/coach/adultes/apercu" element={<Guard roles={["COACH"]}><AdultSpace preview /></Guard>} />
         <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
         <Route path="/coach/securite" element={<Guard roles={["COACH", "TRAINER"]}><Securite /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH", "TRAINER"]}><Centre /></Guard>} />
