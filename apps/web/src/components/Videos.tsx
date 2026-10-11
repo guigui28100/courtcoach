@@ -11,7 +11,7 @@ export function useVideos(version = 0) {
 }
 
 // Envoi d'une vidéo, morceau par morceau (2 Mo), avec barre de progression.
-export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: string; onDone: () => void; who?: string; toPlayer?: string }) {
+export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string }) {
   const [err, setErr] = useState("");
   const [pct, setPct] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
         setPct(Math.round(((i + 1) / c.chunkCount) * 100));
       }
       await post(`/videos/${c.id}/complete`);
-      form.reset(); setOpen(false); onDone();
+      form.reset(); setOpen(false); onDone(c.id);
     } catch (x) { setErr((x as Error).message); }
     setPct(null);
   }
@@ -49,7 +49,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
-            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. <strong>Elle reste en brouillon : {toPlayer} et sa famille ne la voient pas</strong> tant que tu ne l'as pas envoyée. Ouvre-la ensuite dans ton studio pour la commenter (traits, cercles, voix…), puis envoie-la : soit avec le bouton « Envoyer la vidéo », soit en envoyant ton analyse (la vidéo part alors avec). Elle apparaîtra dans l'onglet « Vidéos » de {toPlayer}, marquée <strong>« De ton coach »</strong>, avec ton message. Ils pourront la regarder mais pas la supprimer. Elle est supprimée automatiquement après 12 mois.</p>
+            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. <strong>Elle reste en brouillon : {toPlayer} et sa famille ne la voient pas</strong> tant que tu ne l'as pas envoyée. Le studio d'analyse s'ouvre dès que le dépôt est terminé : commente-la (traits, cercles, voix…), puis envoie-la : soit avec le bouton « Envoyer la vidéo », soit en envoyant ton analyse (la vidéo part alors avec). Elle apparaîtra dans l'onglet « Vidéos » de {toPlayer}, marquée <strong>« De ton coach »</strong>, avec ton message. Ils pourront la regarder mais pas la supprimer. Elle est supprimée automatiquement après 12 mois.</p>
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}

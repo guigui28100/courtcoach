@@ -406,13 +406,14 @@ function StarsTab({ p }: { p: Player }) {
 }
 
 function PlayerVideosTab({ p }: { p: Player }) {
+  const nav = useNavigate();
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
-      {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Tu l'analyses d'abord, puis tu l'envoies (bouton « Envoyer la vidéo » sur la page de la vidéo, ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={() => setVersion((n) => n + 1)} /></>}
+      {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio d'analyse s'ouvre : tu l'analyses, puis tu l'envoies (bouton « Envoyer la vidéo », ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={(vid) => (vid ? nav(`/coach/videos/${vid}`) : setVersion((n) => n + 1))} /></>}
       <ul className="m-0 grid list-none gap-3 p-0">
         {videos.map((v) => (
           <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? (v.fromCoach ? " · avec ton message" : " · avec une question") : ""}</small></span><VideoBadge v={v} forCoach /></Link></li>
