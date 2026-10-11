@@ -8,7 +8,7 @@ import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout
 import { useVideos } from "../components/Videos";
 import { adultFacts, adultName, currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
 
-const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Reprise d'une analyse vidéo" };
+const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
 function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
   const [ask, setAsk] = useState<"ACCEPTED" | "REFUSED" | null>(null);

@@ -21,7 +21,7 @@ const STATUS_UI = {
   ACCEPTED: { icon: "✅", label: "Acceptée", bar: "#2f8f5b", soft: "#eef8f1", ink: "#1d6b43" },
   REFUSED: { icon: "❌", label: "Refusée", bar: "#c0392b", soft: "#fdf0ee", ink: "#9a2a1f" },
 } as const;
-const TYPE_UI: Record<string, [string, string, string]> = { individuel: ["🎾", "Cours individuel", "Toi et ton coach"], duo: ["👥", "Cours à deux", "Avec un partenaire"], video: ["🎬", "Reprise d'une vidéo", "On revoit une analyse"] };
+const TYPE_UI: Record<string, [string, string, string]> = { individuel: ["🎾", "Cours individuel", "Sur le court, toi et ton coach"], duo: ["👥", "Cours à deux", "Avec un partenaire"] };
 const GOALS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
 const MOMENTS = ["Peu importe", "Matin", "Après-midi", "Soirée"];
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
@@ -35,22 +35,21 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ kind, preview, onClose, onSent }: { kind: LessonKind; preview: boolean; onClose: () => void; onSent: () => void }) {
+function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose: () => void; onSent: () => void }) {
   const [err, setErr] = useState("");
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
     const f = new FormData(e.currentTarget); setErr("");
-    try { await post("/lessons", { type: kind === "reprise" ? "video" : f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
-    <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label={kind === "reprise" ? "Nouvelle demande de reprise vidéo" : "Nouvelle demande de cours"}>
-      {kind === "cours" && (
+    <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          {Object.entries(TYPE_UI).filter(([k]) => k !== "video").map(([k, [icon, title, sub]], i) => (
+          {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
             <label key={k} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
               <input type="radio" name="type" value={k} defaultChecked={i === 0} className="sr-only" />
               <span aria-hidden="true" className="text-3xl">{icon}</span><span className="grid"><strong>{title}</strong><small className="text-muted">{sub}</small></span>
@@ -58,17 +57,16 @@ function NewLessonForm({ kind, preview, onClose, onSent }: { kind: LessonKind; p
           ))}
         </div>
       </fieldset>
-      )}
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>{kind === "cours" ? 2 : 1}</span>{kind === "cours" ? "Sur quoi veux-tu travailler ?" : "Sur quoi veux-tu revenir avec ton coach ?"}</legend>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>{kind === "cours" ? 3 : 2}</span>Quels jours t'arrangent ? <small className="font-body font-normal text-muted">(facultatif)</small></legend>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>3</span>Quels jours t'arrangent ? <small className="font-body font-normal text-muted">(facultatif)</small></legend>
         <div className="flex flex-wrap gap-2">{DAYS.map((d) => <Chip key={d} type="checkbox" name="days" value={d} />)}</div>
       </fieldset>
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>{kind === "cours" ? 4 : 3}</span>À quel moment de la journée ?</legend>
+      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>4</span>À quel moment de la journée ?</legend>
         <div className="flex flex-wrap gap-2">{MOMENTS.map((x, i) => <Chip key={x} type="radio" name="moment" value={x} defaultChecked={i === 0} />)}</div>
       </fieldset>
-      <Field label="Un message pour ton coach (facultatif)" id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder={kind === "reprise" ? "Ex. : j'aimerais revoir ensemble l'analyse de mon revers du 5 octobre" : "Ex. : je voudrais fiabiliser mon service avant le tournoi"} /></Field>
+      <Field label="Un message pour ton coach (facultatif)" id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
       <Err msg={err} />
       <div className="flex flex-wrap gap-2"><button className="btn-clay">Envoyer ma demande</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
     </form>
@@ -105,17 +103,12 @@ function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: (
   );
 }
 
-type LessonKind = "cours" | "reprise";
-const COPY: Record<LessonKind, { icon: string; title: string; button: string; first: string; none: string; ok: string; groups: [string, string, string]; emptyTitle: string; emptyText: string }> = {
-  cours: { icon: "📅", title: "Mes cours particuliers", button: "+ Demander un cours", first: "Demander mon premier cours", none: "Tu n'as pas encore de cours particulier.", ok: "✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.", groups: ["✅ Mes cours confirmés", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Envie de progresser avec ton coach ?", emptyText: "Choisis un cours, dis-nous sur quoi travailler et quand : il te répond ici." },
-  reprise: { icon: "🔁", title: "Mes reprises d'analyse", button: "+ Demander une reprise", first: "Demander une première reprise", none: "Tu n'as pas encore demandé de reprise.", ok: "✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.", groups: ["✅ Reprises confirmées", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Une analyse à revoir avec ton coach ?", emptyText: "Une reprise, c'est un rendez-vous pour revoir ensemble, en direct, une vidéo qu'il a déjà analysée." },
-};
+const COPY = { icon: "📅", title: "Mes cours particuliers", button: "+ Demander un cours", first: "Demander mon premier cours", none: "Tu n'as pas encore de cours particulier.", ok: "✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.", groups: ["✅ Mes cours confirmés", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Envie de progresser avec ton coach ?", emptyText: "Un cours particulier, c'est un vrai cours sur le court avec ton coach. Choisis le type, dis-nous sur quoi travailler et quand : il te répond ici." };
 
-function LessonsSection({ kind, lessons: all, preview, seenLocal, onSent, onSeen }: { kind: LessonKind; lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void }) {
+function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
-  const c = COPY[kind];
-  const lessons = all.filter((l) => (l.type === "video") === (kind === "reprise")); // les reprises vidéo sont à part des cours particuliers
+  const c = COPY;
   const isNew = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
   const byDate = (a: Lesson, b: Lesson) => (isNew(b) ? 1 : 0) - (isNew(a) ? 1 : 0) || b.createdAt.localeCompare(a.createdAt);
   const groups: { key: Lesson["status"]; title: string; list: Lesson[] }[] = [
@@ -126,7 +119,7 @@ function LessonsSection({ kind, lessons: all, preview, seenLocal, onSent, onSeen
   const news = lessons.filter(isNew).length;
   const summary = lessons.length === 0 ? c.none : [news ? `${news} nouvelle${news > 1 ? "s" : ""} réponse${news > 1 ? "s" : ""}` : "", `${groups[0].list.length} confirmé${groups[0].list.length > 1 ? "s" : ""}`, groups[1].list.length ? `${groups[1].list.length} en attente` : ""].filter(Boolean).join(" · ");
   const ask = () => { setOpen(true); setSent(false); };
-  const hid = `t-${kind}`;
+  const hid = "t-cours";
   return (
     <section aria-labelledby={hid} className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -134,7 +127,7 @@ function LessonsSection({ kind, lessons: all, preview, seenLocal, onSent, onSeen
         {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
-      {open && <NewLessonForm kind={kind} preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
+      {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
       {lessons.length > 0 ? groups.filter((g) => g.list.length > 0).map((g) => (
         <div key={g.key} className="grid gap-3">
           <h3 className="m-0 text-lg">{g.title} <span className="font-body text-base font-normal text-muted">({g.list.length})</span></h3>
@@ -142,7 +135,7 @@ function LessonsSection({ kind, lessons: all, preview, seenLocal, onSent, onSeen
         </div>
       )) : !open && (
         <div className="grid justify-items-center gap-2 rounded-3xl border-2 border-dashed border-line bg-white p-8 text-center">
-          <span aria-hidden="true" className="text-5xl">{kind === "reprise" ? "🎬" : "🎾"}</span>
+          <span aria-hidden="true" className="text-5xl">🎾</span>
           <p className="m-0 text-lg font-bold">{c.emptyTitle}</p>
           <p className="m-0 max-w-md text-muted">{c.emptyText}</p>
           <button className="btn-clay mt-1" onClick={ask}>{c.first}</button>
@@ -188,7 +181,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
 // Exemples FICTIFS montrés au coach dans « Voir comme un adulte » (aucune vraie demande, aucune donnée de personne)
 const EXAMPLE_LESSONS: Lesson[] = [
   { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", coachReply: "Parfait, rendez-vous mardi à 18 h.", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-03T09:00:00Z" },
-  { id: "ex2", type: "video", objective: "Revers", days: [], moment: "Peu importe", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-08T09:00:00Z" },
+  { id: "ex2", type: "individuel", objective: "Revers", days: [], moment: "Peu importe", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-08T09:00:00Z" },
   { id: "ex3", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
 ];
 
@@ -203,7 +196,7 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
   const tab: AdultTab = (["cours", "videos", "profil"] as const).find((k) => k === params.get("onglet")) ?? "cours";
   const go = (k: string) => { setParams(k === "cours" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const unseen = (l: Lesson) => l.status !== "PENDING" && !l.seenByMemberAt && !seenLocal.includes(l.id);
-  const newAnswers = lessons.filter((l) => l.type !== "video" && unseen(l)).length, newReprises = lessons.filter((l) => l.type === "video" && unseen(l)).length;
+  const newAnswers = lessons.filter(unseen).length;
   const fresh = (videos ?? []).filter((v) => v.analysis?.sentAt && !v.seenAt);
   const waiting = (videos ?? []).filter((v) => !v.analysis?.sentAt), done = (videos ?? []).filter((v) => v.analysis?.sentAt);
   const missing = !preview && (!me?.lastName || !me?.birthYear || !me?.level || !me?.phone);
@@ -227,12 +220,12 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
       )}
       <PageHead eyebrow="Mon espace" title={!preview && me?.firstName ? `Bonjour ${me.firstName} !` : "Bienvenue sur CourtCoach !"}>Tes cours particuliers, tes vidéos et ton profil, au même endroit.</PageHead>
       <Page>
-        <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mes vidéos", fresh.length + newReprises], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
-          {tab === "cours" && <LessonsSection kind="cours" lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} />}
+        <SideLayout nav={<TabsBar label="Mon espace" active={tab} onChange={go} tabs={[["cours", "📅 Mes cours", newAnswers], ["videos", "🎬 Mes vidéos", fresh.length], ["profil", "🙋 Mon profil", missing ? 1 : 0]]} />}>
+          {tab === "cours" && <LessonsSection lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} />}
 
           {tab === "videos" && (
             <section aria-labelledby="t-vid" className="grid gap-5">
-              <div className="grid gap-0.5"><h2 id="t-vid" className="m-0">🎬 Mes vidéos à analyser</h2><p className="m-0 text-muted">Envoie une vidéo de quelques coups : ton coach l'analyse et te répond ici.</p></div>
+              <div className="grid gap-0.5"><h2 id="t-vid" className="m-0">🎬 Mes vidéos à analyser</h2><p className="m-0 text-muted">Envoie une vidéo de quelques coups : ton coach la reçoit, l'analyse puis te la renvoie. Vous pouvez ensuite discuter ensemble, à partir de l'analyse, par messages.</p></div>
               {fresh.length > 0 && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.length > 1 ? `${fresh.length} de tes vidéos` : "une de tes vidéos"} : ouvre-la ci-dessous.</p>}
               <div className="card grid gap-3">
                 <h3 className="m-0 text-lg">📤 Envoyer une vidéo</h3>
@@ -244,7 +237,6 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
                   <div className="grid gap-3"><h3 className="m-0 text-lg">✅ Analysées par ton coach <span className="font-body text-base font-normal text-muted">({done.length})</span></h3><VideoList videos={done} onChanged={onVideosChanged} empty="Pas encore de vidéo analysée." /></div>
                 </>
               )}
-              <div className="mt-2 border-t-2 border-line pt-6"><LessonsSection kind="reprise" lessons={lessons} preview={preview} seenLocal={seenLocal} onSent={onLessonsChanged} onSeen={onSeen} /></div>
             </section>
           )}
 
