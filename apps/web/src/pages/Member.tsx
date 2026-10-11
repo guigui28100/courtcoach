@@ -4,7 +4,7 @@ import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { ADULT_LEVELS, CourseStar, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { ADULT_LEVELS, CourseStar, fmtSlot, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
@@ -87,6 +87,12 @@ function LessonCard({ l, isNew, onSeen }: { l: Lesson; isNew: boolean; onSeen: (
         </div>
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold" style={{ background: ui.soft, color: ui.ink }}><span aria-hidden="true">{ui.icon}</span>{ui.label}</span>
       </div>
+      {l.status === "ACCEPTED" && l.finalSlot && (
+        <div className="mx-4 mb-4 rounded-2xl bg-[#eef8f1] p-3 text-[#1d6b43]">
+          <small className="font-bold">📅 Ton cours est fixé</small>
+          <p className="m-0 text-lg font-extrabold">{fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>
+        </div>
+      )}
       {l.coachReply && (
         <div className="mx-4 mb-4 grid gap-0.5 rounded-2xl rounded-tl-sm bg-[#f3f6fb] p-3">
           <small className="font-bold text-muted">💬 Réponse de ton coach</small>
@@ -180,7 +186,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
 // Espace de l'adhérent adulte : demandes de cours et réponse du coach, visibles tout de suite.
 // Exemples FICTIFS montrés au coach dans « Voir comme un adulte » (aucune vraie demande, aucune donnée de personne)
 const EXAMPLE_LESSONS: Lesson[] = [
-  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", coachReply: "Parfait, rendez-vous mardi à 18 h.", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-03T09:00:00Z" },
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", finalSlot: { date: new Date(Date.now() + 4 * 86_400_000).toISOString().slice(0, 10), time: "18:00" }, place: "Court 2", coachReply: "Parfait, à mardi !", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: null, createdAt: "2026-10-03T09:00:00Z" },
   { id: "ex2", type: "individuel", objective: "Revers", days: [], moment: "Peu importe", message: "", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: "2026-10-08T09:00:00Z" },
   { id: "ex3", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
 ];

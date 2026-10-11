@@ -88,11 +88,17 @@ describe("CourtCoach API", () => {
   it("demande de cours : l'adulte demande, le coach répond, l'adulte est prévenu", async () => {
     const created = await adult.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: ["Samedi"], moment: "Matin" }).expect(201);
     await adult.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED" }).expect(403);
+    // le coach doit fixer une date et une heure valides pour accepter
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED" }).expect(400);
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED", slot: { date: "2020-01-01", time: "10:00" } }).expect(400);
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED", slot: { date: "2026-02-31", time: "10:00" } }).expect(400);
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "25:00" } }).expect(400);
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "REFUSED", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "10:00" } }).expect(400);
     const list = await coach.get("/api/lessons").expect(200);
     expect(list.body).toHaveLength(1);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED", reply: "Samedi 10h, court 2" }).expect(200);
+    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "ACCEPTED", reply: "À samedi", place: "Court 2", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "10:00" } }).expect(200);
     const mine = await adult.get("/api/lessons").expect(200);
-    expect(mine.body[0]).toMatchObject({ status: "ACCEPTED", coachReply: "Samedi 10h, court 2", seenByMemberAt: null });
+    expect(mine.body[0]).toMatchObject({ status: "ACCEPTED", coachReply: "À samedi", place: "Court 2", finalSlot: { time: "10:00" }, seenByMemberAt: null });
     await adult.post(`/api/lessons/${created.body.id}/seen`).set(ORIGIN).expect(204);
     await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(404); // déjà traitée
   });

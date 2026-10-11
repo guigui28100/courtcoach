@@ -6,47 +6,60 @@ import { TrainersTab } from "../components/Trainers";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { adultFacts, adultName, currentSeason, fmtDate, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, currentSeason, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
 function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
   const [ask, setAsk] = useState<"ACCEPTED" | "REFUSED" | null>(null);
-  const [reply, setReply] = useState("");
+  const [date, setDate] = useState(""), [time, setTime] = useState("18:00");
+  const [place, setPlace] = useState(""), [reply, setReply] = useState("");
   const [err, setErr] = useState("");
   async function send() {
-    try { await post(`/lessons/${l.id}/answer`, { status: ask, reply: reply || undefined }); onDone(); } catch (e) { setErr((e as Error).message); }
+    setErr("");
+    if (ask === "ACCEPTED" && (!date || !time)) { setErr("Indique la date et l'heure du cours."); return; }
+    try { await post(`/lessons/${l.id}/answer`, ask === "ACCEPTED" ? { status: "ACCEPTED", slot: { date, time }, place: place || undefined, reply: reply || undefined } : { status: "REFUSED", reply: reply || undefined }); onDone(); } catch (e) { setErr((e as Error).message); }
   }
+  const field = "input !min-h-11";
   return (
-    <li className="card flex flex-wrap items-center justify-between gap-3">
-      <div className="min-w-0">
-        <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
-        <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
-        <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
-        {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
+    <li className="card grid gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
+          <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
+          <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
+          {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
+        </div>
+        {l.status !== "PENDING" && <span className={"badge " + (l.status === "ACCEPTED" ? "!border-ok !text-ok" : "!border-bad !text-bad")}>{l.status === "ACCEPTED" ? "Acceptée" : "Refusée"}</span>}
       </div>
-      {l.status === "PENDING" ? (
-        ask ? (
-          <div className="flex w-full flex-wrap gap-2">
-            <input className="input min-w-52 flex-1" maxLength={200} aria-label="Message pour l'adhérent (facultatif)" placeholder={ask === "ACCEPTED" ? "Ex. : Samedi 10h, court 2" : "Ex. : Pas de créneau cette semaine"} value={reply} onChange={(e) => setReply(e.target.value)} autoFocus />
-            <button className={ask === "ACCEPTED" ? "btn-clay btn-sm" : "btn-danger btn-sm"} onClick={send}>{ask === "ACCEPTED" ? "Confirmer l'acceptation" : "Confirmer le refus"}</button>
-            <button className="btn-outline btn-sm" onClick={() => setAsk(null)}>Annuler</button>
-            <Err msg={err} />
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <button className="btn-clay btn-sm" onClick={() => setAsk("ACCEPTED")}>Accepter</button>
-            <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>Refuser</button>
-          </div>
-        )
+      {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-bold text-[#1d6b43]">📅 Cours fixé : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
+      {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">💬 « {l.coachReply} »</p>}
+      {l.status === "PENDING" && (!ask ? (
+        <div className="flex flex-wrap gap-2">
+          <button className="btn-clay btn-sm" onClick={() => setAsk("ACCEPTED")}>✅ Accepter et fixer la date</button>
+          <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>Refuser</button>
+        </div>
       ) : (
-        <span className={"badge " + (l.status === "ACCEPTED" ? "!border-ok !text-ok" : "!border-bad !text-bad")}>{l.status === "ACCEPTED" ? "Acceptée" : "Refusée"}</span>
-      )}
+        <div className="grid gap-3 rounded-2xl border-2 border-line bg-chalk p-3">
+          {ask === "ACCEPTED" && (
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="grid gap-1 text-sm font-bold">Date du cours<input type="date" className={field} min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} autoFocus /></label>
+              <label className="grid gap-1 text-sm font-bold">Heure<input type="time" className={field} value={time} onChange={(e) => setTime(e.target.value)} /></label>
+              <label className="grid min-w-44 flex-1 gap-1 text-sm font-bold">Lieu (facultatif)<input className={field} maxLength={60} placeholder="Ex. : court 2" value={place} onChange={(e) => setPlace(e.target.value)} /></label>
+            </div>
+          )}
+          <input className={field} maxLength={200} aria-label="Message pour l'adhérent (facultatif)" placeholder={ask === "ACCEPTED" ? "Un petit mot pour l'adhérent (facultatif)" : "Ex. : Pas de créneau cette semaine"} value={reply} onChange={(e) => setReply(e.target.value)} />
+          <Err msg={err} />
+          <div className="flex flex-wrap gap-2">
+            <button className={ask === "ACCEPTED" ? "btn-clay btn-sm" : "btn-danger btn-sm"} onClick={send}>{ask === "ACCEPTED" ? "Confirmer le cours" : "Confirmer le refus"}</button>
+            <button className="btn-outline btn-sm" onClick={() => { setAsk(null); setErr(""); }}>Annuler</button>
+          </div>
+        </div>
+      ))}
     </li>
   );
 }
 
-// Liste de vidéos : à analyser, ou déjà analysées (un seul titre, jamais répété)
 function VideoQueue({ videos, label, mode }: { videos: VideoRow[]; label: (v: VideoRow) => string; mode: "todo" | "done" }) {
   const list = mode === "todo" ? videos.filter((v) => !v.analysis?.sentAt && !v.fromCoach) : videos.filter((v) => v.analysis?.sentAt);
   return (
@@ -88,9 +101,10 @@ function useCoachData(version = 0) {
   }, []);
   useEffect(load, [load, version]);
   const pending = lessons.filter((l) => l.status === "PENDING");
+  const upcoming = lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso()).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
   const youthVideos = (videos ?? []).filter((v) => v.kind === "centre");
-  return { lessons, pending, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reload: load };
+  return { lessons, pending, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reload: load };
 }
 
 // ───────── ACCUEIL : ce qui demande l'attention, une seule fois, puis deux portes d'entrée ─────────
@@ -155,7 +169,7 @@ export function CoachHome() {
 export function AdultsPage() {
   const d = useCoachData();
   const [tab, setTab] = useTab(["demandes", "videos", "historique"] as const);
-  const done = d.lessons.filter((l) => l.status !== "PENDING");
+  const done = d.lessons.filter((l) => l.status !== "PENDING" && !d.upcoming.includes(l));
   const waiting = waitingOf(d.adultVideos);
   const answered = d.adultVideos.filter((v) => v.analysis?.sentAt);
   const owner = (v: VideoRow) => [adultName(v.owner), adultFacts(v.owner)].filter(Boolean).join(" · ");
@@ -165,10 +179,13 @@ export function AdultsPage() {
       <Page>
         <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />
         {tab === "demandes" && (
-          <ul className="m-0 grid list-none gap-3 p-0">
-            {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
-            {!d.pending.length && <li><Empty>Aucune demande de cours en attente 🎾</Empty></li>}
-          </ul>
+          <div className="grid gap-6">
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
+              {!d.pending.length && <li><Empty>Aucune demande de cours en attente 🎾</Empty></li>}
+            </ul>
+            {d.upcoming.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">📅 Prochains cours ({d.upcoming.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.upcoming.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
+          </div>
         )}
         {tab === "videos" && <VideoQueue videos={d.adultVideos} label={owner} mode="todo" />}
         {tab === "historique" && (
