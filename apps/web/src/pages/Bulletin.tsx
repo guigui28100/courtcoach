@@ -10,7 +10,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { ageOf, isTeen, AXES, START_ITEMS, itemKey, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { MISSION_TOPICS, ageOf, isTeen, AXES, START_ITEMS, itemKey, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -221,13 +221,22 @@ export default function Bulletin() {
 }
 
 // Liste compacte : un titre par domaine (technique, tactique, physique, mental), puis une puce par mission
+// Les missions d'un domaine sont rangées par « point à travailler » (coup droit, revers…) : « Revers : Fiabiliser la profondeur » → sous-titre « Revers » + objectif « Fiabiliser la profondeur »
+function splitTopic(g: Goal): [string, Goal] {
+  const k = g.title.indexOf(" : "), head = k > 0 ? g.title.slice(0, k) : "";
+  return head && (MISSION_TOPICS[g.axis] ?? []).includes(head) ? [head, { ...g, title: g.title.slice(k + 3) }] : ["", g];
+}
 function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: Goal) => ReactNode; rating?: (axisKey: string) => number | undefined }) {
   return (
     <div className="grid gap-3">
-      {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase()); return (
+      {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase());
+        const parts = list.map(splitTopic), topics = [...new Set(parts.map(([t]) => t).filter(Boolean))], free = parts.filter(([t]) => !t).map(([, g]) => g);
+        const ul = (items: Goal[]) => <ul className="bul-list m-0 grid list-disc gap-2 pl-6 text-[#1f2937]" style={{ ["--mk" as string]: a.color }}>{items.map(render)}</ul>;
+        return (
         <section key={a.key} className="grid min-w-0 break-inside-avoid gap-1" aria-label={a.label}>
           <h3 className="m-0 flex items-center justify-between gap-2 border-b-2 pb-1 text-base" style={{ color: a.color, borderColor: `${a.color}55` }}><span><span aria-hidden="true">{EMOJI[a.key.toLowerCase()]} </span>{a.label}</span>{n ? <small className="font-body text-muted">{n}/5</small> : null}</h3>
-          <ul className="bul-list m-0 grid list-disc gap-2 pl-6 text-[#1f2937]" style={{ ["--mk" as string]: a.color }}>{list.map(render)}</ul>
+          {free.length > 0 && ul(free)}
+          {topics.map((t) => <div key={t} className="grid gap-1"><h4 className="m-0 mt-1 text-sm font-bold text-[#1f2937]">{t}</h4>{ul(parts.filter(([x]) => x === t).map(([, g]) => g))}</div>)}
         </section>
       ); })}
     </div>
