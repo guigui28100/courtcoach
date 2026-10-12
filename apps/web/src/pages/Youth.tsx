@@ -4,7 +4,7 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
 import { AxisIcon, CourtArt, MissionRing, RulerIcon, StarShape, TeenIcon } from "../components/TeenIcons";
-import { useYouthTheme } from "../components/theme";
+import { useYouthTheme, useThemePref, THEME_CHOICES } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
@@ -410,6 +410,16 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
   );
 }
 
+// Choix du mode d'affichage : suit l'appareil (automatique) ou clair / sombre
+function ThemePicker() {
+  const [pref, setPref] = useThemePref();
+  return (
+    <div role="radiogroup" aria-label="Mode d'affichage" className="theme-pick justify-self-end">
+      {THEME_CHOICES.map(([k, icon, label]) => <button key={k} type="button" role="radio" aria-checked={pref === k} onClick={() => setPref(k)}><span aria-hidden="true">{icon}</span> {label}</button>)}
+    </div>
+  );
+}
+
 const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Mon compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
@@ -473,6 +483,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             </nav>
 
             <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
+              <ThemePicker />
               {newStars > 0 && tab !== "progres" && (
                 <button type="button" role="status" onClick={() => go("progres")} className="lift flex flex-wrap items-center gap-3 rounded-3xl border-2 border-[#dcf247] bg-[#dcf247]/20 p-4 text-left text-white backdrop-blur-md">
                   <span aria-hidden="true" className="text-4xl">🌟</span>
