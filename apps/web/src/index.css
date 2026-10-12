@@ -443,3 +443,13 @@ html[data-mode="light"] .galaxy-sky .mdesc-how { color: rgba(255, 255, 255, 0.85
 html[data-mode="light"] .galaxy-sky .bulletin-hero h1, html[data-mode="light"] .galaxy-sky .bulletin-hero h2, html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-white"] { color: #fff !important; }
 html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-[#dcf247]"], html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-[#c6ff3d]"] { color: #dcf247 !important; }
 html[data-mode="light"] .galaxy-sky .bulletin-hero .gal-chip { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.22); color: #fff !important; }
+/* Bandeau d'accueil « galaxie » en clair : une plaque sombre pour que la balle-planète (dessin blanc et jaune) reste bien visible */
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card.glass { background: linear-gradient(160deg, #2a1b8f, #15125c); border-color: rgba(255, 255, 255, 0.22); box-shadow: 0 16px 36px rgba(21, 18, 92, 0.3); color: #fff; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card h1, html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card [class*="text-white"] { color: #fff !important; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card [class*="text-[#dcf247]"] { color: #dcf247 !important; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card .gal-chip { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+html[data-mode="light"][data-gal="teen"] .step-ico em { color: rgba(31, 37, 71, 0.13); }
+/* Contours bien visibles en clair : boutons de choix et champs (les traits décoratifs restent discrets) */
+html[data-mode="light"] .galaxy-sky button[class*="border-white/"], html[data-mode="light"] .galaxy-sky a[class*="border-white/"], html[data-mode="light"] .galaxy-sky input, html[data-mode="light"] .galaxy-sky select, html[data-mode="light"] .galaxy-sky textarea { border-color: rgba(49, 46, 129, 0.55); }
+html[data-mode="light"] .galaxy-sky [class*="border-white/"]:not(button):not(a) { border-color: rgba(49, 46, 129, 0.28); }
+html[data-mode="light"] .galaxy-sky ::placeholder { color: #5b6275; opacity: 1; }
