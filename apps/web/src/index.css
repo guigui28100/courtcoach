@@ -453,3 +453,6 @@ html[data-mode="light"][data-gal="teen"] .step-ico em { color: rgba(31, 37, 71, 
 html[data-mode="light"] .galaxy-sky button[class*="border-white/"], html[data-mode="light"] .galaxy-sky a[class*="border-white/"], html[data-mode="light"] .galaxy-sky input, html[data-mode="light"] .galaxy-sky select, html[data-mode="light"] .galaxy-sky textarea { border-color: rgba(49, 46, 129, 0.55); }
 html[data-mode="light"] .galaxy-sky [class*="border-white/"]:not(button):not(a) { border-color: rgba(49, 46, 129, 0.28); }
 html[data-mode="light"] .galaxy-sky ::placeholder { color: #5b6275; opacity: 1; }
+/* Sur le bulletin, le radar garde sa plaque blanche d'origine (pas la plaque sombre de l'espace du jeune) */
+html[data-mode="light"] .bul-body figure:has(> svg[role="img"]) { padding: 0; background: none; color: inherit; border-radius: 0; }
+html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), html[data-mode="light"][data-gal="teen"] .galaxy-sky .bul-body figure:has(> svg[role="img"]) { padding: 0; background: none; color: inherit; border-radius: 0; }
