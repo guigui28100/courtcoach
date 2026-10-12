@@ -25,6 +25,11 @@ export interface Goal { hiddenFrom?: number | null; targetStars?: number; author
 // Date (AAAA-MM-JJ) et heure de début (HH:MM) d'un cours fixé par le coach
 export interface Slot { date: string; time: string; }
 export const fmtTime = (t: string) => { const [h, m] = t.split(":"); return `${Number(h)} h${m === "00" ? "" : " " + m}`; };
+// « travail du revers », « travail de la volée » : le déterminant s'accorde avec le mot
+const WORK_OF: Record<string, string> = { "Coup droit": "du coup droit", "Revers": "du revers", "Service": "du service", "Retour de service": "du retour de service", "Volée": "de la volée", "Smash": "du smash", "Jeu de jambes": "du jeu de jambes" };
+export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail ${WORK_OF[objective]}` : objective === "Autre" ? "à préciser avec ton coach" : objective.toLowerCase());
+// « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
+export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
 export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 

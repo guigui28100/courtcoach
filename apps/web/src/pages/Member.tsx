@@ -4,7 +4,7 @@ import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { ADULT_LEVELS, CourseStar, fmtSlot, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { ADULT_LEVELS, CourseStar, fmtSlot, courtNumber, workPhrase, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
@@ -144,9 +144,10 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   }
   return (
     <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
-      <p className="m-0 text-lg leading-snug">
-        Ton coach te propose un cours <strong>le {l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong> pour travailler <strong>{l.objective}</strong>{l.place ? <> sur le terrain <strong>{l.place}</strong></> : ""}.
-      </p>
+      <div className="grid gap-1 text-lg leading-snug">
+        <p className="m-0">Ton coach te propose un cours le <strong>{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>{l.place && courtNumber(l.place) ? <> sur le terrain n° <strong>{courtNumber(l.place)}</strong></> : ""}.</p>
+        <p className="m-0">Objectif de la séance : <strong>{workPhrase(l.objective)}</strong></p>
+      </div>
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
