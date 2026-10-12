@@ -38,6 +38,12 @@ export class ConsentDto {
   @IsIn(["paper", "online"]) method: string;
 }
 
+export class OnlineConsentDto {
+  @IsEnum(ConsentKind) kind: ConsentKind;
+  @Transform(trim) @IsString() @MinLength(2) @MaxLength(100) givenBy: string; // nom du parent / responsable légal
+  @IsString() @MinLength(1) @MaxLength(200) password: string; // confirme que c'est bien le parent
+}
+
 export class InvitationDto {
   @Transform(lower) @IsEmail() @MaxLength(254) email: string;
   @IsIn([Role.GUARDIAN, Role.YOUTH]) role: Role;

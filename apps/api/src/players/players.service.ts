@@ -1,12 +1,12 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConsentKind, GoalStatus, Player, Role } from "@prisma/client";
 import { randomBytes, randomInt } from "crypto";
-import { hash } from "@node-rs/argon2";
+import { hash, verify } from "@node-rs/argon2";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
-import { FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -60,7 +60,7 @@ export class PlayersService {
     if (!p) throw new NotFoundException("Fiche introuvable");
     if (isStaff(user)) await this.audit.log(user.id, "read", "Player", id); // journal : le coach (ou l'entraîneur) a ouvert cette fiche
     const { consents, ...player } = p;
-    return { ...this.shape(player as Player, user), consents: isStaff(user) ? consents : undefined };
+    return { ...this.shape(player as Player, user), consents: isStaff(user) || user.role === Role.GUARDIAN ? consents : undefined };
   }
 
   async create(user: AuthUser, dto: CreatePlayerDto) {
@@ -130,8 +130,8 @@ export class PlayersService {
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
     const { coachNotes, declaredMatches, ...visible } = p;
-    // Les matchs déclarés par le jeune ne sont jamais montrés aux parents (même dans leur copie des données)
-    const forYouth = user.role === Role.YOUTH ? { ...visible, declaredMatches } : visible;
+    // Les matchs déclarés par le jeune sont visibles du compte de la famille (l'espace de l'enfant) et du coach
+    const forYouth = { ...visible, declaredMatches };
     const out = { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : forYouth) };
     return user.role === Role.COACH ? out : JSON.parse(JSON.stringify(out, (k, v) => (["authorId", "authorName", "authorRole"].includes(k) ? undefined : v))); // jamais le nom d'un entraîneur chez la famille
   }
@@ -151,8 +151,21 @@ export class PlayersService {
     await this.audit.log(user.id, "consent", "Player", playerId);
     return c;
   }
+  // Accord donné EN LIGNE par le parent lui-même (son mot de passe confirme que c'est bien lui, pas l'enfant)
+  async giveConsentOnline(user: AuthUser, playerId: string, dto: OnlineConsentDto) {
+    if (user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé au parent");
+    await this.assertCanRead(user, playerId);
+    const me = await this.prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+    if (!me || !(await verify(me.passwordHash, dto.password).catch(() => false))) throw new BadRequestException("Mot de passe incorrect : l'accord n'a pas été enregistré.");
+    const already = await this.prisma.consent.findFirst({ where: { playerId, kind: dto.kind, withdrawnAt: null } });
+    if (already) return already;
+    const c = await this.prisma.consent.create({ data: { kind: dto.kind, givenBy: dto.givenBy, method: "online", playerId, userId: user.id, policyVersion: POLICY_VERSION } });
+    await this.touch(playerId);
+    await this.audit.log(user.id, "consent-online", "Player", playerId);
+    return { id: c.id, kind: c.kind, givenBy: c.givenBy, method: c.method, grantedAt: c.grantedAt, withdrawnAt: c.withdrawnAt };
+  }
   async withdrawConsent(user: AuthUser, playerId: string, consentId: string) {
-    this.assertCoach(user);
+    if (user.role === Role.GUARDIAN) await this.assertCanRead(user, playerId); else this.assertCoach(user);
     const consent = await this.prisma.consent.findFirst({ where: { id: consentId, playerId, withdrawnAt: null } });
     if (!consent) throw new NotFoundException("Accord introuvable");
     await this.prisma.consent.update({ where: { id: consentId }, data: { withdrawnAt: new Date() } });
@@ -460,7 +473,8 @@ export class PlayersService {
   }
 
   // ----- Matchs déclarés par le jeune (visibles du jeune et du coach, jamais des parents) -----
-  private assertYouth(user: AuthUser) { if (user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune"); }
+  private isHome(user: AuthUser) { return user.role === Role.YOUTH || user.role === Role.GUARDIAN; } // le compte relié au jeune : l'espace de l'enfant (un seul espace, ouvert avec l'e-mail du parent)
+  private assertYouth(user: AuthUser) { if (!this.isHome(user)) throw new ForbiddenException("Réservé au jeune et à sa famille"); }
   private async ownMatch(user: AuthUser, playerId: string, matchId: string) {
     const m = await this.prisma.declaredMatch.findFirst({ where: { id: matchId, playerId } });
     if (!m) throw new NotFoundException("Match introuvable");
@@ -481,7 +495,7 @@ export class PlayersService {
     return { id: m.id, day: m.day, kind: m.kind, event: m.event, result: m.result, score: m.score, opponent: m.opponent, feeling: m.feeling, wellDone: m.wellDone, toImprove: m.toImprove, opponentRanking: m.opponentRanking ?? null, missionChecks: (m.missionChecks as Record<string, number> | null) ?? {}, coachComment: m.coachComment, editableUntil: new Date(m.createdAt.getTime() + 7 * 24 * 3600 * 1000).toISOString(), editable: this.editable(m) };
   }
   async declaredMatches(user: AuthUser, playerId: string) {
-    if (!isStaff(user) && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    if (!isStaff(user) && !this.isHome(user)) throw new ForbiddenException("Réservé au jeune, à sa famille et au coach");
     await this.assertCanRead(user, playerId);
     const rows = await this.prisma.declaredMatch.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "desc" }] });
     return rows.map((m) => this.matchOut(m));
@@ -505,10 +519,10 @@ export class PlayersService {
     return this.matchOut(u);
   }
   async removeDeclaredMatch(user: AuthUser, playerId: string, matchId: string) {
-    if (!isStaff(user) && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
+    if (!isStaff(user) && !this.isHome(user)) throw new ForbiddenException("Réservé au jeune, à sa famille et au coach");
     await this.assertCanRead(user, playerId);
     const m = await this.ownMatch(user, playerId, matchId);
-    if (user.role === Role.YOUTH && !this.editable(m)) throw new ConflictException("Ce match ne peut plus être supprimé (au-delà de 7 jours) : demande à ton coach.");
+    if (this.isHome(user) && !this.editable(m)) throw new ConflictException("Ce match ne peut plus être supprimé (au-delà de 7 jours) : demande à ton coach.");
     await this.prisma.declaredMatch.delete({ where: { id: matchId } });
   }
   async commentDeclaredMatch(user: AuthUser, playerId: string, matchId: string, dto: MatchCommentDto) {

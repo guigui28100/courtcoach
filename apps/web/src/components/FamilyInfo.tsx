@@ -42,12 +42,12 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
         {text("training", "Volume d'entraînement", { placeholder: "Ex. : 3 h par semaine" })}
       </fieldset>
       <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
-        <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et par vous.">
+        <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et par ce compte (qui est aussi l'espace de votre enfant : remplissez-le à l'abri des regards si besoin).">
           <textarea id="health" name="health" className="input" defaultValue={p.health ?? ""} maxLength={1000} />
         </Field>
       </fieldset>
       <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3"><button className="btn-clay" disabled={busy}>Enregistrer les renseignements</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
-      <p className="hint m-0">Ces informations sont vues par le coach, par ses entraîneurs et, s'il a un compte, par votre enfant. <strong>La santé reste entre le coach et vous.</strong> Vous pouvez tout modifier quand vous voulez.</p>
+      <p className="hint m-0">Ces informations sont vues par le coach, par ses entraîneurs et, s'il a un compte, par votre enfant. <strong>La santé n'est vue que du coach et de ce compte.</strong> Vous pouvez tout modifier quand vous voulez.</p>
     </form>
   );
 }
