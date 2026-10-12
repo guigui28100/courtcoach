@@ -401,10 +401,10 @@ function StarsTab({ p }: { p: Player }) {
       <StarsRadar stars={stars} who="coach" />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
-        <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
+        <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
-        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} onChange={setLines} />
+        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
       </section>
