@@ -61,6 +61,13 @@ export const START_ITEMS: Record<string, [string, string][]> = {
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
 };
+// Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs
+export const MISSION_TOPICS: Record<string, string[]> = {
+  TECHNIQUE: ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes"],
+  TACTIQUE: ["Défendre", "Attaquer", "Construire le point", "Variations", "Lecture du jeu"],
+  PHYSIQUE: ["Endurance", "Vitesse", "Explosivité", "Gainage", "Coordination", "Souplesse"],
+  MENTAL: ["Concentration", "Gestion des émotions", "Routines", "Confiance", "Combativité"],
+};
 export const itemKey = (axis: string, k: string) => `d_${axis}_${k}`;
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
 export interface Evaluation { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }
