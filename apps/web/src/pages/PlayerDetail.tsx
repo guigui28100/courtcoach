@@ -8,7 +8,7 @@ import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLines
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -275,8 +275,17 @@ function Objectifs({ p }: { p: Player }) {
   const seasons = [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`];
   const here = goals.filter((g) => goalApplies(g, t));
 
-  const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [newTitle, setNewTitle] = useState("");
-  async function addQuick(e: FormEvent) { e.preventDefault(); if (!newTitle.trim()) return; await post(`/players/${p.id}/goals`, { season, axis: newAxis, title: newTitle.trim(), trimesters: [t] }); setNewTitle(""); load(); }
+  const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [topic, setTopic] = useState(""), [newObjs, setNewObjs] = useState<string[]>([""]), [saving, setSaving] = useState(false), [added, setAdded] = useState("");
+  const topics = MISSION_TOPICS[newAxis] ?? [];
+  const filled = newObjs.map((x) => x.trim()).filter(Boolean);
+  async function addQuick(e: FormEvent) {
+    e.preventDefault(); if (!filled.length || saving) return;
+    setSaving(true); setAdded("");
+    try {
+      for (const o of filled) await post(`/players/${p.id}/goals`, { season, axis: newAxis, title: (topic ? `${topic} : ${o}` : o).slice(0, 200), trimesters: [t] });
+      setAdded(`${filled.length} objectif${filled.length > 1 ? "s ajoutés" : " ajouté"} au trimestre ${t}.`); setNewObjs([""]); setTopic(""); load();
+    } finally { setSaving(false); }
+  }
   async function add(axis: string) { await post(`/players/${p.id}/goals`, { season, axis, title: "Nouvel objectif", trimesters: [t] }); load(); }
   async function upd(g: Goal, body: Partial<Goal>) { setGoals((l) => l.map((x) => (x.id === g.id ? { ...x, ...body } : x))); await patch(`/goals/${g.id}`, body); }
   return (
@@ -295,11 +304,27 @@ function Objectifs({ p }: { p: Player }) {
       <form onSubmit={addQuick} className="card grid gap-3 border-2 !border-clay" aria-labelledby="obj-add">
         <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
         <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
-        <div className="flex flex-wrap gap-2">
-          <select className="input !w-auto" aria-label="Domaine" value={newAxis} onChange={(e) => setNewAxis(e.target.value)}>{AXES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select>
-          <input className="input min-w-52 flex-1" aria-label="Nouvel objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-          <button className="btn-clay" disabled={!newTitle.trim()}>+ Ajouter l'objectif</button>
+        <div className="grid gap-1"><strong>1. Le domaine</strong>
+          <div role="radiogroup" aria-label="Domaine" className="flex flex-wrap gap-2">
+            {AXES.map((a) => <button key={a.key} type="button" role="radio" aria-checked={newAxis === a.key} onClick={() => { setNewAxis(a.key); setTopic(""); }} className={"btn btn-sm " + (newAxis === a.key ? "text-white" : "border-2 border-line bg-white text-ink")} style={newAxis === a.key ? { background: a.color } : undefined}>{a.label}</button>)}
+          </div>
         </div>
+        <div className="grid gap-1"><strong>2. Le point à travailler</strong>
+          <div role="radiogroup" aria-label="Point à travailler" className="flex flex-wrap gap-2">
+            {topics.map((x) => <button key={x} type="button" role="radio" aria-checked={topic === x} onClick={() => setTopic(topic === x ? "" : x)} className={"btn btn-sm " + (topic === x ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>{x}</button>)}
+            <button type="button" role="radio" aria-checked={topic === ""} onClick={() => setTopic("")} className={"btn btn-sm " + (topic === "" ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Autre / général</button>
+          </div>
+        </div>
+        <div className="grid gap-2"><strong>3. Les objectifs de travail{topic ? ` pour « ${topic} »` : ""}</strong>
+          {newObjs.map((o, i) => (
+            <div key={i} className="flex gap-2">
+              <input className="input min-w-0 flex-1" aria-label={`Objectif ${i + 1}`} maxLength={180} placeholder={i === 0 ? "Ex. : Fiabiliser la première balle" : "Un autre objectif"} value={o} onChange={(e) => setNewObjs((l) => l.map((x, j) => (j === i ? e.target.value : x)))} />
+              {newObjs.length > 1 && <button type="button" className="btn-outline btn-sm" aria-label={`Retirer l'objectif ${i + 1}`} onClick={() => setNewObjs((l) => l.filter((_, j) => j !== i))}>✕</button>}
+            </div>
+          ))}
+          {newObjs.length < 8 && <button type="button" className="btn-outline btn-sm self-start" onClick={() => setNewObjs((l) => [...l, ""])}>+ Ajouter un autre objectif</button>}
+        </div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={!filled.length || saving}>{saving ? "Enregistrement…" : filled.length > 1 ? `Créer les ${filled.length} missions` : "Créer la mission"}</button>{added && <p role="status" className="m-0 font-bold text-ok">{added}</p>}</div>
         <p className="hint m-0">Chaque trimestre ne montre que ses propres objectifs. Tu peux modifier un objectif, le <strong>reporter au trimestre suivant</strong> (ou non), ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
       </form>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -406,13 +431,14 @@ function StarsTab({ p }: { p: Player }) {
 }
 
 function PlayerVideosTab({ p }: { p: Player }) {
+  const nav = useNavigate();
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
-      {imageOk && <><p className="hint m-0">Tu peux envoyer une vidéo à {p.firstName} (exemple à imiter, son match…) : il la verra dans son onglet « Vidéos », marquée « De ton coach ». Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={() => setVersion((n) => n + 1)} /></>}
+      {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio d'analyse s'ouvre : tu l'analyses, puis tu l'envoies (bouton « Envoyer la vidéo », ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={(vid) => (vid ? nav(`/coach/videos/${vid}`) : setVersion((n) => n + 1))} /></>}
       <ul className="m-0 grid list-none gap-3 p-0">
         {videos.map((v) => (
           <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? (v.fromCoach ? " · avec ton message" : " · avec une question") : ""}</small></span><VideoBadge v={v} forCoach /></Link></li>

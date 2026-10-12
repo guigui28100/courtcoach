@@ -19,7 +19,11 @@ export class LessonsService {
 
   create(user: AuthUser, dto: CreateLessonDto) {
     if (user.role !== Role.ADULT) throw new ForbiddenException("Les demandes de cours sont réservées aux adhérents adultes");
-    return this.prisma.lessonRequest.create({ data: { memberId: user.id, type: dto.type, objective: dto.objective, days: dto.days ?? [], moment: dto.moment ?? "Peu importe", message: dto.message ?? "" } });
+    // Cours à deux : il faut savoir QUI vient (prénom, nom, âge, classement ou niveau du partenaire)
+    const duo = dto.type === "duo";
+    if (duo && (!dto.partnerFirstName?.trim() || !dto.partnerLastName?.trim() || !dto.partnerAge || !dto.partnerLevel)) throw new BadRequestException("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire.");
+    const partner = duo ? { partnerFirstName: dto.partnerFirstName!.trim(), partnerLastName: dto.partnerLastName!.trim(), partnerAge: dto.partnerAge!, partnerLevel: dto.partnerLevel! } : {};
+    return this.prisma.lessonRequest.create({ data: { memberId: user.id, type: dto.type, objective: dto.objective, days: dto.days ?? [], moment: dto.moment ?? "Peu importe", message: dto.message ?? "", ...partner } });
   }
 
   // Un adulte voit les siennes ; le coach voit toutes les demandes (avec le prénom de la personne).

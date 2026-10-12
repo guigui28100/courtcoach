@@ -31,6 +31,7 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
         <div className="min-w-0">
           <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
           <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
+          {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-bold text-ink">👥 Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
           <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
           {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
         </div>

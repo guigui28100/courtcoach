@@ -4,12 +4,14 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { CourtMark, MissionBar, Planet, Stars } from "../components/Galaxy";
 import { AxisIcon, CourtArt, MissionRing, RulerIcon, StarShape, TeenIcon } from "../components/TeenIcons";
-import { useYouthTheme } from "../components/theme";
+import { useYouthTheme, useThemePref, THEME_CHOICES } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { BulletinShelf, hasContent } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
+import { ConsentsTab, ParentReminders } from "../components/Consents";
+import { FamilyInfo } from "../components/FamilyInfo";
 import { StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
@@ -98,7 +100,7 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-missions">
       <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions du trimestre {t}</h2>
       {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
-        <ol className="m-0 grid list-none gap-4 p-0 md:grid-cols-2">
+        <ol className="mdesc-list m-0 grid list-none p-0 md:grid-cols-2">
           {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => here.filter((g) => g.axis === axis)).map((g) => {
             const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"];
             return (
@@ -368,7 +370,7 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
   );
 }
 
-type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "compte";
+type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "renseignements" | "autorisations" | "compte";
 
 // Étape de la page de présentation : un titre, deux phrases, un bouton vers la page concernée
 function Step({ n, icon, title, text, to, go, hot = false, teen = false }: { n: number; icon: string; title: string; text: string; to: Tab; go: (t: Tab) => void; hot?: boolean; teen?: boolean }) {
@@ -410,7 +412,17 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["compte", "🔒", "Mon compte"]];
+// Choix du mode d'affichage : suit l'appareil (automatique) ou clair / sombre
+function ThemePicker() {
+  const [pref, setPref] = useThemePref();
+  return (
+    <div role="radiogroup" aria-label="Mode d'affichage" className="theme-pick justify-self-end">
+      {THEME_CHOICES.map(([k, icon, label]) => <button key={k} type="button" role="radio" aria-checked={pref === k} onClick={() => setPref(k)}><span aria-hidden="true">{icon}</span> {label}</button>)}
+    </div>
+  );
+}
+
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["renseignements", "📝", "Mes renseignements"], ["autorisations", "✅", "Mes autorisations"], ["compte", "🔒", "Mon compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
@@ -431,11 +443,13 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
       setGoals(Object.fromEntries(g));
       const w = await Promise.all(ps.map(async (p) => [p.id, (await get<{ result: string }[]>(`/players/${p.id}/matches`).catch(() => [])).filter((m) => m.result === "Victoire").length] as const));
       setWins(Object.fromEntries(w));
-      if (ps[0]) get<SelfEvaluation[]>(`/players/${ps[0].id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([]));
     }).catch(() => setPlayers([]));
   }, [previewId, version]);
 
-  const p = players?.[0]; // un compte « jeune » n'est relié qu'à sa propre fiche
+  const [childId, setChildId] = useState<string | null>(null);
+  const p = players?.find((x) => x.id === childId) ?? players?.[0]; // un compte est relié à un enfant (un parent qui a plusieurs enfants choisit en haut de page)
+  const isParent = me?.role === "GUARDIAN" && !previewId; // le compte du parent ouvre l'espace de son enfant + les rubriques réservées au parent
+  useEffect(() => { if (p?.id) get<SelfEvaluation[]>(`/players/${p.id}/self-evaluations`).then(setSelfEvals).catch(() => setSelfEvals([])); }, [p?.id, version]);
   useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans (d'après la date de naissance)
   const tab: Tab = (TABS.find(([k]) => k === (params.get("onglet") === "bulletin" ? "bulletins" : params.get("onglet")))?.[0]) ?? "accueil";
   const go = (t: Tab) => { setParams(t === "accueil" ? {} : { onglet: t }, { replace: false }); window.scrollTo({ top: 0, behavior: "smooth" }); };
@@ -463,7 +477,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
-                {TABS.filter(([k]) => k !== "compte" || !previewId).map(([k, icon, label]) => (
+                {TABS.filter(([k]) => (k !== "compte" || !previewId) && ((k !== "renseignements" && k !== "autorisations") || isParent)).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
                     {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
@@ -472,7 +486,16 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               </div>
             </nav>
 
-            <div key={tab} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
+            <div key={tab + p.id} className="gal-pop grid grid-cols-[minmax(0,1fr)] gap-5" role="tabpanel">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {players && players.length > 1 && !previewId ? (
+                  <div role="radiogroup" aria-label="Choisir l'enfant" className="theme-pick">
+                    {players.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === p.id} onClick={() => setChildId(x.id)}>{x.firstName}</button>)}
+                  </div>
+                ) : <span />}
+                <ThemePicker />
+              </div>
+              {tab === "accueil" && isParent && <ParentReminders p={p} go={go} />}
               {newStars > 0 && tab !== "progres" && (
                 <button type="button" role="status" onClick={() => go("progres")} className="lift flex flex-wrap items-center gap-3 rounded-3xl border-2 border-[#dcf247] bg-[#dcf247]/20 p-4 text-left text-white backdrop-blur-md">
                   <span aria-hidden="true" className="text-4xl">🌟</span>
@@ -486,11 +509,13 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
+              {tab === "renseignements" && isParent && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
+              {tab === "autorisations" && isParent && <ConsentsTab p={p} />}
               {tab === "compte" && !previewId && (
                 <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                   <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
                   <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link></p>
-                  <p className="m-0 text-sm text-white/80">Pour demander une copie ou la suppression de ton dossier, parles-en à un parent ou écris au club.</p>
+                  <p className="m-0 text-sm text-white/80">Pour demander une copie des données ou la suppression du dossier, écris au club.</p>
                   <div className="flex flex-wrap gap-2">
                     <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>
                     <button className="btn btn-sm border-2 border-[#ff9b9b] text-[#ffb4b4] hover:bg-[#b3261e] hover:text-white" onClick={async () => { if (confirm("Supprimer définitivement ton compte (ton dossier reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>

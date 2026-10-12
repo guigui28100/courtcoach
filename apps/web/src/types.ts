@@ -25,8 +25,13 @@ export interface Goal { hiddenFrom?: number | null; targetStars?: number; author
 // Date (AAAA-MM-JJ) et heure de début (HH:MM) d'un cours fixé par le coach
 export interface Slot { date: string; time: string; }
 export const fmtTime = (t: string) => { const [h, m] = t.split(":"); return `${Number(h)} h${m === "00" ? "" : " " + m}`; };
+// « travail du revers », « travail de la volée » : le déterminant s'accorde avec le mot
+const WORK_OF: Record<string, string> = { "Coup droit": "du coup droit", "Revers": "du revers", "Service": "du service", "Retour de service": "du retour de service", "Volée": "de la volée", "Smash": "du smash", "Jeu de jambes": "du jeu de jambes" };
+export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail ${WORK_OF[objective]}` : objective === "Autre" ? "à préciser avec ton coach" : objective.toLowerCase());
+// « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
+export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -55,6 +60,13 @@ export const START_ITEMS: Record<string, [string, string][]> = {
   tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"]],
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
+};
+// Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs
+export const MISSION_TOPICS: Record<string, string[]> = {
+  TECHNIQUE: ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes"],
+  TACTIQUE: ["Défendre", "Attaquer", "Construire le point", "Variations", "Lecture du jeu"],
+  PHYSIQUE: ["Endurance", "Vitesse", "Explosivité", "Gainage", "Coordination", "Souplesse"],
+  MENTAL: ["Concentration", "Gestion des émotions", "Routines", "Confiance", "Combativité"],
 };
 export const itemKey = (axis: string, k: string) => `d_${axis}_${k}`;
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
@@ -101,7 +113,7 @@ export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "V
 export interface AnalysisOut { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
-  kind: "coaching" | "centre"; fromCoach: boolean; images: { id: string; note: string }[]; audio: { seconds: number } | null; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
+  kind: "coaching" | "centre"; fromCoach: boolean; draft?: boolean; images: { id: string; note: string }[]; audio: { seconds: number } | null; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }
@@ -139,6 +151,8 @@ export const SELF_PRESETS: { proud: Preset[]; improve: Preset[]; wish: Preset[] 
   improve: [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["deplacements", "Mes déplacements"], ["tactique", "Mes choix pendant le match"], ["calme", "Rester calme quand je rate"], ["concentration", "Ma concentration"], ["endurance", "Mon endurance"], ["confiance", "Ma confiance en moi"]],
   wish: [["classement", "Monter au classement"], ["gagner-tournoi", "Gagner un tournoi"], ["plus-tournois", "Faire plus de tournois"], ["amicaux-weekend", "Jouer plus de parties amicales le week-end"], ["continuer", "Continuer comme ça"], ["plus-physique", "Faire plus de physique"]],
 };
+// Auto-évaluation rapide d'une mission pendant un match (1 à 3)
+export const MISSION_CHECKS = [["😕", "Pas encore"], ["🙂", "Un peu"], ["😃", "Bien"]] as const;
 export const FEELINGS = [["😟", "Difficile"], ["😕", "Pas facile"], ["🙂", "Ça va"], ["😀", "Bien"], ["🤩", "Super"]] as const;
 // Anciens choix de « Mon projet » : ils restent lisibles dans les bulletins déjà envoyés
 export const SELF_LEGACY: Preset[] = [["match", "Jouer plus de matchs"], ["tournoi", "Faire un tournoi"], ["defis", "Faire plus de petits défis"], ["jeux", "Plus de jeux pour s'amuser"], ["video", "Que le coach regarde mes vidéos"], ["physique", "Un peu plus de physique"], ["service", "Travailler encore mon service"], ["copains", "Jouer avec des copains"]];
@@ -193,7 +207,7 @@ export const todayIso = () => new Date().toISOString().slice(0, 10);
 export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
 // ----- Matchs déclarés par le jeune (choix proposés, jamais de nom d'adversaire) -----
-export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; coachComment: string; editable: boolean; editableUntil: string; }
+export interface DeclaredMatch { id: string; day: string; kind: string; event: string; result: "Victoire" | "Défaite"; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; missionChecks?: Record<string, number>; coachComment: string; editable: boolean; editableUntil: string; }
 export const MATCH_KINDS: [string, string][] = [["tournoi", "🏆 Tournoi"], ["plateau", "🎾 Plateau"], ["equipes", "👥 Championnat par équipes"], ["entrainement", "🏋️ Match d'entraînement"]];
 export const MATCH_OPPONENTS: [string, string][] = [["plus-fort", "💪 Plus fort que moi"], ["pareil", "⚖️ Du même niveau"], ["moins-fort", "🌱 Moins fort que moi"]];
 export const MATCH_SKILLS: [string, string][] = [["service", "Mon service"], ["coup-droit", "Mon coup droit"], ["revers", "Mon revers"], ["retour", "Mon retour de service"], ["volee", "Mon jeu au filet"], ["deplacements", "Mes déplacements"], ["calme", "Mon calme"], ["tactique", "Mes choix tactiques"], ["physique", "Mon physique"], ["combativite", "Ma combativité"], ["concentration", "Ma concentration"]];
@@ -204,6 +218,8 @@ export const matchLabel = (list: [string, string][], id: string | null) => list.
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »
 // Adulte qui demande un cours : ce que le coach voit (nom, âge, classement ou niveau)
 export interface AdultInfo { firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; }
+// Cours à deux : classement ou niveau du partenaire (« Je ne sais pas » possible)
+export const PARTNER_LEVELS_EXTRA = "Je ne sais pas";
 export const ADULT_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export const adultAge = (birthYear: number | null | undefined, now = new Date()) => (birthYear ? now.getFullYear() - birthYear : null);
 export const adultName = (a: (AdultInfo & { email?: string }) | null | undefined, fallback = "Adhérent") => [a?.firstName, a?.lastName].filter(Boolean).join(" ") || a?.email || fallback;

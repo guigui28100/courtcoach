@@ -1,9 +1,10 @@
 import { LessonStatus } from "@prisma/client";
 import { Transform } from "class-transformer";
 import { Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, Matches, MaxLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
+export const PARTNER_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30", "Je ne sais pas"];
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 export class CreateLessonDto {
@@ -12,6 +13,11 @@ export class CreateLessonDto {
   @IsOptional() @IsArray() @ArrayMaxSize(7) @IsIn(DAYS, { each: true }) days?: string[];
   @IsOptional() @IsIn(["Peu importe", "Matin", "Après-midi", "Soirée"]) moment?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(500) message?: string;
+  // Cours à DEUX : le partenaire (obligatoire pour un cours « duo », ignoré sinon)
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) partnerFirstName?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) partnerLastName?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(4) @Max(99) partnerAge?: number;
+  @IsOptional() @IsIn(PARTNER_LEVELS) partnerLevel?: string;
 }
 
 // Date et heure de début du cours (ex. 2026-10-20 à 18:00)

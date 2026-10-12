@@ -11,7 +11,7 @@ export function useVideos(version = 0) {
 }
 
 // Envoi d'une vidéo, morceau par morceau (2 Mo), avec barre de progression.
-export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: string; onDone: () => void; who?: string; toPlayer?: string }) {
+export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string }) {
   const [err, setErr] = useState("");
   const [pct, setPct] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -28,7 +28,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
     if (blob.size < 1024) return setErr("Ce fichier est vide.");
     setPct(0);
     try {
-      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
+      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? String(f.get("shot")) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
       for (let i = 0; i < c.chunkCount; i++) {
         const part = blob.slice(i * c.chunkSize, (i + 1) * c.chunkSize);
         for (let attempt = 1; ; attempt++) {
@@ -38,7 +38,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
         setPct(Math.round(((i + 1) / c.chunkCount) * 100));
       }
       await post(`/videos/${c.id}/complete`);
-      form.reset(); setOpen(false); onDone();
+      form.reset(); setOpen(false); onDone(c.id);
     } catch (x) { setErr((x as Error).message); }
     setPct(null);
   }
@@ -49,12 +49,12 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
-            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. Elle apparaît dans l'onglet « Vidéos » de {toPlayer} et de sa famille, marquée <strong>« De ton coach »</strong>, avec ton message. Ils peuvent la regarder mais pas la supprimer. Pour la commenter avec des dessins (traits, cercles…), ouvre-la ensuite dans ton studio et envoie une analyse : {toPlayer} la recevra avec tes images annotées. Pas de nom ni de téléphone dans le titre. Elle est supprimée automatiquement après 12 mois.</p>
+            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. <strong>Elle reste en brouillon : {toPlayer} et sa famille ne la voient pas</strong> tant que tu ne l'as pas envoyée. Le studio d'analyse s'ouvre dès que le dépôt est terminé : commente-la (traits, cercles, voix…), puis envoie-la : soit avec le bouton « Envoyer la vidéo », soit en envoyant ton analyse (la vidéo part alors avec). Elle apparaîtra dans l'onglet « Vidéos » de {toPlayer}, marquée <strong>« De ton coach »</strong>, avec ton message. Ils pourront la regarder mais pas la supprimer. Elle est supprimée automatiquement après 12 mois.</p>
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder={toPlayer ? "Un service à imiter" : "Mon service de ce matin"} /></Field>
+          <div className={"grid gap-4 " + (toPlayer ? "" : "sm:grid-cols-2")}>
+            {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
             <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>
           </div>
           <Field label={toPlayer ? `Ton message pour ${toPlayer} (facultatif)` : "Une question pour le coach ? (facultatif)"} id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>
@@ -85,7 +85,9 @@ export function VideosIntro({ who = "jeune", dark = false }: { who?: keyof typeo
   );
 }
 
-export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: boolean }) => v.fromCoach
+export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: boolean }) => v.fromCoach && v.draft
+  ? <span className="badge !border-[#c08a00] !bg-[#fff3cd] !text-[#7a5a00]">📝 Brouillon : pas encore envoyée</span>
+  : v.fromCoach
   ? <span className={"badge " + (!forCoach && !v.seenAt ? "!border-ok !bg-[#e6f5ec] !text-ok" : "")}>{forCoach ? "🎬 Envoyée par toi" : v.seenAt ? "🎓 De ton coach" : "🎓 De ton coach · nouveau"}</span>
   : v.analysis?.sentAt
   ? <span className={"badge " + (v.seenAt ? "" : "!border-ok !bg-[#e6f5ec] !text-ok")}>{v.seenAt ? "Analyse lue" : "✅ Analyse reçue"}</span>

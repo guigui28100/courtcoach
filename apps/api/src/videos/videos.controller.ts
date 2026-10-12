@@ -51,6 +51,7 @@ export class VideosController {
   @Post("videos/:id/seen") @HttpCode(204) seen(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.markSeen(u, id); }
   @Post("videos/:id/messages") message(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: MessageDto) { return this.svc.addMessage(u, id, dto.text); }
   @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/analysis") saveAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: AnalysisDto) { return this.svc.saveAnalysis(u, id, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Post("videos/:id/send-to-player") @HttpCode(204) sendToPlayer(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.sendToPlayer(u, id); }
   @Roles(Role.COACH, Role.TRAINER) @Post("videos/:id/analysis/send") @HttpCode(204) sendAnalysis(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.sendAnalysis(u, id); }
 
   // Appelée chaque nuit par Vercel (tâche planifiée) : supprime les vidéos de plus de 12 mois.

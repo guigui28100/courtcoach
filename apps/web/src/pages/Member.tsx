@@ -1,16 +1,10 @@
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { get, post, put, del } from "../api";
+import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { Radar } from "../components/Radar";
-import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { ADULT_LEVELS, CourseStar, fmtSlot, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
-import { BulletinShelf } from "../components/BulletinShelf";
-import { FamilyTournaments } from "../components/Tournaments";
-import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
-import { StarsCard, StarsRadar, useStars } from "../components/Stars";
-import { Avatar, Empty, Err, Field, Page, PageHead, ProgressBar, SideLayout, TabLabel, TabsBar } from "../components/ui";
-import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
+import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
+import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -29,16 +23,9 @@ function Fold({ title, count, hot = 0, onOpen, children }: { title: string; coun
 }
 
 // ----- Mes demandes de cours : une liste claire (une carte par demande) et un formulaire en 4 petites étapes -----
-const STATUS_UI = {
-  PENDING: { icon: "⏳", label: "En attente", bar: "#c08a00", soft: "#fff8e1", ink: "#7a5a00" },
-  PROPOSED: { icon: "💬", label: "À confirmer", bar: "#2a6fb0", soft: "#eaf2fb", ink: "#1f5a96" },
-  ACCEPTED: { icon: "✅", label: "Confirmé", bar: "#2f8f5b", soft: "#eef8f1", ink: "#1d6b43" },
-  REFUSED: { icon: "❌", label: "Refusée", bar: "#c0392b", soft: "#fdf0ee", ink: "#9a2a1f" },
-} as const;
 const TYPE_UI: Record<string, [string, string, string]> = { individuel: ["🎾", "Cours individuel", "Sur le court, toi et ton coach"], duo: ["👥", "Cours à deux", "Avec un partenaire"] };
 const GOALS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
 const MOMENTS = ["Peu importe", "Matin", "Après-midi", "Soirée"];
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
 // Pastille à cocher (choix unique ou multiple)
 function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox"; name: string; value: string; defaultChecked?: boolean }) {
@@ -51,17 +38,19 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
 
 function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose: () => void; onSent: () => void }) {
   const [err, setErr] = useState("");
+  const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
     const f = new FormData(e.currentTarget); setErr("");
-    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+    if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
+    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
+      <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
             <label key={k} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
@@ -71,6 +60,18 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
           ))}
         </div>
       </fieldset>
+      {duo && (
+        <fieldset className="m-0 grid gap-3 rounded-2xl border-2 border-clay/40 bg-[#fdf1ea] p-4" aria-label="Ton partenaire">
+          <legend className="px-2 font-display text-base font-bold">👥 Ton partenaire pour ce cours à deux</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Son prénom" id="p-first"><input id="p-first" name="pFirst" className="input" maxLength={60} autoComplete="off" required /></Field>
+            <Field label="Son nom" id="p-last"><input id="p-last" name="pLast" className="input" maxLength={60} autoComplete="off" required /></Field>
+            <Field label="Son âge" id="p-age"><input id="p-age" name="pAge" type="number" inputMode="numeric" min={4} max={99} className="input" required /></Field>
+            <Field label="Son classement ou son niveau" id="p-level"><select id="p-level" name="pLevel" className="input" defaultValue="" required><option value="" disabled>Choisir…</option>{[...ADULT_LEVELS, PARTNER_LEVELS_EXTRA].map((x) => <option key={x}>{x}</option>)}</select></Field>
+          </div>
+          <small className="text-muted">Ces informations servent seulement à organiser le cours : seul le coach les voit. Préviens ton partenaire.</small>
+        </fieldset>
+      )}
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
@@ -102,7 +103,7 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" }) {
 
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
 function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
-  const title = `${l.objective} · ${TYPE_SHORT[l.type] ?? "Cours"}`;
+  const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}`;
   const state = { PENDING: ["⏳ En attente", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
   const sub = l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
     : l.status === "PENDING" ? `Tes disponibilités : ${l.days.length ? l.days.join(", ").toLowerCase() : "à définir"} · ${l.moment.toLowerCase()}`
@@ -144,9 +145,10 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   }
   return (
     <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
-      <p className="m-0 text-lg leading-snug">
-        Ton coach te propose un cours <strong>le {l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong> pour travailler <strong>{l.objective}</strong>{l.place ? <> sur le terrain <strong>{l.place}</strong></> : ""}.
-      </p>
+      <div className="grid gap-1 text-lg leading-snug">
+        <p className="m-0">Ton coach te propose un cours le <strong>{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>{l.place && courtNumber(l.place) ? <> sur le terrain n° <strong>{courtNumber(l.place)}</strong></> : ""}.</p>
+        <p className="m-0">Objectif de la séance : <strong>{workPhrase(l.objective)}</strong></p>
+      </div>
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
@@ -350,202 +352,4 @@ export function AdultSpace() {
 export function AdultPreview() {
   const [seen, setSeen] = useState<string[]>([]);
   return <AdultView preview lessons={EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} onRespond={async () => { throw new Error("Aperçu : rien n'est envoyé."); }} videos={[]} onVideosChanged={() => {}} />;
-}
-
-// Objectifs du trimestre : « À travailler » tant que le coach n'a pas fait le point (le statut n'apparaît qu'après son évaluation)
-function GoalsTab({ goals, stars }: { goals: Goal[]; stars: CourseStar[] | null }) {
-  const t = trimesterOf();
-  const here = goals.filter((g) => goalApplies(g, t));
-  if (!here.length) return <Empty>Aucun objectif fixé pour le trimestre {t} pour l'instant.</Empty>;
-  const evaluated = here.some((g) => statusAt(g, t));
-  return (
-    <div className="grid gap-4">
-      <p className="m-0 text-muted">{evaluated ? `Objectifs du trimestre ${t} et bilan du coach.` : `Objectifs à travailler au trimestre ${t}. Le coach fera le point à la fin du trimestre.`}</p>
-      <div className="grid gap-3 md:grid-cols-2">
-        {AXES.map((a) => {
-          const mine = here.filter((g) => g.axis === a.key);
-          if (!mine.length) return null;
-          return (
-            <section key={a.key} className="card grid content-start gap-3 border-t-[6px]" style={{ borderTopColor: a.color }} aria-label={a.label}>
-              <h3 className="m-0" style={{ color: a.color }}>{a.label}</h3>
-              {mine.map((g) => { const st = statusAt(g, t); return (
-                <div key={g.id} className="grid gap-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2"><strong>{g.title}</strong>
-                    <span className="shrink-0 rounded-full px-2.5 py-0.5 text-sm font-bold" style={st ? { background: GOAL_STATUS[st].bg, color: GOAL_STATUS[st].ink } : { background: "#f1ece4", color: "#4b5566" }}>{st ? `${GOAL_STATUS[st].emoji} ${GOAL_STATUS[st].label}` : "🎯 À travailler"}</span></div>
-                  {isCarriedOver(g, t) && <small className="font-bold text-[#5b21b6]">🔁 Objectif reconduit depuis le trimestre {t - 1}</small>}
-                  {g.indicator && <small className="hint">Mesuré par : {g.indicator}</small>}
-                  {(() => { const earned = missionStars(stars ?? [], g.id, currentSeason(), t), target = g.targetStars ?? 10; return <><ProgressBar value={missionPercent(earned, target)} color={a.color} /><small className="font-bold">⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} pour réussir cette mission</small></>; })()}
-                </div>
-              ); })}
-            </section>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Dernière évaluation et bulletins d'un joueur (lecture seule)
-function EvalTab({ p, goals = [] }: { p: Player; goals?: Goal[] }) {
-  const { evals } = useFollowUp(p.id);
-  if (!evals) return <div className="skeleton h-40" role="status" aria-label="Chargement en cours" />;
-  const last = evals.find((e) => ratedCount(e) > 0);
-  const prevP = last ? previousPeriod(last.season, last.trimester) : null;
-  const prev = last && prevP ? evals.find((e) => e.season === prevP.season && e.trimester === prevP.t) : undefined;
-  const now: Record<string, number> = {}, before: Record<string, number> = {};
-  EVAL_AXES.forEach((a) => { now[a.key] = axisAverage(last, a); before[a.key] = axisAverage(prev, a); });
-  return (
-    <div className="card grid gap-4">
-      <h3 className="m-0">{last ? (last.trimester === 0 ? "Bilan de début d'année" : "Dernière évaluation") : "Évaluation"}</h3>
-      {!last ? <p className="m-0 text-muted">Pas encore d'évaluation trimestrielle.</p> : (
-        <div className="grid gap-4 md:grid-cols-[300px_1fr]">
-          <div className="grid content-start justify-items-center gap-1">
-            <Radar series={[{ label: last.trimester === 0 ? "Départ" : `T${last.trimester}`, values: now, color: "#b8471f" }, ...(prev && prevP ? [{ label: prevP.t === 0 ? "Départ" : `T${prevP.t}`, values: before, color: "#10203a", dashed: true }] : [])]} />
-            <p className="m-0 text-center font-bold">{periodLabel(last.season, last.trimester)}<br />Moyenne {fmtAvg(overallAverage(last))} / 5 {trendCommon(last, prev)}</p>
-          </div>
-          <div className="grid content-start gap-3">
-            {last.appreciation && <p className="m-0 rounded-xl bg-sand p-3">« {last.appreciation} »<small className="hint block">Appréciation du coach</small></p>}
-            {EVAL_AXES.map((a) => ratedCount({ ratings: Object.fromEntries(a.skills.filter(([k]) => last.ratings[k]).map(([k]) => [k, last.ratings[k]])) }) ? (
-              <div key={a.key} className="grid gap-2 border-l-4 pl-3" style={{ borderLeftColor: a.color }}>
-                <h4 className="m-0 font-display font-bold" style={{ color: a.color }}>{a.label} · {fmtAvg(axisAverage(last, a))} / 5</h4>
-                <SkillBars axis={a} ev={last} prev={prev} />
-              </div>
-            ) : null)}
-            {last.strengths && <p className="m-0"><strong>Points forts : </strong>{last.strengths}</p>}
-            {last.improve && <p className="m-0"><strong>À travailler : </strong>{last.improve}</p>}
-            {last.next && <p className="m-0"><strong>Objectifs du trimestre suivant : </strong>{last.next}</p>}
-          </div>
-        </div>
-      )}
-      {(evals.length > 0 || goals.length > 0) && <><h3 className="m-0">Bulletins</h3><BulletinShelf evals={evals} goals={goals} base={`/suivi/${p.id}`} famille /></>}
-    </div>
-  );
-}
-
-function MatchesTab({ p }: { p: Player }) {
-  const { matches } = useFollowUp(p.id);
-  return matches.length ? <div className="card grid gap-3"><h3 className="m-0">Compétition</h3><MatchTable matches={matches} /></div> : <Empty>Aucun match enregistré pour l'instant.</Empty>;
-}
-
-// Vidéos d'un joueur du Centre : la famille peut en envoyer (si l'accord « droit à l'image » est enregistré) et lire les analyses.
-function PlayerVideos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fresh: VideoRow[]; refresh: () => void }) {
-  return (
-    <div className="card grid gap-3">
-      <h3 className="m-0">Vidéos</h3>
-      <VideosIntro who="famille" />
-      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Le coach a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous.</p>}
-      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Le coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous.</p>}
-      <VideoUpload playerId={p.id} onDone={refresh} />
-      <VideoList videos={mine} onChanged={refresh} empty="Aucune vidéo pour l'instant." />
-    </div>
-  );
-}
-
-type FTab = "accueil" | "renseignements" | "objectifs" | "evaluations" | "etoiles" | "matchs" | "videos" | "compte";
-const FTABS: [FTab, string][] = [["accueil", "🏠 Accueil"], ["renseignements", "📝 Renseignements"], ["objectifs", "🎯 Objectifs"], ["evaluations", "📊 Évaluations"], ["etoiles", "⭐ Étoiles"], ["matchs", "🏟️ Matchs"], ["videos", "🎬 Vidéos"], ["compte", "🔒 Compte"]];
-
-// Carte cliquable de l'accueil
-function Shortcut({ icon, title, text, hot = false, onClick }: { icon: string; title: string; text: string; hot?: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className={"card lift grid content-start gap-1 text-left " + (hot ? "!border-ok !bg-[#eef8f1]" : "")}>
-      <span className="text-3xl" aria-hidden="true">{icon}</span><strong className="text-lg">{title}</strong><span className="text-sm text-muted">{text}</span><span className="mt-1 text-sm font-bold text-clay">Ouvrir →</span>
-    </button>
-  );
-}
-
-// Espace des parents : suivi du joueur en lecture seule, un sujet par onglet.
-export function FamilySpace() {
-  const { me, eraseAccount } = useAuth();
-  const [params, setParams] = useSearchParams();
-  const [players, setPlayers] = useState<Player[] | null>(null);
-  const [goals, setGoals] = useState<Record<string, Goal[]>>({});
-  const [chosen, setChosen] = useState(0); // un parent peut suivre plusieurs enfants
-  const [version, setVersion] = useState(0);
-  const videos = useVideos(version);
-  const refresh = useCallback(() => setVersion((n) => n + 1), []);
-  useEffect(() => {
-    get<Player[]>("/players").then(async (ps) => {
-      setPlayers(ps);
-      const entries = await Promise.all(ps.map(async (p) => [p.id, await get<Goal[]>(`/players/${p.id}/goals?season=${currentSeason()}`).catch(() => [] as Goal[])] as const));
-      setGoals(Object.fromEntries(entries));
-    }).catch(() => setPlayers([]));
-  }, []);
-
-  const p = players?.[Math.min(chosen, (players?.length ?? 1) - 1)];
-  const tab: FTab = FTABS.find(([k]) => k === params.get("onglet"))?.[0] ?? "accueil";
-  const go = (t: FTab) => { setParams(t === "accueil" ? {} : { onglet: t }); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const mine = (videos ?? []).filter((v) => p && v.player?.id === p.id);
-  const fresh = mine.filter((v) => (v.analysis?.sentAt || v.fromCoach) && !v.seenAt);
-  const list = p ? goals[p.id] ?? [] : [];
-  const t = trimesterOf();
-  const here = list.filter((g) => goalApplies(g, t));
-  const achieved = here.filter((g) => statusAt(g, t) === "ACHIEVED").length;
-  const evaluated = here.some((g) => statusAt(g, t));
-  const stars = useStars(p?.id, version);
-  const { evals } = useFollowUp(p?.id ?? "");
-  const word = evals?.find((e) => e.appreciation)?.appreciation;
-
-  return (
-    <>
-      <PageHead eyebrow="Mon suivi" title={me?.firstName ? `Bonjour ${me.firstName}` : "Mon suivi"}>Objectifs, évaluations, matchs et vidéos, en lecture seule.</PageHead>
-      <Page>
-        {players === null && <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />}
-        {players && !players.length && <Empty>Ton coach n'a pas encore ouvert de suivi.</Empty>}
-        {p && (
-          <>
-            {players!.length > 1 && (
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Choisir l'enfant">
-                {players!.map((x, i) => <button key={x.id} onClick={() => setChosen(i)} aria-pressed={i === chosen} className={"flex min-h-11 items-center gap-2 rounded-full border-2 py-1 pl-1 pr-4 font-bold " + (i === chosen ? "border-ink bg-ink text-white" : "border-line bg-white")}><Avatar name={fullName(x)} size={34} />{x.firstName}</button>)}
-              </div>
-            )}
-            <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-stretch md:gap-6">
-            <div className="tabbar side">
-              <div role="tablist" aria-label="Sections du suivi">
-                {FTABS.map(([k, label]) => (
-                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
-                    <TabLabel text={label} />{k === "videos" && fresh.length > 0 && tab !== k && <span className="absolute right-1 top-2 h-3 w-3 rounded-full bg-clay" aria-label="Nouveau" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div key={tab + p.id} role="tabpanel" className="page-in grid grid-cols-[minmax(0,1fr)] gap-4">
-              {tab === "accueil" && (
-                <>
-                  <section className="card flex items-center gap-4" aria-label={`Suivi de ${p.firstName}`}>
-                    <Avatar name={fullName(p)} size={64} />
-                    <div className="min-w-0"><h2 className="m-0">{fullName(p)}</h2><p className="m-0 text-muted">{[p.ranking && `Classement ${p.ranking}`, p.targetRanking && `objectif ${p.targetRanking}`].filter(Boolean).join(" · ") || "Suivi de la saison"}</p></div>
-                  </section>
-                  {infoMissing(p) > 0 && <button type="button" className="card grid gap-1 border-2 !border-clay text-left" onClick={() => go("renseignements")}><strong>📝 Merci de compléter la fiche de renseignements de {p.firstName}</strong><span className="text-sm text-muted">Club, licence, classement, disponibilités… Cela prend 2 minutes et aide le coach. Cliquez ici pour la remplir.</span></button>}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {fresh.length > 0 && <Shortcut hot icon="🎬" title={fresh.every((v) => v.fromCoach) ? `Le coach a envoyé ${fresh.length > 1 ? `${fresh.length} vidéos` : "une vidéo"}` : `Du nouveau dans les vidéos (${fresh.length})`} text="Regarder la vidéo du coach, lire ses conseils et les images annotées." onClick={() => go("videos")} />}
-                    <Shortcut icon="🎯" title={here.length ? (evaluated ? `${achieved} objectif${achieved > 1 ? "s" : ""} atteint${achieved > 1 ? "s" : ""} sur ${here.length}` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler`) : "Objectifs"} text={here.length ? (evaluated ? `Bilan du trimestre ${t}` : `Trimestre ${t} : le coach fera le point à la fin.`) : "Le coach n'a pas encore fixé d'objectifs pour ce trimestre."} onClick={() => go("objectifs")} />
-                    <Shortcut icon="📊" title="Évaluations et bulletins" text={word ? `« ${word.length > 110 ? word.slice(0, 107) + "…" : word} »` : "Radar des compétences, bulletins à imprimer."} onClick={() => go("evaluations")} />
-                    <Shortcut icon="⭐" title={stars && stars.length ? `${stars.reduce((n, s) => n + s.stars, 0)} étoile${stars.reduce((n, s) => n + s.stars, 0) > 1 ? "s" : ""}` : "Étoiles de fin de cours"} text={stars && stars.length ? `Dernier cours : +${stars[0].stars} ⭐` : "Le coach en donne à la fin des cours, pour l'effort et l'attitude."} onClick={() => go("etoiles")} />
-                    <Shortcut icon="🏟️" title="Matchs" text="Résultats des compétitions." onClick={() => go("matchs")} />
-                    {!fresh.length && <Shortcut icon="🎬" title="Vidéos" text="Envoyer une vidéo ou lire une analyse." onClick={() => go("videos")} />}
-                  </div>
-                </>
-              )}
-              {tab === "renseignements" && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
-              {tab === "objectifs" && <GoalsTab goals={list} stars={stars} />}
-              {tab === "evaluations" && <EvalTab p={p} goals={list} />}
-              {tab === "etoiles" && <><StarsRadar stars={stars} who="famille" /><StarsCard stars={stars} who="famille" /></>}
-              {tab === "matchs" && <><FamilyTournaments /><MatchesTab p={p} /></>}
-              {tab === "videos" && <PlayerVideos p={p} mine={mine} fresh={fresh} refresh={refresh} />}
-              {tab === "compte" && (
-                <section className="card grid gap-3">
-                  <h2 className="m-0 text-lg">Mes données</h2>
-                  <p className="hint m-0">{me?.email} · <Link to="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</Link> · Pour demander une copie ou la suppression du dossier de l'enfant, écris au club.</p>
-                  <Link to="/mot-de-passe" className="btn-outline btn-sm self-start no-underline">Changer mon mot de passe</Link>
-                  <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement ton compte (le dossier du joueur reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
-                </section>
-              )}
-            </div>
-            </div>
-          </>
-        )}
-      </Page>
-    </>
-  );
 }

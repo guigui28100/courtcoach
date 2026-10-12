@@ -256,6 +256,7 @@ model DeclaredMatch {
   feeling    Int      // 1 à 5
   wellDone   String[] // jusqu'à 2 points forts (identifiants proposés)
   toImprove  String?  // 1 point à améliorer (identifiant proposé)
+  missionChecks Json @default("{}") // auto-évaluation rapide sur SES missions pendant ce match : { identifiantMission: 1 (pas encore) | 2 (un peu) | 3 (bien) }
   coachComment String @default("") // réponse du coach (300 caractères maximum)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -337,6 +338,7 @@ model Video {
   seenAt      DateTime?   // date à laquelle l'élève / la famille a vu l'analyse
   deleteAfter DateTime?   // suppression automatique prévue
   fromCoach   Boolean     @default(false) // vidéo envoyée PAR le coach au joueur (démonstration, vidéo de son jeu…)
+  sentToPlayerAt DateTime? // vidéo du coach : BROUILLON (invisible du joueur et de sa famille) tant que cette date est vide
   ownerId     String?     // adulte à l'origine de la vidéo
   owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   playerId    String?
@@ -434,6 +436,10 @@ model LessonRequest {
   confirmedAt   DateTime?    // quand l'adulte a confirmé la date
   adultReply    String       @default("") // message de l'adulte s'il n'est pas disponible
   declinedSlot  Json?        // dernière date refusée par l'adulte
+  partnerFirstName String    @default("") // cours à DEUX : partenaire de l'adulte (saisi par lui, vu du coach seulement)
+  partnerLastName  String    @default("")
+  partnerAge       Int?
+  partnerLevel     String    @default("") // classement ou niveau du partenaire
   createdAt     DateTime     @default(now())
 
   @@index([memberId])

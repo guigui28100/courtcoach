@@ -10,7 +10,7 @@ import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
 import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
-import { AdultPreview, AdultSpace, FamilySpace } from "./pages/Member";
+import { AdultPreview, AdultSpace } from "./pages/Member";
 import Securite from "./pages/Securite";
 import VideoReview from "./pages/VideoReview";
 import YouthSpace from "./pages/Youth";
@@ -19,7 +19,7 @@ import { Authorization, Privacy } from "./pages/Static";
 
 // Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
 function Apercu() { const { id = "" } = useParams(); return <YouthSpace previewId={id} />; }
-function Suivi() { const { me } = useAuth(); return me?.role === "YOUTH" ? <YouthSpace /> : <FamilySpace />; }
+function Suivi() { return <YouthSpace />; } // un seul espace : celui de l'enfant (le compte du parent l'ouvre, avec en plus ses rubriques de parent)
 
 export default function App() {
   return (

@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { del, get, post, put } from "../api";
 import { useEffect, useCallback } from "react";
-import { DeclaredMatch, FEELINGS, fmtDate, matchLabel, MATCH_KINDS, MATCH_KINDS_ALL, MATCH_OPPONENTS, MATCH_SKILLS, Player, RANKINGS, todayIso } from "../types";
+import { currentSeason, DeclaredMatch, FEELINGS, fmtDate, goalApplies, Goal, matchLabel, MISSION_CHECKS, trimesterOf, MATCH_KINDS, MATCH_KINDS_ALL, MATCH_OPPONENTS, MATCH_SKILLS, Player, RANKINGS, todayIso } from "../types";
 
 export function useDeclaredMatches(playerId: string | undefined, enabled = true) {
   const [list, setList] = useState<DeclaredMatch[] | null>(null);
@@ -9,6 +9,18 @@ export function useDeclaredMatches(playerId: string | undefined, enabled = true)
   useEffect(load, [load]);
   return { list, reload: load };
 }
+
+// Missions du trimestre du joueur (pour s'évaluer dessus pendant un match, et pour lire les évaluations déjà faites)
+function useMissionGoals(playerId: string): Goal[] {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  useEffect(() => { get<Goal[]>(`/players/${playerId}/goals?season=${currentSeason()}`).then(setGoals).catch(() => setGoals([])); }, [playerId]);
+  return goals;
+}
+// « 🚀 Missions : Servir plus régulièrement 😃 · … » (une ligne, seulement celles que le jeune a évaluées)
+const MissionChecksLine = ({ m, goals }: { m: DeclaredMatch; goals: Goal[] }) => {
+  const rows = goals.filter((g) => m.missionChecks?.[g.id]);
+  return rows.length ? <span className="text-sm">🚀 Missions : {rows.map((g, i) => <span key={g.id}>{i > 0 && " · "}{g.title} <span title={MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[1]}>{MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[0]}</span></span>)}</span> : null;
+};
 
 const pill = (on: boolean) => "min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors " + (on ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20");
 
@@ -24,6 +36,8 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
   const [feeling, setFeeling] = useState(initial?.feeling ?? 0);
   const [well, setWell] = useState<string[]>(initial?.wellDone ?? []);
   const [improve, setImprove] = useState<string>(initial?.toImprove ?? "");
+  const goals = useMissionGoals(p.id).filter((g) => goalApplies(g, trimesterOf(new Date(day + "T12:00:00"))));
+  const [checks, setChecks] = useState<Record<string, number>>(initial?.missionChecks ?? {});
   const [msg, setMsg] = useState(""); const [busy, setBusy] = useState(false);
   const ready = kind && result && opponent && feeling > 0;
   async function save(e: FormEvent) {
@@ -32,7 +46,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
     if (!ready) return setMsg("⚠️ Choisis le type de match, le résultat, le niveau de l'adversaire et ton ressenti.");
     setBusy(true);
     try {
-      const body = { day, kind, event: event.trim() || undefined, result, score: score.trim() || undefined, opponent, feeling, wellDone: well, toImprove: improve || undefined, opponentRanking: ranking || undefined };
+      const body = { day, kind, event: event.trim() || undefined, result, score: score.trim() || undefined, opponent, feeling, wellDone: well, toImprove: improve || undefined, opponentRanking: ranking || undefined, missionChecks: Object.fromEntries(Object.entries(checks).filter(([id]) => goals.some((g) => g.id === id))) };
       if (initial) await put(`/players/${p.id}/declared-matches/${initial.id}`, body); else await post(`/players/${p.id}/declared-matches`, body);
       onDone();
     } catch (x) { setMsg("⚠️ " + (x as Error).message); } finally { setBusy(false); }
@@ -59,10 +73,21 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
       <div className="grid gap-2">{step(4, "Comment as-tu joué ?")}
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ton ressenti">{FEELINGS.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={feeling === i + 1} onClick={() => setFeeling(i + 1)} className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (feeling === i + 1 ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}</div>
       </div>
-      <div className="grid gap-2">{step(5, "Ce qui a bien marché (2 au maximum)")}
+      {goals.length > 0 && (
+        <div className="grid gap-2">{step(5, "Et mes missions ? (en un clic, facultatif)")}
+          <ul className="m-0 grid list-none gap-2 p-0">{goals.map((g) => (
+            <li key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <strong className="leading-snug">{g.title}</strong>
+              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={`Ma mission « ${g.title} » pendant ce match`}>{MISSION_CHECKS.map(([e, t], i) => { const on = checks[g.id] === i + 1; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setChecks((c) => { const n = { ...c }; if (on) delete n[g.id]; else n[g.id] = i + 1; return n; })} className={pill(on) + " !px-3"}><span aria-hidden="true">{e} </span>{t}</button>; })}</div>
+            </li>
+          ))}</ul>
+          <small className="text-white/70">Pas obligatoire : touche une réponse seulement si tu as travaillé cette mission pendant le match.</small>
+        </div>
+      )}
+      <div className="grid gap-2">{step(goals.length ? 6 : 5, "Ce qui a bien marché (2 au maximum)")}
         <div className="flex flex-wrap gap-2">{MATCH_SKILLS.map(([k, l]) => { const on = well.includes(k); return <button key={k} type="button" aria-pressed={on} disabled={!on && well.length >= 2} className={pill(on) + " disabled:opacity-40"} onClick={() => setWell(on ? well.filter((x) => x !== k) : [...well, k])}>{on ? "✓ " : ""}{l}</button>; })}</div>
       </div>
-      <div className="grid gap-2">{step(6, "Ce que je veux améliorer (1 choix)")}
+      <div className="grid gap-2">{step(goals.length ? 7 : 6, "Ce que je veux améliorer (1 choix)")}
         <div className="flex flex-wrap gap-2">{MATCH_SKILLS.map(([k, l]) => <button key={k} type="button" aria-pressed={improve === k} className={pill(improve === k)} onClick={() => setImprove(improve === k ? "" : k)}>{improve === k ? "✓ " : ""}{l}</button>)}</div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -74,7 +99,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
   );
 }
 
-function MatchCard({ m, p, onChanged, preview }: { m: DeclaredMatch; p: Player; onChanged: () => void; preview?: boolean }) {
+function MatchCard({ m, p, onChanged, preview, goals }: { m: DeclaredMatch; p: Player; onChanged: () => void; preview?: boolean; goals: Goal[] }) {
   const [edit, setEdit] = useState(false);
   if (edit) return <li className="list-none"><MatchForm p={p} initial={m} preview={preview} onDone={() => { setEdit(false); onChanged(); }} /></li>;
   const left = Math.max(0, Math.ceil((new Date(m.editableUntil).getTime() - Date.now()) / 86400000));
@@ -83,6 +108,7 @@ function MatchCard({ m, p, onChanged, preview }: { m: DeclaredMatch; p: Player; 
       <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
       <span className="text-sm text-white/85">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire : {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</span>
       {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm text-white/85">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
+      <span className="text-sm text-white/85"><MissionChecksLine m={m} goals={goals} /></span>
       {m.coachComment && <span className="rounded-xl bg-[#dcf247] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
       <span className="flex flex-wrap items-center gap-2 text-sm">
         {m.editable ? (<>
@@ -97,6 +123,7 @@ function MatchCard({ m, p, onChanged, preview }: { m: DeclaredMatch; p: Player; 
 // Section « Mes matchs » de l'espace du jeune
 export function DeclaredMatchesSection({ p, preview = false }: { p: Player; preview?: boolean }) {
   const { list, reload } = useDeclaredMatches(p.id);
+  const goals = useMissionGoals(p.id);
   const [open, setOpen] = useState(false);
   const wins = (list ?? []).filter((m) => m.result === "Victoire").length;
   return (
@@ -108,7 +135,7 @@ export function DeclaredMatchesSection({ p, preview = false }: { p: Player; prev
       {list === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Aucun match noté pour l'instant. Après ton prochain match, viens le raconter ici !</p> : (
         <>
           <p className="m-0 font-bold">{wins} victoire{wins > 1 ? "s" : ""} · {list.length - wins} défaite{list.length - wins > 1 ? "s" : ""}</p>
-          <ul className="m-0 grid gap-2 p-0">{list.map((m) => <MatchCard key={m.id} m={m} p={p} onChanged={reload} preview={preview} />)}</ul>
+          <ul className="m-0 grid gap-2 p-0">{list.map((m) => <MatchCard key={m.id} m={m} p={p} onChanged={reload} preview={preview} goals={goals} />)}</ul>
         </>
       )}
     </section>
@@ -118,6 +145,7 @@ export function DeclaredMatchesSection({ p, preview = false }: { p: Player; prev
 // Côté coach : les matchs déclarés par le jeune, avec un commentaire
 export function CoachDeclaredMatches({ p }: { p: Player }) {
   const { list, reload } = useDeclaredMatches(p.id);
+  const goals = useMissionGoals(p.id);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   if (!list || !list.length) return list ? <section className="card grid gap-1"><h3 className="m-0">🏟️ Matchs déclarés par {p.firstName}</h3><p className="hint m-0">Rien pour l'instant : {p.firstName} peut noter ses matchs dans son espace (visibles de lui et de toi seulement, pas de ses parents).</p></section> : null;
   return (
@@ -129,6 +157,7 @@ export function CoachDeclaredMatches({ p }: { p: Player }) {
             <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"badge " + (m.result === "Victoire" ? "!border-ok !text-ok" : "!border-bad !text-bad")}>{m.result}</span></span>
             <small className="hint">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</small>
             {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
+            <MissionChecksLine m={m} goals={goals} />
             <div className="flex flex-wrap gap-2">
               <input className="input min-w-52 flex-1" aria-label={`Ta réponse pour ce match`} maxLength={300} placeholder="Ta réponse (visible de lui)" value={drafts[m.id] ?? m.coachComment} onChange={(e) => setDrafts({ ...drafts, [m.id]: e.target.value })} />
               <button className="btn-clay btn-sm" disabled={(drafts[m.id] ?? m.coachComment) === m.coachComment} onClick={async () => { await put(`/players/${p.id}/declared-matches/${m.id}/comment`, { comment: drafts[m.id] ?? "" }); setDrafts((d) => { const n = { ...d }; delete n[m.id]; return n; }); reload(); }}>Répondre</button>

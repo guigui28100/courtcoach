@@ -38,6 +38,12 @@ export class ConsentDto {
   @IsIn(["paper", "online"]) method: string;
 }
 
+export class OnlineConsentDto {
+  @IsEnum(ConsentKind) kind: ConsentKind;
+  @Transform(trim) @IsString() @MinLength(2) @MaxLength(100) givenBy: string; // nom du parent / responsable légal
+  @IsString() @MinLength(1) @MaxLength(200) password: string; // confirme que c'est bien le parent
+}
+
 export class InvitationDto {
   @Transform(lower) @IsEmail() @MaxLength(254) email: string;
   @IsIn([Role.GUARDIAN, Role.YOUTH]) role: Role;
@@ -120,6 +126,7 @@ export class DeclaredMatchDto {
   @IsOptional() @IsArray() @ArrayMaxSize(2) @IsIn(MATCH_SKILLS, { each: true }) wellDone?: string[];
   @IsOptional() @IsIn(MATCH_SKILLS) toImprove?: string;
   @IsOptional() @IsIn(RANKINGS) opponentRanking?: string; // classement de l'adversaire (facultatif)
+  @IsOptional() @IsObject() missionChecks?: Record<string, number>; // { identifiant de mission : 1 à 3 } (vérifié par le serveur)
 }
 export class MatchCommentDto { @IsString() @MaxLength(300) comment: string; }
 

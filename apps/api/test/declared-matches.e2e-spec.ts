@@ -42,6 +42,24 @@ describe("Matchs déclarés par le jeune", () => {
     expect((await A.coach.get(`/api/players/${p1}/declared-matches`).expect(200)).body).toHaveLength(1);
   });
 
+  it("le jeune s'évalue vite sur SES missions pendant le match (1 à 3) ; une mission d'un autre joueur ou une note hors 1-3 est refusée ; le coach la voit", async () => {
+    const g1 = (await A.coach.post(`/api/players/${p1}/goals`).set(ORIGIN).send({ season: "2026-2027", axis: "TECHNIQUE", title: "Servir plus régulièrement" }).expect(201)).body.id;
+    const g2 = (await A.coach.post(`/api/players/${p2}/goals`).set(ORIGIN).send({ season: "2026-2027", axis: "MENTAL", title: "Rester calme" }).expect(201)).body.id;
+    const post = (b: object) => A.jeune.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(b);
+    await post(match({ missionChecks: { [g1]: 4 } })).expect(400);
+    await post(match({ missionChecks: { [g1]: 0 } })).expect(400);
+    await post(match({ missionChecks: { [g2]: 2 } })).expect(400); // mission d'un AUTRE joueur
+    await post(match({ missionChecks: { inconnue: 2 } })).expect(400);
+    const ok = await post(match({ missionChecks: { [g1]: 3 } })).expect(201);
+    expect(ok.body.missionChecks).toEqual({ [g1]: 3 });
+    const seen = (await A.coach.get(`/api/players/${p1}/declared-matches`).expect(200)).body.find((m: any) => m.id === ok.body.id);
+    expect(seen.missionChecks).toEqual({ [g1]: 3 });
+    await A.jeune.put(`/api/players/${p1}/declared-matches/${ok.body.id}`).set(ORIGIN).send(match({ missionChecks: { [g1]: 1 } })).expect(200);
+    const bare = await post(match()).expect(201); expect(bare.body.missionChecks).toEqual({}); // facultatif
+    await A.jeune.delete(`/api/players/${p1}/declared-matches/${bare.body.id}`).set(ORIGIN).expect(204);
+    await A.jeune.delete(`/api/players/${p1}/declared-matches/${ok.body.id}`).set(ORIGIN).expect(204);
+  });
+
   it("valeurs refusées : choix inconnu, note hors 1-5, 3 points forts, texte trop long, cours à venir, date trop ancienne", async () => {
     const post = (b: object) => A.jeune.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(b);
     await post(match({ kind: "bagarre" })).expect(400);
@@ -56,14 +74,12 @@ describe("Matchs déclarés par le jeune", () => {
     await post(match({ day: iso(500) })).expect(400);
   });
 
-  it("les PARENTS ne voient jamais ces matchs (liste, copie des données) et ne peuvent rien écrire ; un adulte non plus ; un autre jeune non plus", async () => {
-    await A.parent.get(`/api/players/${p1}/declared-matches`).expect(403);
-    await A.parent.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(match()).expect(403);
-    await A.parent.put(`/api/players/${p1}/declared-matches/${mid}`).set(ORIGIN).send(match()).expect(403);
-    await A.parent.delete(`/api/players/${p1}/declared-matches/${mid}`).set(ORIGIN).expect(403);
-    expect((await A.parent.get(`/api/players/${p1}/export`).expect(200)).body.declaredMatches).toBeUndefined();
-    expect((await A.jeune.get(`/api/players/${p1}/export`).expect(200)).body.declaredMatches).toHaveLength(1);
-    expect((await A.coach.get(`/api/players/${p1}/export`).expect(200)).body.declaredMatches).toHaveLength(1);
+  it("le compte de la FAMILLE est l'espace de l'enfant : il voit et note les matchs (liste, copie des données) ; un adulte non, un autre jeune non", async () => {
+    expect((await A.parent.get(`/api/players/${p1}/declared-matches`).expect(200)).body).toHaveLength(1);
+    const fam = await A.parent.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(match()).expect(201);
+    await A.parent.put(`/api/players/${p1}/declared-matches/${fam.body.id}`).set(ORIGIN).send(match({ score: "7/5 6/4" })).expect(200);
+    await A.parent.delete(`/api/players/${p1}/declared-matches/${fam.body.id}`).set(ORIGIN).expect(204);
+    expect((await A.parent.get(`/api/players/${p1}/export`).expect(200)).body.declaredMatches).toHaveLength(1);
     for (const [m, u, b] of [["get", `/api/players/${p1}/declared-matches`], ["post", `/api/players/${p1}/declared-matches`, match()], ["put", `/api/players/${p1}/declared-matches/${mid}`, match()], ["delete", `/api/players/${p1}/declared-matches/${mid}`]] as any) expect([u, m, (await (A.adulte as any)[m](u).set(ORIGIN).send(b)).status]).toEqual([u, m, 403]);
     await A.jeune2.get(`/api/players/${p1}/declared-matches`).expect(404);
     await A.jeune2.post(`/api/players/${p1}/declared-matches`).set(ORIGIN).send(match()).expect(404);

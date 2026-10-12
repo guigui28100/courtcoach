@@ -47,6 +47,7 @@ export class VideosService {
     const v = await this.prisma.video.findUnique({ where: { id } });
     if (!v) throw new NotFoundException("Vidéo introuvable");
     if (user.role === Role.COACH) return v;
+    if (v.fromCoach && !v.sentToPlayerAt && !isStaff(user)) throw new NotFoundException("Vidéo introuvable"); // brouillon du coach : le joueur et sa famille ne le voient pas encore
     if (user.role === Role.ADULT) { if (v.ownerId === user.id && !v.playerId) return v; throw new NotFoundException("Vidéo introuvable"); }
     if (v.playerId && (await this.prisma.playerAccess.findUnique({ where: { userId_playerId: { userId: user.id, playerId: v.playerId } } }))) return v;
     throw new NotFoundException("Vidéo introuvable");
@@ -137,11 +138,12 @@ export class VideosService {
       recordedAt: v.recordedAt, deleteAfter: v.deleteAfter, seenAt: v.seenAt,
       kind: v.playerId ? "centre" : "coaching",
       fromCoach: v.fromCoach,
+      draft: v.fromCoach && !v.sentToPlayerAt,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, phone: v.owner.phone ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
       images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
-      audio: v.audio && (coach || a?.sentAt || v.fromCoach) ? { seconds: v.audio.seconds } : null,
+      audio: v.audio && (coach || a?.sentAt || (v.fromCoach && !!v.sentToPlayerAt)) ? { seconds: v.audio.seconds } : null,
       messageCount: v._count?.messages ?? 0,
     };
   }
@@ -154,7 +156,7 @@ export class VideosService {
     if (user.role === Role.COACH) await this.purgeExpired();
     const where = user.role === Role.COACH ? { complete: true }
       : user.role === Role.ADULT ? { complete: true, ownerId: user.id, playerId: null }
-      : { complete: true, player: { accesses: { some: { userId: user.id } } } };
+      : { complete: true, player: { accesses: { some: { userId: user.id } } }, ...(isStaff(user) ? {} : { NOT: { fromCoach: true, sentToPlayerAt: null } }) };
     const rows = await this.prisma.video.findMany({ where, include: this.include, orderBy: { recordedAt: "desc" } });
     return rows.map((v) => this.summary(v, user));
   }
@@ -219,14 +221,25 @@ export class VideosService {
 
   async sendAnalysis(user: AuthUser, id: string) {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
-    await this.load(user, id); // un entraîneur ne touche qu'aux vidéos de ses jeunes
+    const v = await this.load(user, id); // un entraîneur ne touche qu'aux vidéos de ses jeunes
     const a = await this.prisma.analysis.findFirst({ where: { videoId: id } });
     if (!a || !a.observation.trim()) throw new BadRequestException("Écris au moins une observation avant d'envoyer l'analyse.");
     await this.prisma.$transaction([
       this.prisma.analysis.update({ where: { id: a.id }, data: { sentAt: a.sentAt ?? new Date() } }),
-      this.prisma.video.update({ where: { id }, data: { status: VideoStatus.ANALYSED, ...(a.sentAt ? {} : { seenAt: null }) } }),
+      this.prisma.video.update({ where: { id }, data: { status: VideoStatus.ANALYSED, ...(a.sentAt ? {} : { seenAt: null }), ...(v.fromCoach && !v.sentToPlayerAt ? { sentToPlayerAt: new Date(), seenAt: null } : {}) } }),
     ]);
     await this.audit.log(user.id, "analysis-send", "Video", id);
+  }
+
+  // Vidéo déposée par le coach : brouillon jusqu'à ce qu'il l'envoie au joueur (ou envoie son analyse)
+  async sendToPlayer(user: AuthUser, id: string) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    const v = await this.load(user, id);
+    if (!v.fromCoach || !v.complete) throw new BadRequestException("Seule une vidéo déposée par le coach pour un joueur peut lui être envoyée.");
+    if (v.sentToPlayerAt) return;
+    await this.prisma.video.update({ where: { id }, data: { sentToPlayerAt: new Date(), seenAt: null } });
+    if (v.playerId) await this.prisma.player.update({ where: { id: v.playerId }, data: { lastActivityAt: new Date() } });
+    await this.audit.log(user.id, "video-send-player", "Video", id);
   }
 
   // ----- Images annotées (studio d'analyse) : ajoutées par le coach, visibles par la personne concernée une fois l'analyse envoyée -----

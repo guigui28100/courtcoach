@@ -357,7 +357,7 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 .mcard-num span { margin-top: 0.3rem; color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; font-weight: 700; }
 .mcard .teen-seg i.on { background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), var(--c) 40%, var(--c)); }
 @media (max-width: 640px) { .mcard { grid-template-columns: auto 1fr; padding: 1rem; } .mcard-num { grid-column: 1 / -1; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 0.5rem; } .mcard-num b { font-size: 2.4rem; } }
-.mdesc { position: relative; overflow: hidden; display: grid; align-content: start; gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
+.mdesc { position: relative; overflow: hidden; display: grid; align-content: start; row-gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
 .mdesc::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--d), transparent); }
 .mdesc-title { position: relative; z-index: 1; max-width: 85%; font-size: 1.35rem; line-height: 1.2; font-weight: 800; color: #fff; }
 .mdesc-how { position: relative; z-index: 1; display: flex; gap: 0.6rem; align-items: flex-start; padding-top: 0.7rem; border-top: 1px dashed rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.85); line-height: 1.45; }
@@ -375,3 +375,84 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
   .gal-tabs.side button::before { content: ""; position: absolute; left: 0.45rem; top: 50%; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #ffd447; box-shadow: 0 0 10px rgba(255, 212, 71, 0.9); transform: translateY(-50%) scale(0); transition: transform 0.18s ease-out; pointer-events: none; }
   .gal-tabs.side button:not([aria-selected="true"]):hover::before { transform: translateY(-50%) scale(1); }
 }
+
+/* Missions (onglet « Mes missions » du jeune) : chaque carte a 3 lignes (domaine · mission · « comment on le mesure »). Les lignes sont PARTAGÉES entre les cartes côte à côte : tous les titres sont à la même hauteur, et tous les « comment on le mesure » aussi. */
+.mdesc-list { column-gap: 1rem; row-gap: 1rem; }
+.mdesc-list > .mdesc { grid-row: span 3; }
+@supports (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: subgrid; } }
+@supports not (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: auto minmax(3.4rem, auto) 1fr; } }
+.mdesc-list .mdesc-title { align-self: start; }
+.mdesc-list .mdesc-how { align-self: start; }
+
+/* ---------- Mode clair / sombre de l'espace du jeune (choix du joueur ou réglage de son appareil) ---------- */
+.theme-pick { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.3); background: rgba(10, 10, 40, 0.35); }
+.theme-pick button { min-height: 2.25rem; padding: 0 0.8rem; border-radius: 999px; border: 0; background: transparent; color: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.theme-pick button[aria-checked="true"] { background: #dcf247; color: #10203a; }
+@media (max-width: 480px) { .theme-pick button { padding: 0 0.55rem; font-size: 0.78rem; } }
+
+html[data-mode="light"] .theme-pick { border-color: rgba(31, 37, 71, 0.25); background: rgba(255, 255, 255, 0.8); color: #1f2547; }
+html[data-mode="light"] .stars { opacity: 0.12; }
+/* Fond et cartes */
+html[data-mode="light"] .galaxy-sky { color: #1f2547; background: radial-gradient(900px 480px at 85% -10%, rgba(167, 139, 250, 0.35), transparent), radial-gradient(700px 480px at -10% 40%, rgba(56, 189, 248, 0.22), transparent), linear-gradient(170deg, #f4f3ff, #e9ecff 70%); }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky { background: radial-gradient(900px 420px at 85% -10%, rgba(45, 212, 191, 0.16), transparent 60%), linear-gradient(180deg, #f6f8fb, #e9eef5); }
+html[data-mode="light"] .galaxy-sky::before { opacity: 0.35; filter: none; }
+html[data-mode="light"] .glass { border: 1.5px solid rgba(67, 56, 202, 0.18); background: rgba(255, 255, 255, 0.92); color: #1f2547; box-shadow: 0 10px 28px rgba(49, 46, 129, 0.12); backdrop-filter: none; }
+html[data-mode="light"] .galaxy-sky h1, html[data-mode="light"] .galaxy-sky h2, html[data-mode="light"] .galaxy-sky h3 { color: #1b1863; }
+html[data-mode="light"] .gal-chip { background: rgba(67, 56, 202, 0.08); border: 1px solid rgba(67, 56, 202, 0.2); color: #1f2547; }
+/* Textes blancs du mode sombre → foncés (sauf sur les boutons et pastilles colorés) */
+html[data-mode="light"] .galaxy-sky [class*="text-white"]:not(.gal-btn):not(.btn-clay):not([aria-selected="true"]) { color: #1f2547; }
+html[data-mode="light"] .galaxy-sky [class*="bg-white/"] { background-color: rgba(67, 56, 202, 0.07); }
+html[data-mode="light"] .galaxy-sky [class*="border-white/"] { border-color: rgba(67, 56, 202, 0.2); }
+html[data-mode="light"] .galaxy-sky .hint, html[data-mode="light"] .galaxy-sky .text-muted { color: #4b5566; }
+/* Le menu reste un panneau foncé lisible (comme une barre latérale) */
+html[data-mode="light"] .gal-bar { background: #1b1863; }
+html[data-mode="light"] .gal-tabs { color: #e4e1ff; }
+html[data-mode="light"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]), html[data-mode="light"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]) .tab-txt { color: #e4e1ff; }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]), html[data-mode="light"][data-gal="teen"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]) .tab-txt { color: #c9d3e3; }
+html[data-mode="light"] .galaxy-sky .step-text { color: #3b4268; }
+html[data-mode="light"] .galaxy-sky [class*="text-[#dcf247]"], html[data-mode="light"] .galaxy-sky [class*="text-[#c6ff3d]"] { color: #4d6a00; }
+.theme-pick { align-self: start; }
+html[data-mode="light"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]) .tab-ico { color: #e4e1ff; }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .gal-tabs button:not([aria-selected="true"]) .tab-ico { color: #c9d3e3; }
+/* Thème « ados » en clair : le bandeau d'accueil reste un tableau sombre (court dessiné), le reste est clair */
+html[data-mode="light"][data-gal="teen"] .teen-hero.glass { background: linear-gradient(160deg, #121a2b, #0b1220); border-color: rgba(255, 255, 255, 0.14); color: #eef1f6; box-shadow: 0 18px 40px rgba(11, 18, 32, 0.28); }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .teen-title { color: #fff; }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .teen-kicker { color: #c6ff3d; }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .teen-sub { color: #c8d1df; }
+html[data-mode="light"][data-gal="teen"] .step-card { background: #fff; border-color: rgba(31, 37, 71, 0.14); box-shadow: 0 8px 22px rgba(31, 37, 71, 0.08); }
+html[data-mode="light"][data-gal="teen"] .step-card.hot { background: #f4ffd6; border-color: #86b900; }
+html[data-mode="light"][data-gal="teen"] .step-ico { color: #3f6b00; background: #eef9c8; }
+html[data-mode="light"][data-gal="teen"] .step-ico em { color: rgba(31, 37, 71, 0.07); background: none; }
+html[data-mode="light"][data-gal="teen"] .step-go { color: #1f2547; border-color: rgba(31, 37, 71, 0.25); background: #fff; }
+html[data-mode="light"][data-gal="teen"] .step-card.hot .step-go { background: #c6ff3d; color: #05070b; border-color: #86b900; }
+html[data-mode="light"][data-gal="teen"] .step-new { background: #4d6a00; color: #fff; }
+html[data-mode="light"]:not([data-gal="teen"]) .step-card { background: #fff; border-color: rgba(67, 56, 202, 0.18); box-shadow: 0 8px 22px rgba(49, 46, 129, 0.1); }
+html[data-mode="light"]:not([data-gal="teen"]) .step-go { color: #1b1863; border-color: rgba(67, 56, 202, 0.3); background: #f1f0ff; }
+html[data-mode="light"]:not([data-gal="teen"]) .step-card.hot { border-color: #86b900; background: #f7ffdc; }
+/* Radars et cartes de mission : ils restent des « plaques » sombres (leurs couleurs sont dessinées pour le sombre) */
+html[data-mode="light"] .galaxy-sky figure:has(> svg[role="img"]) { padding: 1rem; border-radius: 1.3rem; background: linear-gradient(160deg, #24208a, #15125c); color: #fff; }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky figure:has(> svg[role="img"]) { background: linear-gradient(160deg, #162033, #0b1220); }
+html[data-mode="light"] .galaxy-sky .mcard, html[data-mode="light"] .galaxy-sky .mdesc { background: linear-gradient(160deg, #24208a, #15125c); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+html[data-mode="light"] .galaxy-sky .mcard.done { background: linear-gradient(160deg, rgba(198, 255, 61, 0.28), #15125c 70%); }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .mcard, html[data-mode="light"][data-gal="teen"] .galaxy-sky .mdesc { background: linear-gradient(160deg, #162033, #0b1220); }
+html[data-mode="light"][data-gal="teen"] .galaxy-sky .mcard.done { background: linear-gradient(160deg, rgba(198, 255, 61, 0.22), #0b1220 70%); }
+html[data-mode="light"] .galaxy-sky figure [class*="text-white"], html[data-mode="light"] .galaxy-sky .mcard [class*="text-white"], html[data-mode="light"] .galaxy-sky .mdesc [class*="text-white"], html[data-mode="light"] .galaxy-sky .mcard h3, html[data-mode="light"] .galaxy-sky .mdesc h3 { color: #fff !important; }
+html[data-mode="light"] .galaxy-sky .mcard-title, html[data-mode="light"] .galaxy-sky .mdesc-title, html[data-mode="light"] .galaxy-sky .mdesc-how b { color: #fff; }
+html[data-mode="light"] .galaxy-sky .mdesc-how { color: rgba(255, 255, 255, 0.85); }
+/* Le bandeau du bulletin reste sombre : ses textes gardent leurs couleurs d'origine */
+html[data-mode="light"] .galaxy-sky .bulletin-hero h1, html[data-mode="light"] .galaxy-sky .bulletin-hero h2, html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-white"] { color: #fff !important; }
+html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-[#dcf247]"], html[data-mode="light"] .galaxy-sky .bulletin-hero [class*="text-[#c6ff3d]"] { color: #dcf247 !important; }
+html[data-mode="light"] .galaxy-sky .bulletin-hero .gal-chip { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.22); color: #fff !important; }
+/* Bandeau d'accueil « galaxie » en clair : une plaque sombre pour que la balle-planète (dessin blanc et jaune) reste bien visible */
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card.glass { background: linear-gradient(160deg, #2a1b8f, #15125c); border-color: rgba(255, 255, 255, 0.22); box-shadow: 0 16px 36px rgba(21, 18, 92, 0.3); color: #fff; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card h1, html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card [class*="text-white"] { color: #fff !important; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card [class*="text-[#dcf247]"] { color: #dcf247 !important; }
+html[data-mode="light"]:not([data-gal="teen"]) .galaxy-sky .hero-card .gal-chip { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+html[data-mode="light"][data-gal="teen"] .step-ico em { color: rgba(31, 37, 71, 0.13); }
+/* Contours bien visibles en clair : boutons de choix et champs (les traits décoratifs restent discrets) */
+html[data-mode="light"] .galaxy-sky button[class*="border-white/"], html[data-mode="light"] .galaxy-sky a[class*="border-white/"], html[data-mode="light"] .galaxy-sky input, html[data-mode="light"] .galaxy-sky select, html[data-mode="light"] .galaxy-sky textarea { border-color: rgba(49, 46, 129, 0.55); }
+html[data-mode="light"] .galaxy-sky [class*="border-white/"]:not(button):not(a) { border-color: rgba(49, 46, 129, 0.28); }
+html[data-mode="light"] .galaxy-sky ::placeholder { color: #5b6275; opacity: 1; }
+/* Sur le bulletin, le radar garde sa plaque blanche d'origine (pas la plaque sombre de l'espace du jeune) */
+html[data-mode="light"] .bul-body figure:has(> svg[role="img"]) { padding: 0; background: none; color: inherit; border-radius: 0; }
+html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), html[data-mode="light"][data-gal="teen"] .galaxy-sky .bul-body figure:has(> svg[role="img"]) { padding: 0; background: none; color: inherit; border-radius: 0; }
