@@ -58,6 +58,19 @@ describe("Cours particuliers : le coach propose une date, l'adulte la confirme",
     expect(cancelled).toMatchObject({ status: "REFUSED", finalSlot: null });
   });
 
+  it("cours à DEUX : le partenaire (prénom, nom, âge, classement) est obligatoire ; le coach le voit ; cours individuel : ignoré", async () => {
+    const post = (b: object) => A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", ...b });
+    await post({}).expect(400);
+    await post({ partnerFirstName: "Marc", partnerLastName: "Durand", partnerAge: 45 }).expect(400); // classement manquant
+    await post({ partnerFirstName: "Marc", partnerLastName: "Durand", partnerAge: 3, partnerLevel: "30/1" }).expect(400); // âge impossible
+    await post({ partnerFirstName: "Marc", partnerLastName: "Durand", partnerAge: 45, partnerLevel: "champion du monde" }).expect(400); // classement hors liste
+    const r = await post({ partnerFirstName: "Marc", partnerLastName: "Durand", partnerAge: 45, partnerLevel: "30/1" }).expect(201);
+    expect(r.body).toMatchObject({ type: "duo", partnerFirstName: "Marc", partnerLastName: "Durand", partnerAge: 45, partnerLevel: "30/1" });
+    expect((await A.coach.get("/api/lessons").expect(200)).body.find((l: { id: string }) => l.id === r.body.id)).toMatchObject({ partnerFirstName: "Marc", partnerAge: 45 });
+    const solo = await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", partnerFirstName: "Zoé" }).expect(201);
+    expect(solo.body.partnerFirstName).toBe(""); // ignoré pour un cours individuel
+  });
+
   it("dates invalides refusées", async () => {
     const id = await ask();
     await A.coach.post(`/api/lessons/${id}/answer`).set(ORIGIN).send({ status: "PROPOSED" }).expect(400);

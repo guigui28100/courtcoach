@@ -31,7 +31,7 @@ export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail 
 // « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
 export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -211,6 +211,8 @@ export const matchLabel = (list: [string, string][], id: string | null) => list.
 // Classements de tennis, du plus bas au plus haut : sert à trouver « le classement le plus élevé battu »
 // Adulte qui demande un cours : ce que le coach voit (nom, âge, classement ou niveau)
 export interface AdultInfo { firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; }
+// Cours à deux : classement ou niveau du partenaire (« Je ne sais pas » possible)
+export const PARTNER_LEVELS_EXTRA = "Je ne sais pas";
 export const ADULT_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30"];
 export const adultAge = (birthYear: number | null | undefined, now = new Date()) => (birthYear ? now.getFullYear() - birthYear : null);
 export const adultName = (a: (AdultInfo & { email?: string }) | null | undefined, fallback = "Adhérent") => [a?.firstName, a?.lastName].filter(Boolean).join(" ") || a?.email || fallback;

@@ -4,7 +4,7 @@ import { get, post, put, del } from "../api";
 import { useAuth } from "../auth";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { ADULT_LEVELS, CourseStar, fmtSlot, courtNumber, workPhrase, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, CourseStar, fmtSlot, courtNumber, workPhrase, Slot, todayIso, missionPercent, missionStars, axisAverage, AXES, currentSeason, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, isCarriedOver, Lesson, overallAverage, periodLabel, Player, previousPeriod, ratedCount, STATUS as GOAL_STATUS, statusAt, trendCommon, trimesterOf, VideoRow } from "../types";
 import { BulletinShelf } from "../components/BulletinShelf";
 import { FamilyTournaments } from "../components/Tournaments";
 import { FamilyInfo, infoMissing } from "../components/FamilyInfo";
@@ -51,17 +51,19 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
 
 function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose: () => void; onSent: () => void }) {
   const [err, setErr] = useState("");
+  const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
     const f = new FormData(e.currentTarget); setErr("");
-    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+    if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
+    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
+      <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
             <label key={k} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
@@ -71,6 +73,18 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
           ))}
         </div>
       </fieldset>
+      {duo && (
+        <fieldset className="m-0 grid gap-3 rounded-2xl border-2 border-clay/40 bg-[#fdf1ea] p-4" aria-label="Ton partenaire">
+          <legend className="px-2 font-display text-base font-bold">👥 Ton partenaire pour ce cours à deux</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Son prénom" id="p-first"><input id="p-first" name="pFirst" className="input" maxLength={60} autoComplete="off" required /></Field>
+            <Field label="Son nom" id="p-last"><input id="p-last" name="pLast" className="input" maxLength={60} autoComplete="off" required /></Field>
+            <Field label="Son âge" id="p-age"><input id="p-age" name="pAge" type="number" inputMode="numeric" min={4} max={99} className="input" required /></Field>
+            <Field label="Son classement ou son niveau" id="p-level"><select id="p-level" name="pLevel" className="input" defaultValue="" required><option value="" disabled>Choisir…</option>{[...ADULT_LEVELS, PARTNER_LEVELS_EXTRA].map((x) => <option key={x}>{x}</option>)}</select></Field>
+          </div>
+          <small className="text-muted">Ces informations servent seulement à organiser le cours : seul le coach les voit. Préviens ton partenaire.</small>
+        </fieldset>
+      )}
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
@@ -102,7 +116,7 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" }) {
 
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
 function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
-  const title = `${l.objective} · ${TYPE_SHORT[l.type] ?? "Cours"}`;
+  const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}`;
   const state = { PENDING: ["⏳ En attente", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
   const sub = l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
     : l.status === "PENDING" ? `Tes disponibilités : ${l.days.length ? l.days.join(", ").toLowerCase() : "à définir"} · ${l.moment.toLowerCase()}`

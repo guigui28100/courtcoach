@@ -436,6 +436,10 @@ model LessonRequest {
   confirmedAt   DateTime?    // quand l'adulte a confirmé la date
   adultReply    String       @default("") // message de l'adulte s'il n'est pas disponible
   declinedSlot  Json?        // dernière date refusée par l'adulte
+  partnerFirstName String    @default("") // cours à DEUX : partenaire de l'adulte (saisi par lui, vu du coach seulement)
+  partnerLastName  String    @default("")
+  partnerAge       Int?
+  partnerLevel     String    @default("") // classement ou niveau du partenaire
   createdAt     DateTime     @default(now())
 
   @@index([memberId])
