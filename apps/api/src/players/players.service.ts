@@ -466,9 +466,19 @@ export class PlayersService {
     if (!m) throw new NotFoundException("Match introuvable");
     return m;
   }
+  // Auto-évaluation rapide sur SES missions : au plus 8, valeurs 1 à 3, et seulement des missions de CE joueur
+  private async missionChecks(playerId: string, raw?: Record<string, number>) {
+    const entries = Object.entries(raw ?? {});
+    if (!entries.length) return {};
+    if (entries.length > 8) throw new BadRequestException("Trop de missions évaluées.");
+    for (const [, v] of entries) if (!Number.isInteger(v) || v < 1 || v > 3) throw new BadRequestException("Évaluation de mission invalide (1 à 3).");
+    const n = await this.prisma.goal.count({ where: { playerId, id: { in: entries.map(([k]) => k) } } });
+    if (n !== entries.length) throw new BadRequestException("Mission inconnue.");
+    return Object.fromEntries(entries);
+  }
   private editable(m: { createdAt: Date }) { return Date.now() - m.createdAt.getTime() < 7 * 24 * 3600 * 1000; }
-  private matchOut(m: { id: string; day: string; kind: string; event: string; result: string; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; coachComment: string; createdAt: Date }) {
-    return { id: m.id, day: m.day, kind: m.kind, event: m.event, result: m.result, score: m.score, opponent: m.opponent, feeling: m.feeling, wellDone: m.wellDone, toImprove: m.toImprove, opponentRanking: m.opponentRanking ?? null, coachComment: m.coachComment, editableUntil: new Date(m.createdAt.getTime() + 7 * 24 * 3600 * 1000).toISOString(), editable: this.editable(m) };
+  private matchOut(m: { id: string; day: string; kind: string; event: string; result: string; score: string; opponent: string; feeling: number; wellDone: string[]; toImprove: string | null; opponentRanking?: string | null; missionChecks?: unknown; coachComment: string; createdAt: Date }) {
+    return { id: m.id, day: m.day, kind: m.kind, event: m.event, result: m.result, score: m.score, opponent: m.opponent, feeling: m.feeling, wellDone: m.wellDone, toImprove: m.toImprove, opponentRanking: m.opponentRanking ?? null, missionChecks: (m.missionChecks as Record<string, number> | null) ?? {}, coachComment: m.coachComment, editableUntil: new Date(m.createdAt.getTime() + 7 * 24 * 3600 * 1000).toISOString(), editable: this.editable(m) };
   }
   async declaredMatches(user: AuthUser, playerId: string) {
     if (!isStaff(user) && user.role !== Role.YOUTH) throw new ForbiddenException("Réservé au jeune et au coach");
@@ -481,7 +491,7 @@ export class PlayersService {
     await this.assertCanRead(user, playerId);
     this.checkDay(dto.day.slice(0, 10));
     if ((await this.prisma.declaredMatch.count({ where: { playerId } })) >= 300) throw new BadRequestException("Trop de matchs enregistrés : parles-en à ton coach.");
-    const m = await this.prisma.declaredMatch.create({ data: { playerId, day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null, opponentRanking: dto.opponentRanking ?? null } });
+    const m = await this.prisma.declaredMatch.create({ data: { playerId, day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null, opponentRanking: dto.opponentRanking ?? null, missionChecks: await this.missionChecks(playerId, dto.missionChecks) } });
     await this.touch(playerId);
     return this.matchOut(m);
   }
@@ -491,7 +501,7 @@ export class PlayersService {
     const m = await this.ownMatch(user, playerId, matchId);
     if (!this.editable(m)) throw new ConflictException("Ce match ne peut plus être modifié (au-delà de 7 jours).");
     this.checkDay(dto.day.slice(0, 10));
-    const u = await this.prisma.declaredMatch.update({ where: { id: matchId }, data: { day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null, opponentRanking: dto.opponentRanking ?? null } });
+    const u = await this.prisma.declaredMatch.update({ where: { id: matchId }, data: { day: dto.day.slice(0, 10), kind: dto.kind, event: (dto.event ?? "").trim(), result: dto.result, score: (dto.score ?? "").trim(), opponent: dto.opponent, feeling: dto.feeling, wellDone: [...new Set(dto.wellDone ?? [])], toImprove: dto.toImprove ?? null, opponentRanking: dto.opponentRanking ?? null, missionChecks: await this.missionChecks(playerId, dto.missionChecks) } });
     return this.matchOut(u);
   }
   async removeDeclaredMatch(user: AuthUser, playerId: string, matchId: string) {

@@ -256,6 +256,7 @@ model DeclaredMatch {
   feeling    Int      // 1 à 5
   wellDone   String[] // jusqu'à 2 points forts (identifiants proposés)
   toImprove  String?  // 1 point à améliorer (identifiant proposé)
+  missionChecks Json @default("{}") // auto-évaluation rapide sur SES missions pendant ce match : { identifiantMission: 1 (pas encore) | 2 (un peu) | 3 (bien) }
   coachComment String @default("") // réponse du coach (300 caractères maximum)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

@@ -120,6 +120,7 @@ export class DeclaredMatchDto {
   @IsOptional() @IsArray() @ArrayMaxSize(2) @IsIn(MATCH_SKILLS, { each: true }) wellDone?: string[];
   @IsOptional() @IsIn(MATCH_SKILLS) toImprove?: string;
   @IsOptional() @IsIn(RANKINGS) opponentRanking?: string; // classement de l'adversaire (facultatif)
+  @IsOptional() @IsObject() missionChecks?: Record<string, number>; // { identifiant de mission : 1 à 3 } (vérifié par le serveur)
 }
 export class MatchCommentDto { @IsString() @MaxLength(300) comment: string; }
 
