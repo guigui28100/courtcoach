@@ -163,8 +163,23 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
   );
 }
 
+const QUICK = [{ n: -1, emoji: "⬇️", label: "Recul −1", color: "#8b1e3f" }, { n: 0, emoji: "😕", label: "Pas encore", color: "#d64545" }, { n: 1, emoji: "🙂", label: "Ça progresse", color: "#e8920c" }, { n: 2, emoji: "😃", label: "Réussi", color: "#2c9a5b" }];
+const DOMAIN_COLOR: Record<string, string> = { technique: "#b8471f", tactique: "#2a6fb0", physique: "#2f8f5b", mental: "#7a4cc2" };
+function QuickButtons({ value, onPick, who, name }: { value: number; onPick: (n: number) => void; who: string; name: string }) {
+  return (
+    <div className="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label={`${name} pour ${who}`}>
+      {QUICK.map((q) => (
+        <button key={q.n} type="button" role="radio" aria-checked={value === q.n} onClick={() => onPick(q.n)}
+          className={"flex min-h-14 flex-col items-center justify-center rounded-xl border-2 px-1 text-center leading-tight " + (value === q.n ? "text-white shadow-md" : "border-line bg-sand text-muted hover:bg-white")}
+          style={value === q.n ? { background: q.color, borderColor: q.color } : undefined}>
+          <span className="text-xl" aria-hidden="true">{q.emoji}</span><span className="text-xs font-bold">{q.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 // Étoiles = évaluation jour après jour des missions : une rangée par mission (de −3 à 3), puis éventuellement une étoile « hors mission »
-export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[] }) {
+export function StarLinesEditor({ lines, onChange, who, goals = [], allStars }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[]; allStars?: CourseStar[] }) {
   const ids = new Set(goals.map((g) => g.id));
   const isMission = (l: StarLine) => !!l.goalId && ids.has(l.goalId);
   const isQuality = (l: StarLine) => !isMission(l) && !!qualityOfReason(l.reason);
@@ -181,26 +196,46 @@ export function StarLinesEditor({ lines, onChange, who, goals = [] }: { lines: S
     const next: StarLine = { stars: 0, comment: "", ...cur, ...patch, domain: q.domain, reason: stars < 0 ? "neg-" + q.reason : q.reason, goalId: undefined };
     onChange(cur ? lines.map((l) => (l === cur ? next : l)) : [...lines, next]);
   };
-  const row = (key: string, title: React.ReactNode, hint: string | null, l: StarLine | undefined, set: (p: Partial<StarLine>) => void) => { const n = l?.stars ?? 0; return (
-    <div key={key} className="grid gap-2 rounded-2xl border border-line bg-white p-3">
-      <strong title={hint ?? undefined}>{title}</strong>
-      <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label={`Étoiles de ${who} : ${key}`}>
-        {[-3, -2, -1, 0, 1, 2, 3].map((k) => (
-          <button key={k} type="button" role="radio" aria-checked={n === k} aria-label={k < 0 ? `Retirer ${-k} étoile${k < -1 ? "s" : ""}` : k === 0 ? "Aucune étoile" : `${k} étoile${k > 1 ? "s" : ""}`} onClick={() => set({ stars: k })}
-            className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (n === k ? (k < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (k === 0 ? " mx-1" : "")}>{k < 0 ? `−${-k}` : k === 0 ? "0" : "⭐".repeat(k)}</button>
-        ))}
+  const noteField = (n: number, l: StarLine | undefined, set: (p: Partial<StarLine>) => void) => n !== 0 && (
+    <label className="grid gap-1 text-sm font-bold">{n < 0 ? `✏️ Explique pourquoi (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+      <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => set({ comment: e.target.value })} placeholder={n < 0 ? "Ex. : Beaucoup de balles dans le filet, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>
+  );
+  // Une carte par objectif : 4 gros boutons (recul −1, pas encore 0, ça progresse +1, réussi +2)
+  const missionRow = (g: Goal) => {
+    const l = lines.find((x) => x.goalId === g.id), n = l?.stars ?? 0, target = g.targetStars ?? 10;
+    const got = Math.max(0, (allStars ?? []).filter((x) => x.goalId === g.id).reduce((a, x) => a + x.stars, 0));
+    const pct = Math.min(100, Math.round((got / Math.max(1, target)) * 100));
+    const set = (p: Partial<StarLine>) => setMission(g, p);
+    return (
+      <div key={g.id} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3" style={{ borderLeftWidth: 7, borderLeftColor: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }}>
+        <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
+        {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-bold text-muted">{got} sur {target} ⭐</small></div>}
+        <QuickButtons who={who} name={g.title} value={n} onPick={(k) => set({ stars: k })} />
+        {n !== 0 && !QUICK.some((q) => q.n === n) && <small className="font-bold text-muted">Actuellement : {n} ⭐ (choisis un bouton pour changer)</small>}
+        {noteField(n, l, set)}
       </div>
-      {n !== 0 && <label className="grid gap-1 text-sm font-bold">{n < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
-        <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => set({ comment: e.target.value })} placeholder={n < 0 ? "Ex. : Peu concentré sur cet exercice, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>}
-    </div>
-  ); };
+    );
+  };
+  // Les 2 qualités : un bouton « super » et un bouton « à revoir »
+  const qualityRow = (q: (typeof QUALITIES)[number]) => {
+    const l = lines.find((x) => isQuality(x) && qualityOfReason(x.reason)!.key === q.key), n = l?.stars ?? 0;
+    const set = (p: Partial<StarLine>) => setQuality(q.key, p);
+    return (
+      <div key={q.key} className="grid gap-2">
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label={`${q.label} de ${who}`}>
+          <button type="button" aria-pressed={n > 0} title={q.hint} onClick={() => set({ stars: n > 0 ? 0 : 1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n > 0 ? "border-[#e0a800] bg-[#f5c518] text-[#4a3800]" : "border-line bg-white text-ink hover:bg-sand")}>🌟 {q.key === "attitude" ? "Super attitude" : "Super concentration"}</button>
+          <button type="button" aria-pressed={n < 0} onClick={() => set({ stars: n < 0 ? 0 : -1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n < 0 ? "border-[#8b1e3f] bg-[#8b1e3f] text-white" : "border-line bg-white text-ink hover:bg-sand")}>⬇️ {q.key === "attitude" ? "Attitude à revoir" : "Concentration à revoir"}</button>
+        </div>
+        {noteField(n, l, set)}
+      </div>
+    );
+  };
   return (
     <div className="grid gap-3">
-      <p className="hint m-0">Les étoiles évaluent, cours après cours, {goals.length ? `les missions de ${who} et ses 2 qualités` : `les 2 qualités de ${who}`}. 0 = rien à signaler ; −1 à −3 = pas en progrès (le joueur voit toujours ton explication).</p>
-      {goals.length > 0 && <h4 className="m-0">🎯 Les missions</h4>}
-      {goals.map((g) => row("mission " + g.title, <>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</>, null, lines.find((x) => x.goalId === g.id), (p) => setMission(g, p)))}
-      <h4 className="m-0">🌟 Les 2 qualités</h4>
-      {QUALITIES.map((q) => row(q.label, <><span aria-hidden="true">{q.emoji} </span>{q.label}</>, q.hint, lines.find((l) => isQuality(l) && qualityOfReason(l.reason)!.key === q.key), (p) => setQuality(q.key, p)))}
+      {goals.length > 0 ? <h4 className="m-0 font-bold">🚀 Les objectifs de {who}</h4> : <p className="hint m-0">{who} n'a pas encore d'objectif pour ce trimestre.</p>}
+      {goals.map(missionRow)}
+      <h4 className="m-0 font-bold">🌟 Attitude et concentration</h4>
+      {QUALITIES.map(qualityRow)}
       <details className="rounded-2xl border border-line bg-white p-3" open={others.length > 0}>
         <summary className="cursor-pointer font-bold">Autre étoile, hors mission et hors qualités</summary>
         <div className="mt-2"><OtherLinesEditor lines={others} who={who} onChange={(o) => onChange([...lines.filter((l) => !others.includes(l)), ...o])} /></div>

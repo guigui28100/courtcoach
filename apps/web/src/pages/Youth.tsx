@@ -474,7 +474,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}
         {players?.length === 0 && <div className="glass text-center"><p className="m-0 text-lg">Ton coach n'a pas encore ouvert ton espace. Reviens bientôt !</p></div>}
         {p && (
-          <div className="grid gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:items-stretch md:gap-6">
+          <div className="grid gap-5 md:grid-cols-[285px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => (k !== "compte" || !previewId) && ((k !== "renseignements" && k !== "autorisations") || isParent)).map(([k, icon, label]) => (

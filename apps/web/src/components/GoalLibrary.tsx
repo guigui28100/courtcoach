@@ -31,14 +31,14 @@ export function useGoalTemplates() {
 // Onglet « Définition des objectifs » : la bibliothèque d'objectifs du coach. Un objectif qu'on donne à un jeune devient SA mission du trimestre.
 export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: { players: Player[]; isCoach: boolean; only?: Player; trimester?: number; onGiven?: () => void }) {
   const { list, load } = useGoalTemplates();
-  const [axis, setAxis] = useState("TECHNIQUE"), [title, setTitle] = useState(""), [indicator, setIndicator] = useState(""), [stars, setStars] = useState(10);
+  const [axis, setAxis] = useState("TECHNIQUE"), [title, setTitle] = useState(""), [stars, setStars] = useState(10);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const [giving, setGiving] = useState<string | null>(null); // objectif en cours d'attribution
   const [picked, setPicked] = useState<string[]>([]); const [triState, setTri] = useState(trimesterOf()); const tri = trimester ?? triState; const [result, setResult] = useState("");
 
   async function add(e: FormEvent) {
     e.preventDefault(); setErr("");
-    try { await post("/goal-templates", { axis, title: title.trim(), indicator: indicator.trim(), targetStars: stars }); setTitle(""); setIndicator(""); load(); } catch (x) { setErr((x as Error).message); }
+    try { await post("/goal-templates", { axis, title: title.trim(), indicator: "", targetStars: stars }); setTitle(""); load(); } catch (x) { setErr((x as Error).message); }
   }
   async function seed() { setBusy(true); setErr(""); try { for (const s of STARTER) await post("/goal-templates", { ...s, targetStars: 10 }); load(); } catch (x) { setErr((x as Error).message); } finally { setBusy(false); } }
   async function upd(t: GoalTemplate, body: Partial<GoalTemplate>) { try { await patch(`/goal-templates/${t.id}`, { axis: t.axis, title: t.title, indicator: t.indicator, targetStars: t.targetStars, ...body }); load(); } catch (x) { setErr((x as Error).message); } }
@@ -49,7 +49,7 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
       for (const id of only ? [only.id] : picked) {
         const goals = await get<Goal[]>(`/players/${id}/goals?season=${season}`).catch(() => [] as Goal[]);
         if (goals.some((g) => g.title.trim().toLowerCase() === t.title.trim().toLowerCase() && goalApplies(g, tri))) { already++; continue; }
-        await post(`/players/${id}/goals`, { season, axis: t.axis, title: t.title, indicator: t.indicator, trimesters: [tri], targetStars: t.targetStars });
+        await post(`/players/${id}/goals`, { season, axis: t.axis, title: t.title, trimesters: [tri], targetStars: t.targetStars });
         done++;
       }
       setResult(only ? (done ? `✅ Donné à ${only.firstName} pour le trimestre ${tri} : c'est maintenant sa mission.` : `${only.firstName} a déjà cet objectif au trimestre ${tri}.`) : `✅ Donné à ${done} jeune${done > 1 ? "s" : ""} pour le trimestre ${tri}${already ? ` (${already} l'avai${already > 1 ? "ent" : "t"} déjà)` : ""}. C'est maintenant leur mission.`);
@@ -68,7 +68,6 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
             <input className="input min-w-52 flex-1" aria-label="Objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input className="input min-w-52 flex-1" aria-label="Comment le mesure-t-on ?" maxLength={200} placeholder="Comment le mesure-t-on ? (facultatif)" value={indicator} onChange={(e) => setIndicator(e.target.value)} />
             <label className="flex items-center gap-2 text-sm font-bold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" value={stars} onChange={(e) => setStars(Math.max(3, Math.min(60, Number(e.target.value) || 10)))} /></label>
             <button className="btn-clay" disabled={title.trim().length < 2}>+ Ajouter à la bibliothèque</button>
           </div>
@@ -95,11 +94,10 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
                     {isCoach ? (
                       <>
                         <input className="input" aria-label="Objectif" defaultValue={t.title} maxLength={200} onBlur={(e) => e.target.value.trim().length >= 2 && e.target.value !== t.title && upd(t, { title: e.target.value.trim() })} />
-                        <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={t.indicator} maxLength={200} onBlur={(e) => e.target.value !== t.indicator && upd(t, { indicator: e.target.value })} />
                         <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" defaultValue={t.targetStars} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== t.targetStars) upd(t, { targetStars: v }); }} /></label>
                       </>
                     ) : (
-                      <><strong>{t.title}</strong>{t.indicator && <span className="text-sm text-muted">{t.indicator}</span>}<span className="text-sm font-bold">⭐ {t.targetStars} étoiles pour réussir</span></>
+                      <><strong>{t.title}</strong><span className="text-sm font-bold">⭐ {t.targetStars} étoiles pour réussir</span></>
                     )}
                     <div className="flex flex-wrap gap-2">
                       {only ? <button className="btn-clay btn-sm" disabled={busy} onClick={() => { setPicked([]); give(t); }}>🎁 Donner à {only.firstName} (T{tri})</button> : <button className="btn-clay btn-sm" aria-expanded={giving === t.id} onClick={() => { setGiving(giving === t.id ? null : t.id); setPicked([]); setResult(""); }}>🎁 Donner à des jeunes</button>}

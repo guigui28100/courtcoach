@@ -9,7 +9,7 @@ import { hasContent } from "./BulletinShelf";
 import { useStars } from "./Stars";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { AuthorBadge, Err, Field } from "./ui";
-import { RANKINGS, AXES, axisAverage, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, START_ITEMS, itemKey, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { RANKINGS, AXES, axisAverage, LEVELS, levelOf, DOMAIN_EMOJI, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, START_ITEMS, itemKey, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -97,61 +97,57 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 // Bilan de départ, version simple : une note par domaine, deux phrases et un mot du coach (les missions se donnent dans « Définition des objectifs »)
 export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [rt, setRt] = useState<Record<string, number>>(() => ({ ...Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)), ...Object.fromEntries(Object.entries(saved?.ratings ?? {}).filter(([k]) => k.startsWith("d_"))) }));
-  // Noter un point du détail : la note du domaine devient la moyenne des points notés (elle reste modifiable ensuite)
-  const setItem = (axis: string, key: string, n: number) => setRt((r) => { const next = { ...r, [key]: n }; const vals = (START_ITEMS[axis] ?? []).map(([k]) => next[itemKey(axis, k)]).filter(Boolean); if (vals.length) next[axis] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length); return next; });
-  const [strengths, setStrengths] = useState(saved?.strengths ?? ""), [improve, setImprove] = useState(saved?.improve ?? ""), [word, setWord] = useState(saved?.appreciation ?? "");
+  // Toucher un niveau : la note du domaine devient la moyenne des points notés (arrondie à un entier de 1 à 5, comme avant)
+  const setItem = (axis: string, key: string, n: number) => setRt((r) => { const next = { ...r, [key]: n }; const vals = (START_ITEMS[axis] ?? []).map(([k]) => next[itemKey(axis, k)]).filter(Boolean); if (vals.length) next[axis] = Math.min(5, Math.max(1, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length))); return next; });
+  const [word, setWord] = useState(saved?.appreciation ?? "");
+  // Points forts et priorités : calculés d'après les niveaux (le coach n'écrit rien)
+  const listOf = (levels: number[]) => EVAL_AXES.flatMap((a) => (START_ITEMS[a.key] ?? []).filter(([k]) => levels.includes(levelOf(rt[itemKey(a.key, k)]))).map(([, label]) => label));
+  const strong = listOf([3]).length ? listOf([3]) : listOf([2]), todo = listOf([0]).length ? listOf([0]) : listOf([1]);
+  const counts = LEVELS.map((_, i) => EVAL_AXES.reduce((n, a) => n + (START_ITEMS[a.key] ?? []).filter(([k]) => levelOf(rt[itemKey(a.key, k)]) === i).length, 0));
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   async function save(e: FormEvent) {
     e.preventDefault();
     try {
-      await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? strengths : saved?.strengths ?? "", improve: t === 0 ? improve : saved?.improve ?? "", next: saved?.next ?? "", appreciation: word });
+      await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? (strong.length ? strong.slice(0, 6).join(" ; ") : saved?.strengths ?? "") : saved?.strengths ?? "", improve: t === 0 ? (todo.length ? todo.slice(0, 6).join(" ; ") : saved?.improve ?? "") : saved?.improve ?? "", next: saved?.next ?? "", appreciation: word });
       setMsg({ ok: true, text: "Enregistré ✓" }); onSaved();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
-      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ, en 3 minutes.</strong> Une note de 1 à 5 par domaine (avec le détail si vous voulez), deux phrases et un mot du coach. Les missions à travailler se donnent dans l'onglet « Définir les objectifs de travail ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Une note de 1 à 5 par domaine : elle fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
-      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "1. Où en est" : "Où en est"} {p.firstName} ?</legend>
-        {EVAL_AXES.map((a) => (
-          <div key={a.key} className="grid gap-2 rounded-xl border border-line border-l-[6px] bg-white p-3" style={{ borderLeftColor: a.color }}>
-            <div role="radiogroup" aria-label={a.label} className="flex flex-wrap items-center justify-between gap-2">
-              <strong style={{ color: a.color }}>{a.label}</strong>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <label key={n} className={"flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-2 font-display font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink " + (rt[a.key] === n ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:border-ink")} title={RATING_LABELS[n]}>
-                    <input type="radio" name={`b-${a.key}`} className="sr-only" checked={rt[a.key] === n} onChange={() => setRt((r) => ({ ...r, [a.key]: n }))} aria-label={`${a.label} : ${n} sur 5, ${RATING_LABELS[n]}`} />{n}
-                  </label>
-                ))}
-              </div>
-            </div>
-            {t === 0 && START_ITEMS[a.key] && (
-              <div className="grid gap-1.5 border-t border-line pt-2" aria-label={`Détail ${a.label}`}>
-                <small className="hint">Le détail (facultatif) : la note du domaine se calcule toute seule.</small>
-                {START_ITEMS[a.key].map(([k, label]) => (
-                  <div key={k} role="radiogroup" aria-label={label} className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-bold">{label}</span>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <label key={n} className={"flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 text-sm font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink " + (rt[itemKey(a.key, k)] === n ? "border-transparent text-white" : "border-line bg-white text-muted")} style={rt[itemKey(a.key, k)] === n ? { background: a.color } : undefined}>
-                          <input type="radio" name={`d-${a.key}-${k}`} className="sr-only" checked={rt[itemKey(a.key, k)] === n} onChange={() => setItem(a.key, itemKey(a.key, k), n)} aria-label={`${label} : ${n} sur 5, ${RATING_LABELS[n]}`} />
-                          {n}
-                        </label>
-                      ))}
-                    </div>
+      <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ.</strong> Pour chaque point, touche le niveau actuel. C'est tout : le radar, les points forts et les priorités se calculent tout seuls. Les missions se donnent dans l'onglet « Définir les objectifs de travail ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Pour chaque point, touche le niveau actuel : cela fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Résumé">
+        {LEVELS.map((l, i) => <div key={l.label} className="rounded-2xl border-t-[5px] bg-white p-3 text-center shadow-sm" style={{ borderTopColor: l.color }}><b className="block text-3xl" style={{ color: l.color }}>{counts[i]}</b><span className="text-sm font-bold">{l.label}</span></div>)}
+      </div>
+      {EVAL_AXES.map((a) => {
+        const items = START_ITEMS[a.key] ?? [];
+        const done = items.filter(([k]) => levelOf(rt[itemKey(a.key, k)]) >= 2).length;
+        const oldNote = !items.some(([k]) => rt[itemKey(a.key, k)]) && rt[a.key];
+        return (
+          <fieldset key={a.key} className="card grid gap-1 border-l-[8px]" style={{ borderLeftColor: a.color }}>
+            <legend className="sr-only">{a.label}</legend>
+            <h3 className="m-0 flex items-center gap-2 text-xl" style={{ color: a.color }}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]}</span>{a.label}<small className="ml-auto rounded-full bg-sand px-3 py-1 text-sm font-bold text-muted">{done} sur {items.length} acquis</small></h3>
+            {oldNote ? <p className="hint m-0">Ancienne note du domaine : {rt[a.key]}/5 (remplacée dès que tu notes un point ci-dessous).</p> : null}
+            {items.map(([k, label]) => {
+              const cur = levelOf(rt[itemKey(a.key, k)]);
+              return (
+                <div key={k} role="radiogroup" aria-label={label} className="grid gap-2 border-t border-line py-2 sm:grid-cols-[170px_1fr] sm:items-center">
+                  <span className="font-bold">{label}</span>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                    {LEVELS.map((l, i) => (
+                      <button key={l.label} type="button" role="radio" aria-checked={cur === i} onClick={() => setItem(a.key, itemKey(a.key, k), l.rating)}
+                        className={"min-h-11 rounded-xl border-2 px-1.5 text-center text-[13px] leading-tight " + (cur === i ? "font-black text-white shadow-md" : "border-line bg-sand font-bold text-muted hover:bg-white")}
+                        style={cur === i ? { background: l.color, borderColor: l.color } : undefined}>{l.label}</button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        <p className="hint m-0">1 = à travailler · 3 = acquis · 5 = point fort.</p>
-      </fieldset>
-      {t === 0 && <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">2. En deux phrases</legend>
-        <Field label="Points forts" id="b-strengths"><textarea id="b-strengths" className="input" maxLength={3000} value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="Ce qu'il fait déjà bien" /></Field>
-        <Field label="À progresser" id="b-improve"><textarea id="b-improve" className="input" maxLength={3000} value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Ce qu'il doit travailler en priorité" /></Field>
-      </fieldset>}
-      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">{t === 0 ? "3. " : ""}Le mot du coach</legend>
-        <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Beau trimestre, continue comme ça !" /></Field>
+                </div>
+              );
+            })}
+          </fieldset>
+        );
+      })}
+      {t === 0 && (strong.length > 0 || todo.length > 0) && <div className="grid gap-2 rounded-2xl border border-line bg-white p-3 text-sm sm:grid-cols-2"><p className="m-0"><strong>⭐ Points forts (automatique) :</strong> {strong.join(", ") || "—"}</p><p className="m-0"><strong>🎯 À travailler en priorité (automatique) :</strong> {todo.join(", ") || "—"}</p></div>}
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">💬 Le mot du coach</legend>
+        <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Un joueur plein d'envie, continue comme ça !" /></Field>
       </fieldset>
       <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>

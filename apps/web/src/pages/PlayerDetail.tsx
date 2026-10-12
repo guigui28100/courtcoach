@@ -337,7 +337,6 @@ function Objectifs({ p }: { p: Player }) {
                 <article key={g.id} className={"grid gap-2 rounded-xl border border-line border-l-[6px] bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")} style={{ borderLeftColor: authorColor(g) ?? undefined }}>
                   <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" /></div>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
-                  <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={g.indicator} maxLength={200} onBlur={(e) => e.target.value !== g.indicator && upd(g, { indicator: e.target.value })} />
                   <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ Étoiles à gagner pour réussir cette mission
                     <input type="number" min={3} max={60} className="input !w-24" defaultValue={g.targetStars ?? 10} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== (g.targetStars ?? 10)) upd(g, { targetStars: v }); }} />
                     <span className="hint font-normal">Aide à décider « atteinte » en fin de trimestre.</span></label>
@@ -402,10 +401,10 @@ function StarsTab({ p }: { p: Player }) {
       <StarsRadar stars={stars} who="coach" />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
-        <p className="hint m-0">1 = bien, 2 = très bien, 3 = exceptionnel. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
+        <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
-        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} onChange={setLines} />
+        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
       </section>

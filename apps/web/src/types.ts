@@ -60,7 +60,16 @@ export const START_ITEMS: Record<string, [string, string][]> = {
   tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"]],
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
+  attitude: [["ecoute", "Écoute"], ["effort", "Effort"], ["comportement", "Comportement"]],
 };
+// Les 4 niveaux d'un point du bilan, enregistrés comme une note de 1 à 5 (1, 2, 4, 5) : les anciens bilans restent lisibles
+export const LEVELS: { label: string; rating: number; color: string }[] = [
+  { label: "Non maîtrisé", rating: 1, color: "#d64545" },
+  { label: "En cours d'acquisition", rating: 2, color: "#e8920c" },
+  { label: "En maîtrise", rating: 4, color: "#2c9a5b" },
+  { label: "Point fort", rating: 5, color: "#1f6fd1" },
+];
+export const levelOf = (rating: number | undefined) => (!rating ? -1 : rating <= 1.5 ? 0 : rating <= 3.5 ? 1 : rating <= 4.5 ? 2 : 3);
 // Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs
 export const MISSION_TOPICS: Record<string, string[]> = {
   TECHNIQUE: ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes"],
