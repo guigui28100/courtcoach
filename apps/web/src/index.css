@@ -357,7 +357,7 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 .mcard-num span { margin-top: 0.3rem; color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; font-weight: 700; }
 .mcard .teen-seg i.on { background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), var(--c) 40%, var(--c)); }
 @media (max-width: 640px) { .mcard { grid-template-columns: auto 1fr; padding: 1rem; } .mcard-num { grid-column: 1 / -1; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 0.5rem; } .mcard-num b { font-size: 2.4rem; } }
-.mdesc { position: relative; overflow: hidden; display: grid; align-content: start; gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
+.mdesc { position: relative; overflow: hidden; display: grid; align-content: start; row-gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
 .mdesc::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--d), transparent); }
 .mdesc-title { position: relative; z-index: 1; max-width: 85%; font-size: 1.35rem; line-height: 1.2; font-weight: 800; color: #fff; }
 .mdesc-how { position: relative; z-index: 1; display: flex; gap: 0.6rem; align-items: flex-start; padding-top: 0.7rem; border-top: 1px dashed rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.85); line-height: 1.45; }
@@ -375,3 +375,11 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
   .gal-tabs.side button::before { content: ""; position: absolute; left: 0.45rem; top: 50%; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #ffd447; box-shadow: 0 0 10px rgba(255, 212, 71, 0.9); transform: translateY(-50%) scale(0); transition: transform 0.18s ease-out; pointer-events: none; }
   .gal-tabs.side button:not([aria-selected="true"]):hover::before { transform: translateY(-50%) scale(1); }
 }
+
+/* Missions (onglet « Mes missions » du jeune) : chaque carte a 3 lignes (domaine · mission · « comment on le mesure »). Les lignes sont PARTAGÉES entre les cartes côte à côte : tous les titres sont à la même hauteur, et tous les « comment on le mesure » aussi. */
+.mdesc-list { column-gap: 1rem; row-gap: 1rem; }
+.mdesc-list > .mdesc { grid-row: span 3; }
+@supports (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: subgrid; } }
+@supports not (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: auto minmax(3.4rem, auto) 1fr; } }
+.mdesc-list .mdesc-title { align-self: start; }
+.mdesc-list .mdesc-how { align-self: start; }

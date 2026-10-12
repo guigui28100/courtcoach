@@ -98,7 +98,7 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
     <section className="glass gal-pop grid gap-4" aria-labelledby="gal-missions">
       <h2 id="gal-missions" className="m-0 text-2xl">🚀 Mes missions du trimestre {t}</h2>
       {here.length === 0 ? <p className="m-0 text-white/80">Ton coach va bientôt te donner tes missions pour ce trimestre.</p> : (
-        <ol className="m-0 grid list-none gap-4 p-0 md:grid-cols-2">
+        <ol className="mdesc-list m-0 grid list-none p-0 md:grid-cols-2">
           {(["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => here.filter((g) => g.axis === axis)).map((g) => {
             const m = MISSION[g.axis as "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL"];
             return (
