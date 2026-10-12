@@ -337,7 +337,6 @@ function Objectifs({ p }: { p: Player }) {
                 <article key={g.id} className={"grid gap-2 rounded-xl border border-line border-l-[6px] bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")} style={{ borderLeftColor: authorColor(g) ?? undefined }}>
                   <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" /></div>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
-                  <input className="input" aria-label="Comment le mesure-t-on ?" placeholder="Comment le mesure-t-on ?" defaultValue={g.indicator} maxLength={200} onBlur={(e) => e.target.value !== g.indicator && upd(g, { indicator: e.target.value })} />
                   <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ Étoiles à gagner pour réussir cette mission
                     <input type="number" min={3} max={60} className="input !w-24" defaultValue={g.targetStars ?? 10} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== (g.targetStars ?? 10)) upd(g, { targetStars: v }); }} />
                     <span className="hint font-normal">Aide à décider « atteinte » en fin de trimestre.</span></label>
