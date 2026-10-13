@@ -93,7 +93,7 @@ function StartBilan({ p, base }: { p: Player; base: string }) {
   );
 }
 
-function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: string; stars: CourseStar[] | null }) {
+function Missions({ goals, p, base, stars, videos = [] }: { goals: Goal[]; p: Player; base: string; stars: CourseStar[] | null; videos?: VideoRow[] }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t)); // les missions de CE trimestre
   return (
@@ -107,7 +107,12 @@ function Missions({ goals, p, base, stars }: { goals: Goal[]; p: Player; base: s
               <li key={g.id} className="mdesc" style={{ ["--d" as string]: m.color }}>
                 <span className="mc-pill"><span aria-hidden="true">{m.emoji} </span>{m.label}</span>
                 <strong className="mdesc-title">{g.title}</strong>
-                {g.indicator && <span className="mdesc-how"><RulerIcon /><span><b>Comment on le mesure :</b> {g.indicator}</span></span>}
+                <div className="mdesc-extra">
+                  {g.indicator && <span className="mdesc-how"><RulerIcon /><span><b>Comment on le mesure :</b> {g.indicator}</span></span>}
+                  {videos.filter((v) => v.goalIds?.includes(g.id)).map((v) => (
+                    <Link key={v.id} to={{ search: `?onglet=videos&video=${v.id}` }} className="mdesc-video no-underline" aria-label={`Ouvrir la vidéo : ${v.title}`}>🎬 Voir la vidéo : {v.title}</Link>
+                  ))}
+                </div>
                 <span className="mdesc-wm" aria-hidden="true"><AxisIcon axis={g.axis} size={120} /></span>
               </li>
             );
@@ -357,7 +362,7 @@ function PreviewVideos({ mine }: { mine: VideoRow[] }) {
   );
 }
 
-function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fresh: VideoRow[]; refresh: () => void }) {
+function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow[]; fresh: VideoRow[]; refresh: () => void; openId?: string | null }) {
   return (
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
@@ -365,7 +370,7 @@ function Videos({ p, mine, fresh, refresh }: { p: Player; mine: VideoRow[]; fres
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
       {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
       <VideoUpload playerId={p.id} onDone={refresh} />
-      <VideoList videos={mine} onChanged={refresh} empty="Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !" />
+      <VideoList videos={mine} openId={openId} onChanged={refresh} empty="Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !" />
     </section>
   );
 }
@@ -504,8 +509,8 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               )}
               {tab === "accueil" && <HomeTab p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} newStars={newStars} go={go} />}
               {tab === "depart" && <StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
-              {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} /></>}
-              {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} />)}
+              {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
+              {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}

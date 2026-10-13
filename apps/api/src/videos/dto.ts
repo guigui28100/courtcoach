@@ -21,6 +21,10 @@ export class AnalysisDto {
   @IsOptional() @IsArray() @ArrayMaxSize(10) @IsString({ each: true }) goalIds?: string[];
 }
 
+export class VideoGoalsDto {
+  @IsArray() @ArrayMaxSize(10) @IsString({ each: true }) goalIds: string[];
+}
+
 export class MessageDto {
   @Transform(trim) @IsString() @MaxLength(1000) text: string;
 }

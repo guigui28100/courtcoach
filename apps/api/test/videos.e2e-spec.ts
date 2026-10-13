@@ -277,6 +277,15 @@ describe("Vidéos et analyses", () => {
     await A.par1.get(`/api/videos/${vid}/file`).set("Range", "bytes=0-99").expect(206);
     await A.par1.post(`/api/videos/${vid}/seen`).set(ORIGIN).expect(204); // vue sans analyse : c'est déjà un message du coach
     expect((await A.par1.get(`/api/videos/${vid}`).expect(200)).body.seenAt).toBeTruthy();
+    // Rattacher la vidéo à une mission : la famille la retrouve en cliquant sur la mission ; mission d'un autre joueur refusée ; la famille ne peut pas rattacher
+    await A.par1.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [goalP1] }).expect(403);
+    await A.coach.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [goalP2] }).expect(400);
+    expect((await A.coach.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [goalP1] }).expect(200)).body.goalIds).toEqual([goalP1]);
+    expect((await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid).goalIds).toEqual([goalP1]);
+    await A.adulteA?.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [goalP1] }).expect(403);
+    await A.coach.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [] }).expect(200);
+    expect((await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid).goalIds).toEqual([]);
+    await A.coach.put(`/api/videos/${vid}/goals`).set(ORIGIN).send({ goalIds: [goalP1] }).expect(200);
     await A.par1.delete(`/api/videos/${vid}`).set(ORIGIN).expect(403);
     await login("autreFamille", "autre-famille@exemple.fr", Role.GUARDIAN); await login("adulteX", "adulte-x@exemple.fr", Role.ADULT); // comptes neufs (des tests précédents ont fermé d'autres sessions)
     await A.autreFamille.get(`/api/videos/${vid}`).expect(404);

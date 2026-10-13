@@ -129,7 +129,7 @@ export class VideosService {
   }
 
   // ----- Listes -----
-  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; email: string } | null; analyses?: any[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
+  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; email: string } | null; analyses?: any[]; goals?: { goalId: string }[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
     const coach = !!user && isStaff(user);
     const visible = a && (coach || a.sentAt);
@@ -142,6 +142,8 @@ export class VideosService {
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, phone: v.owner.phone ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
+      // missions rattachées : le joueur ne les voit que quand la vidéo lui est visible (analyse envoyée, ou vidéo du coach envoyée)
+      goalIds: coach || a?.sentAt || (v.fromCoach && !!v.sentToPlayerAt) ? (v.goals ?? []).map((g) => g.goalId) : [],
       images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
       audio: v.audio && (coach || a?.sentAt || (v.fromCoach && !!v.sentToPlayerAt)) ? { seconds: v.audio.seconds } : null,
       messageCount: v._count?.messages ?? 0,
@@ -150,7 +152,7 @@ export class VideosService {
   private analysisOut(a: any, staff = false) {
     return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId), ...(staff ? { authorName: a.authorName, authorRole: a.authorRole } : {}) };
   }
-  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
+  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } }, goals: { select: { goalId: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
 
   async list(user: AuthUser) {
     if (user.role === Role.COACH) await this.purgeExpired();
@@ -177,7 +179,7 @@ export class VideosService {
     const authors = await this.prisma.user.findMany({ where: { id: { in: [...new Set(msgs.map((m) => m.authorId))] } }, select: { id: true, role: true } });
     const roleOf = new Map(authors.map((a) => [a.id, a.role]));
     const goals = isStaff(user) && v.playerId ? await this.prisma.goal.findMany({ where: { playerId: v.playerId }, orderBy: { createdAt: "asc" }, select: { id: true, axis: true, title: true, season: true } }) : [];
-    const linked = v.playerId && out.analysis ? await this.prisma.goal.findMany({ where: { id: { in: out.analysis.goalIds } }, select: { id: true, axis: true, title: true } }) : [];
+    const linked = v.playerId && out.goalIds.length ? await this.prisma.goal.findMany({ where: { id: { in: out.goalIds } }, select: { id: true, axis: true, title: true } }) : [];
     return { ...out, messages: msgs.map((m) => ({ id: m.id, text: m.text, createdAt: m.createdAt, fromCoach: roleOf.get(m.authorId) === Role.COACH || roleOf.get(m.authorId) === Role.TRAINER, mine: m.authorId === user.id })), goals, linkedGoals: linked };
   }
 
@@ -214,9 +216,36 @@ export class VideosService {
     if (dto.goalIds) {
       await this.prisma.analysisGoal.deleteMany({ where: { analysisId: a.id } });
       if (dto.goalIds.length) await this.prisma.analysisGoal.createMany({ data: [...new Set(dto.goalIds)].map((goalId) => ({ analysisId: a.id, goalId })) });
+      if (v.playerId) await this.replaceVideoGoals(id, dto.goalIds);
     }
     if (v.playerId) await this.prisma.player.update({ where: { id: v.playerId }, data: { lastActivityAt: new Date() } });
     return { id: a.id };
+  }
+
+  private async replaceVideoGoals(videoId: string, goalIds: string[]) {
+    await this.prisma.videoGoal.deleteMany({ where: { videoId } });
+    const ids = [...new Set(goalIds)];
+    if (ids.length) await this.prisma.videoGoal.createMany({ data: ids.map((goalId) => ({ videoId, goalId })) });
+  }
+
+  // Rattacher la vidéo à des missions du joueur (coach, ou entraîneur de ce joueur) : le joueur la retrouve en cliquant sur la mission
+  async setGoals(user: AuthUser, id: string, goalIds: string[]) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const v = await this.prisma.video.findUnique({ where: { id } });
+    if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!v.playerId) throw new BadRequestException("Les missions concernent seulement les jeunes du Centre.");
+    const ids = [...new Set(goalIds)];
+    if (ids.length && (await this.prisma.goal.count({ where: { id: { in: ids }, playerId: v.playerId } })) !== ids.length) throw new BadRequestException("Mission invalide.");
+    await this.replaceVideoGoals(id, ids);
+    // garde l'analyse (si elle existe) cohérente avec les missions choisies
+    const a = await this.prisma.analysis.findFirst({ where: { videoId: id } });
+    if (a) {
+      await this.prisma.analysisGoal.deleteMany({ where: { analysisId: a.id } });
+      if (ids.length) await this.prisma.analysisGoal.createMany({ data: ids.map((goalId) => ({ analysisId: a.id, goalId })) });
+    }
+    await this.audit.log(user.id, "video-goals", "Video", id);
+    return { goalIds: ids };
   }
 
   async sendAnalysis(user: AuthUser, id: string) {
