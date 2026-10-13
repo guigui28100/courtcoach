@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseIntPipe, Post, Put, Query, Req, Res, UnauthorizedException } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { Role } from "@prisma/client";
 import { timingSafeEqual } from "crypto";
 import type { Request, Response } from "express";
@@ -17,6 +18,7 @@ export class VideosController {
   @Put("videos/:id/chunks/:n") @HttpCode(204) chunk(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("n", ParseIntPipe) n: number, @Req() req: Request) { return this.svc.putChunk(u, id, n, req.body); }
   @Post("videos/:id/complete") complete(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.complete(u, id); }
 
+  @Throttle({ default: { limit: 300, ttl: 60_000 } }) // lecture par tranches : assez large pour regarder, trop étroit pour aspirer en masse
   @Get("videos/:id/file")
   async file(@CurrentUser() u: AuthUser, @Param("id") id: string, @Headers("range") range: string | undefined, @Res() res: Response) {
     const r = await this.svc.readRange(u, id, range);
