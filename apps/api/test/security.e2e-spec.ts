@@ -95,7 +95,7 @@ describe("Sécurité : double authentification, mots de passe, journal", () => {
     await A.coach.post(`/api/players/${playerId}/access/inconnu/reset-password`).set(ORIGIN).expect(404);
     const r = (await A.coach.post(`/api/players/${playerId}/access/${guardId}/reset-password`).set(ORIGIN).expect(200)).body;
     expect(r.temporaryPassword).toHaveLength(14);
-    await A.parent.get("/api/players").expect(403); // l'ancienne session ne sert plus qu'à changer le mot de passe
+    await A.parent.get("/api/players").expect(401); // l'ancienne session est fermée tout de suite (le mot de passe a changé)
     const again = agent(); await again.post("/api/auth/login").set(ORIGIN).send({ email: "parent@exemple.fr", password: PASSWORD }).expect(401);
     await again.post("/api/auth/login").set(ORIGIN).send({ email: "parent@exemple.fr", password: r.temporaryPassword }).expect(200);
     expect((await again.get("/api/auth/me").expect(200)).body.mustChangePassword).toBe(true);
@@ -106,5 +106,39 @@ describe("Sécurité : double authentification, mots de passe, journal", () => {
     await A.coach.get(`/api/players/${playerId}`).expect(200);
     expect(await prisma.auditLog.count({ where: { action: "read", entityId: playerId } })).toBeGreaterThan(0);
     await A.coach.delete("/api/auth/me").set(ORIGIN).expect(403);
+  });
+
+  it("changer ou réinitialiser un mot de passe ferme aussitôt les anciennes sessions (même avec un jeton encore valable)", async () => {
+    const id = await login("ancien", Role.ADULT);
+    const autre = agent(); await autre.post("/api/auth/login").set(ORIGIN).send({ email: "ancien@exemple.fr", password: PASSWORD }).expect(200);
+    await autre.get("/api/auth/me").expect(200);
+    await A.ancien.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: PASSWORD, newPassword: "un-autre-mot-de-passe-solide-2" }).expect(200);
+    await autre.get("/api/auth/me").expect(401); // l'autre appareil est déconnecté immédiatement
+    await A.ancien.get("/api/auth/me").expect(200); // l'appareil qui a changé le mot de passe reste connecté
+    await prisma.user.delete({ where: { id } });
+  });
+
+  it("seul le site officiel peut appeler le serveur depuis un navigateur (CORS fermé) et une action venant d'un autre site est refusée", async () => {
+    const ok = await request(app.getHttpServer()).options("/api/auth/login").set("Origin", "http://localhost:5173").set("Access-Control-Request-Method", "POST");
+    expect(ok.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    const evil = await request(app.getHttpServer()).options("/api/auth/login").set("Origin", "https://pirate.example").set("Access-Control-Request-Method", "POST");
+    expect(evil.headers["access-control-allow-origin"]).toBeUndefined();
+    await A.coach.post("/api/players").set("Origin", "https://pirate.example").send({ firstName: "X" }).expect(403);
+    const h = (await request(app.getHttpServer()).get("/api/health")).headers;
+    expect(h["x-powered-by"]).toBeUndefined();
+    expect(h["x-content-type-options"]).toBe("nosniff");
+    expect(h["cache-control"]).toBe("no-store");
+  });
+
+  it("double authentification obligatoire (réglage REQUIRE_STAFF_2FA) : le coach sans double authentification ne peut plus que l'activer", async () => {
+    process.env.REQUIRE_STAFF_2FA = "true";
+    try {
+      const r = await A.coach.get("/api/players").expect(403);
+      expect(r.body.code).toBe("TWO_FACTOR_REQUIRED");
+      await A.coach.get("/api/auth/me").expect(200);
+      await A.coach.post("/api/auth/2fa/setup").set(ORIGIN).expect(200); // il peut commencer l'activation
+      await A.adulte.get("/api/auth/me").expect(200); // les autres comptes ne sont pas concernés
+    } finally { delete process.env.REQUIRE_STAFF_2FA; }
+    await A.coach.get("/api/players").expect(200); // réglage retiré : tout fonctionne comme avant
   });
 });

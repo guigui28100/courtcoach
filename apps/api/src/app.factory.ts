@@ -12,6 +12,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   const dbUrl = resolveDatabaseUrl();
   if (!dbUrl) throw new Error("Adresse de la base de données manquante (DATABASE_URL)");
   process.env.DATABASE_URL = dbUrl;
+  if (process.env.NODE_ENV === "production" && !process.env.WEB_ORIGIN) throw new Error("WEB_ORIGIN manquant : l'adresse du site est obligatoire en production");
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error("JWT_SECRET manquant ou trop court (32 caractères minimum)");
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: process.env.NODE_ENV === "test" ? false : ["error", "warn", "log"] });
   app.setGlobalPrefix("api");
@@ -21,7 +22,8 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.use(cookieParser());
   app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
   app.use("/api/tournaments", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // documents de tournoi (3 Mo maximum)
-  app.enableCors({ origin: process.env.WEB_ORIGIN, credentials: true });
+  // Fermé par défaut : seul le site officiel (WEB_ORIGIN) peut appeler le serveur depuis un navigateur
+  app.enableCors({ origin: process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN.replace(/\/$/, "")] : false, credentials: true, methods: ["GET", "POST", "PUT", "PATCH", "DELETE"] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   return app;
 }
