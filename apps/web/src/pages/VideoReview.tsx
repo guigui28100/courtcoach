@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { del, get, post, put } from "../api";
-import { AuthorBadge, Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
+import { AuthorBadge, BackLink, Empty, Err, Field, Page, PageHead, Skeleton } from "../components/ui";
 import { Compare, VideoStudio } from "../components/Studio";
 import { Thread } from "../components/Videos";
 import { adultFacts, adultName, AXES, fmtDate, fmtMo, VideoDetail } from "../types";
@@ -22,7 +22,7 @@ export default function VideoReview() {
     get<VideoDetail>(`/videos/${id}`).then((d) => { setV(d); setExercises(d.analysis?.exercises ?? []); setGoalIds(d.goalIds ?? d.analysis?.goalIds ?? []); }).catch(() => setMissing(true));
   }, [id]);
   useEffect(load, [load]);
-  if (missing) return <Page><Empty>Cette vidéo est introuvable (elle a peut-être été supprimée).</Empty><Link to="/coach" className="btn-clay no-underline">Retour</Link></Page>;
+  if (missing) return <Page><Empty>Cette vidéo est introuvable (elle a peut-être été supprimée).</Empty><Link to="/coach/adultes?onglet=videos" className="btn-clay no-underline">Retour</Link></Page>;
   if (!v) return <Skeleton lines={2} />;
   const centre = v.kind === "centre";
   const sent = !!v.analysis?.sentAt;
@@ -55,7 +55,7 @@ export default function VideoReview() {
     <>
       <PageHead eyebrow={centre ? "Centre de compétition jeunes" : "Demandes de coaching"} title={v.title}>{who} · {v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</PageHead>
       <Page>
-        <Link to={centre && v.player ? `/coach/centre/${v.player.id}` : "/coach"} className="font-bold text-ink underline">← Retour</Link>
+        <BackLink fallback={centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"} className="font-bold text-ink underline">← Retour</BackLink>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
             {draft && (
@@ -68,7 +68,7 @@ export default function VideoReview() {
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
             <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
-            <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}` : "/coach"); } }}>Supprimer la vidéo</button>
+            <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"); } }}>Supprimer la vidéo</button>
           </div>
           <div className="grid content-start gap-4">
             {centre && (

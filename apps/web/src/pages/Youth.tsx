@@ -14,6 +14,7 @@ import { ConsentsTab, ParentReminders } from "../components/Consents";
 import { FamilyInfo } from "../components/FamilyInfo";
 import { StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
+import { BackLink } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
@@ -473,7 +474,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
         {previewId && (
           <p className="glass m-0 flex flex-wrap items-center justify-between gap-2 !p-3 text-sm" role="note">
             <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {p?.firstName ?? "le jeune"} (sans pouvoir envoyer de vidéo).</span>
-            <Link to={`/coach/centre/${previewId}`} className="gal-btn btn-sm no-underline">← Retour au dossier</Link>
+            <BackLink fallback={`/coach/centre/${previewId}`} className="gal-btn btn-sm no-underline">← Retour</BackLink>
           </p>
         )}
         {players === null && <p className="text-center text-white/80">Chargement de ta galaxie…</p>}

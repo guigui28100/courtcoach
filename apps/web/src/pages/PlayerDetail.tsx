@@ -453,9 +453,11 @@ export default function PlayerDetail() {
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
   const [missing, setMissing] = useState(false);
-  const [search] = useSearchParams();
+  // L'onglet est gardé dans l'adresse (?onglet=…) : le bouton « retour » et l'actualisation reviennent au bon onglet
+  const [search, setSearch] = useSearchParams();
   const wanted = search.get("onglet");
-  const [tab, setTab] = useState<Tab>((["profil", "accords", "objectifs", "evaluations", "etoiles", "videos", "matchs", "bulletins"] as string[]).includes(wanted || "") ? (wanted as Tab) : "profil");
+  const tab = ((["profil", "accords", "depart", "objectifs", "evaluations", "etoiles", "videos", "matchs", "bulletins"] as string[]).includes(wanted || "") ? wanted : "profil") as Tab;
+  const setTab = (k: Tab) => { setSearch(k === "profil" ? {} : { onglet: k }); };
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
