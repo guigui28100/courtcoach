@@ -85,7 +85,7 @@ export default function FinDeCours() {
               <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">⚠️ pas encore enregistré</span>}</span>
               <strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>
             </div>
-            <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} allStars={allStars[p.id]} onChange={(lines) => set(p.id, { lines })} />
+            <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} allStars={allStars[p.id]} day={day} onChange={(lines) => set(p.id, { lines })} />
             <div className="flex flex-wrap gap-2">
               <button className="btn-clay" disabled={busy || !r.dirty} onClick={async () => { if (await saveRows([p]) && next) setSel(next.id); }}>{next ? `💾 Enregistrer ${p.firstName} et passer à ${next.firstName} →` : `💾 Enregistrer ${p.firstName}`}</button>
             </div>
