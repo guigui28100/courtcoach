@@ -40,6 +40,14 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 7. **Une fois par trimestre** : relire le journal de connexions (page Sécurité) et lancer `npm audit` dans `apps/api` et `apps/web` (je peux le faire pour toi).
 8. **Ordinateur et téléphone** : mises à jour faites, verrouillage de l'écran, pas de session coach ouverte sur un appareil prêté.
 
+## Recommandations de Vercel : ce qui s'applique à CourtCoach
+| Recommandation | Pour CourtCoach |
+| :-- | :-- |
+| Ne jamais mettre un secret dans une variable visible du navigateur (`NEXT_PUBLIC_…`, chez nous `VITE_…`) | **Vérifié : rien à corriger.** Le site (`apps/web`) n'utilise AUCUNE variable d'environnement ; tous les secrets (`JWT_SECRET`, `DATABASE_URL`, `CRON_SECRET`, `TOTP_KEY`) restent côté serveur. Règle : ne jamais créer de variable `VITE_…` pour un secret. |
+| Protection des déploiements (Deployment Protection) sur les aperçus | **À faire par toi dans Vercel** (Settings → Deployment Protection → « Vercel Authentication » pour les aperçus, sur courtcoach-7kdp et courtcoach-api). Les aperçus ne contiennent que l'interface, et le serveur refuse déjà tout appel venant d'une autre adresse que le site officiel, mais autant qu'ils ne soient pas publics. Tu restes connecté à Vercel, donc tu les ouvres comme avant. |
+| Contrôler l'identité dans CHAQUE route, pas seulement dans l'interface | **Déjà le cas** : un garde global exige une connexion sur toutes les routes du serveur, puis un contrôle de rôle et de propriété (famille, entraîneur, coach). Un test automatique (`routes.e2e-spec.ts`) liste toutes les routes et échoue si l'une est ouverte par erreur. |
+| Réseau privé (Secure Compute) | **Non applicable** : réservé à l'offre « Enterprise » de Vercel. À la place : la base Neon n'accepte que les connexions chiffrées (`sslmode=require`), avec un mot de passe long jamais partagé. |
+
 ## Ce qu'il reste à faire (par ordre d'importance)
 1. **Activer la double authentification** sur ton compte coach (menu « Sécurité ») et ranger les codes de secours sur papier.
 2. **Mot de passe oublié du coach** : le propriétaire du site le redéfinit avec la commande `create-coach` (voir `GUIDE-MISE-EN-LIGNE.md`). Pas de procédure par e-mail tant qu'aucun service d'envoi n'est choisi.
