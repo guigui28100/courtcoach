@@ -152,13 +152,13 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
-          <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline !bg-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
           <small>Ton coach ne se déplacera que si tu confirmes.</small>
         </div>
       ) : (
         <div className="grid gap-2 text-ink">
           <input className="input !min-h-11" maxLength={200} aria-label="Message pour ton coach (facultatif)" placeholder="Un mot pour ton coach (facultatif)" value={msg} onChange={(e) => setMsg(e.target.value)} />
-          <div className="flex flex-wrap gap-2"><button className="btn-danger" disabled={busy} onClick={() => reply("decline")}>Envoyer : pas disponible</button><button className="btn-outline !bg-white" onClick={() => setNo(false)}>Retour</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-danger" disabled={busy} onClick={() => reply("decline")}>Envoyer : pas disponible</button><button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setNo(false)}>Retour</button></div>
         </div>
       )}
       <Err msg={err} />
