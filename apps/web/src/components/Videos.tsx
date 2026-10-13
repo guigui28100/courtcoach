@@ -108,7 +108,7 @@ export function VideoPanel({ id, onChanged, onSeen }: { id: string; onChanged: (
   }
   return (
     <div className="grid gap-3">
-      <video controls playsInline preload="metadata" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
+      <video controls playsInline preload="none" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
       {v.fromCoach && <p className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3"><strong>🎓 Vidéo envoyée par ton coach.</strong>{v.question ? <> Son message : « {v.question} »</> : " Regarde-la bien !"}</p>}
       {!v.fromCoach && v.question && <p className="m-0"><strong>Ta question :</strong> {v.question}</p>}
       <AudioPlayer v={v} />

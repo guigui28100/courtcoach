@@ -110,9 +110,21 @@ export class VideosService {
   }
 
   // ----- Lecture du fichier, par tranches (compatible avec la lecture vidéo des navigateurs) -----
+  // Alerte : une personne qui ouvre beaucoup de vidéos différentes en peu de temps (compte volé ?) est notée dans le journal.
+  private readonly recentOpens = new Map<string, Map<string, number>>();
+  private async watchOpens(userId: string, videoId: string) {
+    const now = Date.now(), limit = Number(process.env.VIDEO_BULK_ALERT) || 15;
+    const mine = this.recentOpens.get(userId) ?? new Map<string, number>();
+    for (const [k, t] of mine) if (now - t > 10 * 60_000) mine.delete(k);
+    mine.set(videoId, now); this.recentOpens.set(userId, mine);
+    if (this.recentOpens.size > 5000) this.recentOpens.clear();
+    if (mine.size >= limit) { mine.clear(); await this.audit.log(userId, "video-bulk-view", "Video", videoId); }
+  }
+
   async readRange(user: AuthUser, id: string, header?: string) {
     const v = await this.load(user, id);
     if (!v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!header || /^bytes=0-/.test(header.trim())) await this.watchOpens(user.id, id); // une « ouverture » = lecture depuis le début
     let start = 0, end = v.sizeBytes - 1;
     if (header) {
       const m = /^bytes=(\d*)-(\d*)$/.exec(header.trim());

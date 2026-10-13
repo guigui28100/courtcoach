@@ -72,3 +72,6 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 - Format vérifié sur le contenu du fichier (PDF, JPEG, PNG, docx, xlsx), 3 Mo maximum ; tout autre fichier (exécutable renommé, page web…) est refusé.
 - Téléchargement : `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, Word et Excel toujours en téléchargement (jamais ouverts dans la page).
 - Droits vérifiés à chaque lecture (coach : tout ; entraîneur : ses jeunes ; famille et jeune : seulement les documents partagés pour leur joueur) ; adultes : 403 ; chaque ouverture par le personnel est inscrite au journal.
+
+## Vidéos (13/10/2026)
+- Alerte `video-bulk-view` au journal (15 vidéos différentes en 10 min) et limite de 300 lectures/minute sur le fichier. À surveiller dans le journal du coach.

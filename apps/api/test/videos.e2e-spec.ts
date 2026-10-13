@@ -307,4 +307,24 @@ describe("Vidéos et analyses", () => {
     expect(seen.analysis.observation).toBe("Bonne rotation d'épaules.");
     await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
   });
+  it("tout est fermé : sans droit, ni le fichier, ni les images, ni la voix, ni le détail ne s'ouvrent", async () => {
+    const vid = ((await upload(A.coach, { playerId: p1, title: "Fermée" }, fakeMp4(5000))) as any).vid as string;
+    const paths = [`/api/videos/${vid}`, `/api/videos/${vid}/file`, `/api/videos/${vid}/audio`, `/api/videos/${vid}/images/x`];
+    for (const path of paths) {
+      expect((await http.get(path)).status).toBe(401); // pas connecté
+      for (const who of ["adultB", "par2"]) expect([403, 404]).toContain((await A[who].get(path)).status); // adulte ou autre famille
+    }
+    await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
+  });
+
+  it("alerte : ouvrir beaucoup de vidéos différentes en peu de temps est noté dans le journal", async () => {
+    process.env.VIDEO_BULK_ALERT = "3";
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) ids.push(((await upload(A.adultB, {}, fakeMp4(5000))) as any).vid);
+    await prisma.auditLog.deleteMany({ where: { action: "video-bulk-view" } });
+    for (const id of ids) await A.adultB.get(`/api/videos/${id}/file`).expect(206);
+    expect(await prisma.auditLog.count({ where: { action: "video-bulk-view" } })).toBe(1);
+    delete process.env.VIDEO_BULK_ALERT;
+    for (const id of ids) await A.adultB.delete(`/api/videos/${id}`).set(ORIGIN).expect(204);
+  });
 });

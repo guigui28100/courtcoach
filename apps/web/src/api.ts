@@ -3,7 +3,18 @@ export class ApiError extends Error {
   constructor(public status: number, message: string, public code?: string) { super(message); }
 }
 
+// Compteur des demandes en cours : le petit voile d'attente (NetLoader) s'affiche tant que le serveur n'a pas répondu.
+let pending = 0;
+const listeners = new Set<(n: number) => void>();
+export const onPending = (fn: (n: number) => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
+function track(delta: number) { pending = Math.max(0, pending + delta); listeners.forEach((f) => f(pending)); }
+
 async function raw(path: string, init: RequestInit = {}) {
+  const quiet = path.includes("/chunks/") || path.includes("/auth/refresh") || path.includes("/ping"); // envois de vidéo et renouvellements : pas de voile
+  if (!quiet) track(1);
+  try { return await send(path, init); } finally { if (!quiet) track(-1); }
+}
+async function send(path: string, init: RequestInit) {
   const res = await fetch("/api" + path, {
     credentials: "same-origin",
     ...init,

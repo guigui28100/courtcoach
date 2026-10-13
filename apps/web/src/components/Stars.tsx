@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, totalStars, trimesterOf } from "../types";
+import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, STARS_PER_POINT, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -55,7 +55,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
   const by = starsByDomain(stars, season, t);
   const values = Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.min(5, (by[a.key] * 5) / STARS_FOR_FULL)]));
   const total = Object.values(by).reduce((n, v) => n + v, 0);
-  // Avec un point de départ : le 2e radar part du MÊME dessin, puis chaque étoile le fait grandir (30 étoiles = +5 points, 6 étoiles = +1 point, sans dépasser 5)
+  // Avec un point de départ : le 2e radar part du MÊME dessin, puis chaque étoile le fait grandir (60 étoiles = +5 points, 12 étoiles = +1 point, sans dépasser 5)
   const now = start ? Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.min(5, (start[a.key] || 0) + (by[a.key] * 5) / STARS_FOR_FULL)])) : values;
   const sub = dark ? "text-white/80" : "text-muted";
   const me = who === "jeune";
@@ -63,7 +63,7 @@ export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonP
     <section className={dark ? "glass grid gap-4" : "card grid gap-4"} aria-labelledby="stars-radar">
       <h2 id="stars-radar" className={bulletin ? "m-0 text-2xl" : "m-0 text-2xl"}>🌟 {bulletin ? `Suivi des progrès cours après cours · trimestre ${t}` : me ? `Mon suivi des progrès cours après cours · trimestre ${t}` : `Le suivi des progrès cours après cours · trimestre ${t}`}</h2>
       <p className={"m-0 " + sub}>{bulletin ? `Les étoiles données à ${who === "coach" ? "ce joueur" : "ce joueur"} pendant ce trimestre, par domaine.` : me ? "Chaque étoile que ton coach te donne fait grandir un domaine. Plus tu en gagnes, plus ton radar se remplit ; quand ton coach te dit « pas en progrès » dans un domaine, il perd des étoiles. Il repart de zéro à chaque trimestre : à toi de le remplir à nouveau !" : "Chaque étoile fait grandir un domaine. Le radar se remplit au fil des cours du trimestre, se met à jour à chaque cours et repart de zéro au trimestre suivant."} Un domaine est plein à {STARS_FOR_FULL} étoiles.</p>
-      {start && <p className={"m-0 rounded-xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>📐 Le radar de droite <strong>part exactement de ton point de départ</strong>. Chaque étoile le fait grandir : <strong>6 étoiles dans un domaine = 1 point de plus</strong>.</p>}
+      {start && <p className={"m-0 rounded-xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60")}>📐 Le radar de droite <strong>part exactement de ton point de départ</strong>. Chaque étoile le fait grandir : <strong>{STARS_PER_POINT} étoiles dans un domaine = 1 point de plus</strong>.</p>}
       {start ? (
         // Deux radars côte à côte : le point de départ (fixe) et celui des étoiles (il grandit à chaque cours)
         <div className="grid gap-4">
