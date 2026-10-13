@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
-import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
+import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -152,13 +152,13 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
-          <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline !bg-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
           <small>Ton coach ne se déplacera que si tu confirmes.</small>
         </div>
       ) : (
         <div className="grid gap-2 text-ink">
           <input className="input !min-h-11" maxLength={200} aria-label="Message pour ton coach (facultatif)" placeholder="Un mot pour ton coach (facultatif)" value={msg} onChange={(e) => setMsg(e.target.value)} />
-          <div className="flex flex-wrap gap-2"><button className="btn-danger" disabled={busy} onClick={() => reply("decline")}>Envoyer : pas disponible</button><button className="btn-outline !bg-white" onClick={() => setNo(false)}>Retour</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-danger" disabled={busy} onClick={() => reply("decline")}>Envoyer : pas disponible</button><button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setNo(false)}>Retour</button></div>
         </div>
       )}
       <Err msg={err} />
@@ -292,7 +292,7 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, onRe
         <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
             <p className="m-0"><strong>👀 Aperçu : voici ce que voit un adulte.</strong> Les demandes ci-dessous sont des exemples inventés, rien n'est envoyé ni enregistré.</p>
-            <Link to="/coach/adultes" className="btn-ink btn-sm no-underline">← Retour aux demandes</Link>
+            <BackLink fallback="/coach/adultes" className="btn-ink btn-sm no-underline">← Retour aux demandes</BackLink>
           </div>
         </div>
       )}

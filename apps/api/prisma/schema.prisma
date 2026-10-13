@@ -192,6 +192,7 @@ model Goal {
   trimesters Int[]    @default([])  // trimestres où l'objectif est à travailler (vide = toute la saison)
   createdAt  DateTime @default(now())
   analyses   AnalysisGoal[]
+  videos     VideoGoal[]
   checkpoints GoalCheckpoint[]
   hiddenFrom Int?     // mission validée que le coach ne veut plus voir À PARTIR de ce trimestre (2, 3…) : les trimestres déjà passés et leurs bulletins ne changent pas
   targetStars Int     @default(10) // nombre d'étoiles à gagner sur cette mission pour la considérer atteinte (aide à décider)
@@ -349,6 +350,7 @@ model Video {
   chunks   VideoChunk[]
   images   VideoImage[]
   audio    VideoAudio?
+  goals    VideoGoal[]
 
   @@index([ownerId])
   @@index([playerId])
@@ -397,6 +399,17 @@ model Analysis {
   authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
   authorName String?
   authorRole String?
+}
+
+// Vidéo rattachée à une mission du joueur : il clique sur la mission et retrouve sa vidéo
+model VideoGoal {
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  goalId  String
+  goal    Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, goalId])
+  @@index([goalId])
 }
 
 model AnalysisGoal {

@@ -83,6 +83,11 @@
 .tabbar { min-width: 0; position: sticky; top: 61px; z-index: 30; margin-inline: -1rem; padding-inline: 1rem; background: rgba(251, 247, 241, 0.96); backdrop-filter: blur(8px); }
 .tabbar > div { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--color-line); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
 .tabbar > div::-webkit-scrollbar { display: none; }
+/* Téléphone : les onglets restent sur une ligne qu'on fait défiler (jamais de mots coupés à la verticale) */
+@media (max-width: 767px) {
+  .tabbar > div > button { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .tabbar .tab-txt { white-space: nowrap; flex: none; }
+}
 .gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 1.5rem; background: rgba(27, 24, 99, 0.96); backdrop-filter: blur(12px); box-shadow: 0 10px 28px rgba(20, 16, 80, 0.55); }
 .gal-tabs > div { display: flex; gap: 0.5rem; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 24px), transparent); }
 .gal-tabs > div::-webkit-scrollbar { display: none; }
@@ -360,6 +365,9 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 .mdesc { position: relative; overflow: hidden; display: grid; align-content: start; row-gap: 0.7rem; padding: 1.3rem 1.4rem; min-height: 10rem; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)); }
 .mdesc::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--d), transparent); }
 .mdesc-title { position: relative; z-index: 1; max-width: 85%; font-size: 1.35rem; line-height: 1.2; font-weight: 800; color: #fff; }
+.mdesc-extra { position: relative; z-index: 1; display: grid; gap: 0.6rem; align-content: start; }
+.mdesc-video { display: flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.55rem 0.9rem; border-radius: 0.9rem; border: 2px solid var(--d); background: rgba(255, 255, 255, 0.12); color: #fff; font-weight: 800; line-height: 1.25; }
+.mdesc-video:hover, .mdesc-video:focus-visible { background: rgba(255, 255, 255, 0.24); }
 .mdesc-how { position: relative; z-index: 1; display: flex; gap: 0.6rem; align-items: flex-start; padding-top: 0.7rem; border-top: 1px dashed rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.85); line-height: 1.45; }
 .mdesc-how svg { flex: none; margin-top: 0.15rem; color: var(--d); }
 .mdesc-how b { color: #fff; }
@@ -382,7 +390,7 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 @supports (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: subgrid; } }
 @supports not (grid-template-rows: subgrid) { .mdesc-list > .mdesc { grid-template-rows: auto minmax(3.4rem, auto) 1fr; } }
 .mdesc-list .mdesc-title { align-self: start; }
-.mdesc-list .mdesc-how { align-self: start; }
+.mdesc-list .mdesc-extra { align-self: start; }
 
 /* ---------- Mode clair / sombre de l'espace du jeune (choix du joueur ou réglage de son appareil) ---------- */
 .theme-pick { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.3); background: rgba(10, 10, 40, 0.35); }

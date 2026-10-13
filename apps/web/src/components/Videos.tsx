@@ -163,13 +163,15 @@ export function Thread({ messages }: { messages: VideoDetail["messages"] }) {
 }
 
 // Liste de vidéos ouvrables (une à la fois)
-export function VideoList({ videos, onChanged, empty }: { videos: VideoRow[]; onChanged: () => void; empty: string }) {
-  const [open, setOpen] = useState<string | null>(null);
+export function VideoList({ videos, onChanged, empty, openId }: { videos: VideoRow[]; onChanged: () => void; empty: string; openId?: string | null }) {
+  const [open, setOpen] = useState<string | null>(openId && videos.some((v) => v.id === openId) ? openId : null);
+  // Arrivée depuis une mission : on fait défiler jusqu'à la vidéo ouverte
+  useEffect(() => { if (openId) document.getElementById(`video-${openId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [openId]);
   if (!videos.length) return <p className="m-0 text-muted">{empty}</p>;
   return (
     <ul className="m-0 grid list-none gap-3 p-0">
       {videos.map((v) => (
-        <li key={v.id} className="rounded-xl border border-line bg-white p-3">
+        <li key={v.id} id={`video-${v.id}`} className="scroll-mt-24 rounded-xl border border-line bg-white p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><strong>{v.title}</strong><p className="m-0 text-sm text-muted">{v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</p></div>
             <div className="flex items-center gap-2"><VideoBadge v={v} /><button className="btn-outline btn-sm" aria-expanded={open === v.id} onClick={() => setOpen(open === v.id ? null : v.id)}>{open === v.id ? "Fermer" : "Ouvrir"}</button></div>

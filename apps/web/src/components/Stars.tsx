@@ -179,7 +179,7 @@ function QuickButtons({ value, onPick, who, name }: { value: number; onPick: (n:
   );
 }
 // Étoiles = évaluation jour après jour des missions : une rangée par mission (de −3 à 3), puis éventuellement une étoile « hors mission »
-export function StarLinesEditor({ lines, onChange, who, goals = [], allStars }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[]; allStars?: CourseStar[] }) {
+export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, day }: { lines: StarLine[]; onChange: (l: StarLine[]) => void; who: string; goals?: Goal[]; allStars?: CourseStar[]; day?: string }) {
   const ids = new Set(goals.map((g) => g.id));
   const isMission = (l: StarLine) => !!l.goalId && ids.has(l.goalId);
   const isQuality = (l: StarLine) => !isMission(l) && !!qualityOfReason(l.reason);
@@ -203,13 +203,15 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars }: 
   // Une carte par objectif : 4 gros boutons (recul −1, pas encore 0, ça progresse +1, réussi +2)
   const missionRow = (g: Goal) => {
     const l = lines.find((x) => x.goalId === g.id), n = l?.stars ?? 0, target = g.targetStars ?? 10;
-    const got = Math.max(0, (allStars ?? []).filter((x) => x.goalId === g.id).reduce((a, x) => a + x.stars, 0));
+    // Le total bouge tout de suite : étoiles des AUTRES jours + ce qui est choisi pour ce cours (le cours du jour remplace ce qui était déjà enregistré ce jour-là)
+    const before = (allStars ?? []).filter((x) => x.goalId === g.id && (!day || x.day !== day)).reduce((a, x) => a + x.stars, 0);
+    const got = Math.max(0, before + (day ? n : 0));
     const pct = Math.min(100, Math.round((got / Math.max(1, target)) * 100));
     const set = (p: Partial<StarLine>) => setMission(g, p);
     return (
       <div key={g.id} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3" style={{ borderLeftWidth: 7, borderLeftColor: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }}>
         <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
-        {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-bold text-muted">{got} sur {target} ⭐</small></div>}
+        {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-bold text-muted" aria-live="polite">{got} sur {target} ⭐{day && n !== 0 && <span className={n > 0 ? " text-ok" : " text-bad"}> ({n > 0 ? "+" : "−"}{Math.abs(n)} ce cours)</span>}</small></div>}
         <QuickButtons who={who} name={g.title} value={n} onPick={(k) => set({ stars: k })} />
         {n !== 0 && !QUICK.some((q) => q.n === n) && <small className="font-bold text-muted">Actuellement : {n} ⭐ (choisis un bouton pour changer)</small>}
         {noteField(n, l, set)}

@@ -7,7 +7,7 @@ import { CourtMark, Planet, Stars } from "../components/Galaxy";
 import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { Empty } from "../components/ui";
+import { BackLink, Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
 import { MISSION_TOPICS, ageOf, isTeen, AXES, START_ITEMS, itemKey, LEVELS, levelOf, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
@@ -53,7 +53,7 @@ export default function Bulletin() {
 
   useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans
   const staff = me?.role === "COACH" || me?.role === "TRAINER";
-  const back = staff ? `/coach/centre/${id}` : "/suivi";
+  const back = staff ? `/coach/centre/${id}?onglet=bulletins` : "/suivi?onglet=bulletins";
   if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
   if (!p || !evals) return <p className="p-8 text-center text-muted">Chargement…</p>;
   // Le jeune et sa famille voient le bulletin d'un trimestre seulement à partir du 1er décembre (T1), du 1er mars (T2) et du 1er juin (T3)
@@ -104,7 +104,7 @@ export default function Bulletin() {
       <div className="print:hidden"><Stars /></div>
       <div className="relative z-10 mx-auto max-w-4xl px-3 py-6 sm:px-4 print:p-0">
         <div className="print:hidden mb-4 flex flex-wrap items-center gap-3">
-          <Link to={back} className="font-bold text-white underline">← Retour</Link>
+          <BackLink fallback={back} className="font-bold text-white underline">← Retour</BackLink>
           <button className="gal-btn" onClick={() => window.print()}>🖨️ Imprimer / Enregistrer en PDF</button>
           {staff && <Link to={`/coach/centre/${id}/apercu`} className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme le jeune</Link>}
           <p className="m-0 basis-full text-sm text-white/80">Astuce : dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour l'envoyer par e-mail.</p>

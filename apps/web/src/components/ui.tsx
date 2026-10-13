@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
   return (
@@ -185,5 +185,13 @@ export function MultiSelect({ id, name, options, value }: { id: string; name: st
       </div>
       <input type="hidden" name={name} value={chosen.join(", ")} />
     </details>
+  );
+}
+
+// Vrai bouton « retour » : revient à la page d'où l'on vient (avec son onglet) ; si on est arrivé directement sur cette page, va à l'adresse de secours
+export function BackLink({ fallback, className, children }: { fallback: string; className?: string; children: ReactNode }) {
+  const nav = useNavigate();
+  return (
+    <Link to={fallback} className={className} onClick={(e) => { e.preventDefault(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav(fallback); }}>{children}</Link>
   );
 }

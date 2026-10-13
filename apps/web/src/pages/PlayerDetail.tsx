@@ -404,7 +404,7 @@ function StarsTab({ p }: { p: Player }) {
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
-        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} onChange={setLines} />
+        <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} day={day} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
         <Err msg={err} />
       </section>
@@ -453,9 +453,11 @@ export default function PlayerDetail() {
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
   const [missing, setMissing] = useState(false);
-  const [search] = useSearchParams();
+  // L'onglet est gardé dans l'adresse (?onglet=…) : le bouton « retour » et l'actualisation reviennent au bon onglet
+  const [search, setSearch] = useSearchParams();
   const wanted = search.get("onglet");
-  const [tab, setTab] = useState<Tab>((["profil", "accords", "objectifs", "evaluations", "etoiles", "videos", "matchs", "bulletins"] as string[]).includes(wanted || "") ? (wanted as Tab) : "profil");
+  const tab = ((["profil", "accords", "depart", "objectifs", "evaluations", "etoiles", "videos", "matchs", "bulletins"] as string[]).includes(wanted || "") ? wanted : "profil") as Tab;
+  const setTab = (k: Tab) => { setSearch(k === "profil" ? {} : { onglet: k }); };
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
   if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
