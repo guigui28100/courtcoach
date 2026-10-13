@@ -38,7 +38,7 @@ export class AcceptInvitationDto {
 }
 
 export class ChangePasswordDto {
-  @IsString() @MaxLength(128) currentPassword: string;
+  @IsOptional() @IsString() @MaxLength(128) currentPassword?: string; // inutile à la première connexion (le mot de passe provisoire vient d'être saisi)
   @IsString() @MinLength(10, { message: "Le nouveau mot de passe doit faire au moins 10 caractères." }) @MaxLength(128) newPassword: string;
   @IsOptional() @IsBoolean() acceptPolicy?: boolean;
 }

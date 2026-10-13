@@ -204,8 +204,9 @@ describe("CourtCoach API", () => {
     await fam.get(`/api/players/${p4.body.id}`).expect(403); // bloqué tant que le mot de passe n'est pas changé
     await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: access.body.temporaryPassword, acceptPolicy: true }).expect(400);
     await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: "nouveau-mot-de-passe-1", acceptPolicy: false }).expect(400);
-    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: "mauvais-mot-de-passe", newPassword: "nouveau-mot-de-passe-1", acceptPolicy: true }).expect(401);
-    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: access.body.temporaryPassword, newPassword: "nouveau-mot-de-passe-1", acceptPolicy: true }).expect(200);
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ newPassword: "nouveau-mot-de-passe-1", acceptPolicy: true }).expect(200); // 1re connexion : le mot de passe provisoire n'est pas redemandé
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ currentPassword: "mauvais-mot-de-passe", newPassword: "encore-un-autre-mot-de-passe-2" }).expect(401); // ensuite, il est exigé
+    await fam.post("/api/auth/change-password").set(ORIGIN).send({ newPassword: "encore-un-autre-mot-de-passe-2" }).expect(401);
     await fam.get(`/api/players/${p4.body.id}`).expect(200);
     await agent().post("/api/auth/login").set(ORIGIN).send({ email: "parent-zoe@exemple.fr", password: access.body.temporaryPassword }).expect(401); // l'ancien mot de passe ne marche plus
     // même e-mail pour un 2e enfant : accès ajouté, pas de nouveau mot de passe

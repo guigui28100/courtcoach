@@ -466,3 +466,13 @@ html[data-mode="light"] .bul-body figure:has(> svg[role="img"]) { padding: 0; ba
 html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), html[data-mode="light"][data-gal="teen"] .galaxy-sky .bul-body figure:has(> svg[role="img"]) { padding: 0; background: none; color: inherit; border-radius: 0; }
 /* Menu de gauche (ordinateur) : chaque rubrique tient sur UNE seule ligne (« Mon point de départ », « Mes renseignements »…) */
 @media (min-width: 768px) { .gal-tabs.side .tab-txt { white-space: nowrap; } }
+
+
+/* ---------- Attente du serveur (NetLoader) ---------- */
+.net-bar { position: fixed; inset: 0 0 auto 0; z-index: 90; height: 4px; overflow: hidden; background: rgba(16, 32, 58, 0.12); }
+.net-bar span { display: block; height: 100%; width: 40%; background: #dcf247; box-shadow: 0 0 0 1px #10203a; animation: net-slide 1.1s ease-in-out infinite; }
+.net-msg { position: fixed; z-index: 90; left: 50%; bottom: 1rem; transform: translateX(-50%); margin: 0; display: flex; align-items: center; gap: 0.6rem; max-width: calc(100vw - 2rem); padding: 0.6rem 1rem; border-radius: 999px; background: #10203a; color: #fff; font-weight: 700; font-size: 0.95rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.net-spin { width: 1rem; height: 1rem; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.35); border-top-color: #dcf247; animation: net-rot 0.8s linear infinite; flex: none; }
+@keyframes net-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@keyframes net-rot { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .net-bar span { animation: none; width: 100%; opacity: 0.7; } .net-spin { animation: none; } }

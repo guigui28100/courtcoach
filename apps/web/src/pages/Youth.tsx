@@ -422,7 +422,7 @@ function HomeTab({ p, done, wins, fresh, sent, pending, stars, newStars, go }: {
 function ThemePicker() {
   const [pref, setPref] = useThemePref();
   return (
-    <div role="radiogroup" aria-label="Mode d'affichage" className="theme-pick justify-self-end">
+    <div role="radiogroup" aria-label="Mode d'affichage" className="theme-pick justify-self-start">
       {THEME_CHOICES.map(([k, icon, label]) => <button key={k} type="button" role="radio" aria-checked={pref === k} onClick={() => setPref(k)}><span aria-hidden="true">{icon}</span> {label}</button>)}
     </div>
   );
@@ -483,7 +483,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div className="grid gap-5 md:grid-cols-[285px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
-                {TABS.filter(([k]) => (k !== "compte" || !previewId) && ((k !== "renseignements" && k !== "autorisations") || isParent)).map(([k, icon, label]) => (
+                {TABS.filter(([k]) => ((k !== "renseignements" && k !== "autorisations") || isParent)).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
                     {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
@@ -499,7 +499,6 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                     {players.map((x) => <button key={x.id} type="button" role="radio" aria-checked={x.id === p.id} onClick={() => setChildId(x.id)}>{x.firstName}</button>)}
                   </div>
                 ) : <span />}
-                <ThemePicker />
               </div>
               {tab === "accueil" && isParent && <ParentReminders p={p} go={go} />}
               {newStars > 0 && tab !== "progres" && (
@@ -517,16 +516,25 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "renseignements" && isParent && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
               {tab === "autorisations" && isParent && <ConsentsTab p={p} />}
-              {tab === "compte" && !previewId && (
-                <section className="glass grid gap-3" aria-labelledby="gal-donnees">
-                  <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
-                  <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link></p>
-                  <p className="m-0 text-sm text-white/80">Pour demander une copie des données ou la suppression du dossier, écris au club.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>
-                    <button className="btn btn-sm border-2 border-[#ff9b9b] text-[#ffb4b4] hover:bg-[#b3261e] hover:text-white" onClick={async () => { if (confirm("Supprimer définitivement ton compte (ton dossier reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
-                  </div>
-                </section>
+              {tab === "compte" && (
+                <>
+                  <section className="glass grid gap-3" aria-labelledby="gal-theme">
+                    <h2 id="gal-theme" className="m-0 text-2xl">🎨 Mon affichage</h2>
+                    <p className="m-0 text-sm text-white/85">« Automatique » suit le réglage de ton téléphone ou de ton ordinateur (clair le jour, sombre le soir). Tu peux aussi choisir.</p>
+                    <ThemePicker />
+                  </section>
+                  {!previewId && (
+                    <section className="glass grid gap-3" aria-labelledby="gal-donnees">
+                      <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
+                      <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link></p>
+                      <p className="m-0 text-sm text-white/80">Pour demander une copie des données ou la suppression du dossier, écris au club.</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>
+                        <button className="btn btn-sm border-2 border-[#ff9b9b] text-[#ffb4b4] hover:bg-[#b3261e] hover:text-white" onClick={async () => { if (confirm("Supprimer définitivement ton compte (ton dossier reste au club) ?")) { await eraseAccount(); window.location.href = "/"; } }}>Supprimer mon compte</button>
+                      </div>
+                    </section>
+                  )}
+                </>
               )}
             </div>
           </div>

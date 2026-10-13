@@ -203,8 +203,9 @@ export const starReason = (id: string) => STAR_REASONS.find((r) => r.id === id) 
 export const isNegReason = (id: string) => id.startsWith("neg-");
 // Total : les étoiles en moins se soustraient, mais le total ne descend jamais sous zéro
 export const totalStars = (list: Pick<CourseStar, "stars">[]) => Math.max(0, list.reduce((n, s) => n + s.stars, 0));
-// Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 30 étoiles dans le trimestre = domaine plein (5 sur 5) ; il repart de zéro à chaque trimestre
-export const STARS_FOR_FULL = 30;
+// Radar « de tous les jours » : chaque étoile fait grandir un domaine ; 60 étoiles dans le trimestre = domaine plein (5 sur 5) ; 12 étoiles = 1 point ; il repart de zéro à chaque trimestre
+export const STARS_FOR_FULL = 60;
+export const STARS_PER_POINT = STARS_FOR_FULL / 5; // 12 étoiles dans un domaine = 1 point de radar
 export const DOMAIN_EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">[], season = currentSeason(), t = trimesterOf()) {
   const out: Record<string, number> = {}; EVAL_AXES.forEach((a) => { out[a.key] = 0; });

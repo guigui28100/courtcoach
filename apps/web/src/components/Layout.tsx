@@ -1,4 +1,5 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { onPending } from "../api";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Role } from "../types";
@@ -42,6 +43,24 @@ export function Brand({ light = false }: { light?: boolean }) {
   );
 }
 
+// Attente du serveur : un trait qui défile en haut dès que ça tarde, puis un petit message si ça dure (le serveur gratuit s'endort et met quelques secondes à se réveiller).
+function NetLoader() {
+  const [n, setN] = useState(0), [show, setShow] = useState(false), [slow, setSlow] = useState(false);
+  useEffect(() => onPending(setN), []);
+  useEffect(() => {
+    if (n === 0) { setShow(false); setSlow(false); return; }
+    const a = window.setTimeout(() => setShow(true), 250), b = window.setTimeout(() => setSlow(true), 3000);
+    return () => { window.clearTimeout(a); window.clearTimeout(b); };
+  }, [n]);
+  if (!show) return null;
+  return (
+    <>
+      <div className="net-bar print:hidden" aria-hidden="true"><span /></div>
+      {slow && <p role="status" className="net-msg print:hidden"><span className="net-spin" aria-hidden="true" /> Un instant, le serveur se réveille…</p>}
+    </>
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const { me, logout } = useAuth();
   const nav = useNavigate();
@@ -53,6 +72,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <NetLoader />
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
       <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">

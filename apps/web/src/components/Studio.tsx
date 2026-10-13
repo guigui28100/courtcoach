@@ -285,7 +285,7 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
     <div className="grid content-start gap-2">
       <p className="m-0 font-bold">{label}</p>
       <div className="relative">
-      <video ref={vref} src={src} playsInline preload="auto" muted className="block w-full rounded-xl bg-black" aria-label={label}
+      <video ref={vref} src={src} playsInline preload="metadata" muted className="block w-full rounded-xl bg-black" aria-label={label}
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onDurationChange={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
         onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />

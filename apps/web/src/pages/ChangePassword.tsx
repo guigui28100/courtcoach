@@ -20,7 +20,7 @@ export default function ChangePassword() {
     setError("");
     if (f.get("next") !== f.get("again")) { setError("Les deux mots de passe ne sont pas identiques."); return; }
     try {
-      await post("/auth/change-password", { currentPassword: String(f.get("current")), newPassword: String(f.get("next")), acceptPolicy: forced ? f.get("policy") === "on" : undefined });
+      await post("/auth/change-password", { currentPassword: forced ? undefined : String(f.get("current")), newPassword: String(f.get("next")), acceptPolicy: forced ? f.get("policy") === "on" : undefined });
       await reload();
       nav(homeFor(me!.role), { replace: true });
     } catch (err) { setError((err as Error).message); }
@@ -29,7 +29,7 @@ export default function ChangePassword() {
   return (
     <AuthShell eyebrow={forced ? "Première connexion" : "Mon compte"} title={forced ? "Choisis ton mot de passe" : "Changer mon mot de passe"} subtitle={forced ? "Le mot de passe que le club t'a donné est provisoire. Choisis-en un que toi seul connais : personne, pas même le coach, ne pourra le lire." : "Choisis un nouveau mot de passe."}>
         <form onSubmit={submit} className="card grid gap-4 !p-6 shadow-[0_10px_30px_rgba(16,32,58,0.08)]" noValidate>
-          <Field label={forced ? "Mot de passe provisoire" : "Mot de passe actuel"} id="current"><PasswordInput id="current" name="current" autoComplete="current-password" /></Field>
+          {!forced && <Field label="Mot de passe actuel" id="current"><PasswordInput id="current" name="current" autoComplete="current-password" /></Field>}
           <Field label="Nouveau mot de passe" id="next" hint="10 caractères minimum. Une phrase facile à retenir est idéale."><PasswordInput id="next" name="next" minLength={10} autoComplete="new-password" /></Field>
           <Field label="Nouveau mot de passe (encore une fois)" id="again"><PasswordInput id="again" name="again" autoComplete="new-password" /></Field>
           {forced && (

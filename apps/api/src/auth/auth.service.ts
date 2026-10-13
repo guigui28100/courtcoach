@@ -165,11 +165,12 @@ export class AuthService {
   }
 
   // Changement de mot de passe (obligatoire à la première connexion avec un mot de passe provisoire).
-  async changePassword(userId: string, current: string, next: string, acceptPolicy?: boolean) {
+  async changePassword(userId: string, current: string | undefined, next: string, acceptPolicy?: boolean) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (!(await verify(user.passwordHash, current).catch(() => false))) throw new UnauthorizedException("Mot de passe actuel incorrect.");
+    // Première connexion (mot de passe provisoire) : la personne vient de le saisir pour entrer, on ne le redemande pas.
+    if (!user.mustChangePassword && !(await verify(user.passwordHash, current ?? "").catch(() => false))) throw new UnauthorizedException("Mot de passe actuel incorrect.");
     checkStrength(next, user.email);
-    if (current === next) throw new BadRequestException("Choisis un mot de passe différent du provisoire.");
+    if (await verify(user.passwordHash, next).catch(() => false)) throw new BadRequestException(user.mustChangePassword ? "Choisis un mot de passe différent du provisoire." : "Choisis un mot de passe différent de l'actuel.");
     if (user.mustChangePassword && acceptPolicy !== true) throw new BadRequestException("Il faut accepter la politique de confidentialité.");
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hash(next), mustChangePassword: false } }),
