@@ -35,7 +35,7 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 2. **Activer la double authentification du coach** sur CourtCoach (menu Sécurité), ranger les 8 codes de secours sur papier, puis ajouter `REQUIRE_STAFF_2FA=true` dans Vercel (projet courtcoach-api) et redéployer.
 3. **GitHub** : protéger la branche `main` (Settings → Branches : « Require a pull request before merging »), et n'inviter personne d'autre sans réfléchir.
 4. **Vercel** : marquer les variables `JWT_SECRET`, `DATABASE_URL`, `CRON_SECRET`, `TOTP_KEY` comme « Sensitive » ; ne jamais les copier dans un message, un e-mail ou une capture d'écran.
-5. **Changer `JWT_SECRET` et `CRON_SECRET` une fois par an** (cela déconnecte tout le monde une fois : c'est normal).
+5. **Changer `JWT_SECRET` et `CRON_SECRET` une fois par an** (cela déconnecte tout le monde une fois : c'est normal). **Ne jamais changer `TOTP_KEY`** : cela casserait la double authentification déjà activée. Supprimer `SETUP_TOKEN` de Vercel une fois le compte coach créé.
 6. **Neon** : vérifier que les sauvegardes sont actives et que la base est en Europe ; ne pas partager l'adresse de la base.
 7. **Une fois par trimestre** : relire le journal de connexions (page Sécurité) et lancer `npm audit` dans `apps/api` et `apps/web` (je peux le faire pour toi).
 8. **Ordinateur et téléphone** : mises à jour faites, verrouillage de l'écran, pas de session coach ouverte sur un appareil prêté.
