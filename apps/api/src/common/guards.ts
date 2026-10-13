@@ -3,7 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { COOKIE_ACCESS } from "./auth.types";
+import { COOKIE_ACCESS, passwordStamp } from "./auth.types";
 
 // Toute route exige une connexion, sauf celles marquées @Public().
 @Injectable()
@@ -16,9 +16,14 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException();
     try {
       const payload = await this.jwt.verifyAsync(token);
-      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, email: true, deletedAt: true, mustChangePassword: true } });
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, email: true, deletedAt: true, mustChangePassword: true, passwordHash: true, totpEnabled: true } });
       if (!user || user.deletedAt) throw new UnauthorizedException();
+      if (payload.pv !== passwordStamp(user.passwordHash)) throw new UnauthorizedException(); // mot de passe changé depuis : cette session n'est plus valable
       req.user = { id: user.id, role: user.role, email: user.email };
+      // Option « double authentification obligatoire » (REQUIRE_STAFF_2FA=true) : coach et entraîneurs doivent l'activer avant de continuer (seules les pages du compte restent ouvertes)
+      if (process.env.REQUIRE_STAFF_2FA === "true" && (user.role === Role.COACH || user.role === Role.TRAINER) && !user.totpEnabled && !String(req.originalUrl || req.url).startsWith("/api/auth/")) {
+        throw new ForbiddenException({ message: "Active d'abord la double authentification (menu Sécurité).", code: "TWO_FACTOR_REQUIRED" });
+      }
       // Mot de passe provisoire : on ne peut rien faire d'autre que le changer.
       if (user.mustChangePassword && !this.reflector.getAllAndOverride<boolean>("allowMustChange", [ctx.getHandler(), ctx.getClass()])) {
         throw new ForbiddenException({ message: "Tu dois d'abord choisir ton mot de passe.", code: "PASSWORD_CHANGE_REQUIRED" });

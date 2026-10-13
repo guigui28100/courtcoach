@@ -5,6 +5,7 @@ import { hash, verify } from "@node-rs/argon2";
 import { createHash, randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
+import { passwordStamp } from "../common/auth.types";
 import { newRecoveryCodes, newSecret, otpauthUrl, seal, unseal, verifyCode } from "./totp";
 
 const WEAK = new Set(["motdepasse12", "motdepasse123", "azertyuiop", "azerty12345", "1234567890", "0123456789", "password123", "password1234", "qwertyuiop", "tennisclub", "tennis12345", "courtcoach", "houdan2026"]);
@@ -30,7 +31,9 @@ export class AuthService {
   constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService, private readonly audit: AuditService) {}
 
   private async issueTokens(userId: string, role: Role) {
-    const access = await this.jwt.signAsync({ sub: userId, role }, { expiresIn: ACCESS_TTL_S });
+    // « pv » = empreinte du mot de passe actuel : si le mot de passe change (ou est réinitialisé), les anciennes sessions cessent de marcher tout de suite
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    const access = await this.jwt.signAsync({ sub: userId, role, pv: passwordStamp(me?.passwordHash ?? "") }, { expiresIn: ACCESS_TTL_S });
     const refresh = randomBytes(48).toString("base64url");
     await this.prisma.refreshToken.create({ data: { userId, tokenHash: sha256(refresh), expiresAt: new Date(Date.now() + REFRESH_TTL_MS) } });
     return { access, refresh, accessMaxAgeMs: ACCESS_TTL_S * 1000, refreshMaxAgeMs: REFRESH_TTL_MS };

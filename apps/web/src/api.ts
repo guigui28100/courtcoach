@@ -38,6 +38,11 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
     await refreshOnce();
     res = await raw(path, init);
   }
+  // Double authentification obligatoire (réglage du serveur) : on emmène le coach sur la page Sécurité
+  if (res.status === 403) {
+    const body = await res.clone().json().catch(() => null);
+    if (body?.code === "TWO_FACTOR_REQUIRED" && !location.pathname.startsWith("/coach/securite")) location.assign("/coach/securite");
+  }
   return parse(res) as Promise<T>;
 }
 

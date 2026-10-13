@@ -138,7 +138,7 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
   it("mot de passe oublié puis suppression du compte : les sessions se ferment et l'accès disparaît", async () => {
     const r = await A.coach.post(`/api/trainers/${trainerId}/reset-password`).set(ORIGIN).expect(200);
     expect(r.body.temporaryPassword).toHaveLength(14);
-    await A.trainer.get("/api/players").expect(403); // son ancien accès ne mène plus à rien : il doit choisir un nouveau mot de passe
+    await A.trainer.get("/api/players").expect(401); // son ancienne session est fermée tout de suite : il doit se reconnecter avec le mot de passe provisoire
     await A.coach.delete(`/api/trainers/${trainerId}`).set(ORIGIN).expect(204);
     await agent().post("/api/auth/login").set(ORIGIN).send({ email: "julie@exemple.fr", password: r.body.temporaryPassword }).expect(401);
     expect((await A.coach.get("/api/trainers").expect(200)).body).toEqual([]);
