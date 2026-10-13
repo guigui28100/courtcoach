@@ -83,6 +83,11 @@
 .tabbar { min-width: 0; position: sticky; top: 61px; z-index: 30; margin-inline: -1rem; padding-inline: 1rem; background: rgba(251, 247, 241, 0.96); backdrop-filter: blur(8px); }
 .tabbar > div { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 2px solid var(--color-line); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent); }
 .tabbar > div::-webkit-scrollbar { display: none; }
+/* Téléphone : les onglets restent sur une ligne qu'on fait défiler (jamais de mots coupés à la verticale) */
+@media (max-width: 767px) {
+  .tabbar > div > button { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .tabbar .tab-txt { white-space: nowrap; flex: none; }
+}
 .gal-tabs { min-width: 0; position: sticky; top: 69px; z-index: 30; padding: 0.35rem; border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 1.5rem; background: rgba(27, 24, 99, 0.96); backdrop-filter: blur(12px); box-shadow: 0 10px 28px rgba(20, 16, 80, 0.55); }
 .gal-tabs > div { display: flex; gap: 0.5rem; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 24px), transparent); }
 .gal-tabs > div::-webkit-scrollbar { display: none; }
