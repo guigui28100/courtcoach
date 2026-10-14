@@ -85,7 +85,7 @@ export function MissionRadar({ goals, stars, dark = false, who = "jeune", season
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="mission-radar">
       <h2 id="mission-radar" className="m-0 text-2xl">🚀 {me ? "Ma toile des missions" : "La toile des missions"} · trimestre {t}</h2>
-      <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service…) et réunit {me ? "toutes tes missions" : "toutes les missions"} de ce thème (même s'il y en a plusieurs). Plus la pointe est loin du centre, plus {me ? "tu as" : "le joueur a"} gagné d'étoiles ; le bord de la toile veut dire « objectifs atteints ». Elle repart de zéro à chaque trimestre.</p>
+      <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service…) et réunit {me ? "toutes tes missions" : "toutes les missions"} de ce thème ; le chiffre entre parenthèses est leur nombre (rien s'il n'y en a qu'une). Plus la pointe est loin du centre, plus {me ? "tu as" : "le joueur a"} gagné d'étoiles ; le bord de la toile veut dire « objectifs atteints ». Elle repart de zéro à chaque trimestre.</p>
       {here.length === 0 ? <p className={box}>{me ? "Ton coach n'a pas encore fixé de mission ce trimestre : ta toile apparaîtra dès qu'il y en aura." : "Aucune mission ce trimestre : la toile apparaîtra dès que tu en fixes (onglet « Définir les objectifs de travail »)."}</p>
         : n < 3 ? <p className={box}>La toile apparaît à partir de 3 thèmes différents (coup droit, revers, service…). En attendant, suis chaque mission avec sa barre.</p>
         : (
@@ -100,7 +100,7 @@ export function MissionRadar({ goals, stars, dark = false, who = "jeune", season
                 return (
                   <g key={`${r.axis}|${r.label}`}>
                     <circle cx={x} cy={y} r={7} fill={main} />
-                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize={fs} fontWeight="800" fill={col}>{cut(r.label)}</text>
+                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize={fs} fontWeight="800" fill={col}>{cut(r.label)}{r.count > 1 ? ` (${r.count})` : ""}</text>
                     <text x={lx} y={ly + fs + 3} textAnchor={anchor} fontSize={fs - 1} fontWeight="700" fill={dark ? "#fff" : "#10203a"}>{r.earned}/{r.target} ⭐ · {Math.round(r.v * 100)} %</text>
                   </g>
                 );
