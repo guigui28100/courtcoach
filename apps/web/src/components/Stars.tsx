@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
-import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, STARS_PER_POINT, missionStars, goalApplies, totalStars, trimesterOf } from "../types";
+import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, STARS_PER_POINT, MISSION_TOPICS, missionStars, goalApplies, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
 export function useStars(playerId: string | undefined, reload = 0) {
@@ -48,44 +48,60 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
   );
 }
 
-// Toile des objectifs : une pointe par mission du trimestre ; plus la pointe est loin du centre, plus l'élève a gagné d'étoiles sur cette mission (le bord = objectif atteint).
+// Toile des objectifs : une pointe par THÈME de mission (coup droit, revers, service…). Les missions du même thème sont regroupées (même s'il y en a beaucoup) ;
+// la distance = étoiles gagnées sur ces missions / étoiles à gagner (chaque mission plafonnée à son objectif) ; le bord = objectifs atteints.
 const MR_COLOR: Record<string, [string, string]> = { technique: ["#ff9b73", "#b8471f"], tactique: ["#7dbbff", "#2a6fb0"], physique: ["#6ee8aa", "#2f8f5b"], mental: ["#d3b2ff", "#7a4cc2"] }; // [sur fond sombre, sur fond clair]
-const shortTitle = (g: Goal, all: Goal[]) => {
-  const [topic, ...rest] = g.title.split(" : "); const same = all.filter((x) => x.title.split(" : ")[0] === topic).length;
-  const t = rest.length ? (same > 1 ? rest.join(" : ") : topic) : g.title;
-  return t.length > 20 ? t.slice(0, 19).trimEnd() + "…" : t;
-};
+const AXIS_ORDER = ["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const;
+const AXIS_NAME: Record<string, string> = { TECHNIQUE: "Technique", TACTIQUE: "Tactique", PHYSIQUE: "Physique", MENTAL: "Mental" };
+// Le thème d'une mission : « Revers : jouer croisé » → « Revers » ; sans thème connu (anciennes missions, « Autre ») → le nom du domaine
+const themeOf = (g: Goal) => { const k = g.title.indexOf(" : "), head = k > 0 ? g.title.slice(0, k) : ""; return head && (MISSION_TOPICS[g.axis] ?? []).includes(head) ? head : ""; };
+const cut = (t: string, n = 16) => (t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t);
+// Vrai sur téléphone (écran étroit) : sert à ajuster la taille du texte du dessin
+function useNarrow() {
+  const [n, setN] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
+  useEffect(() => { const on = () => setN(window.innerWidth < 640); window.addEventListener("resize", on); return () => window.removeEventListener("resize", on); }, []);
+  return n;
+}
 export function MissionRadar({ goals, stars, dark = false, who = "jeune", season: seasonProp, t: tProp }: { goals: Goal[]; stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "coach"; season?: string; t?: number }) {
+  const narrow = useNarrow(); // téléphone : texte un peu plus grand (le dessin est réduit) ; ordinateur : texte plus petit
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
-  const here = (["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
-  const rows = here.map((g) => { const target = g.targetStars ?? 10, earned = missionStars(stars, g.id, season, t); return { g, target, earned, v: Math.min(1, earned / Math.max(1, target)) }; });
+  const here = AXIS_ORDER.flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
+  // Regroupement par thème (dans l'ordre : domaine, puis ordre de la liste des thèmes)
+  const groups = new Map<string, { axis: string; label: string; order: number; count: number; earned: number; target: number }>();
+  for (const g of here) {
+    const topic = themeOf(g), key = `${g.axis}|${topic}`, target = g.targetStars ?? 10, earned = Math.min(target, missionStars(stars, g.id, season, t));
+    const cur = groups.get(key) ?? { axis: g.axis, label: topic || AXIS_NAME[g.axis], order: AXIS_ORDER.indexOf(g.axis as (typeof AXIS_ORDER)[number]) * 100 + (topic ? 1 + (MISSION_TOPICS[g.axis] ?? []).indexOf(topic) : 0), count: 0, earned: 0, target: 0 };
+    cur.count++; cur.earned += earned; cur.target += target; groups.set(key, cur);
+  }
+  const rows = [...groups.values()].sort((a, b) => a.order - b.order).map((r) => ({ ...r, v: Math.min(1, r.earned / Math.max(1, r.target)) }));
   const sub = dark ? "text-white/80" : "text-muted", me = who === "jeune", n = rows.length;
-  const C = 300, R = 215, W = 840, H = 610;
+  const fs = narrow ? (n > 9 ? 22 : 26) : n > 9 ? 15 : 17;
+  const C = 300, R = 215, W = narrow ? 840 : 780, H = 610;
   const pt = (i: number, v: number): [number, number] => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [C + Math.cos(a) * R * v, C + Math.sin(a) * R * v]; };
   const grid = dark ? "rgba(255,255,255,0.3)" : "#e4d6c5", main = dark ? "#dcf247" : "#e0b100";
-  const summary = rows.map((r) => `${r.g.title} : ${r.earned} étoiles sur ${r.target}`).join(". ");
+  const summary = rows.map((r) => `${r.label} : ${r.earned} étoiles sur ${r.target}, ${r.count} mission${r.count > 1 ? "s" : ""}`).join(". ");
   const box = "m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60");
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="mission-radar">
       <h2 id="mission-radar" className="m-0 text-2xl">🚀 {me ? "Ma toile des missions" : "La toile des missions"} · trimestre {t}</h2>
-      <p className={"m-0 " + sub}>Chaque pointe est une mission. Plus la pointe est loin du centre, plus {me ? "tu as" : "le joueur a"} gagné d'étoiles sur cette mission ; le bord de la toile veut dire « objectif atteint ». Elle repart de zéro à chaque trimestre.</p>
-      {n === 0 ? <p className={box}>{me ? "Ton coach n'a pas encore fixé de mission ce trimestre : ta toile apparaîtra dès qu'il y en aura." : "Aucune mission ce trimestre : la toile apparaîtra dès que tu en fixes (onglet « Définir les objectifs de travail »)."}</p>
-        : n < 3 ? <p className={box}>La toile apparaît à partir de 3 missions. En attendant, suis chaque mission avec sa barre.</p>
+      <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service…) et réunit {me ? "toutes tes missions" : "toutes les missions"} de ce thème ; le chiffre entre parenthèses est leur nombre (rien s'il n'y en a qu'une). Plus la pointe est loin du centre, plus {me ? "tu as" : "le joueur a"} gagné d'étoiles ; le bord de la toile veut dire « objectifs atteints ». Elle repart de zéro à chaque trimestre.</p>
+      {here.length === 0 ? <p className={box}>{me ? "Ton coach n'a pas encore fixé de mission ce trimestre : ta toile apparaîtra dès qu'il y en aura." : "Aucune mission ce trimestre : la toile apparaîtra dès que tu en fixes (onglet « Définir les objectifs de travail »)."}</p>
+        : n < 3 ? <p className={box}>La toile apparaît à partir de 3 thèmes différents (coup droit, revers, service…). En attendant, suis chaque mission avec sa barre.</p>
         : (
           <figure className="m-0 grid justify-items-center">
-            <svg viewBox={`-120 -5 ${W} ${H}`} width="100%" style={{ maxWidth: 760 }} role="img" aria-label={`Toile des missions. ${summary}`}>
+            <svg viewBox={`${narrow ? -120 : -90} -5 ${W} ${H}`} width="100%" style={{ maxWidth: narrow ? 760 : 640 }} role="img" aria-label={`Toile des missions. ${summary}`}>
               {[0.2, 0.4, 0.6, 0.8, 1].map((l) => <polygon key={l} points={rows.map((_, i) => pt(i, l).join(",")).join(" ")} fill="none" stroke={grid} strokeWidth={l === 1 ? 2 : 1} />)}
               {rows.map((_, i) => { const [x, y] = pt(i, 1); return <line key={i} x1={C} y1={C} x2={x} y2={y} stroke={grid} />; })}
               <polygon points={rows.map((r, i) => pt(i, r.v).join(",")).join(" ")} fill={main} fillOpacity={0.25} stroke={main} strokeWidth={4} strokeLinejoin="round" />
               {rows.map((r, i) => {
                 const [x, y] = pt(i, r.v), a = -Math.PI / 2 + (i * 2 * Math.PI) / n, lx = C + Math.cos(a) * (R + 30), ly = C + Math.sin(a) * (R + 30);
-                const anchor = Math.abs(Math.cos(a)) < 0.3 ? "middle" : Math.cos(a) > 0 ? "start" : "end", col = MR_COLOR[r.g.axis.toLowerCase()]?.[dark ? 0 : 1] ?? "#999";
+                const anchor = Math.abs(Math.cos(a)) < 0.3 ? "middle" : Math.cos(a) > 0 ? "start" : "end", col = MR_COLOR[r.axis.toLowerCase()]?.[dark ? 0 : 1] ?? "#999";
                 return (
-                  <g key={r.g.id}>
+                  <g key={`${r.axis}|${r.label}`}>
                     <circle cx={x} cy={y} r={7} fill={main} />
-                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize="25" fontWeight="800" fill={col}>{shortTitle(r.g, here)}</text>
-                    <text x={lx} y={ly + 27} textAnchor={anchor} fontSize="25" fontWeight="900" fill={dark ? "#fff" : "#10203a"}>{r.earned}/{r.target} ⭐ · {Math.round(r.v * 100)} %</text>
+                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize={fs} fontWeight="800" fill={col}>{cut(r.label)}{r.count > 1 ? ` (${r.count})` : ""}</text>
+                    <text x={lx} y={ly + fs + 3} textAnchor={anchor} fontSize={fs - 1} fontWeight="700" fill={dark ? "#fff" : "#10203a"}>{r.earned}/{r.target} ⭐ · {Math.round(r.v * 100)} %</text>
                   </g>
                 );
               })}
@@ -95,7 +111,6 @@ export function MissionRadar({ goals, stars, dark = false, who = "jeune", season
     </section>
   );
 }
-
 
 // Suivi des progrès cours après cours (ancien « radar de tous les jours ») : alimenté par les étoiles de la saison, mis à jour à chaque cours
 export function StarsRadar({ stars, dark = false, who = "jeune", season: seasonProp, t: tProp, bulletin = false, start, hideDomains = false }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" | "coach"; season?: string; t?: number; bulletin?: boolean; hideDomains?: boolean; start?: Record<string, number> }) {
