@@ -12,7 +12,7 @@ import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
 import { ConsentsTab, ParentReminders } from "../components/Consents";
 import { FamilyInfo } from "../components/FamilyInfo";
-import { StarsRadar, useStars } from "../components/Stars";
+import { MissionRadar, StarsRadar, useStars } from "../components/Stars";
 import { useFollowUp } from "../components/Suivi";
 import { BackLink } from "../components/ui";
 import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
@@ -509,7 +509,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               )}
               {tab === "accueil" && <HomeTab p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} newStars={newStars} go={go} />}
               {tab === "depart" && <StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} />}
-              {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
+              {tab === "missions" && <><MissionRadar goals={goals[p.id] ?? []} stars={stars} dark /><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}

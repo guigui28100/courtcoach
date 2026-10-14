@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, StarsRadar, useStars } from "../components/Stars";
+import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, StarsRadar, MissionRadar, useStars } from "../components/Stars";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -399,6 +399,7 @@ function StarsTab({ p }: { p: Player }) {
   return (
     <div className="grid gap-4">
       <StarsRadar stars={stars} who="coach" />
+      <MissionRadar goals={goals} stars={stars} who="coach" season={currentSeason(new Date(day + "T12:00:00"))} t={trimesterOf(new Date(day + "T12:00:00"))} />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
