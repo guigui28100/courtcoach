@@ -55,13 +55,21 @@ const shortTitle = (g: Goal, all: Goal[]) => {
   const t = rest.length ? (same > 1 ? rest.join(" : ") : topic) : g.title;
   return t.length > 20 ? t.slice(0, 19).trimEnd() + "…" : t;
 };
+// Vrai sur téléphone (écran étroit) : sert à ajuster la taille du texte du dessin
+function useNarrow() {
+  const [n, setN] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
+  useEffect(() => { const on = () => setN(window.innerWidth < 640); window.addEventListener("resize", on); return () => window.removeEventListener("resize", on); }, []);
+  return n;
+}
 export function MissionRadar({ goals, stars, dark = false, who = "jeune", season: seasonProp, t: tProp }: { goals: Goal[]; stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "coach"; season?: string; t?: number }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf();
   const here = (["TECHNIQUE", "TACTIQUE", "PHYSIQUE", "MENTAL"] as const).flatMap((axis) => goals.filter((g) => g.axis === axis && goalApplies(g, t)));
   const rows = here.map((g) => { const target = g.targetStars ?? 10, earned = missionStars(stars, g.id, season, t); return { g, target, earned, v: Math.min(1, earned / Math.max(1, target)) }; });
   const sub = dark ? "text-white/80" : "text-muted", me = who === "jeune", n = rows.length;
-  const C = 300, R = 215, W = 840, H = 610;
+  const narrow = useNarrow(); // téléphone : texte un peu plus grand (le dessin est réduit) ; ordinateur : texte plus petit
+  const fs = narrow ? 26 : 16;
+  const C = 300, R = 215, W = narrow ? 840 : 780, H = 610;
   const pt = (i: number, v: number): [number, number] => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [C + Math.cos(a) * R * v, C + Math.sin(a) * R * v]; };
   const grid = dark ? "rgba(255,255,255,0.3)" : "#e4d6c5", main = dark ? "#dcf247" : "#e0b100";
   const summary = rows.map((r) => `${r.g.title} : ${r.earned} étoiles sur ${r.target}`).join(". ");
@@ -74,7 +82,7 @@ export function MissionRadar({ goals, stars, dark = false, who = "jeune", season
         : n < 3 ? <p className={box}>La toile apparaît à partir de 3 missions. En attendant, suis chaque mission avec sa barre.</p>
         : (
           <figure className="m-0 grid justify-items-center">
-            <svg viewBox={`-120 -5 ${W} ${H}`} width="100%" style={{ maxWidth: 760 }} role="img" aria-label={`Toile des missions. ${summary}`}>
+            <svg viewBox={`${narrow ? -120 : -90} -5 ${W} ${H}`} width="100%" style={{ maxWidth: narrow ? 760 : 640 }} role="img" aria-label={`Toile des missions. ${summary}`}>
               {[0.2, 0.4, 0.6, 0.8, 1].map((l) => <polygon key={l} points={rows.map((_, i) => pt(i, l).join(",")).join(" ")} fill="none" stroke={grid} strokeWidth={l === 1 ? 2 : 1} />)}
               {rows.map((_, i) => { const [x, y] = pt(i, 1); return <line key={i} x1={C} y1={C} x2={x} y2={y} stroke={grid} />; })}
               <polygon points={rows.map((r, i) => pt(i, r.v).join(",")).join(" ")} fill={main} fillOpacity={0.25} stroke={main} strokeWidth={4} strokeLinejoin="round" />
@@ -84,8 +92,8 @@ export function MissionRadar({ goals, stars, dark = false, who = "jeune", season
                 return (
                   <g key={r.g.id}>
                     <circle cx={x} cy={y} r={7} fill={main} />
-                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize="25" fontWeight="800" fill={col}>{shortTitle(r.g, here)}</text>
-                    <text x={lx} y={ly + 27} textAnchor={anchor} fontSize="25" fontWeight="900" fill={dark ? "#fff" : "#10203a"}>{r.earned}/{r.target} ⭐ · {Math.round(r.v * 100)} %</text>
+                    <text x={lx} y={ly - 2} textAnchor={anchor} fontSize={fs} fontWeight="800" fill={col}>{shortTitle(r.g, here)}</text>
+                    <text x={lx} y={ly + fs + 3} textAnchor={anchor} fontSize={fs - 1} fontWeight="700" fill={dark ? "#fff" : "#10203a"}>{r.earned}/{r.target} ⭐ · {Math.round(r.v * 100)} %</text>
                   </g>
                 );
               })}
