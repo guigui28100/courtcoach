@@ -223,6 +223,21 @@ describe("Vidéos et analyses", () => {
     await A.coach.post(`/api/videos/${(r as any).vid}/analysis/send`).set(ORIGIN).expect(400);
   });
 
+  it("analyse d'un jeune du Centre : « ce qui est bien » + « ce qu'on travaille » suffisent pour l'envoyer (sans observation) ; une seule des deux ne suffit pas", async () => {
+    const vid = ((await upload(A.coach, { playerId: p1, title: "Analyse simple" }, fakeMp4(5000))) as any).vid as string;
+    await A.coach.put(`/api/videos/${vid}/analysis`).set(ORIGIN).send({ strengths: "Belle rotation d'épaules." }).expect(200);
+    await A.coach.post(`/api/videos/${vid}/analysis/send`).set(ORIGIN).expect(400); // il manque « ce qu'on travaille »
+    await A.coach.put(`/api/videos/${vid}/analysis`).set(ORIGIN).send({ strengths: "Belle rotation d'épaules.", improve: "Lancer de balle plus haut." }).expect(200);
+    await A.coach.post(`/api/videos/${vid}/analysis/send`).set(ORIGIN).expect(204);
+    const seen = (await A.par1.get("/api/videos").expect(200)).body.find((v: any) => v.id === vid);
+    expect(seen.analysis).toMatchObject({ strengths: "Belle rotation d'épaules.", improve: "Lancer de balle plus haut.", observation: "" });
+    // un adulte (demande de coaching) garde l'observation obligatoire
+    const ad = (await upload(A.adultB, {}, fakeMp4(5000)) as any).vid as string;
+    await A.coach.put(`/api/videos/${ad}/analysis`).set(ORIGIN).send({ strengths: "Bien", improve: "Mieux" }).expect(200);
+    await A.coach.post(`/api/videos/${ad}/analysis/send`).set(ORIGIN).expect(400);
+    await A.coach.delete(`/api/videos/${vid}`).set(ORIGIN).expect(204);
+  });
+
   it("le stockage est limité (quota du club)", async () => {
     process.env.VIDEO_QUOTA_MB = "0.002";
     await A.adultB.post("/api/videos").set(ORIGIN).send({ title: "x", shot: "Service", sizeBytes: 5000 }).expect(507);
