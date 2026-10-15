@@ -264,7 +264,9 @@ export class VideosService {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
     const v = await this.load(user, id); // un entraîneur ne touche qu'aux vidéos de ses jeunes
     const a = await this.prisma.analysis.findFirst({ where: { videoId: id } });
-    if (!a || !a.observation.trim()) throw new BadRequestException("Écris au moins une observation avant d'envoyer l'analyse.");
+    // Vidéo d'un jeune du Centre : « Ce qui est bien » + « Ce qu'on travaille » suffisent (le mot libre est facultatif). Demande de coaching d'un adulte : une observation reste obligatoire.
+    const filled = !!a && (v.playerId ? !!((a.strengths.trim() && a.improve.trim()) || a.observation.trim()) : !!a.observation.trim());
+    if (!a || !filled) throw new BadRequestException(v.playerId ? "Écris « Ce qui est bien » et « Ce qu'on travaille » avant d'envoyer l'analyse." : "Écris au moins une observation avant d'envoyer l'analyse.");
     await this.prisma.$transaction([
       this.prisma.analysis.update({ where: { id: a.id }, data: { sentAt: a.sentAt ?? new Date() } }),
       this.prisma.video.update({ where: { id }, data: { status: VideoStatus.ANALYSED, ...(a.sentAt ? {} : { seenAt: null }), ...(v.fromCoach && !v.sentToPlayerAt ? { sentToPlayerAt: new Date(), seenAt: null } : {}) } }),
