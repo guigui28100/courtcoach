@@ -223,3 +223,5 @@
 - Onglet « 📡 Mes progrès » du jeune : en haut un gros bouton « 🕸️ Voir ma toile et mes progrès » (devient « 🙈 Cacher ma toile ») qui déplie la toile unique (`ThemeRadar` : départ en pointillés + progrès) ; fermée par défaut, puis les cartes de missions. La toile reste aussi dans « Mon point de départ ». Aucun changement du serveur.
 
 - Bilan de départ, Mental : deux points de plus, « Combativité » et « Confiance » (`START_ITEMS` dans `types.ts`, `TOPIC_ITEM` dans `ThemeRadar.tsx`) : ce sont aussi des points proposés pour les missions, donc ils doivent pouvoir être notés au départ et ne plus apparaître sur la toile d'un seul enfant sans note. Les anciens bilans restent valables (point non noté = pas de pointe, sauf mission). Aucun changement du serveur.
+
+- Évaluations (bilan de début d'année, évaluations trimestrielles, bulletins) : le domaine « Attitude » s'écrit « Attitude à l'entraînement » et « Mental » s'écrit « Mental en compétition » (`EVAL_AXES` dans `types.ts`, libellé seulement ; les clés enregistrées `attitude` / `mental` ne changent pas). Les menus de missions et la toile gardent « Mental » / « Attitude ». Aucun changement du serveur.
