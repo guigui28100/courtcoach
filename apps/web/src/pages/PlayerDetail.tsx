@@ -1,3 +1,4 @@
+import { MailParent } from "../components/MailParent";
 import { GoalLibraryTab } from "../components/GoalLibrary";
 import { StartEvalPanel } from "../components/StartEvalTab";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -61,10 +62,19 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
   );
 }
 
+// Message d'invitation préparé pour la messagerie du coach (lien « mailto: ») : le lien est personnel, à usage unique, et le mot de passe n'y figure jamais
+function inviteMailto(i: { url: string; days: number; email: string; role: string }) {
+  const lines = i.role === "YOUTH"
+    ? ["Bonjour,", "", "Voici l'invitation pour ouvrir ton espace sur CourtCoach (Tennis Club Houdan).", `Clique sur ce lien personnel pour choisir ton mot de passe : ${i.url}`]
+    : ["Bonjour,", "", "Vous êtes invité(e) à suivre l'espace de votre enfant sur CourtCoach (Tennis Club Houdan).", `Cliquez sur ce lien personnel pour choisir votre mot de passe : ${i.url}`];
+  lines.push(`Ce lien ne fonctionne qu'une seule fois et reste valable ${i.days} jours. L'identifiant sera cette adresse e-mail.`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan");
+  return `mailto:${i.email}?subject=${encodeURIComponent("Invitation à CourtCoach")}&body=${encodeURIComponent(lines.join("\r\n"))}`;
+}
+
 function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
   const nav = useNavigate();
   const [err, setErr] = useState("");
-  const [invite, setInvite] = useState<{ url: string; days: number } | null>(null);
+  const [invite, setInvite] = useState<{ url: string; days: number; email: string; role: string } | null>(null);
   const [created, setCreated] = useState<{ email: string; password?: string; existing: boolean } | null>(null);
   const [accesses, setAccesses] = useState<{ userId: string; email: string; role: string; mustChangePassword: boolean; lastLoginAt: string | null }[]>([]);
   const loadAccess = useCallback(() => { get(`/players/${p.id}/access`).then(setAccesses); }, [p.id]);
@@ -84,7 +94,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
     setErr(""); setInvite(null);
     try {
       const r = await post<{ token: string; expiresInDays: number }>(`/players/${p.id}/invitations`, { email: String(f.get("email")), role: f.get("role") });
-      setInvite({ url: `${window.location.origin}/invitation/${r.token}`, days: r.expiresInDays });
+      setInvite({ url: `${window.location.origin}/invitation/${r.token}`, days: r.expiresInDays, email: String(f.get("email")), role: String(f.get("role")) });
     } catch (x) { setErr((x as Error).message); }
   }
   async function createAccess(e: FormEvent<HTMLFormElement>) {
@@ -160,7 +170,8 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
             {accesses.map((a) => (
               <li key={a.userId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2">
                 <span><strong>{a.email}</strong> · {a.role === "YOUTH" ? "jeune" : "parent"}<small className="hint block">{a.mustChangePassword ? "Mot de passe provisoire pas encore changé" : a.lastLoginAt ? `Dernière connexion le ${fmtDate(a.lastLoginAt)}` : "Jamais connecté"}</small></span>
-                <span className="flex flex-wrap gap-2">
+                <span className="flex flex-wrap items-start gap-2">
+                {a.role !== "YOUTH" && <MailParent email={a.email} firstName={p.firstName} />}
                 <button className="btn-outline btn-sm" onClick={async () => { if (confirm(`Donner un nouveau mot de passe provisoire à ${a.email} ? L'ancien ne marchera plus.`)) { try { const r = await post<{ email: string; temporaryPassword: string }>(`/players/${p.id}/access/${a.userId}/reset-password`); setCreated({ email: r.email, password: r.temporaryPassword, existing: false }); loadAccess(); } catch (x) { alert((x as Error).message); } } }}>Mot de passe oublié</button>
                 <button className="btn-danger btn-sm" onClick={async () => { if (confirm(`Retirer l'accès de ${a.email} ?`)) { await del(`/players/${p.id}/access/${a.userId}`); loadAccess(); } }}>Retirer l'accès</button>
                 </span>
@@ -182,6 +193,8 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
+            <a className="btn-clay btn-sm mt-3 inline-flex" href={inviteMailto(invite)}>✉️ Envoyer l'invitation par e-mail</a>
+            <p className="hint m-0 mt-1">Ta messagerie s'ouvre avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}
       </section>
