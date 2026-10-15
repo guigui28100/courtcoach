@@ -4,7 +4,9 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { del, get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
-import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, StarsRadar, MissionRadar, useStars } from "../components/Stars";
+import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, useStars } from "../components/Stars";
+import { ThemeRadar } from "../components/ThemeRadar";
+import { useFollowUp } from "../components/Suivi";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -382,6 +384,7 @@ function StarsTab({ p }: { p: Player }) {
   const isCoach = useAuth().me?.role === "COACH";
   const [version, setVersion] = useState(0);
   const stars = useStars(p.id, version);
+  const { evals } = useFollowUp(p.id);
   const [day, setDay] = useState(todayIso());
   const [lines, setLines] = useState<StarLine[]>([]);
   // Missions du trimestre du cours choisi (pour donner des étoiles SUR une mission)
@@ -398,8 +401,7 @@ function StarsTab({ p }: { p: Player }) {
   function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
-      <StarsRadar stars={stars} who="coach" />
-      <MissionRadar goals={goals} stars={stars} who="coach" season={currentSeason(new Date(day + "T12:00:00"))} t={trimesterOf(new Date(day + "T12:00:00"))} />
+      <ThemeRadar ratings={evals?.find((e) => e.season === currentSeason(new Date(day + "T12:00:00")) && e.trimester === 0)?.ratings} goals={goals} stars={stars} who="coach" season={currentSeason(new Date(day + "T12:00:00"))} t={trimesterOf(new Date(day + "T12:00:00"))} />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>

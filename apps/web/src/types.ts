@@ -57,7 +57,7 @@ export const EVAL_AXES: EvalAxis[] = [
 // Bilan de départ : le détail à noter dans chaque domaine (clé enregistrée : d_<domaine>_<point>)
 export const START_ITEMS: Record<string, [string, string][]> = {
   technique: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["volee", "Volée"], ["smash", "Smash"]],
-  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"]],
+  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Jeu au filet"]],
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
   attitude: [["ecoute", "Écoute"], ["effort", "Effort"], ["comportement", "Comportement"]],
@@ -73,7 +73,7 @@ export const levelOf = (rating: number | undefined) => (!rating ? -1 : rating <=
 // Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs
 export const MISSION_TOPICS: Record<string, string[]> = {
   TECHNIQUE: ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes"],
-  TACTIQUE: ["Défendre", "Attaquer", "Construire le point", "Variations", "Lecture du jeu"],
+  TACTIQUE: ["Défendre", "Attaquer", "Jeu au filet", "Construire le point", "Variations", "Lecture du jeu"],
   PHYSIQUE: ["Endurance", "Vitesse", "Explosivité", "Gainage", "Coordination", "Souplesse"],
   MENTAL: ["Concentration", "Gestion des émotions", "Routines", "Confiance", "Combativité"],
 };
