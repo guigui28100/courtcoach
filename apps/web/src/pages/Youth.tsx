@@ -290,7 +290,20 @@ function MissionProgress({ goals, stars, playerId, preview, name, teen }: { goal
 function ProgressTab({ p, stars, goals, preview }: { p: Player; stars: CourseStar[] | null; goals: Goal[]; preview: boolean }) {
   // Ouvrir « Progrès » = voir ses nouvelles étoiles : on les marque comme vues (liste gardée dans le navigateur de l'enfant, rien n'est envoyé)
   useLayoutEffect(() => { if (preview || !stars) return; try { localStorage.setItem(seenKey(p.id), JSON.stringify(stars.slice(0, 400).map(starSig))); } catch { /* ignoré */ } }, [stars, preview, p.id]);
-  return <MissionProgress goals={goals} stars={stars} playerId={p.id} preview={preview} name={p.firstName} teen={isTeen(p)} />;
+  // La toile (départ + progrès) s'ouvre en touchant un bouton : elle ne prend pas de place tant qu'on ne la demande pas
+  const { evals } = useFollowUp(p.id);
+  const start = evals?.find((e) => e.season === currentSeason() && e.trimester === 0);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="grid gap-5">
+      <section className="glass grid gap-3" aria-label="Ma toile">
+        <button type="button" className="gal-btn justify-self-start" aria-expanded={open} aria-controls="theme-radar-zone" onClick={() => setOpen((o) => !o)}>{open ? "🙈 Cacher ma toile" : "🕸️ Voir ma toile et mes progrès"}</button>
+        {!open && <p className="m-0 text-sm text-white/80">Touche le bouton pour voir ta toile : ton départ et tout ce que tu as gagné depuis.</p>}
+        <div id="theme-radar-zone">{open && <ThemeRadar ratings={start?.ratings} goals={goals} stars={stars} dark />}</div>
+      </section>
+      <MissionProgress goals={goals} stars={stars} playerId={p.id} preview={preview} name={p.firstName} teen={isTeen(p)} />
+    </div>
+  );
 }
 
 // Onglet « Matchs » : ceux que le jeune déclare + ceux que son coach a enregistrés
