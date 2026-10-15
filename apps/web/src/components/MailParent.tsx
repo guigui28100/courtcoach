@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { get } from "../api";
+import { useAuth } from "../auth";
 
 // « Prévenir par e-mail » : le site PRÉPARE le message, c'est le coach qui l'envoie depuis sa propre messagerie (lien « mailto: »).
 // Aucun service extérieur, aucune pièce jointe, jamais de détail (ni nombre d'étoiles, ni note, ni contenu de vidéo) : seulement le sujet et le lien du site.
@@ -11,9 +13,9 @@ const TOPICS: { key: string; label: string; text: (who: string) => string }[] = 
   { key: "autre", label: "✏️ Autre (j'écris moi-même)", text: () => "" },
 ];
 
-export function MailParent({ email, firstName }: { email: string; firstName: string }) {
+export function MailParent({ email, firstName, initialTopic = "etoiles" }: { email: string; firstName: string; initialTopic?: string }) {
   const [open, setOpen] = useState(false);
-  const [topic, setTopic] = useState("etoiles");
+  const [topic, setTopic] = useState(initialTopic);
   const [withName, setWithName] = useState(false); // prénom du mineur dans le mail : désactivé par défaut
   const who = withName ? firstName : "votre enfant";
   const t = TOPICS.find((x) => x.key === topic)!;
@@ -37,5 +39,23 @@ export function MailParent({ email, firstName }: { email: string; firstName: str
         </span>
       )}
     </span>
+  );
+}
+
+// Bandeau « Prévenir la famille » placé en haut des onglets Missions et Bulletins de la fiche (coach seulement) : un bouton par compte parent, sujet déjà choisi
+export function MailFamilyBar({ playerId, firstName, topic }: { playerId: string; firstName: string; topic: "missions" | "bulletin" }) {
+  const isCoach = useAuth().me?.role === "COACH";
+  const [parents, setParents] = useState<{ userId: string; email: string; role: string }[] | null>(null);
+  useEffect(() => { if (isCoach) get<{ userId: string; email: string; role: string }[]>(`/players/${playerId}/access`).then((l) => setParents(l.filter((a) => a.role !== "YOUTH"))).catch(() => setParents([])); }, [isCoach, playerId]);
+  if (!isCoach || parents === null) return null;
+  return (
+    <section className="card grid gap-2" aria-label="Prévenir la famille">
+      <h3 className="m-0 text-lg">✉️ Prévenir la famille</h3>
+      {parents.length === 0
+        ? <p className="hint m-0">Aucun compte parent pour l'instant : crée l'accès ou l'invitation dans l'onglet « Accords et famille ».</p>
+        : parents.map((a) => (
+          <span key={a.userId} className="grid gap-1"><small className="hint">{a.email}</small><MailParent email={a.email} firstName={firstName} initialTopic={topic} /></span>
+        ))}
+    </section>
   );
 }

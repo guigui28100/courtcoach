@@ -1,4 +1,4 @@
-import { MailParent } from "../components/MailParent";
+import { MailFamilyBar, MailParent } from "../components/MailParent";
 import { GoalLibraryTab } from "../components/GoalLibrary";
 import { StartEvalPanel } from "../components/StartEvalTab";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -498,12 +498,12 @@ export default function PlayerDetail() {
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "depart" && <StartEvalPanel p={p} onGoto={(x) => setTab(x)} />}
-          {tab === "objectifs" && <Objectifs p={p} />}
+          {tab === "objectifs" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /><Objectifs p={p} /></>}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <Matchs p={p} />}
           {tab === "etoiles" && <StarsTab p={p} />}
-          {tab === "bulletins" && <Bulletins p={p} />}
+          {tab === "bulletins" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="bulletin" /><Bulletins p={p} /></>}
         </div>
         </SideLayout>
       </Page>
