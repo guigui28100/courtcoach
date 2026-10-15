@@ -4,12 +4,13 @@ import { useAuth } from "../auth";
 
 // « Prévenir par e-mail » : le site PRÉPARE le message, c'est le coach qui l'envoie depuis sa propre messagerie (lien « mailto: »).
 // Aucun service extérieur, aucune pièce jointe, jamais de détail (ni nombre d'étoiles, ni note, ni contenu de vidéo) : seulement le sujet et le lien du site.
-const TOPICS: { key: string; label: string; text: (who: string) => string }[] = [
+const TOPICS: { key: string; label: string; text: (who: string) => string; cta?: string }[] = [
   { key: "etoiles", label: "⭐ De nouvelles étoiles", text: (w) => `${w} a reçu de nouvelles étoiles.` },
   { key: "video", label: "🎬 Une vidéo ou une analyse", text: (w) => `Une vidéo ou une analyse est disponible pour ${w}.` },
   { key: "bulletin", label: "📄 Un bulletin", text: (w) => `Un bulletin est disponible pour ${w}.` },
   { key: "missions", label: "🚀 De nouvelles missions", text: (w) => `De nouvelles missions ont été fixées pour ${w}.` },
   { key: "matchs", label: "🏟️ Matchs et tournois", text: (w) => `Il y a une information sur les matchs et tournois de ${w}.` },
+  { key: "autorisations", label: "✅ Autorisations à remplir", text: (w) => `Merci de remplir les autorisations de ${w} dans la rubrique « Mes autorisations » de son espace (une minute suffit). Le rappel disparaît dès que c'est fait.`, cta: "Pour le faire, connectez-vous ici :" },
   { key: "autre", label: "✏️ Autre (j'écris moi-même)", text: () => "" },
 ];
 
@@ -19,7 +20,7 @@ export function MailParent({ email, firstName, initialTopic = "etoiles" }: { ema
   const [withName, setWithName] = useState(false); // prénom du mineur dans le mail : désactivé par défaut
   const who = withName ? firstName : "votre enfant";
   const t = TOPICS.find((x) => x.key === topic)!;
-  const lines = ["Bonjour,", "", t.text(who) || "[Écrivez votre message ici]", `Connectez-vous pour le voir : ${window.location.origin}`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan"];
+  const lines = ["Bonjour,", "", t.text(who) || "[Écrivez votre message ici]", `${t.cta ?? "Connectez-vous pour le voir :"} ${window.location.origin}`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan"];
   return (
     <span className="grid gap-2">
       <button type="button" className="btn-outline btn-sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>✉️ Prévenir par e-mail</button>
