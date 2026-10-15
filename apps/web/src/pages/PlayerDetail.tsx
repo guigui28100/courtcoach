@@ -1,4 +1,4 @@
-import { MailParent } from "../components/MailParent";
+import { MailFamilyBar, MailLinks, MailParent } from "../components/MailParent";
 import { GoalLibraryTab } from "../components/GoalLibrary";
 import { StartEvalPanel } from "../components/StartEvalTab";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -63,12 +63,12 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
 }
 
 // Message d'invitation préparé pour la messagerie du coach (lien « mailto: ») : le lien est personnel, à usage unique, et le mot de passe n'y figure jamais
-function inviteMailto(i: { url: string; days: number; email: string; role: string }) {
+function inviteLines(i: { url: string; days: number; email: string; role: string }) {
   const lines = i.role === "YOUTH"
     ? ["Bonjour,", "", "Voici l'invitation pour ouvrir ton espace sur CourtCoach (Tennis Club Houdan).", `Clique sur ce lien personnel pour choisir ton mot de passe : ${i.url}`]
     : ["Bonjour,", "", "Vous êtes invité(e) à suivre l'espace de votre enfant sur CourtCoach (Tennis Club Houdan).", `Cliquez sur ce lien personnel pour choisir votre mot de passe : ${i.url}`];
   lines.push(`Ce lien ne fonctionne qu'une seule fois et reste valable ${i.days} jours. L'identifiant sera cette adresse e-mail.`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan");
-  return `mailto:${i.email}?subject=${encodeURIComponent("Invitation à CourtCoach")}&body=${encodeURIComponent(lines.join("\r\n"))}`;
+  return lines;
 }
 
 function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
@@ -193,8 +193,8 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
-            <a className="btn-clay btn-sm mt-3 inline-flex" href={inviteMailto(invite)}>✉️ Envoyer l'invitation par e-mail</a>
-            <p className="hint m-0 mt-1">Ta messagerie s'ouvre avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
+            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} /></div>
+            <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}
       </section>
@@ -498,12 +498,12 @@ export default function PlayerDetail() {
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "depart" && <StartEvalPanel p={p} onGoto={(x) => setTab(x)} />}
-          {tab === "objectifs" && <Objectifs p={p} />}
+          {tab === "objectifs" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /><Objectifs p={p} /></>}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <Matchs p={p} />}
           {tab === "etoiles" && <StarsTab p={p} />}
-          {tab === "bulletins" && <Bulletins p={p} />}
+          {tab === "bulletins" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="bulletin" /><Bulletins p={p} /></>}
         </div>
         </SideLayout>
       </Page>
