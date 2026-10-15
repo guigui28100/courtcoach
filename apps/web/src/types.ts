@@ -58,7 +58,7 @@ export const EVAL_AXES: EvalAxis[] = [
 export const START_ITEMS: Record<string, [string, string][]> = {
   technique: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["volee", "Volée"], ["smash", "Smash"]],
   tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Jeu au filet"]],
-  mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"]],
+  mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"], ["combativite", "Combativité"], ["confiance", "Confiance"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
   attitude: [["ecoute", "Écoute"], ["effort", "Effort"], ["comportement", "Comportement"]],
 };
