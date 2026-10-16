@@ -153,7 +153,7 @@ export default function Bulletin() {
                 <h2 id="bul-image" className="m-0 text-3xl font-black text-white drop-shadow">📸 Image du joueur</h2>
             {rated ? (
                 <div className="grid w-full justify-items-center gap-1 break-inside-avoid rounded-3xl bg-white p-3 shadow-[0_10px_28px_rgba(10,30,90,0.35)] ring-4 ring-white/40 sm:mx-auto sm:max-w-2xl">
-                  <ThemeImage evals={[{ label: short(season, t), ratings: ev?.ratings, color: "#7c3aed" }, ...(prev ? [{ label: short(pp.season, pp.t), ratings: prev.ratings, color: "#10203a", dashed: true }] : []), ...(start && ratedCount(start) ? [{ label: "Départ", ratings: start.ratings, color: "#e08a00", dashed: true }] : [])]} fallback={<Radar series={series} />} />
+                  <ThemeImage evals={[{ label: t === 0 ? "Bilan de début d'année" : `Ce trimestre (T${t})`, ratings: ev?.ratings, color: "#7c3aed" }, ...(prev ? [{ label: pp.t === 0 ? "Point de départ (début d'année)" : "Trimestre précédent", ratings: prev.ratings, color: "#10203a", dashed: true }] : []), ...(start && ratedCount(start) ? [{ label: "Point de départ (début d'année)", ratings: start.ratings, color: "#e08a00", dashed: true }] : [])]} fallback={<Radar series={series} />} />
                 </div>
               ) : t === 0 ? <Empty>Les notes du bilan de départ ne sont pas encore saisies.</Empty> : null}
 

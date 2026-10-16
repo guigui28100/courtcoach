@@ -210,10 +210,11 @@ export function PendingReports({ list, onChanged }: { list: TournamentReport[] |
 }
 
 // ----- Chez le jeune et sa famille (onglet « Mes matchs ») : seulement les bilans validés -----
-export function ChildReports({ playerId }: { playerId: string }) {
+export function ChildReports({ playerId, hideEmpty = false }: { playerId: string; hideEmpty?: boolean }) {
   const [list, setList] = useState<TournamentReport[] | null>(null);
   useEffect(() => { get<TournamentReport[]>(`/players/${playerId}/tournament-reports`).then(setList).catch(() => setList([])); }, [playerId]);
-  if (list === null) return <p className="text-center text-white/80">Chargement…</p>;
+  if (list === null) return hideEmpty ? null : <p className="text-center text-white/80">Chargement…</p>;
+  if (!list.length && hideEmpty) return null;
   if (!list.length) return <section className="glass grid gap-2" aria-labelledby="child-rep"><h2 id="child-rep" className="m-0 text-2xl">🏆 Les bilans de mes tournois</h2><p className="m-0">Quand un entraîneur t'accompagne en tournoi, il écrit un petit bilan : tes matchs, ce qui était bien et ce qu'on travaille. Après la validation de ton coach, tu le retrouves ici. Pas encore de bilan pour l'instant !</p></section>;
   return (
     <section className="glass grid gap-3" aria-labelledby="child-rep">
@@ -221,15 +222,17 @@ export function ChildReports({ playerId }: { playerId: string }) {
       {list.map((r) => {
         const f = feelOf(r.feeling), well = wellOf(r), work = workOf(r), stars = reportStarsOf(r);
         return (
-          <article key={r.id} className="grid gap-2 rounded-2xl border-2 border-white/50 bg-white/10 p-4 text-white">
-            <h3 className="m-0 text-xl">{r.name} <small className="font-normal text-white/80">· {fmtPeriod(r.dateFrom, r.dateTo)}</small></h3>
+          <details key={r.id} className="group rounded-2xl border-2 border-white/50 bg-white/10 text-white">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="transition-transform group-open:rotate-90">▶</span><span className="text-lg font-bold">{r.name} <small className="font-normal text-white/80">· {fmtPeriod(r.dateFrom, r.dateTo)}</small></span></summary>
+            <div className="grid gap-2 px-4 pb-4">
             <p className="m-0">{f?.emoji} <strong>{f?.label}</strong></p>
             {well.length > 0 && <p className="m-0"><strong>👍 Ce qui était bien :</strong> {well.map((t) => t.label).join(", ")}</p>}
             {work.length > 0 && <p className="m-0"><strong>🎯 On travaille :</strong> {work.map((t) => t.label).join(", ")}</p>}
             {r.summary && <p className="m-0">💬 « {r.summary} »</p>}
             {stars > 0 && <p className="m-0 font-bold">⭐ +{stars} étoile{stars > 1 ? "s" : ""} gagnée{stars > 1 ? "s" : ""} en match <span className="rounded-full bg-[#dcf247] px-2 py-0.5 text-xs text-[#10203a]">⚔️ ×2</span></p>}
             <ul className="m-0 grid list-none gap-0.5 p-0 text-sm text-white/90">{r.matches.map((m, i) => <li key={i}>{m.result === "Victoire" ? "🏆" : "😕"} {m.score || m.result}{m.opponentRanking ? ` · adversaire ${m.opponentRanking}` : ""}</li>)}</ul>
-          </article>
+            </div>
+          </details>
         );
       })}
     </section>

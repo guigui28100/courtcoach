@@ -313,6 +313,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
   return (
     <>
       {!preview && <FamilyTournaments dark />}
+      {!p.committeeTrainer && <ChildReports playerId={p.id} hideEmpty />}
       <DeclaredMatchesSection p={p} preview={preview} />
       {matches.length > 0 && (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-matchs">
@@ -498,7 +499,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
           <div className="grid gap-5 md:grid-cols-[285px_minmax(0,1fr)] md:items-stretch md:gap-6">
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
-                {TABS.filter(([k]) => ((k !== "renseignements" && k !== "autorisations") || isParent)).map(([k, icon, label]) => (
+                {TABS.filter(([k]) => ((k !== "renseignements" && k !== "autorisations") || isParent) && (k !== "tournois" || !!p.committeeTrainer)).map(([k, icon, label]) => (
                   <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
                     {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
@@ -527,7 +528,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
-              {tab === "tournois" && <ChildReports playerId={p.id} />}
+              {tab === "tournois" && p.committeeTrainer && <ChildReports playerId={p.id} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "renseignements" && isParent && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
