@@ -195,3 +195,21 @@ export class FamilyInfoDto {
 export class SignatureDto {
   @IsString() @MaxLength(80000) @Matches(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/, { message: "Signature invalide" }) image!: string;
 }
+
+// Bilan de tournoi (entraîneur de comité ou coach) : les matchs, comment ça s'est passé, thème par thème, un petit mot. Les thèmes sont vérifiés par le service.
+export class ReportMatchDto {
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) day: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(40) round?: string;
+  @IsIn(["Victoire", "Défaite"]) result: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(40) score?: string;
+  @IsOptional() @IsIn(RANKINGS) opponentRanking?: string;
+}
+export class TournamentReportDto {
+  @Transform(trim) @IsString() @MinLength(2) @MaxLength(80) name: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) dateFrom: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) dateTo: string;
+  @Type(() => Number) @IsInt() @Min(1) @Max(4) feeling: number;
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => ReportMatchDto) matches: ReportMatchDto[];
+  @IsObject() themes: Record<string, { level: string; goalId?: string }>;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(300) summary?: string;
+}

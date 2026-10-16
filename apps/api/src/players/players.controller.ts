@@ -2,14 +2,15 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, GoalTemplateDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, TournamentReportDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, GoalTemplateDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
+import { TournamentReportsService } from "./reports.service";
 
 // Tout le Centre de compétition jeunes est fermé aux adhérents adultes (demande de coaching) : seuls le coach et les familles invitées entrent.
 @Roles(Role.COACH, Role.TRAINER, Role.GUARDIAN, Role.YOUTH)
 @Controller()
 export class PlayersController {
-  constructor(private readonly svc: PlayersService) {}
+  constructor(private readonly svc: PlayersService, private readonly reports: TournamentReportsService) {}
 
   @Get("players") list(@CurrentUser() u: AuthUser) { return this.svc.list(u); }
   @Get("players/inactive") inactive(@CurrentUser() u: AuthUser) { return this.svc.inactive(u); }
@@ -76,4 +77,12 @@ export class PlayersController {
   @Get("players/:id/matches") matches(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.matches(u, id); }
   @Post("players/:id/matches") addMatch(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: MatchDto) { return this.svc.addMatch(u, id, dto); }
   @Delete("matches/:matchId") @HttpCode(204) removeMatch(@CurrentUser() u: AuthUser, @Param("matchId") mid: string) { return this.svc.removeMatch(u, mid); }
+
+  // ----- Bilans de tournoi : saisis par l'entraîneur de comité (SES jeunes) ou le coach, validés par le coach ; la famille ne voit que les bilans validés -----
+  @Roles(Role.COACH) @Get("tournament-reports/pending") pendingReports(@CurrentUser() u: AuthUser) { return this.reports.pending(u); }
+  @Get("players/:id/tournament-reports") listReports(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.reports.list(u, id); }
+  @Roles(Role.COACH, Role.TRAINER) @Post("players/:id/tournament-reports") createReport(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: TournamentReportDto) { return this.reports.create(u, id, dto); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/tournament-reports/:rid") updateReport(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("rid") rid: string, @Body() dto: TournamentReportDto) { return this.reports.update(u, id, rid, dto); }
+  @Roles(Role.COACH) @HttpCode(200) @Post("players/:id/tournament-reports/:rid/validate") validateReport(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("rid") rid: string) { return this.reports.validate(u, id, rid); }
+  @Roles(Role.COACH, Role.TRAINER) @HttpCode(204) @Delete("players/:id/tournament-reports/:rid") removeReport(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("rid") rid: string) { return this.reports.remove(u, id, rid); }
 }

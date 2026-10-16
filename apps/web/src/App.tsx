@@ -4,6 +4,8 @@ import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
 import { AdultsPage, Centre, CoachHome } from "./pages/Coach";
 import Bulletin from "./pages/Bulletin";
+import TournamentReportPrint from "./pages/TournamentReportPrint";
+import TrainerPreview from "./pages/TrainerPreview";
 import FinDeCours from "./pages/FinDeCours";
 import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
@@ -36,11 +38,13 @@ export default function App() {
         <Route path="/coach/adultes/apercu" element={<Guard roles={["COACH"]}><AdultPreview /></Guard>} />
         <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
         <Route path="/coach/securite" element={<Guard roles={["COACH", "TRAINER"]}><Securite /></Guard>} />
+        <Route path="/coach/centre/apercu-entraineur" element={<Guard roles={["COACH"]}><TrainerPreview /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH", "TRAINER"]}><Centre /></Guard>} />
         <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH", "TRAINER"]}><FinDeCours /></Guard>} />
         <Route path="/coach/centre/:id" element={<Guard roles={["COACH", "TRAINER"]}><PlayerDetail /></Guard>} />
         <Route path="/coach/centre/:id/apercu" element={<Guard roles={["COACH", "TRAINER"]}><Apercu /></Guard>} />
         <Route path="/coach/videos/:id" element={<Guard roles={["COACH", "TRAINER"]}><VideoReview /></Guard>} />
+        <Route path="/coach/centre/:id/bilan-tournoi/:rid" element={<Guard roles={["COACH"]}><TournamentReportPrint /></Guard>} />
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />

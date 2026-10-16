@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { get } from "../api";
 import { Radar } from "./Radar";
+import { ReportTag } from "./TournamentReports";
 import { Goal, QUALITIES, qualityOfReason, CourseStar, currentSeason, DOMAIN_EMOJI, EVAL_AXES, fmtDay, isNegReason, starReason, STAR_NEG_REASONS, STAR_REASONS, starsByDomain, STARS_FOR_FULL, STARS_PER_POINT, MISSION_TOPICS, missionStars, goalApplies, totalStars, trimesterOf } from "../types";
 
 // Chargement des étoiles d'un joueur (le coach, le joueur et sa famille y ont accès)
@@ -213,7 +214,7 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
           <ul className="m-0 grid list-none gap-2 p-0">
             {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); const neg = s.stars < 0; return (
               <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row + (neg ? " border-l-4 border-[#ff8a80]" : "")}>
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><strong className="min-w-28">{fmtDay(s.day)}</strong><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : "—"}</strong>{r && <span className={sub}>{r.emoji} {r.label}</span>}</span>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><strong className="min-w-28">{fmtDay(s.day)}</strong><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? ""}` : "—"}</strong>{r && <span className={sub}>{r.emoji} {r.label}</span>}{s.reportId && <ReportTag />}</span>
                 {neg && <small className={sub}>Pas en progrès cette fois : ce n'est pas grave, c'est pour t'aider à progresser.</small>}
                 {s.comment && <span className="text-sm">💬 {s.comment}</span>}
               </li>

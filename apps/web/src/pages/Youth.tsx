@@ -11,6 +11,7 @@ import { FamilyTournaments } from "../components/Tournaments";
 import { DeclaredMatchesSection } from "../components/DeclaredMatches";
 import { SelfEvalSection } from "../components/SelfEval";
 import { ConsentsTab, ParentReminders } from "../components/Consents";
+import { ChildReports } from "../components/TournamentReports";
 import { FamilyInfo } from "../components/FamilyInfo";
 import { useStars } from "../components/Stars";
 import { ThemeRadar } from "../components/ThemeRadar";
@@ -312,6 +313,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
   return (
     <>
       {!preview && <FamilyTournaments dark />}
+      <ChildReports playerId={p.id} />
       <DeclaredMatchesSection p={p} preview={preview} />
       {matches.length > 0 && (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-matchs">

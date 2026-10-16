@@ -126,12 +126,12 @@ export class PlayersService {
   async export(user: AuthUser, id: string) {
     if (user.role === Role.TRAINER) throw new ForbiddenException("Réservé au coach");
     await this.assertCanRead(user, id);
-    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, qualities: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
+    const p = await this.prisma.player.findUnique({ where: { id }, include: { goals: { include: { checkpoints: true } }, evaluations: true, selfEvaluations: true, courseStars: true, qualities: true, tournamentReports: true, declaredMatches: true, matches: true, consents: true, analyses: { select: { id: true, observation: true, strengths: true, improve: true, createdAt: true } }, videos: { select: { title: true, shot: true, recordedAt: true } } } });
     if (!p) throw new NotFoundException("Fiche introuvable");
     await this.audit.log(user.id, "export", "Player", id);
-    const { coachNotes, declaredMatches, ...visible } = p;
+    const { coachNotes, declaredMatches, tournamentReports, ...visible } = p;
     // Les matchs déclarés par le jeune sont visibles du compte de la famille (l'espace de l'enfant) et du coach
-    const forYouth = { ...visible, declaredMatches };
+    const forYouth = { ...visible, declaredMatches, tournamentReports: tournamentReports.filter((r) => r.status === "VALIDATED") }; // la famille ne reçoit que les bilans validés
     const out = { exportedAt: new Date().toISOString(), ...(user.role === Role.COACH ? p : forYouth) };
     return user.role === Role.COACH ? out : JSON.parse(JSON.stringify(out, (k, v) => (["authorId", "authorName", "authorRole"].includes(k) ? undefined : v))); // jamais le nom d'un entraîneur chez la famille
   }
@@ -393,7 +393,7 @@ export class PlayersService {
   }
   async stars(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, comment: true, authorId: true, authorName: true, authorRole: true } }).then((rows) => this.hideAuthors(user, rows));
+    return this.prisma.courseStar.findMany({ where: { playerId }, orderBy: [{ day: "desc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, reportId: true, comment: true, authorId: true, authorName: true, authorRole: true } }).then((rows) => this.hideAuthors(user, rows));
   }
   async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
     await this.assertStaffFor(user, playerId);
@@ -413,11 +413,11 @@ export class PlayersService {
     const who = await this.who(user);
     // Les lignes envoyées remplacent celles de ce cours (le coach peut ainsi en ajouter, corriger ou retirer)
     await this.prisma.$transaction([
-      this.prisma.courseStar.deleteMany({ where: { playerId, day } }),
+      this.prisma.courseStar.deleteMany({ where: { playerId, day, reportId: null } }), // les étoiles « en match » d'un bilan de tournoi ne sont jamais remplacées par la saisie d'un cours
       this.prisma.courseStar.createMany({ data: dto.items.map((i) => ({ ...who, playerId, day, stars: i.stars, reason: i.reason, goalId: i.goalId ?? null, domain: i.goalId ? axisOf.get(i.goalId)! : i.domain!, comment: (i.comment ?? "").trim() })) }),
     ]);
     await this.touch(playerId);
-    return this.prisma.courseStar.findMany({ where: { playerId, day }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, comment: true, authorId: true, authorName: true, authorRole: true } });
+    return this.prisma.courseStar.findMany({ where: { playerId, day, reportId: null }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { id: true, day: true, stars: true, reason: true, domain: true, goalId: true, reportId: true, comment: true, authorId: true, authorName: true, authorRole: true } });
   }
   // ----- Les quatre qualités notées à chaque cours (état d'esprit, motivation, assiduité, attitude : de 1 à 5) -----
   async qualities(user: AuthUser, playerId: string) {
@@ -445,6 +445,7 @@ export class PlayersService {
     await this.assertStaffFor(user, playerId);
     const line = await this.prisma.courseStar.findFirst({ where: { id: lineId, playerId } });
     if (!line) throw new NotFoundException("Ligne d'étoiles introuvable");
+    if (line.reportId) throw new BadRequestException("Ces étoiles viennent d'un bilan de tournoi : supprime le bilan pour les retirer.");
     if (line.stars < 0) throw new BadRequestException("Cette ligne « pas en progrès » se corrige depuis la fiche du joueur, onglet Étoiles.");
     const u = await this.prisma.courseStar.update({ where: { id: lineId }, data: { stars: dto.stars, ...(await this.who(user)) } });
     await this.touch(playerId);
@@ -453,6 +454,7 @@ export class PlayersService {
   // Retire UNE ligne d'étoiles (les autres lignes du cours restent, avec leur auteur)
   async removeStarLine(user: AuthUser, playerId: string, lineId: string) {
     await this.assertStaffFor(user, playerId);
+    if (await this.prisma.courseStar.findFirst({ where: { id: lineId, playerId, reportId: { not: null } }, select: { id: true } })) throw new BadRequestException("Ces étoiles viennent d'un bilan de tournoi : supprime le bilan pour les retirer.");
     const r = await this.prisma.courseStar.deleteMany({ where: { id: lineId, playerId } });
     if (!r.count) throw new NotFoundException("Ligne d'étoiles introuvable");
     await this.touch(playerId);
@@ -468,7 +470,7 @@ export class PlayersService {
   async removeStar(user: AuthUser, playerId: string, day: string) {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);
-    const r = await this.prisma.courseStar.deleteMany({ where: { playerId, day } });
+    const r = await this.prisma.courseStar.deleteMany({ where: { playerId, day, reportId: null } });
     if (!r.count) throw new NotFoundException("Aucune étoile ce jour-là");
   }
 
