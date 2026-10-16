@@ -9,7 +9,7 @@ import { currentSeason, Goal, TournamentReport } from "../types";
 // « 👀 Voir comme un entraîneur de comité » (coach seulement) : exemples INVENTÉS, aucun vrai jeune n'est lu, rien n'est envoyé ni enregistré.
 const SEASON = currentSeason();
 const goal = (id: string, title: string, axis: string) => ({ id, playerId: "demo", season: SEASON, title, axis, targetStars: 10, trimesters: [1, 2, 3], progress: 0, checkpoints: [], status: "TO_WORK" }) as unknown as Goal;
-const GOALS: Goal[] = [goal("g1", "Service : lancer de balle", "TECHNIQUE"), goal("g2", "Jeu au filet : monter après le service", "TACTIQUE"), goal("g3", "Combativité : ne rien lâcher", "MENTAL")];
+const GOALS: Goal[] = [goal("g1", "Service : lancer de balle", "TECHNIQUE"), goal("g2", "Montées au filet : monter après le service", "TACTIQUE"), goal("g3", "Combativité : ne rien lâcher", "MENTAL")];
 const day = new Date().toISOString().slice(0, 10);
 const EXAMPLE: TournamentReport = {
   id: "demo-r", playerId: "demo", name: "Tournoi jeunes de Dreux (exemple)", dateFrom: day, dateTo: day, feeling: 3,

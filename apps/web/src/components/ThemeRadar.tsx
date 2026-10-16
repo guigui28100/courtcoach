@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { CourseStar, currentSeason, Goal, goalApplies, itemKey, MISSION_TOPICS, missionStars, START_ITEMS, STARS_PER_POINT, trimesterOf } from "../types";
 
-// LA toile du joueur : une pointe par THÈME (coup droit, revers, service, jeu au filet, défendre, concentration, gainage…).
+// LA toile du joueur : une pointe par THÈME (coup droit, revers, service, montées au filet, défendre, concentration…).
 // Départ = le bilan du coach (fixe). Maintenant = le départ + les étoiles gagnées sur les missions de ce thème (12 étoiles = 1 point, 5 au maximum).
 // Elle sert aussi, avec les notes d'une évaluation, à « l'Image du joueur » des bulletins.
 const AXES = ["technique", "tactique", "physique", "mental", "attitude"] as const;
 const AXIS_NAME: Record<string, string> = { technique: "Technique", tactique: "Tactique", physique: "Physique", mental: "Mental", attitude: "Attitude" };
 const COLOR: Record<string, [string, string]> = { technique: ["#ff9b73", "#b8471f"], tactique: ["#7dbbff", "#2a6fb0"], physique: ["#6ee8aa", "#2f8f5b"], mental: ["#d3b2ff", "#7a4cc2"], attitude: ["#ffd84d", "#946b00"] }; // [fond sombre, fond clair]
 // Un point à travailler d'une mission → le point du bilan correspondant
-const TOPIC_ITEM: Record<string, string> = { "Coup droit": "coup_droit", "Revers": "revers", "Service": "service", "Volée": "volee", "Smash": "smash", "Jeu au filet": "jeu_filet", "Défendre": "defendre", "Attaquer": "attaquer", "Concentration": "concentration", "Gestion des émotions": "emotions", "Routines": "routines", "Combativité": "combativite", "Confiance": "confiance", "Endurance": "endurance", "Vitesse": "vitesse", "Explosivité": "explosivite", "Gainage": "gainage", "Coordination": "coordination" };
-const SHORT: Record<string, string> = { "Gestion des émotions": "Émotions", "Retour de service": "Retour", "Construire le point": "Construire", "Lecture du jeu": "Lecture du jeu" };
+const TOPIC_ITEM: Record<string, string> = { "Coup droit": "coup_droit", "Revers": "revers", "Service": "service", "Volée": "volee", "Smash": "smash", "Montées au filet": "jeu_filet", "Jeu au filet": "jeu_filet", "Défendre": "defendre", "Attaquer": "attaquer", "Concentration": "concentration", "Gestion des émotions": "emotions", "Routines": "routines", "Combativité": "combativite", "Confiance": "confiance", "Endurance": "endurance", "Vitesse": "vitesse", "Explosivité": "explosivite" };
+const SHORT: Record<string, string> = { "Gestion des émotions": "Émotions", "Retour de service": "Retour", "Construire le point (régularité)": "Construire", "Construire le point": "Construire", "Lecture du jeu": "Lecture du jeu" };
 
 export interface ThemeDef { id: string; axis: string; label: string; item?: string }
 // Tous les thèmes possibles, dans l'ordre : domaine, puis points du bilan, puis les autres points à travailler des missions
@@ -91,7 +91,7 @@ export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune",
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="theme-radar">
       <h2 id="theme-radar" className="m-0 text-2xl">📍 {me ? "Ma toile" : "La toile du joueur"} · trimestre {t}</h2>
-      <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service, jeu au filet…). Le trait en pointillés est {me ? "ton départ (le bilan de ton coach)" : "le départ (le bilan du coach)"} ; le trait plein est {me ? "ton niveau maintenant" : "le niveau maintenant"} : le départ, plus les étoiles gagnées sur les missions du thème. <strong>12 étoiles = 1 point de plus.</strong> Elle repart du bilan de départ à chaque trimestre.</p>
+      <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service, montées au filet…). Le trait en pointillés est {me ? "ton départ (le bilan de ton coach)" : "le départ (le bilan du coach)"} ; le trait plein est {me ? "ton niveau maintenant" : "le niveau maintenant"} : le départ, plus les étoiles gagnées sur les missions du thème. <strong>12 étoiles = 1 point de plus.</strong> Elle repart du bilan de départ à chaque trimestre.</p>
       {n < 3 ? <p className={box}>{me ? "La toile apparaît dès que ton coach a noté au moins 3 points dans ton bilan de départ, ou fixé des missions sur 3 thèmes." : "La toile apparaît dès que le bilan de départ note au moins 3 points, ou que des missions couvrent 3 thèmes."}</p> : (
         <figure className="m-0 grid justify-items-center gap-2">
           <ThemeRadarSvg spokes={spokes} series={series} dark={dark} summary={summary} />
