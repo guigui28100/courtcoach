@@ -194,7 +194,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
-            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: "Ton invitation à CourtCoach", paragraphs: inviteLines(invite).slice(2, 4).map((l) => l.replace(/ : http\S+$/, " :")).concat(inviteLines(invite)[4]), button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
+            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: "Ton invitation à CourtCoach", topic: { emoji: "🔑", label: "Votre invitation" }, paragraphs: inviteLines(invite).slice(2, 4).map((l) => l.replace(/ : http\S+$/, " :")).concat(inviteLines(invite)[4]), button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
             <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}

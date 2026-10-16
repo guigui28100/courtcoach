@@ -15,6 +15,9 @@ const TOPICS: { key: string; label: string; text: (who: string) => string; cta?:
   { key: "autre", label: "✏️ Autre (j'écris moi-même)", text: () => "" },
 ];
 
+// « 🏆 Un bilan de tournoi » -> pastille (emoji + libellé) de l'e-mail mis en forme
+const topicBadge = (label: string) => { const [emoji, ...r] = label.split(" "); return { emoji, label: r.join(" ").replace(/^(Un|Une|De|Des)\s+/i, "").replace(/^nouvelles?\s+/i, "nouvelles ") || "Message" }; };
+
 export function MailParent({ email, firstName, initialTopic = "etoiles" }: { email: string; firstName: string; initialTopic?: string }) {
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState(initialTopic);
@@ -36,7 +39,7 @@ export function MailParent({ email, firstName, initialTopic = "etoiles" }: { ema
           <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={withName} onChange={(e) => setWithName(e.target.checked)} />Mettre le prénom de l'enfant dans le mail</label>
           <pre className="m-0 whitespace-pre-wrap rounded-lg bg-sand/60 p-2 font-sans text-sm" aria-label="Aperçu du message">{lines.join("\n")}</pre>
           <small className="hint">Choisis comment ouvrir ta messagerie : tu peux modifier le message, puis tu appuies sur « Envoyer ». Rien n'est envoyé par le site.</small>
-          <MailLinks to={email} subject="Du nouveau sur CourtCoach" lines={lines} rich={{ title: "Du nouveau sur CourtCoach", paragraphs: [t.text(who) || "[Écrivez votre message ici]"], button: { label: t.cta ? "Ouvrir mes autorisations →" : "Ouvrir CourtCoach →", url: window.location.origin } }} />
+          <MailLinks to={email} subject="Du nouveau sur CourtCoach" lines={lines} rich={{ title: "Du nouveau sur CourtCoach", topic: topicBadge(t.label), paragraphs: [t.text(who) || "[Écrivez votre message ici]"], button: { label: t.cta ? "Ouvrir mes autorisations →" : "Ouvrir CourtCoach →", url: window.location.origin } }} />
         </span>
       )}
     </span>
@@ -61,12 +64,16 @@ export function MailFamilyBar({ playerId, firstName, topic }: { playerId: string
   );
 }
 
-// Message mis en forme (proposition « court de tennis ») : bandeau vert, gros bouton jaune, pied de page. Que du HTML avec styles dans les balises (aucune image, aucun appel à un autre site) : il passe dans Gmail, Outlook et la messagerie Orange quand on le COLLE.
-export interface RichMail { title: string; paragraphs: string[]; button: { label: string; url: string } }
+// Message mis en forme (modèle « Club house » : vert anglais et filets dorés, blason TCH, titre en italique, gros bouton). Que du HTML avec styles dans les balises (aucune image, aucun appel à un autre site) : il passe dans Gmail, Outlook et la messagerie Orange quand on le COLLE.
+export interface RichMail { title: string; paragraphs: string[]; button: { label: string; url: string }; topic?: { emoji: string; label: string } }
 const esc = (x: string) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export function richMailHtml(m: RichMail) {
   const url = esc(m.button.url);
-  return `<div style="background:#dfe7dc;padding:20px;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="520" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;background:#ffffff;border-radius:14px;overflow:hidden"><tr><td style="background:#1f7a4d;border-bottom:6px solid #dcf247;padding:26px 24px 20px;text-align:center;color:#ffffff"><div style="font-size:38px;line-height:1.2">&#127934;</div><div style="font-size:24px;font-weight:bold">${esc(m.title)}</div><div style="font-size:13px">Tennis Club Houdan</div></td></tr><tr><td style="padding:24px;font-size:16px;line-height:1.6;color:#10203a">Bonjour,<br><br>${m.paragraphs.map((x) => esc(x)).join("<br><br>")}<br><br><a href="${url}" style="display:block;text-align:center;background:#f5c518;color:#10203a;font-weight:bold;text-decoration:none;border-radius:12px;padding:14px;border:3px solid #10203a">${esc(m.button.label)}</a><div style="font-size:12px;color:#51607a;margin-top:8px">Si le bouton ne marche pas, copiez ce lien : ${url}</div><br>Bien cordialement,<br><b>Le coach du Tennis Club Houdan</b></td></tr><tr><td style="background:#10203a;color:#cfd8e8;text-align:center;font-size:12px;padding:14px">Message du Tennis Club Houdan &middot; Aucun d&eacute;tail personnel dans ce mail</td></tr></table></div>`;
+  const serif = "Georgia,'Times New Roman',serif";
+  const [first, ...rest] = m.paragraphs;
+  const box = `<div style="border-top:1px solid #c9a24a;border-bottom:1px solid #c9a24a;padding:18px 10px">${m.topic ? `<div style="font-size:30px;line-height:36px">${m.topic.emoji}</div><div style="font-family:${serif};font-size:13px;letter-spacing:4px;color:#8a6d22;margin-top:4px">${esc(m.topic.label.toUpperCase())}</div>` : ""}<div style="font-family:${serif};font-size:21px;line-height:29px;color:#0f3d2b;margin-top:8px;font-style:italic">${esc(first ?? "")}</div></div>`;
+  const others = rest.map((x) => `<p style="margin:16px 0 0;color:#55645a;font-size:15px;line-height:23px">${esc(x)}</p>`).join("");
+  return `<div style="background:#12281f;padding:24px;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="540" align="center" cellpadding="0" cellspacing="0" style="max-width:100%;background:#fbf8ef;border:2px solid #c9a24a"><tr><td bgcolor="#0f3d2b" style="background:#0f3d2b;padding:30px 30px 24px;text-align:center;border-bottom:4px double #c9a24a"><div style="width:74px;height:74px;border-radius:37px;border:3px solid #c9a24a;margin:0 auto;background:#0f3d2b;color:#e8c872;font-family:${serif};font-size:28px;font-weight:bold;line-height:74px">TCH</div><div style="font-family:${serif};font-size:13px;letter-spacing:5px;color:#e8c872;margin-top:14px">TENNIS CLUB HOUDAN</div><div style="font-family:${serif};font-size:30px;line-height:36px;color:#ffffff;font-style:italic;margin-top:10px">${esc(m.title)}</div></td></tr><tr><td style="padding:30px 36px 6px;color:#1d2a22;font-size:16px;line-height:26px;text-align:center"><p style="margin:0 0 14px;font-family:${serif};font-size:17px">Bonjour,</p>${box}${others}</td></tr><tr><td style="padding:22px 36px 6px"><a href="${url}" style="display:block;text-align:center;background:#0f3d2b;color:#e8c872;text-decoration:none;font-family:${serif};font-weight:bold;font-size:19px;padding:17px 20px;border:2px solid #c9a24a">${esc(m.button.label)}</a></td></tr><tr><td style="padding:8px 36px 22px;color:#6f766d;font-size:12px;text-align:center">Si le bouton ne marche pas, copiez ce lien : ${url}</td></tr><tr><td style="padding:0 36px 26px;color:#1d2a22;font-family:${serif};font-size:16px;text-align:center">Bien cordialement,<br><b>Le coach du Tennis Club Houdan</b></td></tr><tr><td bgcolor="#0f3d2b" style="background:#0f3d2b;padding:14px 24px;text-align:center;color:#c9d6cc;font-size:12px;border-top:4px double #c9a24a">Aucun d&eacute;tail personnel dans ce mail</td></tr></table></div>`;
 }
 
 // Les moyens d'ouvrir le message : messagerie de l'ordinateur / du téléphone (mailto), Gmail, Outlook (sites ouverts SEULEMENT si le coach clique), ou copie du texte à coller dans n'importe quelle messagerie.
