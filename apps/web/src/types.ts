@@ -168,7 +168,7 @@ export const SELF_LEGACY: Preset[] = [["match", "Jouer plus de matchs"], ["tourn
 export const presetLabel = (list: Preset[], id: string) => list.find(([k]) => k === id)?.[1];
 
 // ----- Étoiles de fin de cours (données par le coach : en plus pour dire bravo, en moins pour dire « pas en progrès », toujours avec un commentaire pour les retraits) -----
-export interface CourseStar { goalId?: string | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
+export interface CourseStar { reportId?: string | null; goalId?: string | null; authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; day: string; stars: number; reason: string; domain: string | null; comment: string; }
 export const STAR_REASONS: { id: string; emoji: string; label: string; hint: string }[] = [
   { id: "effort", emoji: "💪", label: "Effort", hint: "S'est donné à fond" },
   { id: "ecoute", emoji: "👂", label: "Écoute", hint: "A bien écouté et appliqué les consignes" },
@@ -262,3 +262,37 @@ export function qualityStars(stars: Pick<CourseStar, "day" | "stars" | "reason" 
   for (const q of QUALITIES) sum[q.key] = inT.filter((s) => qualityOfReason(s.reason)!.key === q.key).reduce((n, s) => n + s.stars, 0);
   return { sum, courses: new Set(inT.map((s) => s.day)).size };
 }
+
+// ----- Bilan de tournoi (entraîneur de comité ou coach → validé par le coach → visible de la famille) -----
+export type ReportLevel = "a-travailler" | "bien" | "tres-bien";
+export interface ReportMatch { day: string; round: string; result: "Victoire" | "Défaite"; score: string; opponentRanking?: string | null }
+export interface TournamentReport {
+  id: string; playerId: string; name: string; dateFrom: string; dateTo: string; feeling: number; matches: ReportMatch[];
+  themes: Record<string, { level: ReportLevel; goalId?: string }>; summary: string; status: "SUBMITTED" | "VALIDATED"; validatedAt?: string | null; createdAt: string;
+  authorId?: string | null; authorName?: string | null; authorRole?: string | null; player?: { id: string; firstName: string; lastName: string };
+}
+// Mêmes thèmes que le serveur (apps/api/src/players/report-themes.ts) ; le libellé est aussi celui des « points à travailler » des missions
+export const REPORT_THEMES: { key: string; label: string; axis: string }[] = [
+  { key: "coup-droit", label: "Coup droit", axis: "technique" }, { key: "revers", label: "Revers", axis: "technique" }, { key: "service", label: "Service", axis: "technique" },
+  { key: "retour", label: "Retour de service", axis: "technique" }, { key: "volee", label: "Volée", axis: "technique" }, { key: "smash", label: "Smash", axis: "technique" }, { key: "jeu-de-jambes", label: "Jeu de jambes", axis: "technique" },
+  { key: "defendre", label: "Défendre", axis: "tactique" }, { key: "attaquer", label: "Attaquer", axis: "tactique" }, { key: "jeu-au-filet", label: "Jeu au filet", axis: "tactique" },
+  { key: "construire", label: "Construire le point", axis: "tactique" }, { key: "variations", label: "Variations", axis: "tactique" }, { key: "lecture", label: "Lecture du jeu", axis: "tactique" },
+  { key: "endurance", label: "Endurance", axis: "physique" }, { key: "vitesse", label: "Vitesse", axis: "physique" }, { key: "explosivite", label: "Explosivité", axis: "physique" },
+  { key: "gainage", label: "Gainage", axis: "physique" }, { key: "coordination", label: "Coordination", axis: "physique" }, { key: "souplesse", label: "Souplesse", axis: "physique" },
+  { key: "concentration", label: "Concentration", axis: "mental" }, { key: "emotions", label: "Gestion des émotions", axis: "mental" }, { key: "routines", label: "Routines", axis: "mental" },
+  { key: "confiance", label: "Confiance", axis: "mental" }, { key: "combativite", label: "Combativité", axis: "mental" },
+  { key: "ecoute", label: "Écoute", axis: "attitude" }, { key: "effort", label: "Effort", axis: "attitude" }, { key: "comportement", label: "Comportement", axis: "attitude" }, { key: "fair-play", label: "Fair-play", axis: "attitude" },
+];
+export const REPORT_AXES: { key: string; label: string; emoji: string }[] = [{ key: "technique", label: "Technique", emoji: "🎾" }, { key: "tactique", label: "Tactique", emoji: "🧠" }, { key: "physique", label: "Physique", emoji: "💪" }, { key: "mental", label: "Mental", emoji: "🔥" }, { key: "attitude", label: "Attitude", emoji: "🌟" }];
+// Étoiles « en match » : déjà doublées (×2) ; « À travailler » ne retire jamais d'étoile
+export const REPORT_LEVELS: { key: ReportLevel | ""; label: string; stars: number }[] = [
+  { key: "", label: "Pas vu", stars: 0 }, { key: "a-travailler", label: "À travailler", stars: 0 }, { key: "bien", label: "Bien", stars: 2 }, { key: "tres-bien", label: "Très bien", stars: 4 },
+];
+export const REPORT_FEELINGS: { n: number; emoji: string; label: string }[] = [{ n: 1, emoji: "😕", label: "Difficile" }, { n: 2, emoji: "🙂", label: "Moyen" }, { n: 3, emoji: "😃", label: "Bien" }, { n: 4, emoji: "🌟", label: "Très bien" }];
+export const reportStarsOf = (r: Pick<TournamentReport, "themes">) => Object.values(r.themes).reduce((n, t) => n + (t.level === "bien" ? 2 : t.level === "tres-bien" ? 4 : 0), 0);
+// La mission du joueur qui porte sur ce thème (titre « Coup droit : … ») pour la saison et le trimestre du tournoi ; sinon aucune (étoile « hors mission »)
+export function missionOfTheme(goals: Goal[], label: string, endDay: string): Goal | undefined {
+  const d = new Date(endDay + "T12:00:00"), season = currentSeason(d), t = trimesterOf(d);
+  return goals.find((g) => g.season === season && goalApplies(g, t) && g.title.startsWith(label + " : "));
+}
+export const fmtPeriod = (a: string, b: string) => (a === b ? fmtDay(a) : `${new Date(a + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au ${new Date(b + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`);

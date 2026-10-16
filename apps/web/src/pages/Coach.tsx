@@ -1,3 +1,4 @@
+import { PendingReports } from "../components/TournamentReports";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, patch, post, put } from "../api";
@@ -6,7 +7,7 @@ import { TrainersTab } from "../components/Trainers";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { useVideos } from "../components/Videos";
-import { adultFacts, adultName, currentSeason, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, currentSeason, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
@@ -102,7 +103,9 @@ function useCoachData(version = 0) {
   const [selfEvals, setSelfEvals] = useState<{ player: Player; ev: SelfEvaluation }[]>([]);
   const [storage, setStorage] = useState<{ usedBytes: number; quotaBytes: number } | null>(null);
   const videos = useVideos(version);
+  const [reports, setReports] = useState<TournamentReport[]>([]);
   const load = useCallback(() => {
+    get<TournamentReport[]>("/tournament-reports/pending").then(setReports).catch(() => setReports([])); // bilans de tournoi à valider (coach seulement : sinon 403, liste vide)
     get<Lesson[]>("/lessons").then(setLessons).catch(() => undefined);
     get<Player[]>("/players").then(async (ps) => {
       setPlayers(ps);
@@ -118,7 +121,7 @@ function useCoachData(version = 0) {
   const upcoming = lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso()).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
   const youthVideos = (videos ?? []).filter((v) => v.kind === "centre");
-  return { lessons, pending, toConfirm, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reload: load };
+  return { lessons, pending, toConfirm, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, reload: load };
 }
 
 // ───────── ACCUEIL : ce qui demande l'attention, une seule fois, puis deux portes d'entrée ─────────
@@ -132,6 +135,7 @@ export function CoachHome() {
     ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} a confirmé son cours : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
     ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
+    ...(d.reports.length ? [{ space: "Jeunes" as const, text: `🏆 ${d.reports.length} bilan${d.reports.length > 1 ? "s" : ""} de tournoi à valider`, to: "/coach/centre?onglet=bilans", cta: "Valider" }] : []),
     ...d.selfEvals.map((x) => ({ space: "Jeunes" as const, text: `${x.player.firstName} a envoyé son bulletin du trimestre ${x.ev.trimester}`, to: `/coach/centre/${x.player.id}?onglet=evaluations`, cta: "Lire" })),
     ...(d.inactive.length ? [{ space: "Jeunes" as const, text: `${d.inactive.length} dossier${d.inactive.length > 1 ? "s" : ""} inactif${d.inactive.length > 1 ? "s" : ""} depuis plus de 12 mois`, to: "/coach/centre?onglet=dossiers", cta: "Voir" }] : []),
     ...(!me?.twoFactor ? [{ space: "Compte" as const, text: "Active la double authentification (2 minutes) avant d'enregistrer de vrais jeunes", to: "/coach/securite", cta: "Activer" }] : []),
@@ -249,7 +253,7 @@ export function Centre() {
   const { me } = useAuth();
   const isCoach = me?.role === "COACH"; // un entraîneur de comité ne voit que les jeunes qui lui sont confiés : pas de création, pas de dossiers inactifs, pas de gestion des comptes
   const d = useCoachData();
-  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "tournois", "dossiers", "entraineurs"] as const);
+  const [tab, setTab] = useTab(["joueurs", "videos", "bulletins", "bilans", "tournois", "dossiers", "entraineurs"] as const);
   const players = d.players, inactive = d.inactive;
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
@@ -273,11 +277,11 @@ export function Centre() {
         eyebrow="Espace jeunes · Centre de compétition"
         title="🏆 Mes jeunes compétiteurs"
         subtitle={isCoach ? "Profil, objectifs de l'année, accords des parents et accès des familles." : "Les jeunes que le coach te confie : objectifs, missions, bilans, bulletins, étoiles et vidéos."}
-        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link>{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
       />
       <Page>
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
-        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
+        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "🏆 Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
 
         {tab === "joueurs" && (
           <>
@@ -336,6 +340,7 @@ export function Centre() {
           </ul>
         )}
 
+        {isCoach && tab === "bilans" && <PendingReports list={d.reports} onChanged={d.reload} />}
         {tab === "tournois" && <TournamentsTab players={players} isCoach={isCoach} />}
 
         {isCoach && tab === "entraineurs" && <TrainersTab players={players} />}

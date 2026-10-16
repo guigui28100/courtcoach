@@ -126,6 +126,7 @@ model Player {
   selfEvaluations SelfEvaluation[]
   courseStars CourseStar[]
   declaredMatches DeclaredMatch[]
+  tournamentReports TournamentReport[]
   tournamentDocs TournamentDocPlayer[]
   qualities   CourseQuality[]
   matches     Match[]
@@ -277,9 +278,11 @@ model CourseStar {
   comment   String   @default("") // petit mot du coach (140 caractères maximum)
   goalId    String?  // mission (objectif) sur laquelle porte cette ligne d'étoiles
   goal      Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  reportId  String?  // étoiles « en match » (×2) venues d'un bilan de tournoi validé : ne sont JAMAIS remplacées par la saisie d'un cours
   createdAt DateTime @default(now())
 
   @@index([playerId, day])
+  @@index([reportId])
   authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
   authorName String?
   authorRole String?
@@ -318,11 +321,38 @@ model Match {
   score      String   @default("")
   remark     String   @default("")
   opponentRanking String? // classement de l'adversaire (ex. « 15/2 »), pour le récapitulatif du bulletin
+  reportId   String?  // match créé à la validation d'un bilan de tournoi
 
   @@index([playerId, date])
+  @@index([reportId])
   authorId   String?  // qui a saisi (coach ou entraîneur de comité) : sert à afficher une couleur différente
   authorName String?
   authorRole String?
+}
+
+// Bilan de tournoi : rempli par l'entraîneur de comité (ou le coach), VALIDÉ par le coach. Avant la validation : invisible du jeune et de sa famille, aucune étoile donnée, aucun match créé.
+model TournamentReport {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  name       String   // nom du tournoi
+  dateFrom   String   // « AAAA-MM-JJ »
+  dateTo     String   // « AAAA-MM-JJ » : jour des étoiles données
+  feeling    Int      // 1 (difficile) à 4 (très bien)
+  matches    Json     @default("[]") // [{ day, round, result, score, opponentRanking }]
+  themes     Json     @default("{}") // { identifiantThème: { level: "a-travailler" | "bien" | "tres-bien", goalId?: mission } }
+  summary    String   @default("") // petit mot de bilan (300 caractères maximum)
+  status     String   @default("SUBMITTED") // SUBMITTED (chez le coach, à valider) | VALIDATED (visible de la famille)
+  validatedAt DateTime?
+  validatedById String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  authorId   String?
+  authorName String?
+  authorRole String?
+
+  @@index([playerId, dateTo])
+  @@index([status])
 }
 
 model Video {

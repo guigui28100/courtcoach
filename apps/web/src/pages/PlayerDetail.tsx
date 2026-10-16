@@ -1,4 +1,5 @@
 import { MailFamilyBar, MailLinks, MailParent } from "../components/MailParent";
+import { PlayerReports, ReportTag } from "../components/TournamentReports";
 import { GoalLibraryTab } from "../components/GoalLibrary";
 import { StartEvalPanel } from "../components/StartEvalTab";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -193,7 +194,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
-            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} /></div>
+            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: "Ton invitation à CourtCoach", paragraphs: inviteLines(invite).slice(2, 4).map((l) => l.replace(/ : http\S+$/, " :")).concat(inviteLines(invite)[4]), button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
             <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}
@@ -430,7 +431,7 @@ function StarsTab({ p }: { p: Player }) {
           <ul className="m-0 grid list-none gap-2 p-0">{days.map((d) => { const list = stars.filter((s) => s.day === d); return (
             <li key={d} className="grid gap-1 rounded-xl border border-line px-3 py-2">
               <span className="flex flex-wrap items-center justify-between gap-2"><strong>{fmtDay(d)}</strong><span className="flex gap-2"><button className="btn-outline btn-sm" onClick={() => edit(d)}>Corriger</button><button className="btn-danger btn-sm" onClick={async () => { if (confirm("Retirer toutes les étoiles de ce cours ?")) { await del(`/players/${p.id}/stars/${d}`); setVersion((v) => v + 1); } }}>Retirer</button></span></span>
-              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1"><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? s.domain}` : "—"}</strong><span className="text-muted">{starReason(s.reason)?.emoji} {starReason(s.reason)?.label}</span>{s.comment ? <small className="hint">· {s.comment}</small> : null} <AuthorBadge a={s} /><button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button></span>)}
+              {list.map((s) => <span key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1"><StarCount n={s.stars} /><strong>{s.domain ? `${DOMAIN_EMOJI[s.domain] ?? ""} ${EVAL_AXES.find((a) => a.key === s.domain)?.label ?? s.domain}` : "—"}</strong><span className="text-muted">{starReason(s.reason)?.emoji} {starReason(s.reason)?.label}</span>{s.comment ? <small className="hint">· {s.comment}</small> : null} {s.reportId && <ReportTag />} <AuthorBadge a={s} />{!s.reportId && <button className="btn-danger btn-sm !min-h-8 !px-3" aria-label={`Retirer cette ligne (${s.stars} étoile${s.stars > 1 ? "s" : ""})`} onClick={async () => { if (confirm("Retirer ces étoiles ? Le radar sera mis à jour.")) { await del(`/players/${p.id}/stars/line/${s.id}`); setVersion((v) => v + 1); } }}>✕ Retirer</button>}</span>)}
             </li>
           ); })}</ul>
         )}
@@ -501,7 +502,7 @@ export default function PlayerDetail() {
           {tab === "objectifs" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /><Objectifs p={p} /></>}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
-          {tab === "matchs" && <Matchs p={p} />}
+          {tab === "matchs" && <><PlayerReports p={p} /><Matchs p={p} /></>}
           {tab === "etoiles" && <StarsTab p={p} />}
           {tab === "bulletins" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="bulletin" /><Bulletins p={p} /></>}
         </div>
