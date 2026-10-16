@@ -313,7 +313,6 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
   return (
     <>
       {!preview && <FamilyTournaments dark />}
-      <ChildReports playerId={p.id} />
       <DeclaredMatchesSection p={p} preview={preview} />
       {matches.length > 0 && (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-matchs">
@@ -392,7 +391,7 @@ function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow
   );
 }
 
-type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "progres" | "bulletins" | "renseignements" | "autorisations" | "compte";
+type Tab = "accueil" | "depart" | "missions" | "videos" | "matchs" | "tournois" | "progres" | "bulletins" | "renseignements" | "autorisations" | "compte";
 
 // Étape de la page de présentation : un titre, deux phrases, un bouton vers la page concernée
 function Step({ n, icon, title, text, to, go, hot = false, teen = false }: { n: number; icon: string; title: string; text: string; to: Tab; go: (t: Tab) => void; hot?: boolean; teen?: boolean }) {
@@ -444,7 +443,7 @@ function ThemePicker() {
   );
 }
 
-const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["renseignements", "📝", "Mes renseignements"], ["autorisations", "✅", "Mes autorisations"], ["compte", "🔒", "Mon compte"]];
+const TABS: [Tab, string, string][] = [["accueil", "🏠", "Mon accueil"], ["depart", "📍", "Mon point de départ"], ["missions", "🚀", "Mes missions"], ["videos", "🎬", "Mes vidéos"], ["matchs", "🏟️", "Mes matchs"], ["tournois", "🏆", "Mes bilans de tournoi"], ["progres", "📡", "Mes progrès"], ["bulletins", "📄", "Mes bulletins"], ["renseignements", "📝", "Mes renseignements"], ["autorisations", "✅", "Mes autorisations"], ["compte", "🔒", "Mon compte"]];
 
 // Espace du jeune : l'univers « galaxie », avec des onglets pour ne voir qu'une chose à la fois
 // previewId : le coach regarde ce que voit un jeune (sans pouvoir envoyer de vidéo), sans avoir besoin de son accès.
@@ -528,6 +527,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
               {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
+              {tab === "tournois" && <ChildReports playerId={p.id} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}
               {tab === "bulletins" && <BulletinsTab p={p} goals={goals[p.id] ?? []} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} selfEvals={selfEvals} pending={pending} preview={!!previewId} onSaved={refresh} />}
               {tab === "renseignements" && isParent && <FamilyInfo p={p} onSaved={(np) => setPlayers((all) => (all ?? []).map((x) => (x.id === np.id ? { ...x, ...np } : x)))} />}
