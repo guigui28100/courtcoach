@@ -102,6 +102,18 @@ describe("Bilan de tournoi : l'entraîneur saisit, le coach valide, la famille n
     await A.coach.delete(`/api/players/${p1}/stars/line/${service.id}`).set(ORIGIN).expect(400);
   });
 
+  it("repère « suivi par un entraîneur de comité » : oui pour p1, non sans entraîneur ou avec un entraîneur de club (jamais de nom)", async () => {
+    const one = (await A.parent.get(`/api/players/${p1}`).expect(200)).body;
+    expect(one.committeeTrainer).toBe(true);
+    expect(JSON.stringify(one)).not.toContain("trainer");
+    const p3 = (await A.coach.post("/api/players").set(ORIGIN).send({ firstName: "Hugo" }).expect(201)).body.id;
+    expect((await A.coach.get(`/api/players/${p3}`).expect(200)).body.committeeTrainer).toBe(false);
+    const club = await login("club", Role.TRAINER); await prisma.user.update({ where: { id: club }, data: { trainerKind: "CLUB" } });
+    await prisma.playerAccess.create({ data: { userId: club, playerId: p3, relation: "entraineur" } });
+    expect((await A.coach.get(`/api/players/${p3}`).expect(200)).body.committeeTrainer).toBe(false);
+    const list = (await A.coach.get("/api/players").expect(200)).body as { id: string; committeeTrainer: boolean }[];
+    expect(list.find((x) => x.id === p1)?.committeeTrainer).toBe(true); expect(list.find((x) => x.id === p3)?.committeeTrainer).toBe(false);
+  });
   it("APRÈS validation : la famille voit le bilan (sans le nom de l'auteur), les matchs et les étoiles ; plus de modification", async () => {
     const list = (await A.parent.get(`/api/players/${p1}/tournament-reports`).expect(200)).body;
     expect(list).toHaveLength(1); expect(list[0]).toMatchObject({ name: "Tournoi de Dreux", status: "VALIDATED", feeling: 3 });

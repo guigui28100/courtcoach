@@ -51,7 +51,15 @@ export class PlayersService {
   async list(user: AuthUser) {
     const where = user.role === Role.COACH ? { archivedAt: null } : { accesses: { some: { userId: user.id } } };
     const rows = await this.prisma.player.findMany({ where, orderBy: { firstName: "asc" } });
-    return rows.map((p) => this.shape(p, user));
+    const comite = await this.withCommitteeTrainer(rows.map((r) => r.id));
+    return rows.map((p) => ({ ...this.shape(p, user), committeeTrainer: comite.has(p.id) }));
+  }
+
+  // « Suivi par un entraîneur de comité ? » (oui / non seulement, jamais son nom) : sert à l'espace du jeune pour placer les bilans de tournoi
+  private async withCommitteeTrainer(playerIds: string[]) {
+    if (!playerIds.length) return new Set<string>();
+    const rows = await this.prisma.playerAccess.findMany({ where: { playerId: { in: playerIds }, user: { role: Role.TRAINER, deletedAt: null } }, select: { playerId: true, user: { select: { trainerKind: true } } } });
+    return new Set(rows.filter((r) => r.user.trainerKind !== "CLUB").map((r) => r.playerId));
   }
 
   async get(user: AuthUser, id: string) {
@@ -60,7 +68,8 @@ export class PlayersService {
     if (!p) throw new NotFoundException("Fiche introuvable");
     if (isStaff(user)) await this.audit.log(user.id, "read", "Player", id); // journal : le coach (ou l'entraîneur) a ouvert cette fiche
     const { consents, ...player } = p;
-    return { ...this.shape(player as Player, user), consents: isStaff(user) || user.role === Role.GUARDIAN ? consents : undefined };
+    const comite = await this.withCommitteeTrainer([id]);
+    return { ...this.shape(player as Player, user), committeeTrainer: comite.has(id), consents: isStaff(user) || user.role === Role.GUARDIAN ? consents : undefined };
   }
 
   async create(user: AuthUser, dto: CreatePlayerDto) {

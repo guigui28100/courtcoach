@@ -10,6 +10,7 @@ export const AXES: { key: Axis; label: string; color: string }[] = [
 export interface Player {
   id: string; firstName: string; lastName: string; birthDate: string | null; sex: string | null; club: string | null; licence: string | null;
   heightCm: number | null; ranking: string | null; targetRanking: string | null; hand: string | null; backhand: string | null;
+  committeeTrainer?: boolean; // suivi par un entraîneur de comité (oui / non seulement)
   playStyle: string | null; training: string | null; availability: string | null; health?: string | null; coachNotes?: string | null;
   lastActivityAt: string; consents?: Consent[];
 }

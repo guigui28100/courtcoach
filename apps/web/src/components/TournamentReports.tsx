@@ -210,10 +210,11 @@ export function PendingReports({ list, onChanged }: { list: TournamentReport[] |
 }
 
 // ----- Chez le jeune et sa famille (onglet « Mes matchs ») : seulement les bilans validés -----
-export function ChildReports({ playerId }: { playerId: string }) {
+export function ChildReports({ playerId, hideEmpty = false }: { playerId: string; hideEmpty?: boolean }) {
   const [list, setList] = useState<TournamentReport[] | null>(null);
   useEffect(() => { get<TournamentReport[]>(`/players/${playerId}/tournament-reports`).then(setList).catch(() => setList([])); }, [playerId]);
-  if (list === null) return <p className="text-center text-white/80">Chargement…</p>;
+  if (list === null) return hideEmpty ? null : <p className="text-center text-white/80">Chargement…</p>;
+  if (!list.length && hideEmpty) return null;
   if (!list.length) return <section className="glass grid gap-2" aria-labelledby="child-rep"><h2 id="child-rep" className="m-0 text-2xl">🏆 Les bilans de mes tournois</h2><p className="m-0">Quand un entraîneur t'accompagne en tournoi, il écrit un petit bilan : tes matchs, ce qui était bien et ce qu'on travaille. Après la validation de ton coach, tu le retrouves ici. Pas encore de bilan pour l'instant !</p></section>;
   return (
     <section className="glass grid gap-3" aria-labelledby="child-rep">
