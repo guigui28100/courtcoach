@@ -57,9 +57,9 @@ export const EVAL_AXES: EvalAxis[] = [
 // Bilan de départ : le détail à noter dans chaque domaine (clé enregistrée : d_<domaine>_<point>)
 export const START_ITEMS: Record<string, [string, string][]> = {
   technique: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["volee", "Volée"], ["smash", "Smash"]],
-  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Jeu au filet"]],
+  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Montées au filet"]],
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"], ["combativite", "Combativité"], ["confiance", "Confiance"]],
-  physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"], ["gainage", "Gainage"], ["coordination", "Coordination"]],
+  physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"]],
   attitude: [["ecoute", "Écoute"], ["effort", "Effort"], ["comportement", "Comportement"]],
 };
 // Les 4 niveaux d'un point du bilan, enregistrés comme une note de 1 à 5 (1, 2, 4, 5) : les anciens bilans restent lisibles
@@ -73,8 +73,8 @@ export const levelOf = (rating: number | undefined) => (!rating ? -1 : rating <=
 // Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs
 export const MISSION_TOPICS: Record<string, string[]> = {
   TECHNIQUE: ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes"],
-  TACTIQUE: ["Défendre", "Attaquer", "Jeu au filet", "Construire le point", "Variations", "Lecture du jeu"],
-  PHYSIQUE: ["Endurance", "Vitesse", "Explosivité", "Gainage", "Coordination", "Souplesse"],
+  TACTIQUE: ["Défendre", "Attaquer", "Montées au filet", "Construire le point (régularité)", "Variations", "Lecture du jeu"],
+  PHYSIQUE: ["Endurance", "Vitesse", "Explosivité"],
   MENTAL: ["Concentration", "Gestion des émotions", "Routines", "Confiance", "Combativité"],
 };
 export const itemKey = (axis: string, k: string) => `d_${axis}_${k}`;
@@ -275,10 +275,9 @@ export interface TournamentReport {
 export const REPORT_THEMES: { key: string; label: string; axis: string }[] = [
   { key: "coup-droit", label: "Coup droit", axis: "technique" }, { key: "revers", label: "Revers", axis: "technique" }, { key: "service", label: "Service", axis: "technique" },
   { key: "retour", label: "Retour de service", axis: "technique" }, { key: "volee", label: "Volée", axis: "technique" }, { key: "smash", label: "Smash", axis: "technique" }, { key: "jeu-de-jambes", label: "Jeu de jambes", axis: "technique" },
-  { key: "defendre", label: "Défendre", axis: "tactique" }, { key: "attaquer", label: "Attaquer", axis: "tactique" }, { key: "jeu-au-filet", label: "Jeu au filet", axis: "tactique" },
-  { key: "construire", label: "Construire le point", axis: "tactique" }, { key: "variations", label: "Variations", axis: "tactique" }, { key: "lecture", label: "Lecture du jeu", axis: "tactique" },
+  { key: "defendre", label: "Défendre", axis: "tactique" }, { key: "attaquer", label: "Attaquer", axis: "tactique" }, { key: "jeu-au-filet", label: "Montées au filet", axis: "tactique" },
+  { key: "construire", label: "Construire le point (régularité)", axis: "tactique" }, { key: "variations", label: "Variations", axis: "tactique" }, { key: "lecture", label: "Lecture du jeu", axis: "tactique" },
   { key: "endurance", label: "Endurance", axis: "physique" }, { key: "vitesse", label: "Vitesse", axis: "physique" }, { key: "explosivite", label: "Explosivité", axis: "physique" },
-  { key: "gainage", label: "Gainage", axis: "physique" }, { key: "coordination", label: "Coordination", axis: "physique" }, { key: "souplesse", label: "Souplesse", axis: "physique" },
   { key: "concentration", label: "Concentration", axis: "mental" }, { key: "emotions", label: "Gestion des émotions", axis: "mental" }, { key: "routines", label: "Routines", axis: "mental" },
   { key: "confiance", label: "Confiance", axis: "mental" }, { key: "combativite", label: "Combativité", axis: "mental" },
   { key: "ecoute", label: "Écoute", axis: "attitude" }, { key: "effort", label: "Effort", axis: "attitude" }, { key: "comportement", label: "Comportement", axis: "attitude" }, { key: "fair-play", label: "Fair-play", axis: "attitude" },
