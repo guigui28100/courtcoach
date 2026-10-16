@@ -97,6 +97,8 @@ function useTab<T extends string>(keys: readonly T[]): [T, (k: T) => void] {
 
 // Toutes les données de l'accueil, chargées une seule fois
 function useCoachData(version = 0) {
+  const { viewAs } = useAuth(); // « voir comme un entraîneur » : seulement SES jeunes
+  const mine = useCallback(<T,>(l: T[], idOf: (x: T) => string | undefined) => (viewAs ? l.filter((x) => viewAs.playerIds.includes(idOf(x) ?? "")) : l), [viewAs]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [inactive, setInactive] = useState<{ id: string; firstName: string; lastName: string; lastActivityAt: string }[]>([]);
@@ -107,20 +109,21 @@ function useCoachData(version = 0) {
   const load = useCallback(() => {
     get<TournamentReport[]>("/tournament-reports/pending").then(setReports).catch(() => setReports([])); // bilans de tournoi à valider (coach seulement : sinon 403, liste vide)
     get<Lesson[]>("/lessons").then(setLessons).catch(() => undefined);
-    get<Player[]>("/players").then(async (ps) => {
+    get<Player[]>("/players").then(async (all0) => {
+      const ps = mine(all0, (p) => p.id);
       setPlayers(ps);
       const all = await Promise.all(ps.map(async (p) => (await get<SelfEvaluation[]>(`/players/${p.id}/self-evaluations`).catch(() => [])).filter((e) => !e.readAt).map((ev) => ({ player: p, ev }))));
       setSelfEvals(all.flat());
     }).catch(() => undefined);
     get<typeof inactive>("/players/inactive").then(setInactive).catch(() => undefined);
     get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => undefined);
-  }, []);
+  }, [mine]);
   useEffect(load, [load, version]);
   const pending = lessons.filter((l) => l.status === "PENDING");
   const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const upcoming = lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso()).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
-  const youthVideos = (videos ?? []).filter((v) => v.kind === "centre");
+  const youthVideos = mine((videos ?? []).filter((v) => v.kind === "centre"), (v) => (v as { playerId?: string }).playerId);
   return { lessons, pending, toConfirm, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, reload: load };
 }
 

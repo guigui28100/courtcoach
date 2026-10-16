@@ -466,7 +466,8 @@ function PlayerVideosTab({ p }: { p: Player }) {
 }
 
 export default function PlayerDetail() {
-  const isCoach = useAuth().me?.role === "COACH";
+  const { me, viewAs } = useAuth();
+  const isCoach = me?.role === "COACH";
   const { id = "" } = useParams();
   const [p, setP] = useState<Player | null>(null);
   const [missing, setMissing] = useState(false);
@@ -477,7 +478,7 @@ export default function PlayerDetail() {
   const setTab = (k: Tab) => { setSearch(k === "profil" ? {} : { onglet: k }); };
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
-  if (missing) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
+  if (missing || (viewAs && !viewAs.playerIds.includes(id))) return <Page><Empty>Ce joueur est introuvable.</Empty><Link to="/coach/centre" className="btn-clay no-underline">Retour</Link></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
   const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de début d'année"], ["objectifs", "🎯 Définir les objectifs de travail"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (

@@ -41,7 +41,12 @@ function refreshOnce() {
   return refreshing;
 }
 
+// « Voir comme un entraîneur » : le coach regarde sans rien pouvoir modifier (toute demande qui écrit est refusée ici).
+let previewOnly = false;
+export const setPreviewOnly = (v: boolean) => { previewOnly = v; };
+
 export async function api<T = any>(path: string, init: RequestInit = {}): Promise<T> {
+  if (previewOnly && init.method && init.method !== "GET" && !path.startsWith("/auth/") && !path.includes("/ping")) throw new ApiError(0, "Aperçu : rien n'est enregistré. Quitte l'aperçu pour agir.");
   let res = await raw(path, init);
   // Connexion expirée : renouvellement discret, puis on rejoue la demande une fois. On la rejoue même si le renouvellement
   // a échoué : un autre onglet a pu renouveler la session entre-temps (les cookies sont partagés).

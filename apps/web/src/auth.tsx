@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { del, get, post } from "./api";
+import { del, get, post, setPreviewOnly } from "./api";
 import { Me } from "./types";
 
 interface AuthCtx {
@@ -10,7 +10,13 @@ interface AuthCtx {
   logout(): Promise<void>;
   eraseAccount(): Promise<void>;
   reload(): Promise<void>;
+  viewAs: ViewAs | null; // le coach regarde l'espace d'un entraîneur (lecture seule)
+  startViewAs(v: ViewAs): void;
+  stopViewAs(): void;
 }
+export interface ViewAs { name: string; playerIds: string[]; }
+const VIEW_KEY = "cc-view-trainer";
+function savedView(): ViewAs | null { try { const v = JSON.parse(sessionStorage.getItem(VIEW_KEY) || "null"); return v && Array.isArray(v.playerIds) ? v : null; } catch { return null; } }
 const Ctx = createContext<AuthCtx>(null as never);
 export const useAuth = () => useContext(Ctx);
 
@@ -19,6 +25,7 @@ const IDLE_MS = 30 * 60 * 1000; // déconnexion après 30 minutes sans activité
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewAs, setViewAs] = useState<ViewAs | null>(() => { const v = savedView(); setPreviewOnly(!!v); return v; });
   const timer = useRef<number | undefined>(undefined);
 
   const reload = useCallback(async () => {
@@ -37,8 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { events.forEach((e) => window.removeEventListener(e, arm)); window.clearTimeout(timer.current); };
   }, [me, logout]);
 
+  const shown = me && viewAs && me.role === "COACH" ? { ...me, role: "TRAINER" as const } : me;
   const value: AuthCtx = {
-    me, loading, reload, logout,
+    me: shown, loading, viewAs: me?.role === "COACH" ? viewAs : null,
+    startViewAs: (v) => { setPreviewOnly(true); try { sessionStorage.setItem(VIEW_KEY, JSON.stringify(v)); } catch { /* sans mémoire */ } setViewAs(v); },
+    stopViewAs: () => { setPreviewOnly(false); try { sessionStorage.removeItem(VIEW_KEY); } catch { /* sans mémoire */ } setViewAs(null); }, reload, logout,
     login: async (email, password, code) => { await post("/auth/login", { email, password, ...(code ? { code } : {}) }); await reload(); },
     signup: async (v) => { await post("/auth/signup", v); await reload(); },
     acceptInvitation: async (v) => { await post("/auth/invitations/accept", v); await reload(); },
