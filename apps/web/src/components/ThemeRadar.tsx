@@ -114,7 +114,6 @@ export function ThemeImage({ evals, fallback = null }: { evals: { label: string;
     <figure className="m-0 grid w-full justify-items-center gap-2">
       <ThemeRadarSvg spokes={spokes} series={series} summary={summary} />
       <Legend items={series} dark={false} />
-      {series.length > 1 && <p className="m-0 max-w-md text-center text-sm text-[#10203a]">Plus la forme est grande, mieux le point est maîtrisé. <strong>Trait plein</strong> : ce trimestre. <strong>Pointillés</strong> : le point de comparaison (d'où le joueur est parti).</p>}
     </figure>
   );
 }
