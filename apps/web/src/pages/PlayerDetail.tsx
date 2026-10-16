@@ -63,14 +63,21 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
   );
 }
 
-// Message d'invitation préparé pour la messagerie du coach (lien « mailto: ») : le lien est personnel, à usage unique, et le mot de passe n'y figure jamais
-function inviteLines(i: { url: string; days: number; email: string; role: string }) {
-  const lines = i.role === "YOUTH"
-    ? ["Bonjour,", "", "Voici l'invitation pour ouvrir ton espace sur CourtCoach (Tennis Club Houdan).", `Clique sur ce lien personnel pour choisir ton mot de passe : ${i.url}`]
-    : ["Bonjour,", "", "Vous êtes invité(e) à suivre l'espace de votre enfant sur CourtCoach (Tennis Club Houdan).", `Cliquez sur ce lien personnel pour choisir votre mot de passe : ${i.url}`];
-  lines.push(`Ce lien ne fonctionne qu'une seule fois et reste valable ${i.days} jours. L'identifiant sera cette adresse e-mail.`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan");
-  return lines;
+// Message d'invitation préparé pour la messagerie du coach : explique ce qu'est CourtCoach et quoi faire en premier (le lien est personnel, à usage unique ; le mot de passe n'y figure jamais)
+type Invite = { url: string; days: number; email: string; role: string };
+function inviteContent(i: Invite) {
+  const youth = i.role === "YOUTH";
+  const intro = youth ? "Voici l'invitation pour ouvrir ton espace sur CourtCoach, l'application du Tennis Club Houdan." : "Vous êtes invité(e) à suivre l'espace de votre enfant sur CourtCoach, l'application du Tennis Club Houdan.";
+  const about = youth
+    ? "CourtCoach est ton espace privé de joueur : tu y retrouves tes missions (ce que tu travailles), les étoiles que ton coach te donne, tes vidéos et analyses, tes matchs, tes bilans de tournoi et tes bulletins. Seuls toi, tes parents et ton coach y ont accès."
+    : "CourtCoach est l'espace en ligne privé du Centre de compétition jeunes du Tennis Club Houdan. Vous y suivez les progrès de votre enfant : objectifs de travail (missions), étoiles gagnées aux entraînements, vidéos et analyses du coach, matchs, bilans de tournoi et bulletins. Il n'y a aucune publicité, et rien n'est partagé en dehors du club.";
+  const steps = youth
+    ? [{ title: "Choisis ton mot de passe", text: "Avec le bouton du mail. Ton identifiant sera cette adresse e-mail." }, { title: "Fais le tour de ton espace", text: "L'accueil t'explique tout en quelques étapes : missions, étoiles, vidéos, matchs." }, { title: "Demande à tes parents de donner les autorisations", text: "Ils les donnent depuis leur propre compte (rubrique « Mes autorisations »)." }]
+    : [{ title: "Choisissez votre mot de passe", text: "Avec le bouton du mail. Votre identifiant sera cette adresse e-mail." }, { title: "Donnez les autorisations", text: "Rubrique « Mes autorisations » : l'accord de suivi, et le droit à l'image (indispensable pour que le coach puisse filmer et analyser les vidéos de votre enfant). Vous confirmez avec votre mot de passe et vous pouvez retirer un accord à tout moment : les vidéos sont alors supprimées." }, { title: "Complétez la fiche de renseignements", text: "Rubrique « Mes renseignements » : taille, club, licence, classement, santé… (facultatif, une minute suffit)." }];
+  const lines = ["Bonjour,", "", intro, "", "QU'EST-CE QUE COURTCOACH ?", about, "", "À FAIRE EN PREMIER :", ...steps.map((x, n) => `${n + 1}. ${x.title} : ${x.text}`), "", youth ? `Clique sur ce lien personnel pour choisir ton mot de passe : ${i.url}` : `Cliquez sur ce lien personnel pour choisir votre mot de passe : ${i.url}`, `Ce lien ne fonctionne qu'une seule fois et reste valable ${i.days} jours.`, "", "Bien cordialement,", "Le coach du Tennis Club Houdan"];
+  return { lines, intro, about, steps, youth };
 }
+const inviteLines = (i: Invite) => inviteContent(i).lines;
 
 function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
   const nav = useNavigate();
@@ -194,7 +201,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
-            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: "Ton invitation à CourtCoach", topic: { emoji: "🔑", label: "Votre invitation" }, paragraphs: inviteLines(invite).slice(2, 4).map((l) => l.replace(/ : http\S+$/, " :")).concat(inviteLines(invite)[4]), button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
+            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: inviteContent(invite).youth ? "Ton invitation à CourtCoach" : "Votre invitation à CourtCoach", topic: { emoji: "🔑", label: inviteContent(invite).youth ? "Ton invitation" : "Votre invitation" }, paragraphs: [inviteContent(invite).intro, `Ce lien est personnel : il ne fonctionne qu'une seule fois et reste valable ${invite.days} jours.`], about: { title: "Qu'est-ce que CourtCoach ?", text: inviteContent(invite).about }, steps: inviteContent(invite).steps, button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
             <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}
