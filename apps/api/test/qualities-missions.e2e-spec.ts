@@ -41,7 +41,7 @@ describe("Étoiles liées aux missions et qualités notées à chaque cours", ()
   });
 
   it("des étoiles données SUR une mission : le domaine est celui de la mission ; jamais la mission d'un autre joueur", async () => {
-    const put = (items: object[], who = "coach", pid = p1) => A[who].put(`/api/players/${pid}/stars/${iso(0)}`).set(ORIGIN).send({ items });
+    const put = (items: object[], who = "coach", pid = p1) => A[who].put(`/api/players/${pid}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items });
     const r = await put([{ stars: 2, reason: "effort", goalId: g1, domain: "mental" }]).expect(200); // le domaine envoyé est ignoré : la mission est technique
     expect(r.body[0]).toMatchObject({ goalId: g1, domain: "technique", stars: 2 });
     await put([{ stars: 1, reason: "effort", goalId: g2 }]).expect(400); // mission de Nina sur la fiche de Léo

@@ -9,6 +9,7 @@ import { useAuth } from "../auth";
 import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLinesError, StarsLine, useStars } from "../components/Stars";
 import { ThemeRadar } from "../components/ThemeRadar";
 import { useFollowUp } from "../components/Suivi";
+import { offDayReason } from "../schoolDays";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -19,6 +20,7 @@ const CONSENT_LABEL: Record<Consent["kind"], string> = {
   PRIVACY_POLICY: "Politique de confidentialité", FOLLOW_UP: "Suivi sportif (objectifs, évaluations, bulletins)",
   IMAGE: "Droit à l'image (filmer pour analyser)", HEALTH: "Informations de santé (facultatif)", ACCOUNT: "Compte en ligne du jeune",
 };
+const COURSE_WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const PLAY_STYLES = ["Offensif", "Défensif", "Contre-attaquant", "Fond de court", "Serveur-volleyeur", "Joueur complet", "Régulier", "Puissant", "Joueur d'instinct"];
 const RANKINGS = ["NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6"];
 
@@ -48,7 +50,7 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
             <select id={k} name={k} className="input" defaultValue={p[k] ?? ""}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r}>{r}</option>)}</select>
           </Field>
         ))}
-        {t("hand", "Main")}{t("backhand", "Revers")}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} /></Field>{t("training", "Volume d'entraînement", { hint: "Ex. : 3 h par semaine" })}
+        {t("hand", "Main")}{t("backhand", "Revers")}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} /></Field>{t("training", "Volume d'entraînement", { hint: "Ex. : 3 h par semaine" })}<Field label="Jours de cours habituels" id="courseDays" hint="Les étoiles se donnent ces jours-là, hors vacances scolaires (zone C, Paris)."><MultiSelect id="courseDays" name="courseDays" options={COURSE_WEEKDAYS} value={p.courseDays} /></Field>
       </fieldset>
       {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et les parents.">
@@ -201,7 +203,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
           <div className="alert" role="status">
             <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
-            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: inviteContent(invite).youth ? "Ton invitation à CourtCoach" : "Votre invitation à CourtCoach", topic: { emoji: "🎾", label: inviteContent(invite).youth ? "Ton invitation" : "Votre invitation" }, paragraphs: [inviteContent(invite).intro, `Ce lien est personnel : il ne fonctionne qu'une seule fois et reste valable ${invite.days} jours.`], about: { title: "Qu'est-ce que CourtCoach ?", text: inviteContent(invite).about }, steps: inviteContent(invite).steps, button: { label: "Choisir mon mot de passe →", url: invite.url } }} /></div>
+            <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: inviteContent(invite).youth ? "Ton espace CourtCoach t'attend." : "Votre enfant a son espace CourtCoach.", paragraphs: [inviteContent(invite).youth ? "Missions, étoiles, vidéos, matchs et bulletins : tout est là. Ton coach t'invite à l'ouvrir." : "Suivez ses progrès : objectifs, étoiles, vidéos du coach, matchs et bulletins. Le Tennis Club Houdan vous invite à l'ouvrir."], note: `${inviteContent(invite).youth ? "Ton lien est personnel" : "Votre lien est personnel"} : il ne fonctionne qu'une seule fois et reste valable ${invite.days} jours.`, about: { title: "Qu'est-ce que CourtCoach ?", text: inviteContent(invite).about }, steps: inviteContent(invite).steps, button: { label: "Choisir mon mot de passe →", url: invite.url }}} /></div>
             <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
           </div>
         )}
@@ -415,7 +417,9 @@ function StarsTab({ p }: { p: Player }) {
   async function save() {
     setErr(""); const bad = starLinesError(lines); if (bad) return setErr(bad);
     const act = activeLines(lines); if (!act.length) return setErr("Choisis un nombre d'étoiles (ou retire la ligne).");
-    try { await put(`/players/${p.id}/stars/${day}`, { items: starItems(lines) }); setLines([]); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
+    const off = offDayReason(day, p.courseDays);
+    if (off && !confirm(`${off}\n\nEnregistrer quand même ces étoiles ?`)) return;
+    try { await put(`/players/${p.id}/stars/${day}`, { items: starItems(lines), confirmOffDay: !!off }); setLines([]); setVersion((v) => v + 1); } catch (e) { setErr((e as Error).message); }
   }
   // Une même journée peut avoir plusieurs lignes : on les regroupe par jour
   const days = [...new Set((stars ?? []).map((s) => s.day))];
@@ -427,6 +431,7 @@ function StarsTab({ p }: { p: Player }) {
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
+        {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-bold text-ink">⚠️ {offDayReason(day, p.courseDays)} Tu pourras quand même enregistrer après confirmation.</p>}
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
         <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} day={day} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}

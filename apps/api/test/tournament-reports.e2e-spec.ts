@@ -93,7 +93,7 @@ describe("Bilan de tournoi : l'entraîneur saisit, le coach valide, la famille n
     expect(stars.every((s: any) => s.stars > 0)).toBe(true);
     expect((await A.coach.get(`/api/players/${p1}/matches`).expect(200)).body).toHaveLength(2);
     // un cours le même jour ne remplace pas les étoiles du tournoi
-    await A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "effort", domain: "attitude" }] }).expect(200);
+    await A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 1, reason: "effort", domain: "attitude" }] }).expect(200);
     expect((await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body).toHaveLength(3);
     await A.coach.delete(`/api/players/${p1}/stars/${day}`).set(ORIGIN).expect(204);
     expect((await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body).toHaveLength(2);

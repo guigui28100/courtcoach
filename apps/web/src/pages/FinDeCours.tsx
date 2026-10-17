@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
 import { StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
+import { offDayReason } from "../schoolDays";
 import { Avatar, Empty, Err, Page, PageHead } from "../components/ui";
 import { CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
 
@@ -47,7 +48,11 @@ export default function FinDeCours() {
         const r = rows[p.id]; if (!r) continue;
         const bad = starLinesError(r.lines); if (bad) throw new Error(`${p.firstName} : ${bad}`);
         const act = activeLines(r.lines);
-        if (act.length) await put(`/players/${p.id}/stars/${day}`, { items: starItems(r.lines) });
+        if (act.length) {
+          const off = offDayReason(day, p.courseDays);
+          if (off && !confirm(`${p.firstName} : ${off}\n\nEnregistrer quand même ?`)) continue;
+          await put(`/players/${p.id}/stars/${day}`, { items: starItems(r.lines), confirmOffDay: !!off });
+        }
         else if (r.had) await del(`/players/${p.id}/stars/${day}`);
       }
       const ids = new Set(list.map((p) => p.id));
@@ -85,6 +90,7 @@ export default function FinDeCours() {
               <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">⚠️ pas encore enregistré</span>}</span>
               <strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>
             </div>
+            {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-bold text-ink">⚠️ {offDayReason(day, p.courseDays)} Une confirmation te sera demandée.</p>}
             <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} allStars={allStars[p.id]} day={day} onChange={(lines) => set(p.id, { lines })} />
             <div className="flex flex-wrap gap-2">
               <button className="btn-clay" disabled={busy || !r.dirty} onClick={async () => { if (await saveRows([p]) && next) setSel(next.id); }}>{next ? `💾 Enregistrer ${p.firstName} et passer à ${next.firstName} →` : `💾 Enregistrer ${p.firstName}`}</button>

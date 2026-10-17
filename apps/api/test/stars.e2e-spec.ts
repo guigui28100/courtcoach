@@ -32,16 +32,16 @@ describe("Étoiles de fin de cours", () => {
   afterAll(async () => { await clean(); await app.close(); });
 
   it("le coach donne des étoiles à la fin d'un cours ; une seule fiche par joueur et par jour (la 2e remplace la 1re)", async () => {
-    const r = await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "technique", comment: "Bravo pour ton énergie !" }] }).expect(200);
+    const r = await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 2, reason: "effort", domain: "technique", comment: "Bravo pour ton énergie !" }] }).expect(200);
     expect(r.body[0]).toMatchObject({ day: iso(0), stars: 2, reason: "effort", domain: "technique" });
-    await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "progres", domain: "technique" }] }).expect(200);
-    await A.coach.put(`/api/players/${p1}/stars/${iso(3)}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "ecoute", domain: "technique" }] }).expect(200);
+    await A.coach.put(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 3, reason: "progres", domain: "technique" }] }).expect(200);
+    await A.coach.put(`/api/players/${p1}/stars/${iso(3)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 1, reason: "ecoute", domain: "technique" }] }).expect(200);
     const list = (await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body;
     expect(list.map((s: any) => [s.day, s.stars, s.reason])).toEqual([[iso(0), 3, "progres"], [iso(3), 1, "ecoute"]]);
   });
 
   it("plusieurs lignes le même jour (raison + domaine différents) : elles remplacent celles du jour, 20 au maximum", async () => {
-    const put = (body: object) => A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send(body);
+    const put = (body: object) => A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, ...body });
     const r = await put({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique", comment: "Beau service" }, { stars: 3, reason: "fairplay", domain: "attitude" }] }).expect(200);
     expect(r.body.map((s: any) => [s.reason, s.domain, s.stars])).toEqual([["effort", "mental", 2], ["progres", "technique", 1], ["fairplay", "attitude", 3]]);
     await put({ items: [{ stars: 1, reason: "courage", domain: "mental" }] }).expect(200); // remplace tout le jour
@@ -57,7 +57,7 @@ describe("Étoiles de fin de cours", () => {
   });
 
   it("le coach remet toutes les étoiles d'un joueur à zéro ; ni la famille ni un autre joueur ne sont touchés", async () => {
-    await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }] }).expect(200);
+    await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 2, reason: "effort", domain: "mental" }] }).expect(200);
     const before = (await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body.length;
     await A.parent.delete(`/api/players/${p1}/stars`).set(ORIGIN).expect(403);
     await A.coach.delete(`/api/players/${p2}/stars`).set(ORIGIN).expect(204);
@@ -66,7 +66,7 @@ describe("Étoiles de fin de cours", () => {
   });
 
   it("le coach retire une seule ligne d'étoiles ; les autres lignes du cours restent ; la famille ne le peut pas", async () => {
-    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique" }] }).expect(200)).body;
+    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 2, reason: "effort", domain: "mental" }, { stars: 1, reason: "progres", domain: "technique" }] }).expect(200)).body;
     await A.parent.delete(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).expect(403);
     await A.coach.delete(`/api/players/${p1}/stars/line/${lines[0].id}`).set(ORIGIN).expect(404); // pas la fiche de ce joueur
     await A.coach.delete(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).expect(204);
@@ -76,7 +76,7 @@ describe("Étoiles de fin de cours", () => {
   });
 
   it("le coach retire une étoile d'une ligne (sans toucher aux autres) ; 0 ou 4 refusés ; la famille ne le peut pas", async () => {
-    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "mental" }, { stars: 2, reason: "progres", domain: "technique" }] }).expect(200)).body;
+    const lines = (await A.coach.put(`/api/players/${p2}/stars/${iso(0)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 3, reason: "effort", domain: "mental" }, { stars: 2, reason: "progres", domain: "technique" }] }).expect(200)).body;
     const r = await A.coach.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 2 }).expect(200);
     expect(r.body).toMatchObject({ stars: 2, reason: "effort", domain: "mental" });
     await A.coach.patch(`/api/players/${p2}/stars/line/${lines[0].id}`).set(ORIGIN).send({ stars: 0 }).expect(400);
@@ -88,7 +88,7 @@ describe("Étoiles de fin de cours", () => {
   });
 
   it("« pas en progrès » : des étoiles en moins, avec une raison « à travailler » et TOUJOURS un commentaire que le jeune et la famille voient", async () => {
-    const put = (items: object[]) => A.coach.put(`/api/players/${p1}/stars/${iso(6)}`).set(ORIGIN).send({ items });
+    const put = (items: object[]) => A.coach.put(`/api/players/${p1}/stars/${iso(6)}`).set(ORIGIN).send({ confirmOffDay: true, items });
     await put([{ stars: -1, reason: "neg-attitude", domain: "attitude" }]).expect(400); // sans explication : refusé
     await put([{ stars: -1, reason: "neg-attitude", domain: "attitude", comment: "  " }]).expect(400);
     await put([{ stars: -1, reason: "effort", domain: "attitude", comment: "Tu as chahuté pendant l'exercice" }]).expect(400); // raison positive avec étoile en moins
@@ -107,7 +107,7 @@ describe("Étoiles de fin de cours", () => {
   });
 
   it("valeurs refusées : 0 ou 4 étoiles, raison inconnue, mot trop long, date invalide, cours à venir, date trop ancienne", async () => {
-    const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send(body);
+    const put = (day: string, body: object) => A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ confirmOffDay: true, ...body });
     await put(iso(1), { items: [{ stars: 0, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(1), { items: [{ stars: 4, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(1), { items: [{ stars: -1, reason: "effort", domain: "technique" }] }).expect(400); // jamais d'étoile négative
@@ -118,7 +118,7 @@ describe("Étoiles de fin de cours", () => {
     await put("pas-une-date", { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(-10), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
     await put(iso(500), { items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(400);
-    await A.coach.put(`/api/players/inconnu/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(404);
+    await A.coach.put(`/api/players/inconnu/stars/${iso(1)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 2, reason: "effort", domain: "technique" }] }).expect(404);
   });
 
   it("la famille et le jeune lisent leurs étoiles, jamais celles d'un autre ; ils ne peuvent ni en donner ni en retirer ; un adulte n'a aucun accès", async () => {
@@ -126,11 +126,11 @@ describe("Étoiles de fin de cours", () => {
     await A.autre.get(`/api/players/${p1}/stars`).expect(404);
     await A.parent.get(`/api/players/${p2}/stars`).expect(404);
     for (const who of ["parent", "jeune", "autre"]) {
-      await A[who].put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
+      await A[who].put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
       await A[who].delete(`/api/players/${p1}/stars/${iso(0)}`).set(ORIGIN).expect(403);
     }
     await A.adulte.get(`/api/players/${p1}/stars`).expect(403);
-    await A.adulte.put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
+    await A.adulte.put(`/api/players/${p1}/stars/${iso(1)}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 3, reason: "effort", domain: "technique" }] }).expect(403);
     expect(await prisma.courseStar.count({ where: { playerId: p1 } })).toBe(2);
   });
 
@@ -140,5 +140,20 @@ describe("Étoiles de fin de cours", () => {
     expect((await A.coach.get(`/api/players/${p1}/export`).expect(200)).body.courseStars).toHaveLength(1);
     await A.coach.delete(`/api/players/${p1}`).set(ORIGIN).expect(204);
     expect(await prisma.courseStar.count({ where: { playerId: p1 } })).toBe(0);
+  });
+
+  it("jours de cours : hors jour habituel ou pendant les vacances (zone C), il faut confirmer", async () => {
+    const ven = "2026-11-20", lun = "2026-11-23", vac = "2026-12-23"; // vendredi, lundi, vacances de Noël
+    await A.coach.patch(`/api/players/${p2}`).set(ORIGIN).send({ courseDays: "Vendredi,Samedi" }).expect(200);
+    await A.coach.patch(`/api/players/${p2}`).set(ORIGIN).send({ courseDays: "Lundi,Zorglub" }).expect(400);
+    const body = { items: [{ stars: 1, reason: "effort", domain: "mental" }] };
+    const put = (d: string, extra: object = {}) => A.coach.put(`/api/players/${p2}/stars/${d}`).set(ORIGIN).send({ ...body, ...extra });
+    // ces dates sont dans le passé ou le futur selon le jour du test : on ne teste que la règle des jours (le jour futur donne 400 pour une autre raison)
+    const r = await put(lun);
+    if (Date.parse(lun) < Date.now()) expect(r.status).toBe(400), expect(r.body.message).toMatch(/jour de cours habituel/);
+    const v = await put(vac);
+    if (Date.parse(vac) < Date.now()) expect(v.body.message).toMatch(/vacances scolaires/);
+    if (Date.parse(ven) < Date.now()) await put(ven).expect(200);
+    if (Date.parse(lun) < Date.now()) await put(lun, { confirmOffDay: true }).expect(200);
   });
 });

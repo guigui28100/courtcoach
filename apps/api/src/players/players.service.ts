@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
+import { offDayReason } from "./school-days";
 import { FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
@@ -407,7 +408,11 @@ export class PlayersService {
   async saveStars(user: AuthUser, playerId: string, day: string, dto: StarsDayDto) {
     await this.assertStaffFor(user, playerId);
     this.checkDay(day);
-    if (!(await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new NotFoundException("Fiche introuvable");
+    const pl = await this.prisma.player.findUnique({ where: { id: playerId }, select: { id: true, courseDays: true } });
+    if (!pl) throw new NotFoundException("Fiche introuvable");
+    // Étoiles seulement un jour de cours : hors jour habituel ou pendant les vacances, le coach doit confirmer
+    const off = offDayReason(day, pl.courseDays);
+    if (off && !dto.confirmOffDay) throw new BadRequestException(`${off} Confirme pour enregistrer quand même.`);
     // Étoiles en plus (bravo) ou en moins (« pas en progrès ») : la raison doit correspondre, et une ligne en moins doit toujours être expliquée au jeune
     for (const i of dto.items) {
       const neg = i.stars < 0;

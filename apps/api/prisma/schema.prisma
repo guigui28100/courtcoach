@@ -112,6 +112,7 @@ model Player {
   backhand         String?
   playStyle        String?
   training         String?
+  courseDays       String?   // jours de cours habituels (ex. « Mercredi,Samedi »)
   availability     String?
   health           String?   // facultatif, sensible : jamais visible hors coach et responsables
   coachNotes       String?   // notes privées du coach : jamais visibles par la famille
