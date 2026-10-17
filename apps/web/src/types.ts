@@ -11,7 +11,7 @@ export interface Player {
   id: string; firstName: string; lastName: string; birthDate: string | null; sex: string | null; club: string | null; licence: string | null;
   heightCm: number | null; ranking: string | null; targetRanking: string | null; hand: string | null; backhand: string | null;
   committeeTrainer?: boolean; // suivi par un entraîneur de comité (oui / non seulement)
-  playStyle: string | null; training: string | null; availability: string | null; health?: string | null; coachNotes?: string | null;
+  playStyle: string | null; training: string | null; courseDays?: string | null; availability: string | null; health?: string | null; coachNotes?: string | null;
   lastActivityAt: string; consents?: Consent[];
 }
 export interface Consent { id: string; kind: "PRIVACY_POLICY" | "FOLLOW_UP" | "IMAGE" | "HEALTH" | "ACCOUNT"; givenBy: string; method: string; grantedAt: string; withdrawnAt: string | null; }

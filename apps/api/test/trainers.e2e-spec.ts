@@ -65,7 +65,7 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
     await t.patch(`/api/goals/${g.id}`).set(ORIGIN).send({ title: "Service plus régulier" }).expect(200);
     await t.put(`/api/goals/${g.id}/checkpoints/1`).set(ORIGIN).send({ progress: 60, comment: "Ça avance" }).expect(200);
     await t.put(`/api/players/${p1}/evaluations/2026-2027/0`).set(ORIGIN).send({ ratings: { service: 3 }, appreciation: "Bon départ" }).expect(200);
-    await t.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ items: [{ stars: 2, reason: "effort", domain: "mental" }] }).expect(200);
+    await t.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 2, reason: "effort", domain: "mental" }] }).expect(200);
     const m = (await t.post(`/api/players/${p1}/matches`).set(ORIGIN).send({ date: day, tournament: "Plateau", result: "Victoire" }).expect(201)).body;
     await t.delete(`/api/matches/${m.id}`).set(ORIGIN).expect(204);
     await t.patch(`/api/players/${p1}`).set(ORIGIN).send({ ranking: "30/3", health: "écrasé ?", coachNotes: "écrasé ?" }).expect(200);
@@ -78,7 +78,7 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
     await t.put(`/api/goals/${g.id}/checkpoints/1`).set(ORIGIN).send({ progress: 70, comment: "Mieux" }).expect(200);
     const seen = (await A.coach.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body[0];
     expect(seen).toMatchObject({ authorName: "Julie", authorRole: "TRAINER" }); expect(seen.checkpoints[0]).toMatchObject({ authorName: "Julie", authorRole: "TRAINER" });
-    await A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "effort", domain: "mental" }] }).expect(200);
+    await A.coach.put(`/api/players/${p1}/stars/${day}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 1, reason: "effort", domain: "mental" }] }).expect(200);
     expect((await A.coach.get(`/api/players/${p1}/stars`).expect(200)).body[0]).toMatchObject({ authorRole: "COACH" });
     const par = await login("parent", Role.GUARDIAN); await prisma.playerAccess.create({ data: { userId: par, playerId: p1, relation: "parent" } });
     const famille = (await A.parent.get(`/api/players/${p1}/goals?season=2026-2027`).expect(200)).body[0];
@@ -97,7 +97,7 @@ describe("Entraîneurs de comité : ils ne voient que les jeunes que le coach le
     await t.put(`/api/goals/${g2.id}/checkpoints/1`).set(ORIGIN).send({ progress: 10 }).expect(404);
     await t.delete(`/api/goals/${g2.id}`).set(ORIGIN).expect(404);
     await t.put(`/api/players/${p2}/evaluations/2026-2027/1`).set(ORIGIN).send({ ratings: {} }).expect(404);
-    await t.put(`/api/players/${p2}/stars/${day}`).set(ORIGIN).send({ items: [{ stars: 1, reason: "effort", domain: "mental" }] }).expect(404);
+    await t.put(`/api/players/${p2}/stars/${day}`).set(ORIGIN).send({ confirmOffDay: true, items: [{ stars: 1, reason: "effort", domain: "mental" }] }).expect(404);
     await t.post(`/api/players/${p2}/matches`).set(ORIGIN).send({ date: day, tournament: "x", result: "Victoire" }).expect(404);
     await t.patch(`/api/players/${p2}`).set(ORIGIN).send({ ranking: "15" }).expect(404);
     await t.put(`/api/videos/${v2}/analysis`).set(ORIGIN).send({ observation: "x" }).expect(404);
