@@ -144,7 +144,7 @@ describe("Étoiles de fin de cours", () => {
 
   it("jours de cours : hors jour habituel ou pendant les vacances (zone C), il faut confirmer", async () => {
     const ven = "2026-11-20", lun = "2026-11-23", vac = "2026-12-23"; // vendredi, lundi, vacances de Noël
-    await A.coach.patch(`/api/players/${p2}`).set(ORIGIN).send({ courseDays: "Vendredi,Samedi" }).expect(200);
+    await A.coach.patch(`/api/players/${p2}`).set(ORIGIN).send({ courseDays: "Vendredi, Samedi" }).expect(200); // le site envoie « Vendredi, Samedi » (avec espace)
     await A.coach.patch(`/api/players/${p2}`).set(ORIGIN).send({ courseDays: "Lundi,Zorglub" }).expect(400);
     const body = { items: [{ stars: 1, reason: "effort", domain: "mental" }] };
     const put = (d: string, extra: object = {}) => A.coach.put(`/api/players/${p2}/stars/${d}`).set(ORIGIN).send({ ...body, ...extra });

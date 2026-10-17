@@ -27,7 +27,7 @@ export class UpdatePlayerDto {
   @IsOptional() @IsString() @MaxLength(30) backhand?: string;
   @IsOptional() @IsString() @MaxLength(200) playStyle?: string;
   @IsOptional() @IsString() @MaxLength(200) training?: string;
-  @IsOptional() @Matches(/^((Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)(,(?!$)|$))*$/) @MaxLength(70) courseDays?: string;
+  @IsOptional() @Matches(/^$|^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)(\s*,\s*(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche))*$/) @MaxLength(70) courseDays?: string;
   @IsOptional() @IsString() @MaxLength(200) availability?: string;
   @IsOptional() @IsString() @MaxLength(1000) health?: string;
   @IsOptional() @IsString() @MaxLength(3000) coachNotes?: string;
