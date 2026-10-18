@@ -13,7 +13,7 @@ import { offDayReason } from "../schoolDays";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, SelectOrText, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge, MarkBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { DEPART_SHOTS, HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { DEPART_SHOTS, GESTURE_MARKS, HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -467,15 +467,38 @@ function PlayerVideosTab({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
+  const [shot, setShot] = useState<string | null>(null);
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
       {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio d'analyse s'ouvre : tu l'analyses, puis tu l'envoies (bouton « Envoyer la vidéo », ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={(vid) => (vid ? nav(`/coach/videos/${vid}`) : setVersion((n) => n + 1))} /></>}
-      <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Gestes de départ">
-        <strong>📍 Gestes de départ de {p.firstName} : {DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length} sur {DEPART_SHOTS.length}</strong>
-        <div className="flex flex-wrap gap-2">{DEPART_SHOTS.map((s) => { const d = videos.find((v) => v.mark === "DEPART" && v.shot === s); return d
-          ? <Link key={s} to={`/coach/videos/${d.id}`} className="badge !border-ok !text-ok no-underline">✅ {s}</Link>
-          : <span key={s} className="badge text-muted">⬜ {s}</span>; })}</div>
+      <section className="grid gap-3 rounded-xl border-2 border-line bg-white p-3" aria-label="Gestes de départ">
+        <div><strong>📍 Gestes de {p.firstName} : {(() => { const n = DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length; return `${n} ${n > 1 ? "départs filmés" : "départ filmé"} sur ${DEPART_SHOTS.length}`; })()}</strong><p className="hint m-0">Touche un coup : tu vois son départ (septembre) et chaque fin de trimestre, et tu peux ajouter la vidéo qui manque.</p></div>
+        <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Coups">
+          {DEPART_SHOTS.map((s) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === s), on = shot === s; return (
+            <button key={s} type="button" role="tab" aria-selected={on} onClick={() => setShot(on ? null : s)}
+              className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+              {s}{has ? " 📍" : ""}
+            </button>
+          ); })}
+        </div>
+        {shot && (
+          <div className="grid gap-3 sm:grid-cols-2" role="tabpanel">
+            {GESTURE_MARKS.map((g) => { const v = videos.find((x) => x.mark === g.key && x.shot === shot); return (
+              <div key={g.key} className="grid content-start gap-2 rounded-xl border border-line bg-sand/40 p-3">
+                <strong>{g.emoji} {g.key === "DEPART" ? "Départ" : g.label} <span className="font-normal text-muted">· {g.when}</span></strong>
+                {v ? <>
+                  <Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">{v.title} · {fmtDate(v.recordedAt)} → ouvrir dans le studio</Link>
+                  {v.draft
+                    ? <div className="grid gap-1"><VideoBadge v={v} forCoach /><button type="button" className="btn-clay btn-sm self-start" onClick={async () => { await post(`/videos/${v.id}/send-to-player`); setVersion((x) => x + 1); }}>📤 Envoyer à {p.firstName}</button></div>
+                    : <span className="badge self-start !border-ok !text-ok">✅ Visible par {p.firstName}{g.key !== "DEPART" ? " à l'ouverture du trimestre" : ""}</span>}
+                </>
+                  : imageOk ? <VideoUpload playerId={p.id} toPlayer={p.firstName} shot={shot} mark={g.key} label={`＋ Ajouter la vidéo ${g.key === "DEPART" ? "de départ" : g.label}`} onDone={(id) => { setVersion((x) => x + 1); if (id) nav(`/coach/videos/${id}`); }} />
+                  : <p className="hint m-0">Accord « droit à l'image » manquant.</p>}
+              </div>
+            ); })}
+          </div>
+        )}
       </section>
       <ul className="m-0 grid list-none gap-3 p-0">
         {videos.map((v) => (
