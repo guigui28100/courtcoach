@@ -1,8 +1,9 @@
 import { Transform, Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
-export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
+// « Volée » reste accepté pour les anciennes vidéos
+export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Volée de coup droit", "Volée de revers", "Smash", "Jeu de jambes", "Autre"];
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // 80 Mo par vidéo
 
 export class CreateVideoDto {
@@ -19,6 +20,14 @@ export class AnalysisDto {
   @IsOptional() @IsString() @MaxLength(2000) improve?: string;
   @IsOptional() @IsArray() @ArrayMaxSize(5) @IsString({ each: true }) @MaxLength(300, { each: true }) exercises?: string[];
   @IsOptional() @IsArray() @ArrayMaxSize(10) @IsString({ each: true }) goalIds?: string[];
+}
+
+// Geste de départ / geste « maintenant » : étiquette posée par le coach sur une vidéo du joueur (null = retirer)
+// DEPART = début d'année (septembre) ; T1 / T2 / T3 = geste filmé à la fin de chaque trimestre
+export const VIDEO_MARKS = ["DEPART", "T1", "T2", "T3"];
+export class VideoMarkDto {
+  @ValidateIf((o) => o.mark !== null) @IsIn(VIDEO_MARKS) mark: string | null;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
 }
 
 export class VideoGoalsDto {

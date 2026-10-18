@@ -3,7 +3,7 @@ import { ConsentKind, Role, Video, VideoStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
-import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES } from "./dto";
+import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES, VideoMarkDto } from "./dto";
 
 export const CHUNK_SIZE = 2 * 1024 * 1024; // le fichier est envoyé et gardé par morceaux de 2 Mo
 const RETENTION_MS = 365 * 24 * 3600 * 1000; // conservation : 12 mois
@@ -11,6 +11,16 @@ const STALE_UPLOAD_MS = 24 * 3600 * 1000;
 // Les adultes (demandes de coaching) ont une place limitée, pour qu'une inscription ouverte à tous ne puisse jamais remplir le stockage du club
 const adultUserBytes = () => (Number(process.env.ADULT_QUOTA_MB) || 100) * 1024 * 1024; // par adulte
 const adultTotalBytes = () => Math.floor(quotaBytes() * ((Number(process.env.ADULT_SHARE_PERCENT) || 40) / 100)); // pour tous les adultes ensemble
+// Un geste de fin de trimestre (T1, T2, T3) n'est visible du jeune et de sa famille qu'à l'ouverture du trimestre (1er déc., 1er mars, 1er juin), comme les bulletins
+export function markVisible(mark: string | null, markedAt: Date | null, staff: boolean, now = new Date()) {
+  if (!mark || mark === "ANCIEN_DEPART") return staff && !!mark;
+  if (staff || mark === "DEPART") return true;
+  const t = Number(mark.slice(1)); if (!t || !markedAt) return false;
+  const y = markedAt.getUTCMonth() >= 8 ? markedAt.getUTCFullYear() : markedAt.getUTCFullYear() - 1; // la saison commence en septembre
+  return now >= new Date(Date.UTC(t === 1 ? y : y + 1, t === 1 ? 11 : t === 2 ? 2 : 5, 1));
+}
+// Un geste T1 / T2 / T3 pas encore ouvert n'existe pas du tout pour le jeune et sa famille (ni liste, ni fichier, ni analyse)
+const gestureLocked = (v: { mark: string | null; markedAt: Date | null }, user: AuthUser) => !isStaff(user) && /^T[123]$/.test(v.mark ?? "") && !markVisible(v.mark, v.markedAt, false);
 const quotaBytes = () => (Number(process.env.VIDEO_QUOTA_MB) || 350) * 1024 * 1024;
 
 // Reconnaît le vrai format du fichier (et pas seulement son nom) : MP4/MOV ou WebM.
@@ -75,6 +85,7 @@ export class VideosService {
     const v = await this.prisma.video.findUnique({ where: { id } });
     if (!v) throw new NotFoundException("Vidéo introuvable");
     if (user.role === Role.COACH) return v;
+    if (gestureLocked(v, user)) throw new NotFoundException("Vidéo introuvable"); // geste d'un trimestre pas encore ouvert
     if (v.fromCoach && !v.sentToPlayerAt && !isStaff(user)) throw new NotFoundException("Vidéo introuvable"); // brouillon du coach : le joueur et sa famille ne le voient pas encore
     if (user.role === Role.ADULT) { if (v.ownerId === user.id && !v.playerId) return v; throw new NotFoundException("Vidéo introuvable"); }
     if (v.playerId && (await this.prisma.playerAccess.findUnique({ where: { userId_playerId: { userId: user.id, playerId: v.playerId } } }))) return v;
@@ -183,6 +194,9 @@ export class VideosService {
       kind: v.playerId ? "centre" : "coaching",
       fromCoach: v.fromCoach,
       draft: v.fromCoach && !v.sentToPlayerAt,
+      mark: markVisible(v.mark, v.markedAt, coach) ? v.mark : null,
+      markNote: markVisible(v.mark, v.markedAt, coach) ? v.markNote ?? null : null,
+      markedAt: markVisible(v.mark, v.markedAt, coach) ? v.markedAt : null,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, phone: v.owner.phone ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
@@ -204,7 +218,7 @@ export class VideosService {
       : user.role === Role.ADULT ? { complete: true, ownerId: user.id, playerId: null }
       : { complete: true, player: { accesses: { some: { userId: user.id } } }, ...(isStaff(user) ? {} : { NOT: { fromCoach: true, sentToPlayerAt: null } }) };
     const rows = await this.prisma.video.findMany({ where, include: this.include, orderBy: { recordedAt: "desc" } });
-    return rows.map((v) => this.summary(v, user));
+    return rows.filter((v) => !gestureLocked(v, user)).map((v) => this.summary(v, user));
   }
 
   async storage() {
@@ -273,6 +287,25 @@ export class VideosService {
   }
 
   // Rattacher la vidéo à des missions du joueur (coach, ou entraîneur de ce joueur) : le joueur la retrouve en cliquant sur la mission
+  // Marque une vidéo du joueur comme « geste de départ » ou « geste de fin de trimestre » T1 / T2 / T3 (un seul de chaque par joueur et par coup) ; null retire l'étiquette.
+  // Un départ remplacé n'est pas perdu : il devient ANCIEN_DEPART (historique, visible du coach seulement).
+  async setMark(user: AuthUser, id: string, dto: VideoMarkDto) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const v = await this.prisma.video.findUnique({ where: { id } });
+    if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!v.playerId) throw new BadRequestException("Le geste de départ concerne seulement les jeunes du Centre.");
+    const note = (dto.note ?? "").trim().slice(0, 200);
+    const same = { playerId: v.playerId, shot: v.shot, id: { not: id } };
+    await this.prisma.$transaction([
+      ...(dto.mark === "DEPART" ? [this.prisma.video.updateMany({ where: { ...same, mark: "DEPART" }, data: { mark: "ANCIEN_DEPART" } })] : []),
+      ...(dto.mark && dto.mark !== "DEPART" ? [this.prisma.video.updateMany({ where: { ...same, mark: dto.mark }, data: { mark: null, markNote: null, markedAt: null } })] : []),
+      this.prisma.video.update({ where: { id }, data: dto.mark ? { mark: dto.mark, markNote: note || null, markedAt: new Date() } : { mark: null, markNote: null, markedAt: null } }),
+    ]);
+    await this.audit.log(user.id, "video-mark", "Video", id);
+    return { mark: dto.mark, markNote: dto.mark ? note || null : null };
+  }
+
   async setGoals(user: AuthUser, id: string, goalIds: string[]) {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
     await this.load(user, id);

@@ -61,16 +61,15 @@ export default function VideoReview() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
             {draft && (
-              <div className="alert grid gap-2" role="status">
-                <strong>📝 Brouillon : {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</strong>
-                <span>Prends ton temps : commente-la dans le studio, puis envoie-la. Tu peux aussi l'envoyer telle quelle.</span>
-                <button type="button" className="btn-clay btn-sm self-start" onClick={sendVideo}>📤 Envoyer la vidéo à {v.player?.firstName}</button>
-              </div>
+              <p className="alert m-0" role="status"><strong>📝 Brouillon :</strong> {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</p>
             )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
-            <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
+            <details className="text-sm"><summary className="cursor-pointer font-bold">⋯ Plus</summary>
+            {draft && <button type="button" className="btn-outline btn-sm mb-2 self-start" onClick={sendVideo}>📤 Envoyer la vidéo seule, sans analyse</button>}
+            <p className="hint">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
             <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"); } }}>Supprimer la vidéo</button>
+            </details>
           </div>
           <div className="grid content-start gap-4">
             {centre ? <SimpleAnalysis v={v} sent={sent} draft={draft} bien={bien} setBien={setBien} travaille={travaille} setTravaille={setTravaille} mot={mot} setMot={setMot} goalIds={goalIds} toggleGoal={toggleGoal} save={save} msg={msg} /> : (
@@ -132,9 +131,9 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
           return <button key={g.id} type="button" aria-pressed={on} onClick={() => toggleGoal(g.id, !on)} className={"min-h-11 rounded-full border-2 px-4 text-left text-sm font-bold " + (on ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{on ? "✔ " : ""}{ax?.label} · {g.title}</button>;
         })}</div>
       </fieldset>
-      <p className="m-0 rounded-xl bg-sand p-3 text-sm"><strong>🎙️ Ma voix (facultatif) :</strong> {v.audio ? `une note vocale de ${v.audio.seconds} s est jointe (à gauche, sous la vidéo).` : "enregistre-la à gauche, sous la vidéo : elle partira avec l'analyse."}</p>
+      <details>
+      <summary className="mb-2 cursor-pointer font-bold">👀 Voir ce que {name} va voir</summary>
       <div className="grid gap-2 rounded-2xl p-4 text-white" style={{ background: "linear-gradient(160deg,#4338ca,#3730a3)" }} aria-label={`Aperçu de ce que ${name} va voir`}>
-        <strong className="text-sm uppercase tracking-wide text-[#dcf247]">👀 Ce que {name} va voir</strong>
         <div className="grid gap-2 rounded-xl border-2 border-white/35 bg-white/15 p-3">
           <p className="m-0 font-bold">🎓 Analyse de ton coach</p>
           <p className="m-0">{bien.trim() ? <>👍 <strong>Ce qui est bien :</strong> {bien}</> : <span className="text-white/60">👍 Ce qui est bien : à écrire…</span>}</p>
@@ -145,12 +144,13 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
           {v.images.length > 0 && <p className="m-0">🖼️ {v.images.length} image{v.images.length > 1 ? "s" : ""} annotée{v.images.length > 1 ? "s" : ""}</p>}
         </div>
       </div>
+      </details>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
         <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `📤 Envoyer à ${name}`}</button>
       </div>
       {msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
-      {!sent && <p className="hint m-0">{draft ? `Tant que tu n'envoies pas, ${name} ne voit ni la vidéo, ni l'analyse. L'envoi part avec la vidéo, l'analyse, les images annotées et ta voix.` : `Tant que l'analyse n'est pas envoyée, la famille ne la voit pas et la discussion reste fermée.`}</p>}
+      {!sent && <p className="hint m-0">L'envoi part avec la vidéo, l'analyse, les images et ta voix.</p>}
     </section>
   );
 }

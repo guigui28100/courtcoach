@@ -1,8 +1,8 @@
 import { PointerEvent, useCallback, useEffect, useRef, useState } from "react";
-import { api, del } from "../api";
+import { api, del, put } from "../api";
 import { Err } from "./ui";
-import { useVideos } from "./Videos";
-import { VideoDetail } from "../types";
+import { MarkBadge, useVideos } from "./Videos";
+import { GESTURE_MARKS, VideoDetail } from "../types";
 import { PoseOverlay } from "./PoseOverlay";
 import { AudioRecorder } from "./AudioNote";
 import { createLandmarker, defaultSkeleton, drawSkeleton, JOINT_LABEL, Joint, measures, nearestJoint, Skeleton, toSkeleton } from "./skeleton";
@@ -407,6 +407,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   return (
     <section className="card grid gap-4" aria-label="Comparer deux vidéos">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-xl">Comparer deux vidéos</h2><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
+      {(() => { const last = ["T3", "T2", "T1"].map((k) => options.find((o) => o.shot === v.shot && o.mark === k)).find(Boolean); const ref = v.mark === "DEPART" ? last : options.find((o) => o.shot === v.shot && o.mark === "DEPART"); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? `🎯 Comparer avec le dernier geste (${GESTURE_MARKS.find((g) => g.key === ref.mark)?.label})` : "📍 Comparer avec le geste de départ"}</button></div> : null; })()}
       {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer. Quand une deuxième vidéo aura été envoyée, tu pourras suivre l'évolution du geste ici.</p> : (
         <div className="field"><label htmlFor="cmp">Vidéo à comparer (de la plus ancienne à la plus récente)</label>
           <select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>
@@ -441,6 +442,40 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
         </>
       )}
     </section>
+  );
+}
+
+// Marquer une vidéo du joueur comme son « geste de départ » (le défaut de début d'année) ou son « geste maintenant » (à remplacer quand tu veux)
+function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }) {
+  const [version, setVersion] = useState(0);
+  const all = useVideos(version) ?? [];
+  const [note, setNote] = useState(v.markNote ?? "");
+  const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  useEffect(() => { setNote(v.markNote ?? ""); }, [v.id, v.markNote]);
+  if (!v.player) return null;
+  const same = all.filter((o) => o.id !== v.id && o.player?.id === v.player!.id && o.shot === v.shot);
+  const history = same.filter((o) => o.mark === "ANCIEN_DEPART");
+  async function mark(m: "DEPART" | "T1" | "T2" | "T3" | null) {
+    const old = m ? same.find((o) => o.mark === m) : undefined, g = GESTURE_MARKS.find((x) => x.key === m);
+    if (m && old && !confirm(`« ${old.title} » est déjà le geste « ${g?.label} » de ${v.player!.firstName} pour ${v.shot.toLowerCase()}. Ce geste le remplace${m === "DEPART" ? " : l'ancien reste dans l'historique, que toi seul vois" : " : l'ancien perd son étiquette"}. Continuer ?`)) return;
+    setErr(""); setBusy(true);
+    try { await put(`/videos/${v.id}/mark`, m ? { mark: m, note } : { mark: null }); setVersion((x) => x + 1); onChanged(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <details className="card" aria-labelledby="geste-mark" open={!!err}>
+      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste : départ et fin de trimestre</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
+      <div className="mt-2 grid gap-3">
+      <p className="hint m-0">{GESTURE_MARKS.some((g) => g.key === v.mark) ? `Cette vidéo est le geste « ${GESTURE_MARKS.find((g) => g.key === v.mark)!.label} » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le départ (septembre), puis le geste de chaque fin de trimestre. ${v.player.firstName} voit un geste de trimestre à l'ouverture du bulletin (1er décembre, 1er mars, 1er juin), une fois la vidéo envoyée.`}</p>
+      <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
+        <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
+      <div className="flex flex-wrap gap-2">
+        {GESTURE_MARKS.map((g) => <button key={g.key} className={g.key === "DEPART" ? "btn-clay btn-sm" : "btn-outline btn-sm"} disabled={busy} onClick={() => mark(g.key)}>{g.emoji} {v.mark === g.key ? "Enregistrer le mot" : g.key === "DEPART" ? "Départ (septembre)" : `${g.label} (${g.when})`}</button>)}
+        {v.mark && v.mark !== "ANCIEN_DEPART" && <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark(null)}>Retirer l'étiquette</button>}
+      </div>
+      {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
+      <Err msg={err} />
+      </div>
+    </details>
   );
 }
 
@@ -503,12 +538,12 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         <video ref={vid} controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="block max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
         <PoseOverlay video={vid} active={pose} guides={guides} onSkeleton={(s) => { poseSk.current = s; }} onStatus={(s, msg) => setPoseStatus({ s, msg })} />
       </div>
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Commandes du lecteur">
-        <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ 1 image</button>
-        <button className="btn-outline btn-sm" onClick={() => seek(1 / FPS)} aria-label="Avancer d'une image">1 image ▶</button>
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Commandes du lecteur">
+        <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ image</button>
+        <button className="btn-outline btn-sm" onClick={() => seek(1 / FPS)} aria-label="Avancer d'une image">image ▶</button>
         <button className="btn-outline btn-sm" onClick={() => seek(-1)}>−1 s</button>
         <button className="btn-outline btn-sm" onClick={() => seek(1)}>+1 s</button>
-        {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
+        {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm !px-3 " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
       </div>
       <div className="flex flex-wrap gap-2">
         <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
@@ -519,16 +554,16 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
           <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
           <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
-          <p className="hint m-0">Le calcul se fait sur cet appareil : la vidéo n'est envoyée nulle part. Si le joueur est flou ou caché, glisse les points à la main sur l'image capturée.</p>
         </div>
       )}
       <Err msg={err} />
+      <GestureMark v={v} onChanged={onChanged} />
       {frame && !editing && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
       {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
-        <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
+        <h3 className="m-0 text-base">🖼️ Images de l'analyse ({v.images.length}/8)</h3>
         {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
-        {v.images.length === 0 ? <p className="hint m-0">Fige une image de la vidéo, dessine dessus (ligne, flèche, angle, texte…) puis enregistre-la : elle s'ajoute à l'analyse envoyée à l'élève.</p> : (
+        {v.images.length === 0 ? <p className="hint m-0">Aucune image pour l'instant : utilise « 📸 Capturer ».</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
               <li key={i.id} className="grid gap-1 rounded-xl border border-line bg-white p-2">
@@ -545,7 +580,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           </ul>
         )}
       </section>
-      <AudioRecorder v={v} onChanged={onChanged} />
+      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-bold">🎙️ Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
     </div>
   );
 }
