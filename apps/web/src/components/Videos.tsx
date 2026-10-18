@@ -190,10 +190,15 @@ export const MarkBadge = ({ v }: { v: VideoRow }) => {
   return v.mark === "ANCIEN_DEPART" ? <span className="badge">🕘 Ancien départ</span> : null;
 };
 
-// Chez le joueur et sa famille, tout en haut de « Mes vidéos » : le geste de départ de l'année et le geste d'aujourd'hui, côte à côte.
-// Les vidéos ne se chargent qu'au clic (jamais toutes ensemble) ; seules celles qui sont déjà visibles du joueur apparaissent.
-export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
-  const [sel, setSel] = useState<string | null>(null); // rien n'est ouvert tant que le jeune ne touche pas un coup
+// Les vidéos de gestes (départ, fin de trimestre) vivent dans « Mon geste » : elles n'apparaissent pas une deuxième fois dans la liste
+export function gestureVideo(v: VideoRow, all: VideoRow[]) {
+  return GESTURE_MARKS.some((g) => g.key === v.mark) && (DEPART_SHOTS.includes(v.shot) || all.some((o) => o.mark === "DEPART" && o.shot === v.shot));
+}
+
+// Chez le joueur et sa famille, tout en haut de « Mes vidéos » : un onglet par coup (départ de septembre puis chaque fin de trimestre).
+// Rien n'est ouvert ni chargé tant que le joueur ne touche pas un coup ; chaque geste s'ouvre avec son analyse et sa discussion.
+export function GestureBeforeAfter({ videos, openId, onChanged }: { videos: VideoRow[]; openId?: string | null; onChanged: () => void }) {
+  const [sel, setSel] = useState<string | null>(() => { const o = openId ? videos.find((v) => v.id === openId) : undefined; return o && gestureVideo(o, videos) ? o.shot : null; });
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
   const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
   const dep = sel ? videos.find((v) => v.mark === "DEPART" && v.shot === sel) : undefined;
@@ -204,8 +209,8 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
         <strong>{g.emoji} {g.key === "DEPART" ? "Au départ" : g.label} <span className="font-normal text-muted">· {v ? fmtDate(v.recordedAt) : g.when}</span></strong>
         {v ? (
           <>
-            <video controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="max-h-[50vh] w-full rounded-lg bg-black" aria-label={`${g.label} : ${v.title}`} />
             {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
+            <VideoPanel id={v.id} onChanged={onChanged} onSeen={onChanged} />
           </>
         ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">{g.key === "DEPART" ? "Ton coach filmera ton geste de départ." : "Le geste de ce trimestre viendra ici."}</p>}
       </div>
@@ -213,12 +218,12 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
   };
   return (
     <section className="grid gap-3 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
-      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : septembre et chaque trimestre</h3><p className="hint m-0">Je me compare à moi, pas aux autres : septembre, puis chaque fin de trimestre. Touche un coup pour voir ses vidéos.</p></div>
+      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : septembre et chaque trimestre</h3><p className="hint m-0">Je me compare à moi, pas aux autres : septembre, puis chaque fin de trimestre. Touche un coup pour voir ses vidéos et l'analyse de ton coach.</p></div>
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Mes coups">
-        {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot; return (
+        {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot, fresh = videos.some((v) => v.shot === shot && GESTURE_MARKS.some((g) => g.key === v.mark) && !v.seenAt && (v.fromCoach || v.analysis?.sentAt)); return (
           <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
-            className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
-            {shot}{has ? " 📍" : ""}
+            className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : fresh ? "border-ok bg-[#eef8f1] text-ink" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+            {shot}{has ? " 📍" : ""}{fresh ? " 🔔" : ""}
           </button>
         ); })}
       </div>
