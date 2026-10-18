@@ -396,6 +396,10 @@ model VideoImage {
   mimeType  String
   sizeBytes Int
   note      String   @default("")
+  source    Bytes?   // image d'origine SANS dessin : sert à modifier les tracés après coup (coach seulement)
+  sourceBytes Int    @default(0)
+  edit      Json?    // tracés (flèches, textes…) et squelette, pour les rouvrir
+  editable  Boolean  @default(false) // vrai quand l'image d'origine et les tracés sont gardés
   createdAt DateTime @default(now())
 
   @@index([videoId])

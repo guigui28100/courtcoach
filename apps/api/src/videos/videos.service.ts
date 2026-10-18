@@ -19,6 +19,31 @@ export function sniffVideo(head: Buffer): string | null {
 
 const MAX_IMAGES = 8;
 const MAX_IMAGE_BYTES = 700 * 1024;
+// Tracés d'une image annotée : on ne garde que des nombres, des couleurs et des textes courts (jamais de code)
+const EDIT_TOOLS = ["line", "arrow", "circle", "free", "angle", "text"];
+const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
+function cleanEdit(body: unknown) {
+  const b = body as Record<string, unknown> | null;
+  if (!b || typeof b !== "object" || JSON.stringify(b).length > 90_000) throw new BadRequestException("Tracés invalides");
+  if (!finite(b.w) || !finite(b.h) || b.w <= 0 || b.h <= 0 || b.w > 4000 || b.h > 4000) throw new BadRequestException("Tracés invalides");
+  if (!Array.isArray(b.shapes) || b.shapes.length > 60) throw new BadRequestException("Trop de tracés (60 au maximum).");
+  const shapes = b.shapes.map((s: any) => {
+    if (!s || !EDIT_TOOLS.includes(s.tool) || typeof s.color !== "string" || !/^#[0-9a-fA-F]{6}$/.test(s.color)) throw new BadRequestException("Tracé invalide");
+    if (!Array.isArray(s.pts) || s.pts.length < 1 || s.pts.length > 600 || s.pts.some((p: unknown) => !Array.isArray(p) || p.length !== 2 || !finite(p[0]) || !finite(p[1]))) throw new BadRequestException("Tracé invalide");
+    const size = s.size === undefined ? 1 : s.size;
+    if (!finite(size) || size < 0.1 || size > 5) throw new BadRequestException("Tracé invalide");
+    if (s.text !== undefined && (typeof s.text !== "string" || s.text.length > 200)) throw new BadRequestException("Texte trop long (200 caractères maximum).");
+    return { tool: s.tool, color: s.color, pts: s.pts.map((p: number[]) => [p[0], p[1]]), size, ...(s.text !== undefined ? { text: s.text } : {}) };
+  });
+  let skeleton: Record<string, number[]> | null = null;
+  if (b.skeleton != null) {
+    const sk = b.skeleton as Record<string, unknown>;
+    const keys = typeof sk === "object" ? Object.keys(sk) : [];
+    if (keys.length > 40 || keys.some((k) => !/^[a-zA-Z]{2,20}$/.test(k) || !Array.isArray(sk[k]) || (sk[k] as unknown[]).length !== 2 || !finite((sk[k] as number[])[0]) || !finite((sk[k] as number[])[1]))) throw new BadRequestException("Squelette invalide");
+    skeleton = Object.fromEntries(keys.map((k) => [k, [(sk[k] as number[])[0], (sk[k] as number[])[1]]]));
+  }
+  return { w: b.w, h: b.h, shapes, skeleton, guides: b.guides !== false, measures: b.measures !== false };
+}
 function sniffImage(b: Buffer): string | null {
   if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
   if (b.length > 8 && b.subarray(1, 4).toString("latin1") === "PNG") return "image/png";
@@ -57,8 +82,8 @@ export class VideosService {
   }
 
   private async usedBytes() {
-    const [v, i, a] = await Promise.all([this.prisma.video.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoImage.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoAudio.aggregate({ _sum: { sizeBytes: true } })]);
-    return (v._sum.sizeBytes ?? 0) + (i._sum.sizeBytes ?? 0) + (a._sum.sizeBytes ?? 0);
+    const [v, i, a] = await Promise.all([this.prisma.video.aggregate({ _sum: { sizeBytes: true } }), this.prisma.videoImage.aggregate({ _sum: { sizeBytes: true, sourceBytes: true } }), this.prisma.videoAudio.aggregate({ _sum: { sizeBytes: true } })]);
+    return (v._sum.sizeBytes ?? 0) + (i._sum.sizeBytes ?? 0) + (i._sum.sourceBytes ?? 0) + (a._sum.sizeBytes ?? 0);
   }
 
   // ----- Envoi en trois temps : annoncer, envoyer les morceaux, terminer -----
@@ -141,7 +166,7 @@ export class VideosService {
   }
 
   // ----- Listes -----
-  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; email: string } | null; analyses?: any[]; goals?: { goalId: string }[]; images?: { id: string; note: string }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
+  private summary(v: Video & { player?: { id: string; firstName: string } | null; owner?: { id: string; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; email: string } | null; analyses?: any[]; goals?: { goalId: string }[]; images?: { id: string; note: string; editable?: boolean }[]; audio?: { seconds: number } | null; _count?: { messages: number } }, user?: AuthUser) {
     const a = v.analyses?.[0];
     const coach = !!user && isStaff(user);
     const visible = a && (coach || a.sentAt);
@@ -156,7 +181,7 @@ export class VideosService {
       analysis: visible ? this.analysisOut(a, coach) : null,
       // missions rattachées : le joueur ne les voit que quand la vidéo lui est visible (analyse envoyée, ou vidéo du coach envoyée)
       goalIds: coach || a?.sentAt || (v.fromCoach && !!v.sentToPlayerAt) ? (v.goals ?? []).map((g) => g.goalId) : [],
-      images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note })) : [],
+      images: coach || a?.sentAt ? (v.images ?? []).map((i) => ({ id: i.id, note: i.note, ...(coach ? { editable: !!i.editable } : {}) })) : [],
       audio: v.audio && (coach || a?.sentAt || (v.fromCoach && !!v.sentToPlayerAt)) ? { seconds: v.audio.seconds } : null,
       messageCount: v._count?.messages ?? 0,
     };
@@ -164,7 +189,7 @@ export class VideosService {
   private analysisOut(a: any, staff = false) {
     return { id: a.id, observation: a.observation, strengths: a.strengths, improve: a.improve, exercises: a.exercises, sentAt: a.sentAt, goalIds: (a.goals ?? []).map((g: any) => g.goalId), ...(staff ? { authorName: a.authorName, authorRole: a.authorRole } : {}) };
   }
-  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } }, goals: { select: { goalId: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
+  private readonly include = { player: { select: { id: true, firstName: true } }, owner: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } }, goals: { select: { goalId: true } }, analyses: { include: { goals: true }, orderBy: { createdAt: "desc" as const }, take: 1 }, images: { select: { id: true, note: true, editable: true }, orderBy: { createdAt: "asc" as const } }, audio: { select: { seconds: true } }, _count: { select: { messages: true } } };
 
   async list(user: AuthUser) {
     if (user.role === Role.COACH) await this.purgeExpired();
@@ -312,6 +337,57 @@ export class VideosService {
     const img = await this.prisma.videoImage.findFirst({ where: { id: imageId, videoId: id } });
     if (!img) throw new NotFoundException("Image introuvable");
     return { data: Buffer.from(img.data), mime: img.mimeType };
+  }
+  // ----- Modifier une image annotée après coup : on garde l'image d'origine (sans dessin) et les tracés -----
+  private async staffImage(user: AuthUser, id: string, imageId: string) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const img = await this.prisma.videoImage.findFirst({ where: { id: imageId, videoId: id } });
+    if (!img) throw new NotFoundException("Image introuvable");
+    return img;
+  }
+  private checkImageBody(body: unknown): Buffer {
+    if (!Buffer.isBuffer(body) || !body.length) throw new BadRequestException("Image invalide");
+    if (body.length > MAX_IMAGE_BYTES) throw new BadRequestException("Image trop lourde (700 Ko maximum).");
+    if (!sniffImage(body)) throw new BadRequestException("Image invalide (JPEG ou PNG).");
+    return body;
+  }
+  private async checkRoom(extra: number) {
+    if (extra > 0 && (await this.usedBytes()) + extra > quotaBytes()) throw new HttpException("L'espace de stockage du club est plein.", 507);
+  }
+  // Remplace l'image annotée (et son commentaire) par une nouvelle version
+  async replaceImage(user: AuthUser, id: string, imageId: string, body: unknown, note?: string) {
+    const img = await this.staffImage(user, id, imageId);
+    const buf = this.checkImageBody(body);
+    await this.checkRoom(buf.length - img.sizeBytes);
+    await this.prisma.videoImage.update({ where: { id: imageId }, data: { data: Uint8Array.from(buf), mimeType: sniffImage(buf)!, sizeBytes: buf.length, note: (note ?? "").slice(0, 300) } });
+    await this.audit.log(user.id, "image-edit", "Video", id);
+    return { id: imageId };
+  }
+  // Garde l'image d'origine, sans dessin
+  async putImageSource(user: AuthUser, id: string, imageId: string, body: unknown) {
+    const img = await this.staffImage(user, id, imageId);
+    const buf = this.checkImageBody(body);
+    await this.checkRoom(buf.length - img.sourceBytes);
+    await this.prisma.videoImage.update({ where: { id: imageId }, data: { source: Uint8Array.from(buf), sourceBytes: buf.length, editable: img.edit != null } });
+    return { id: imageId };
+  }
+  // Garde les tracés (flèches, textes, squelette…) : rien n'est lu comme du code, ils servent seulement à redessiner l'image
+  async putImageEdit(user: AuthUser, id: string, imageId: string, body: unknown) {
+    const img = await this.staffImage(user, id, imageId);
+    const edit = cleanEdit(body);
+    await this.prisma.videoImage.update({ where: { id: imageId }, data: { edit: edit as object, editable: img.source != null } });
+    return { id: imageId };
+  }
+  async imageSource(user: AuthUser, id: string, imageId: string) {
+    const img = await this.staffImage(user, id, imageId);
+    if (!img.source) throw new NotFoundException("Cette image ne peut pas être modifiée (elle a été faite avant cette option).");
+    return { data: Buffer.from(img.source), mime: sniffImage(Buffer.from(img.source)) ?? "image/jpeg" };
+  }
+  async imageEdit(user: AuthUser, id: string, imageId: string) {
+    const img = await this.staffImage(user, id, imageId);
+    if (!img.edit) throw new NotFoundException("Cette image ne peut pas être modifiée (elle a été faite avant cette option).");
+    return img.edit;
   }
   async removeImage(user: AuthUser, id: string, imageId: string) {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");

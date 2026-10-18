@@ -189,6 +189,45 @@ describe("Vidéos et analyses", () => {
     for (const who of ["adultA", "adultB", "par2"]) await A[who].get(`/api/videos/${playerVideo}/images/${r.body.id}`).expect(404);
   });
 
+  it("studio : une image annotée se modifie après coup (image d'origine + tracés gardés), réservé au coach, jamais lisible par la famille", async () => {
+    const jpeg = (n: number) => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(n, 3)]);
+    const bin = (who: any, method: "post" | "put", url: string, body: Buffer, q: Record<string, string> = {}) => who[method](url).query(q).set(ORIGIN).set("Content-Type", "application/octet-stream").send(body);
+    const created = await bin(A.coach, "post", `/api/videos/${playerVideo}/images`, jpeg(1500), { note: "Départ" }).expect(201);
+    const base = `/api/videos/${playerVideo}/images/${created.body.id}`;
+    expect((await A.coach.get(`/api/videos/${playerVideo}`).expect(200)).body.images.find((i: any) => i.id === created.body.id).editable).toBe(false); // anciennes images : pas modifiables
+    await A.coach.get(`${base}/source`).expect(404);
+    await A.coach.get(`${base}/edit`).expect(404);
+    // image d'origine + tracés
+    await bin(A.coach, "put", `${base}/source`, jpeg(1200)).expect(200);
+    await bin(A.coach, "put", `${base}/source`, Buffer.alloc(300, 1)).expect(400); // pas une image
+    const edit = { w: 960, h: 540, shapes: [{ tool: "text", color: "#e11d48", size: 1, pts: [[100, 80]], text: "Coude trop bas" }, { tool: "arrow", color: "#facc15", size: 1.8, pts: [[10, 10], [200, 90]] }], skeleton: null, guides: true, measures: false };
+    await A.coach.put(`${base}/edit`).set(ORIGIN).send({ ...edit, shapes: [{ tool: "script", color: "#e11d48", pts: [[1, 1]] }] }).expect(400); // outil inconnu
+    await A.coach.put(`${base}/edit`).set(ORIGIN).send({ ...edit, shapes: [{ tool: "text", color: "red", pts: [[1, 1]], text: "x" }] }).expect(400); // couleur invalide
+    await A.coach.put(`${base}/edit`).set(ORIGIN).send({ ...edit, shapes: [{ tool: "text", color: "#ffffff", pts: [[1, 1]], text: "x".repeat(201) }] }).expect(400); // texte trop long
+    await A.coach.put(`${base}/edit`).set(ORIGIN).send({ ...edit, skeleton: { nose: ["a", 1] } }).expect(400);
+    await A.coach.put(`${base}/edit`).set(ORIGIN).send(edit).expect(200);
+    expect((await A.coach.get(`/api/videos/${playerVideo}`).expect(200)).body.images.find((i: any) => i.id === created.body.id).editable).toBe(true);
+    const back = (await A.coach.get(`${base}/edit`).expect(200)).body;
+    expect(back.shapes[0]).toMatchObject({ tool: "text", text: "Coude trop bas" }); expect(back.measures).toBe(false);
+    expect((await A.coach.get(`${base}/source`).expect(200)).headers["content-type"]).toBe("image/jpeg");
+    // nouvelle version de l'image annotée (le texte a changé) : même identifiant, nouveau commentaire
+    await bin(A.coach, "put", base, jpeg(1800), { note: "Départ corrigé" }).expect(200);
+    expect((await A.coach.get(`/api/videos/${playerVideo}`).expect(200)).body.images.find((i: any) => i.id === created.body.id).note).toBe("Départ corrigé");
+    expect((await A.coach.get(base).buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on("data", (d: Buffer) => c.push(d)); r.on("end", () => cb(null, Buffer.concat(c))); }).expect(200)).body.length).toBe(1804);
+    // la place utilisée compte aussi l'image d'origine
+    expect((await prisma.videoImage.findUniqueOrThrow({ where: { id: created.body.id } })).sourceBytes).toBe(1204);
+    // cloisonnement : ni la famille, ni un adulte, ni un autre ne modifient ni ne lisent l'original et les tracés
+    for (const who of ["par1", "par2", "adultA", "adultB"]) {
+      await A[who].get(`${base}/source`).expect(403);
+      await A[who].get(`${base}/edit`).expect(403);
+      await A[who].put(`${base}/edit`).set(ORIGIN).send(edit).expect(403);
+      await bin(A[who], "put", base, jpeg(900)).expect(403);
+      await bin(A[who], "put", `${base}/source`, jpeg(900)).expect(403);
+    }
+    await A.coach.get(`/api/videos/${playerVideo}/images/inconnue/edit`).expect(404);
+    expect((await A.par1.get(`/api/videos/${playerVideo}`).expect(200)).body.images.every((i: any) => i.editable === undefined)).toBe(true); // la famille ne voit même pas l'indicateur
+  });
+
   it("commentaire audio : seul le coach l'ajoute ; la personne concernée l'entend une fois l'analyse envoyée ; cloisonné", async () => {
     const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(3000, 5)]);
     const put = (who: any, id: string, body: Buffer, seconds = 12) => who.put(`/api/videos/${id}/audio`).query({ seconds }).set(ORIGIN).set("Content-Type", "application/octet-stream").send(body);

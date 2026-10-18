@@ -10,6 +10,9 @@ import { createLandmarker, defaultSkeleton, drawSkeleton, JOINT_LABEL, Joint, me
 type Pt = [number, number];
 type Tool = "line" | "arrow" | "circle" | "free" | "angle" | "text";
 interface Shape { tool: Tool; color: string; pts: Pt[]; text?: string; size?: number; }
+// Ce qu'on garde pour pouvoir rouvrir une image annotée : tracés, squelette et réglages (l'image d'origine est gardée à part)
+export interface EditData { w: number; h: number; shapes: Shape[]; skeleton: Skeleton | null; guides: boolean; measures: boolean }
+interface SaveExtra { source: Blob | null; edit: EditData }
 const SIZES: [string, number][] = [["Fin", 0.6], ["Moyen", 1], ["Épais", 1.8], ["Très épais", 2.8]];
 const COLORS: [string, string][] = [["#e11d48", "Rouge"], ["#facc15", "Jaune"], ["#38bdf8", "Bleu"], ["#ffffff", "Blanc"]];
 const TOOLS: [Tool, string][] = [["line", "Ligne"], ["arrow", "Flèche"], ["circle", "Cercle"], ["free", "Trait libre"], ["angle", "Angle (3 points)"], ["text", "Texte"]];
@@ -95,21 +98,21 @@ function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number, h = w) {
 }
 
 // Éditeur d'une image figée : dessiner, mesurer un angle, puis l'enregistrer dans l'analyse.
-function Annotator({ base, onCancel, onSave, initialSkeleton = null }: { base: HTMLCanvasElement; onCancel: () => void; onSave: (blob: Blob, note: string) => Promise<void>; initialSkeleton?: Skeleton | null }) {
+function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: { base: HTMLCanvasElement; onCancel: () => void; onSave: (blob: Blob, note: string, extra: SaveExtra) => Promise<void>; initialSkeleton?: Skeleton | null; initial?: { shapes: Shape[]; guides: boolean; measures: boolean; note: string } }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("arrow");
   const [color, setColor] = useState(COLORS[0][0]);
   const [size, setSize] = useState(1); // épaisseur du trait (ou taille du texte)
-  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [shapes, setShapes] = useState<Shape[]>(initial?.shapes ?? []);
   const [draft, setDraft] = useState<Shape | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initial?.note ?? "");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState("");
   const [typing, setTyping] = useState<{ p: Pt; left: number; top: number; text: string } | null>(null);
   // Squelette du joueur : déplaçable point par point, avec repères d'alignement et mesures
   const [skel, setSkel] = useState<Skeleton | null>(initialSkeleton);
-  const [guides, setGuides] = useState(true), [showMeasures, setShowMeasures] = useState(true);
+  const [guides, setGuides] = useState(initial?.guides ?? true), [showMeasures, setShowMeasures] = useState(initial?.measures ?? true);
   const [drag, setDrag] = useState<Joint | null>(null);
   const [detecting, setDetecting] = useState(false), [skMsg, setSkMsg] = useState("");
   const box = useRef<HTMLDivElement>(null);
@@ -185,8 +188,17 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null }: { base: H
         if (blob && blob.size <= 650 * 1024) break;
       }
       if (!blob) throw new Error("Impossible de créer l'image. Essaie un autre navigateur (Chrome ou Safari à jour).");
+      // L'image d'origine (sans dessin) est gardée avec les tracés pour pouvoir tout modifier plus tard ; en modification, elle est déjà là
+      let source: Blob | null = null;
+      if (!initial) {
+        for (const [scale, q] of [[1, 0.8], [1, 0.65], [0.75, 0.65], [0.55, 0.6]] as const) {
+          const c = document.createElement("canvas"); c.width = Math.round(W * scale); c.height = Math.round(H * scale); c.getContext("2d")!.drawImage(base, 0, 0, c.width, c.height);
+          source = await jpeg(c, q);
+          if (source && source.size <= 650 * 1024) break;
+        }
+      }
       setStep("Envoi au serveur…");
-      await onSave(blob, note);
+      await onSave(blob, note, { source, edit: { w: W, h: H, shapes, skeleton: skel, guides, measures: showMeasures } });
     } catch (x) { setErr(((x as Error).name === "AbortError" ? "Le serveur ne répond pas (30 secondes). Réessaie dans un instant." : (x as Error).message) || "L'enregistrement a échoué."); setBusy(false); }
   }
 
@@ -210,6 +222,23 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null }: { base: H
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length} onClick={() => setShapes((l) => l.slice(0, -1))}>Annuler le dernier tracé</button>
         <button type="button" className="btn-outline btn-sm" disabled={!shapes.length && !draft} onClick={() => { setShapes([]); setDraft(null); }}>Tout effacer</button>
       </div>
+      {shapes.length > 0 && (
+        <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Tracés de l'image">
+          <strong>✏️ Les tracés de cette image</strong>
+          <p className="hint m-0">Change le texte d'une étiquette ou retire un tracé, sans tout recommencer.</p>
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {shapes.map((s, i) => (
+              <li key={i} className="flex flex-wrap items-center gap-2">
+                <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border border-line" style={{ background: s.color }} />
+                {s.tool === "text"
+                  ? <input aria-label={`Texte n° ${i + 1}`} className="input !min-h-10 min-w-0 flex-1" maxLength={200} value={s.text ?? ""} onChange={(e) => setShapes((l) => l.map((x, k) => (k === i ? { ...x, text: e.target.value } : x)))} />
+                  : <span className="flex-1 text-sm font-bold">{TOOLS.find(([k]) => k === s.tool)?.[1] ?? s.tool}{s.tool === "angle" && s.pts.length === 3 ? ` : ${Math.round(angleOf(s.pts[0], s.pts[1], s.pts[2]))}°` : ""}</span>}
+                <button type="button" className="btn-outline btn-sm" onClick={() => setShapes((l) => l.filter((_, k) => k !== i))} aria-label={`Retirer le tracé n° ${i + 1}`}>🗑 Retirer</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Squelette du joueur">
         <div className="flex flex-wrap items-center gap-2">
           <strong>🦴 Squelette</strong>
@@ -247,7 +276,7 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null }: { base: H
         <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" enterKeyHint="done" /></div>
         {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
         <Err msg={err} />
-        <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
+        <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : initial ? "Enregistrer les modifications" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
       </form>
     </div>
   );
@@ -260,20 +289,36 @@ const frDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day:
 // Enregistre une image annotée dans l'analyse d'une vidéo.
 // 1) un petit appel « réveille » le serveur (il peut dormir quelques secondes) et compte les images déjà là ;
 // 2) l'envoi attend 30 secondes ; 3) en cas de silence, on vérifie si l'image est quand même arrivée, sinon on réessaie UNE fois (jamais de doublon).
-async function saveImage(videoId: string, blob: Blob, note: string) {
+async function saveImage(videoId: string, blob: Blob, note: string, extra?: SaveExtra) {
   const count = async () => { try { return ((await api<{ images?: unknown[] }>(`/videos/${videoId}`)).images ?? []).length; } catch { return null; } };
-  const send = async (ms: number) => {
+  const send = async (ms: number): Promise<string> => {
     const stop = new AbortController(), timer = setTimeout(() => stop.abort(), ms);
-    try { await api(`/videos/${videoId}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal }); }
+    try { return (await api<{ id: string }>(`/videos/${videoId}/images?note=${encodeURIComponent(note)}`, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, signal: stop.signal })).id; }
     finally { clearTimeout(timer); }
   };
   const before = await count();
-  try { await send(30000); return; } catch (x) {
+  let id = "";
+  try { id = await send(30000); } catch (x) {
     if ((x as Error).name !== "AbortError") throw x;
     const now = await count();
-    if (before !== null && now !== null && now > before) return; // l'image était bien arrivée, seule la réponse s'est perdue
+    if (before !== null && now !== null && now > before) { // l'image était bien arrivée, seule la réponse s'est perdue
+      try { const imgs = (await api<{ images?: { id: string }[] }>(`/videos/${videoId}`)).images ?? []; id = imgs[imgs.length - 1]?.id ?? ""; } catch { /* sans identifiant : l'image reste enregistrée, sans option de modification */ }
+    } else id = await send(45000); // deuxième et dernier essai
   }
-  await send(45000); // deuxième et dernier essai
+  await keepEditable(videoId, id, extra);
+}
+// Garde l'image d'origine et les tracés (pour la modifier plus tard). Si cela échoue, l'image annotée reste enregistrée : on ne perd rien.
+async function keepEditable(videoId: string, imageId: string, extra?: SaveExtra) {
+  if (!imageId || !extra) return;
+  try {
+    if (extra.source) await api(`/videos/${videoId}/images/${imageId}/source`, { method: "PUT", body: extra.source, headers: { "Content-Type": "application/octet-stream" } });
+    await api(`/videos/${videoId}/images/${imageId}/edit`, { method: "PUT", body: JSON.stringify(extra.edit), headers: { "Content-Type": "application/json" } });
+  } catch { /* image annotée enregistrée, mais non modifiable plus tard */ }
+}
+// Remplace une image déjà enregistrée par sa version modifiée
+async function updateImage(videoId: string, imageId: string, blob: Blob, note: string, extra: SaveExtra) {
+  await api(`/videos/${videoId}/images/${imageId}?note=${encodeURIComponent(note)}`, { method: "PUT", body: blob, headers: { "Content-Type": "application/octet-stream" } });
+  await keepEditable(videoId, imageId, { source: null, edit: extra.edit });
 }
 
 // Un lecteur de la comparaison : image par image, curseur, et « le geste démarre ici ».
@@ -392,7 +437,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
           <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>📸 Capturer la comparaison et annoter</button></div>
           <Err msg={err} />
           {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
-          {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note) => { await saveImage(v.id, blob, note); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
+          {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note, extra) => { await saveImage(v.id, blob, note, extra); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
         </>
       )}
     </section>
@@ -424,8 +469,30 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
     setFrameSk(pose && poseSk.current ? JSON.parse(JSON.stringify(poseSk.current)) : null); // le squelette suivi est repris tel quel : on peut encore le corriger
     setFrame(c);
   }
-  async function save(blob: Blob, note: string) {
-    await saveImage(v.id, blob, note);
+  // Rouvrir une image déjà enregistrée : image d'origine + tracés, pour changer un texte sans tout recommencer
+  const [rev, setRev] = useState(0); // fait recharger les images après une modification
+  const [editing, setEditing] = useState<{ imageId: string; base: HTMLCanvasElement; data: EditData; note: string } | null>(null);
+  async function openEdit(imageId: string, note: string) {
+    setErr(""); setDone("");
+    try {
+      const data = await api<EditData>(`/videos/${v.id}/images/${imageId}/edit`);
+      const res = await fetch(`/api/videos/${v.id}/images/${imageId}/source`, { credentials: "include" });
+      if (!res.ok) throw new Error("Impossible de rouvrir l'image d'origine.");
+      const url = URL.createObjectURL(await res.blob());
+      const img = await new Promise<HTMLImageElement>((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error("Impossible de rouvrir l'image d'origine.")); i.src = url; });
+      const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d")!.drawImage(img, 0, 0); URL.revokeObjectURL(url);
+      const k = c.width / data.w; // l'image d'origine a pu être réduite à l'enregistrement : les tracés suivent
+      setEditing({ imageId, base: c, note, data: { ...data, shapes: data.shapes.map((s) => ({ ...s, pts: s.pts.map((p) => [p[0] * k, p[1] * k] as Pt) })) } });
+    } catch (x) { setErr((x as Error).message || "Impossible de rouvrir cette image."); }
+  }
+  async function saveEdit(blob: Blob, note: string, extra: SaveExtra) {
+    if (!editing) return;
+    await updateImage(v.id, editing.imageId, blob, note, { source: null, edit: extra.edit });
+    setEditing(null); setRev((r) => r + 1); setDone("Image modifiée ✓"); onChanged();
+    setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+  }
+  async function save(blob: Blob, note: string, extra: SaveExtra) {
+    await saveImage(v.id, blob, note, extra);
     setFrame(null); setDone("Image enregistrée ✓ : elle est dans « Images de l'analyse » ci-dessous."); onChanged();
     setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   }
@@ -456,7 +523,8 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         </div>
       )}
       <Err msg={err} />
-      {frame && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
+      {frame && !editing && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
+      {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
         <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
         {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
@@ -464,9 +532,14 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
               <li key={i.id} className="grid gap-1 rounded-xl border border-line bg-white p-2">
-                <img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée"} className="w-full rounded-lg" loading="lazy" />
+                <img src={`/api/videos/${v.id}/images/${i.id}?r=${rev}`} alt={i.note || "Image annotée"} className="w-full rounded-lg" loading="lazy" />
                 {i.note && <p className="m-0 text-sm">{i.note}</p>}
-                <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer cette image ?")) { await del(`/videos/${v.id}/images/${i.id}`); onChanged(); } }}>Supprimer</button>
+                <div className="flex flex-wrap gap-2">
+                  {i.editable
+                    ? <button className="btn-outline btn-sm" disabled={!!editing || !!frame} onClick={() => void openEdit(i.id, i.note)}>✏️ Modifier</button>
+                    : <small className="hint self-center">Faite avant l'option « modifier » : pour la changer, refais-la.</small>}
+                  <button className="btn-danger btn-sm" onClick={async () => { if (confirm("Supprimer cette image ?")) { await del(`/videos/${v.id}/images/${i.id}`); onChanged(); } }}>Supprimer</button>
+                </div>
               </li>
             ))}
           </ul>
