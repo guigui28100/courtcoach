@@ -189,9 +189,11 @@ export const MarkBadge = ({ v }: { v: VideoRow }) => v.mark === "DEPART" ? <span
 // Chez le joueur et sa famille, tout en haut de « Mes vidéos » : le geste de départ de l'année et le geste d'aujourd'hui, côte à côte.
 // Les vidéos ne se chargent qu'au clic (jamais toutes ensemble) ; seules celles qui sont déjà visibles du joueur apparaissent.
 export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
-  const [opened, setOpened] = useState<string[]>([]); // rien n'est ouvert tant que le jeune ne touche pas un coup
+  const [sel, setSel] = useState<string | null>(null); // rien n'est ouvert tant que le jeune ne touche pas un coup
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
   const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
+  const dep = sel ? videos.find((v) => v.mark === "DEPART" && v.shot === sel) : undefined;
+  const now = sel ? videos.find((v) => v.mark === "MAINTENANT" && v.shot === sel) : undefined;
   const cell = (v: VideoRow | undefined, kind: "dep" | "now") => (
     <div className="grid content-start gap-2 rounded-xl border border-line bg-white p-3">
       {v ? (
@@ -206,18 +208,16 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
   return (
     <section className="grid gap-3 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
       <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : avant et maintenant</h3><p className="hint m-0">Je me compare à moi, pas aux autres. Touche un coup pour voir ses vidéos.</p></div>
-      {slots.map((shot) => {
-        const dep = videos.find((v) => v.mark === "DEPART" && v.shot === shot);
-        if (!dep) return <p key={shot} className="m-0 flex flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-line bg-white/70 p-3"><strong className="font-display">{shot}</strong><span className="text-muted">· ton coach filmera ton geste de départ</span></p>;
-        const now = videos.find((v) => v.mark === "MAINTENANT" && v.shot === shot);
-        const on = opened.includes(shot);
-        return (
-          <details key={shot} open={on} onToggle={(e) => { const o = (e.currentTarget as HTMLDetailsElement).open; setOpened((l) => (o ? (l.includes(shot) ? l : [...l, shot]) : l.filter((x) => x !== shot))); }} className="rounded-xl border-2 border-line bg-white p-3">
-            <summary className="cursor-pointer font-display font-bold">{shot} <span className="font-sans text-sm font-normal text-muted">· 📍 départ{now ? " · 🎯 aujourd'hui" : ""}</span></summary>
-            {on && <div className="mt-3 grid gap-3 sm:grid-cols-2">{cell(dep, "dep")}{cell(now, "now")}</div>}
-          </details>
-        );
-      })}
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Mes coups">
+        {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot; return (
+          <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
+            className={"min-h-11 rounded-full border-2 px-4 font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+            {shot}{has ? " 📍" : ""}
+          </button>
+        ); })}
+      </div>
+      {sel && dep && <div className="grid gap-3 sm:grid-cols-2" role="tabpanel">{cell(dep, "dep")}{cell(now, "now")}</div>}
+      {sel && !dep && <p role="tabpanel" className="m-0 rounded-xl border-2 border-dashed border-line bg-white/70 p-4 text-center text-muted">Ton coach filmera ton geste de départ pour ce coup.</p>}
     </section>
   );
 }
