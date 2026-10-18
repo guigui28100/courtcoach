@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { put } from "../api";
-import { fmtDate, Player, RANKINGS } from "../types";
+import { fmtDate, HEIGHTS, Player, RANKINGS, TRAINING_VOLUMES } from "../types";
 import { Field } from "./ui";
 
 // Les renseignements qui manquent encore sur la fiche (pour guider les parents)
@@ -19,9 +19,10 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
   const text = (id: keyof Player, label: string, extra?: { hint?: string; type?: string; placeholder?: string }) => (
     <Field label={label} id={id} hint={extra?.hint}><input id={id} name={id} type={extra?.type ?? "text"} defaultValue={(p[id] as string | number | null) ?? ""} className="input" placeholder={extra?.placeholder} /></Field>
   );
-  const choice = (id: "sex" | "hand" | "backhand" | "ranking", label: string, options: string[]) => (
-    <Field label={label} id={id}><select id={id} name={id} className="input" defaultValue={(p[id] as string | null) ?? ""}><option value="">Choisir…</option>{options.map((o) => <option key={o}>{o}</option>)}</select></Field>
-  );
+  const choice = (id: "sex" | "hand" | "backhand" | "ranking" | "heightCm" | "training", label: string, options: string[], suffix = "") => {
+    const cur = p[id] === null || p[id] === undefined ? "" : String(p[id]); // une ancienne valeur saisie à la main reste proposée
+    return <Field label={label} id={id}><select id={id} name={id} className="input" defaultValue={cur}><option value="">Choisir…</option>{cur && !options.includes(cur) && <option>{cur}</option>}{options.map((o) => <option key={o} value={o}>{o}{suffix}</option>)}</select></Field>;
+  };
   return (
     <form onSubmit={save} className="grid gap-4" noValidate key={p.id}>
       <section className="card grid gap-2">
@@ -35,11 +36,11 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
         <p className="hint m-0">Une erreur dans le prénom, le nom ou la date de naissance ? Dites-le au coach : lui seul peut les corriger.</p>
       </section>
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Identité et club</legend>
-        {choice("sex", "Fille ou garçon", ["Fille", "Garçon"])}{text("heightCm", "Taille (cm)", { type: "number" })}{text("club", "Club")}{text("licence", "N° de licence FFT", { hint: "Facultatif" })}
+        {choice("sex", "Fille ou garçon", ["Fille", "Garçon"])}{choice("heightCm", "Taille", HEIGHTS, " cm")}{text("club", "Club")}{text("licence", "N° de licence FFT", { hint: "Facultatif" })}
       </fieldset>
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Tennis</legend>
         {choice("ranking", "Classement actuel", RANKINGS)}{choice("hand", "Main", ["Droitier", "Gaucher"])}{choice("backhand", "Revers", ["À une main", "À deux mains"])}
-        {text("training", "Volume d'entraînement", { placeholder: "Ex. : 3 h par semaine" })}
+        {choice("training", "Volume d'entraînement", TRAINING_VOLUMES)}
       </fieldset>
       <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et par ce compte (qui est aussi l'espace de votre enfant : remplissez-le à l'abri des regards si besoin).">

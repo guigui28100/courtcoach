@@ -13,7 +13,7 @@ import { offDayReason } from "../schoolDays";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -34,6 +34,15 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
     for (const [k, v] of Object.entries(f)) { if (k === "heightCm") { if (v) body[k] = Number(v); } else if (k === "birthDate") { if (v) body[k] = v; } else body[k] = String(v); }
     try { await patch(`/players/${p.id}`, body); setMsg({ ok: true, text: "Enregistré ✓" }); onSaved(); } catch (er) { setMsg({ ok: false, text: (er as Error).message }); }
   }
+  // Menu déroulant : une ancienne valeur saisie à la main reste proposée (elle n'est jamais perdue)
+  const pick = (id: keyof Player, label: string, options: string[], extra?: { hint?: string; suffix?: string }) => {
+    const cur = p[id] === null || p[id] === undefined ? "" : String(p[id]);
+    return (
+      <Field label={label} id={id} hint={extra?.hint}>
+        <select id={id} name={id} className="input" defaultValue={cur}><option value="">Choisir…</option>{cur && !options.includes(cur) && <option>{cur}</option>}{options.map((o) => <option key={o} value={o}>{o}{extra?.suffix ?? ""}</option>)}</select>
+      </Field>
+    );
+  };
   const t = (id: keyof Player, label: string, extra?: { hint?: string; type?: string }) => (
     <Field label={label} id={id} hint={extra?.hint}><input id={id} name={id} type={extra?.type ?? "text"} defaultValue={(p[id] as string | number | null) ?? ""} className="input" /></Field>
   );
@@ -42,7 +51,7 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Identité</legend>
         {t("firstName", "Prénom")}{t("lastName", "Nom")}
         <Field label="Date de naissance" id="birthDate"><input id="birthDate" name="birthDate" type="date" className="input" defaultValue={p.birthDate?.slice(0, 10) ?? ""} /></Field>
-        {t("club", "Club")}{t("licence", "N° de licence FFT")}{t("heightCm", "Taille (cm)", { type: "number" })}
+        {pick("sex", "Fille ou garçon", ["Fille", "Garçon"])}{t("club", "Club")}{t("licence", "N° de licence FFT")}{pick("heightCm", "Taille", HEIGHTS, { suffix: " cm" })}
       </fieldset>
       <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Tennis et compétition</legend>
         {(["ranking", "targetRanking"] as const).map((k) => (
@@ -50,7 +59,7 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
             <select id={k} name={k} className="input" defaultValue={p[k] ?? ""}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r}>{r}</option>)}</select>
           </Field>
         ))}
-        {t("hand", "Main")}{t("backhand", "Revers")}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} /></Field>{t("training", "Volume d'entraînement", { hint: "Ex. : 3 h par semaine" })}<Field label="Jours de cours habituels" id="courseDays" hint="Les étoiles se donnent ces jours-là, hors vacances scolaires (zone C, Paris)."><MultiSelect id="courseDays" name="courseDays" options={COURSE_WEEKDAYS} value={p.courseDays} /></Field>
+        {pick("hand", "Main", ["Droitier", "Gaucher"])}{pick("backhand", "Revers", ["À une main", "À deux mains"])}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} /></Field>{pick("training", "Volume d'entraînement", TRAINING_VOLUMES)}<Field label="Jours de cours habituels" id="courseDays" hint="Les étoiles se donnent ces jours-là, hors vacances scolaires (zone C, Paris)."><MultiSelect id="courseDays" name="courseDays" options={COURSE_WEEKDAYS} value={p.courseDays} /></Field>
       </fieldset>
       {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et les parents.">
