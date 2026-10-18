@@ -52,7 +52,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
-            <p className="alert m-0"><strong>Une vidéo pour {toPlayer}</strong> : sa propre vidéo (filmée à l'entraînement ou en match), ou un exemple à imiter. <strong>Elle reste en brouillon : {toPlayer} et sa famille ne la voient pas</strong> tant que tu ne l'as pas envoyée. Le studio d'analyse s'ouvre dès que le dépôt est terminé : commente-la (traits, cercles, voix…), puis envoie-la : soit avec le bouton « Envoyer la vidéo », soit en envoyant ton analyse (la vidéo part alors avec). Elle apparaîtra dans l'onglet « Vidéos » de {toPlayer}, marquée <strong>« De ton coach »</strong>, avec ton message. Ils pourront la regarder mais pas la supprimer. Elle est supprimée automatiquement après 12 mois.</p>
+            <p className="alert m-0"><strong>Elle reste en brouillon</strong> : {toPlayer} ne la voit pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio s'ouvre : tu écris ton analyse, puis tu envoies.</p>
           ) : (
           <p className="alert m-0">Filme quelques coups (10 à 30 secondes, {fmtMo(MAX_VIDEO_BYTES)} maximum). Pas de nom ni de numéro de téléphone dans le titre. {playerId ? "La vidéo n'est visible que par le coach et la famille du joueur ; elle est supprimée automatiquement après 12 mois." : "La vidéo n'est visible que par toi et le coach ; elle est supprimée automatiquement après 12 mois."}</p>
           )}
@@ -60,7 +60,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
             {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
             {shot ? <input type="hidden" name="shot" value={shot} /> : <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>}
           </div>
-          <Field label={toPlayer ? `Ton message pour ${toPlayer} (facultatif)` : "Une question pour le coach ? (facultatif)"} id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>
+          {!toPlayer && <Field label="Une question pour le coach ? (facultatif)" id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>}
           <Field label="Fichier vidéo (MP4, MOV ou WebM)" id="v-file"><input id="v-file" ref={file} type="file" accept="video/mp4,video/quicktime,video/webm" className="input !py-2.5" /></Field>
           <Err msg={err} />
           {pct !== null && <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Envoi en cours" className="h-3 overflow-hidden rounded-full bg-sand"><div className="h-full bg-clay transition-[width]" style={{ width: `${pct}%` }} /></div>}
@@ -112,7 +112,6 @@ export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: str
   return (
     <div className="grid gap-3">
       <video controls playsInline preload="none" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
-      {v.fromCoach && v.question && <p className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3"><strong>🎓 Message de ton coach :</strong> « {v.question} »</p>}
       {!v.fromCoach && v.question && <p className="m-0"><strong>Ta question :</strong> {v.question}</p>}
       <AudioPlayer v={v} />
       {v.analysis?.sentAt ? <Analysis v={v} /> : !v.fromCoach && <p className="m-0 rounded-xl bg-sand p-3">Le coach n'a pas encore analysé cette vidéo. Tu seras prévenu ici dès que ce sera fait.</p>}
@@ -120,10 +119,11 @@ export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: str
         <section className="grid gap-2" aria-label="Discussion avec le coach">
           <h4 className="m-0 font-display font-bold">Discussion avec le coach</h4>
           <Thread messages={v.messages} />
-          {!preview && <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
-            <input className="input min-w-52 flex-1" aria-label="Ton message" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
-            <button className="btn-clay btn-sm" disabled={!text.trim()}>Envoyer</button>
-          </form>}
+          <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
+            <input className="input min-w-52 flex-1" aria-label="Ton message" value={preview ? "" : text} maxLength={1000} disabled={preview} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
+            <button className="btn-clay btn-sm" disabled={preview || !text.trim()}>Envoyer</button>
+          </form>
+          {preview && <p className="m-0 text-sm font-bold">👀 Aperçu : c'est ici que le jeune t'écrit. Le champ est grisé pour que rien ne soit envoyé à sa place.</p>}
           <Err msg={err} />
         </section>
       )}
