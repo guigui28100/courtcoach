@@ -461,8 +461,8 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
     try { await put(`/videos/${v.id}/mark`, m ? { mark: m, note } : { mark: null }); setVersion((x) => x + 1); onChanged(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   return (
-    <section className="card grid gap-3" aria-labelledby="geste-mark">
-      <div className="flex flex-wrap items-center justify-between gap-2"><h3 id="geste-mark" className="m-0 text-base">🎬 Geste de {v.player.firstName} : départ et maintenant</h3><MarkBadge v={v} /></div>
+    <details className="card grid gap-3" aria-labelledby="geste-mark" open={!!err}>
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste de départ / maintenant</h3><MarkBadge v={v} /></summary>
       <p className="hint m-0">{v.mark === "DEPART" ? `Cette vidéo est le geste de départ de ${v.player.firstName} (${v.shot.toLowerCase()}).` : v.mark === "MAINTENANT" ? `Cette vidéo est le geste « maintenant » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le défaut du début d'année, puis son geste d'aujourd'hui. ${v.player.firstName} ne le voit qu'une fois la vidéo envoyée.`}</p>
       <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
         <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
@@ -474,7 +474,7 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
       {oldNow && v.mark !== "MAINTENANT" && <p className="hint m-0">Le geste « maintenant » actuel est « {oldNow.title} » : il sera remplacé.</p>}
       {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
       <Err msg={err} />
-    </section>
+    </details>
   );
 }
 
@@ -553,7 +553,6 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
           <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
           <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
-          <p className="hint m-0">Le calcul se fait sur cet appareil : la vidéo n'est envoyée nulle part. Si le joueur est flou ou caché, glisse les points à la main sur l'image capturée.</p>
         </div>
       )}
       <Err msg={err} />
@@ -561,9 +560,9 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       {frame && !editing && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
       {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
-        <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
+        <h3 className="m-0 text-base">🖼️ Images de l'analyse ({v.images.length}/8)</h3>
         {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
-        {v.images.length === 0 ? <p className="hint m-0">Fige une image de la vidéo, dessine dessus (ligne, flèche, angle, texte…) puis enregistre-la : elle s'ajoute à l'analyse envoyée à l'élève.</p> : (
+        {v.images.length === 0 ? <p className="hint m-0">Aucune image pour l'instant : utilise « 📸 Capturer ».</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
               <li key={i.id} className="grid gap-1 rounded-xl border border-line bg-white p-2">
@@ -580,7 +579,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           </ul>
         )}
       </section>
-      <AudioRecorder v={v} onChanged={onChanged} />
+      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-bold">🎙️ Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
     </div>
   );
 }

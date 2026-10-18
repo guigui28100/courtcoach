@@ -69,8 +69,10 @@ export default function VideoReview() {
             )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
-            <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
+            <details className="text-sm"><summary className="cursor-pointer font-bold">⋯ Plus</summary>
+            <p className="hint">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
             <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"); } }}>Supprimer la vidéo</button>
+            </details>
           </div>
           <div className="grid content-start gap-4">
             {centre ? <SimpleAnalysis v={v} sent={sent} draft={draft} bien={bien} setBien={setBien} travaille={travaille} setTravaille={setTravaille} mot={mot} setMot={setMot} goalIds={goalIds} toggleGoal={toggleGoal} save={save} msg={msg} /> : (
@@ -133,8 +135,9 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
         })}</div>
       </fieldset>
       <p className="m-0 rounded-xl bg-sand p-3 text-sm"><strong>🎙️ Ma voix (facultatif) :</strong> {v.audio ? `une note vocale de ${v.audio.seconds} s est jointe (à gauche, sous la vidéo).` : "enregistre-la à gauche, sous la vidéo : elle partira avec l'analyse."}</p>
+      <details>
+      <summary className="mb-2 cursor-pointer font-bold">👀 Voir ce que {name} va voir</summary>
       <div className="grid gap-2 rounded-2xl p-4 text-white" style={{ background: "linear-gradient(160deg,#4338ca,#3730a3)" }} aria-label={`Aperçu de ce que ${name} va voir`}>
-        <strong className="text-sm uppercase tracking-wide text-[#dcf247]">👀 Ce que {name} va voir</strong>
         <div className="grid gap-2 rounded-xl border-2 border-white/35 bg-white/15 p-3">
           <p className="m-0 font-bold">🎓 Analyse de ton coach</p>
           <p className="m-0">{bien.trim() ? <>👍 <strong>Ce qui est bien :</strong> {bien}</> : <span className="text-white/60">👍 Ce qui est bien : à écrire…</span>}</p>
@@ -145,6 +148,7 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
           {v.images.length > 0 && <p className="m-0">🖼️ {v.images.length} image{v.images.length > 1 ? "s" : ""} annotée{v.images.length > 1 ? "s" : ""}</p>}
         </div>
       </div>
+      </details>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
         <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `📤 Envoyer à ${name}`}</button>
