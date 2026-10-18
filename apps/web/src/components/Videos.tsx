@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { AudioPlayer } from "./AudioNote";
 import { api, del, get, post, put } from "../api";
 import { Err, Field } from "./ui";
@@ -198,7 +199,7 @@ export function gestureVideo(v: VideoRow, all: VideoRow[]) {
 
 // Chez le joueur et sa famille, tout en haut de « Mes vidéos » : un onglet par coup (départ de septembre puis chaque fin de trimestre).
 // Rien n'est ouvert ni chargé tant que le joueur ne touche pas un coup ; chaque geste s'ouvre avec son analyse et sa discussion.
-export function GestureBeforeAfter({ videos, openId, onChanged }: { videos: VideoRow[]; openId?: string | null; onChanged: () => void }) {
+export function GestureBeforeAfter({ videos, openId, onChanged, preview = false }: { videos: VideoRow[]; openId?: string | null; onChanged: () => void; preview?: boolean }) {
   const [sel, setSel] = useState<string | null>(() => { const o = openId ? videos.find((v) => v.id === openId) : undefined; return o && gestureVideo(o, videos) ? o.shot : null; });
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
   const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
@@ -211,7 +212,9 @@ export function GestureBeforeAfter({ videos, openId, onChanged }: { videos: Vide
         {v ? (
           <>
             {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
-            <VideoPanel id={v.id} onChanged={onChanged} onSeen={onChanged} />
+            {preview
+              ? <p className="m-0 text-sm">{v.draft ? "📝 Brouillon : le jeune ne la voit pas encore. " : ""}<Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">Ouvrir dans mon studio</Link></p>
+              : <VideoPanel id={v.id} onChanged={onChanged} onSeen={onChanged} />}
           </>
         ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">{g.key === "DEPART" ? "Ton coach filmera ton geste de départ." : "Le geste de ce trimestre viendra ici."}</p>}
       </div>
