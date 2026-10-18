@@ -58,7 +58,7 @@ export const EVAL_AXES: EvalAxis[] = [
 // Bilan de départ : le détail à noter dans chaque domaine (clé enregistrée : d_<domaine>_<point>)
 export const START_ITEMS: Record<string, [string, string][]> = {
   technique: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["volee", "Volée"], ["smash", "Smash"]],
-  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Montées au filet"]],
+  tactique: [["defendre", "Défendre"], ["attaquer", "Attaquer"], ["jeu_filet", "Jeu au filet"]],
   mental: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["routines", "Routines"], ["combativite", "Combativité"], ["confiance", "Confiance"]],
   physique: [["endurance", "Endurance"], ["vitesse", "Vitesse"], ["explosivite", "Explosivité"]],
   attitude: [["ecoute", "Écoute"], ["effort", "Effort"], ["comportement", "Comportement"]],
@@ -296,3 +296,7 @@ export function missionOfTheme(goals: Goal[], label: string, endDay: string): Go
   return goals.find((g) => g.season === season && goalApplies(g, t) && g.title.startsWith(label + " : "));
 }
 export const fmtPeriod = (a: string, b: string) => (a === b ? fmtDay(a) : `${new Date(a + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} au ${new Date(b + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`);
+
+// Menus déroulants des renseignements (coach et parents)
+export const HEIGHTS = Array.from({ length: 111 }, (_, i) => String(100 + i)); // 100 à 210 cm
+export const TRAINING_VOLUMES = ["1 cours par semaine", "2 cours par semaine", "3 cours par semaine", "4 cours par semaine"];
