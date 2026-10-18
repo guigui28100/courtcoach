@@ -119,7 +119,9 @@ export function trendCommon(ev: Pick<Evaluation, "ratings"> | undefined, prev: P
 }
 
 // ----- Vidéos et analyses -----
-export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
+export const SHOTS = ["Coup droit", "Revers", "Service", "Volée de coup droit", "Volée de revers", "Smash", "Retour de service", "Jeu de jambes", "Autre"];
+// Les 6 gestes dont on garde une vidéo de départ (début d'année) pour chaque joueur
+export const DEPART_SHOTS = ["Coup droit", "Revers", "Service", "Volée de coup droit", "Volée de revers", "Smash"];
 export interface AnalysisOut { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;

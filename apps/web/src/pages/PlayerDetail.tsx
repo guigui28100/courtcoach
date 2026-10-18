@@ -13,7 +13,7 @@ import { offDayReason } from "../schoolDays";
 import { AuthorBadge, authorColor, Avatar, Empty, Err, Field, MultiSelect, SelectOrText, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge, MarkBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { DEPART_SHOTS, HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -471,6 +471,12 @@ function PlayerVideosTab({ p }: { p: Player }) {
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
       {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio d'analyse s'ouvre : tu l'analyses, puis tu l'envoies (bouton « Envoyer la vidéo », ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={(vid) => (vid ? nav(`/coach/videos/${vid}`) : setVersion((n) => n + 1))} /></>}
+      <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Gestes de départ">
+        <strong>📍 Gestes de départ de {p.firstName} : {DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length} sur {DEPART_SHOTS.length}</strong>
+        <div className="flex flex-wrap gap-2">{DEPART_SHOTS.map((s) => { const d = videos.find((v) => v.mark === "DEPART" && v.shot === s); return d
+          ? <Link key={s} to={`/coach/videos/${d.id}`} className="badge !border-ok !text-ok no-underline">✅ {s}</Link>
+          : <span key={s} className="badge text-muted">⬜ {s}</span>; })}</div>
+      </section>
       <ul className="m-0 grid list-none gap-3 p-0">
         {videos.map((v) => (
           <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.shot} · {fmtDate(v.recordedAt)}{v.question ? (v.fromCoach ? " · avec ton message" : " · avec une question") : ""}</small></span><span className="flex items-center gap-2"><MarkBadge v={v} /><VideoBadge v={v} forCoach /></span></Link></li>

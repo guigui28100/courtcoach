@@ -2,7 +2,8 @@ import { Transform, Type } from "class-transformer";
 import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
-export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Smash", "Jeu de jambes", "Autre"];
+// « Volée » reste accepté pour les anciennes vidéos
+export const SHOTS = ["Coup droit", "Revers", "Service", "Retour de service", "Volée", "Volée de coup droit", "Volée de revers", "Smash", "Jeu de jambes", "Autre"];
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // 80 Mo par vidéo
 
 export class CreateVideoDto {
