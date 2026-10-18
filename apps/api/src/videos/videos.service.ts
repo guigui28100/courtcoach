@@ -19,6 +19,8 @@ export function markVisible(mark: string | null, markedAt: Date | null, staff: b
   const y = markedAt.getUTCMonth() >= 8 ? markedAt.getUTCFullYear() : markedAt.getUTCFullYear() - 1; // la saison commence en septembre
   return now >= new Date(Date.UTC(t === 1 ? y : y + 1, t === 1 ? 11 : t === 2 ? 2 : 5, 1));
 }
+// Un geste T1 / T2 / T3 pas encore ouvert n'existe pas du tout pour le jeune et sa famille (ni liste, ni fichier, ni analyse)
+const gestureLocked = (v: { mark: string | null; markedAt: Date | null }, user: AuthUser) => !isStaff(user) && /^T[123]$/.test(v.mark ?? "") && !markVisible(v.mark, v.markedAt, false);
 const quotaBytes = () => (Number(process.env.VIDEO_QUOTA_MB) || 350) * 1024 * 1024;
 
 // Reconnaît le vrai format du fichier (et pas seulement son nom) : MP4/MOV ou WebM.
@@ -83,6 +85,7 @@ export class VideosService {
     const v = await this.prisma.video.findUnique({ where: { id } });
     if (!v) throw new NotFoundException("Vidéo introuvable");
     if (user.role === Role.COACH) return v;
+    if (gestureLocked(v, user)) throw new NotFoundException("Vidéo introuvable"); // geste d'un trimestre pas encore ouvert
     if (v.fromCoach && !v.sentToPlayerAt && !isStaff(user)) throw new NotFoundException("Vidéo introuvable"); // brouillon du coach : le joueur et sa famille ne le voient pas encore
     if (user.role === Role.ADULT) { if (v.ownerId === user.id && !v.playerId) return v; throw new NotFoundException("Vidéo introuvable"); }
     if (v.playerId && (await this.prisma.playerAccess.findUnique({ where: { userId_playerId: { userId: user.id, playerId: v.playerId } } }))) return v;
@@ -215,7 +218,7 @@ export class VideosService {
       : user.role === Role.ADULT ? { complete: true, ownerId: user.id, playerId: null }
       : { complete: true, player: { accesses: { some: { userId: user.id } } }, ...(isStaff(user) ? {} : { NOT: { fromCoach: true, sentToPlayerAt: null } }) };
     const rows = await this.prisma.video.findMany({ where, include: this.include, orderBy: { recordedAt: "desc" } });
-    return rows.map((v) => this.summary(v, user));
+    return rows.filter((v) => !gestureLocked(v, user)).map((v) => this.summary(v, user));
   }
 
   async storage() {

@@ -273,7 +273,12 @@ describe("Vidéos et analyses", () => {
     await A.coach.post(`/api/videos/${v1}/send-to-player`).set(ORIGIN).expect(204);
     await A.coach.post(`/api/videos/${v2}/send-to-player`).set(ORIGIN).expect(204);
     // un geste de fin de trimestre n'apparaît chez la famille qu'à l'ouverture du trimestre (comme les bulletins)
-    expect(await row(A.par1, v1)).toMatchObject(markVisible("T1", new Date(), false) ? { mark: "T1", markNote: "Le coude s'ouvre" } : { mark: null, markNote: null });
+    if (markVisible("T1", new Date(), false)) expect(await row(A.par1, v1)).toMatchObject({ mark: "T1", markNote: "Le coude s'ouvre" });
+    else { // trimestre pas encore ouvert : la vidéo n'existe pas pour la famille (ni liste, ni détail, ni fichier)
+      expect(await row(A.par1, v1)).toBeUndefined();
+      await A.par1.get(`/api/videos/${v1}`).expect(404);
+      await A.par1.get(`/api/videos/${v1}/file`).expect(404);
+    }
     expect(await row(A.coach, v1)).toMatchObject({ mark: "T1" });
     expect(await row(A.par1, v2)).toMatchObject({ mark: "DEPART", markNote: "Départ de décembre" });
     // un ancien départ n'est jamais montré à la famille, même si la vidéo lui est visible
