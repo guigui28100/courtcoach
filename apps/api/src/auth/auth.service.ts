@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConsentKind, Role } from "@prisma/client";
 import { hash, verify } from "@node-rs/argon2";
@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { passwordStamp } from "../common/auth.types";
-import { newRecoveryCodes, newSecret, otpauthUrl, seal, unseal, verifyCode } from "./totp";
+import { newRecoveryCodes, newSecret, otpauthUrl, seal, totpKeyIsDedicated, unseal, unsealWithKey, verifyCode } from "./totp";
 
 const WEAK = new Set(["motdepasse12", "motdepasse123", "azertyuiop", "azerty12345", "1234567890", "0123456789", "password123", "password1234", "qwertyuiop", "tennisclub", "tennis12345", "courtcoach", "houdan2026"]);
 export function checkStrength(password: string, email?: string) {
@@ -41,6 +41,9 @@ export class AuthService {
 
   async signup(dto: { email: string; password: string; firstName?: string; lastName?: string; birthYear?: number; level?: string; phone?: string }) {
     checkStrength(dto.password, dto.email);
+    // Limite commune à tous les serveurs (comptée dans la base) : une inscription ouverte à tous ne doit pas pouvoir être inondée
+    const perHour = Number(process.env.SIGNUP_PER_HOUR) || 20;
+    if ((await this.prisma.user.count({ where: { role: Role.ADULT, createdAt: { gte: new Date(Date.now() - 3600_000) } } })) >= perHour) throw new HttpException("Beaucoup d'inscriptions en ce moment : réessaie dans une heure, ou préviens le club.", 429);
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) throw new ConflictException("Un compte existe déjà avec cet e-mail.");
     const user = await this.prisma.user.create({
@@ -66,14 +69,15 @@ export class AuthService {
     // Double authentification (coach) : après le bon mot de passe, il faut aussi le code à 6 chiffres (ou un code de secours).
     if (user.totpEnabled && user.totpSecret) {
       if (!code) throw new UnauthorizedException({ message: "Entre le code à 6 chiffres de ton application.", code: "TOTP_REQUIRED" });
-      const step = verifyCode(unseal(user.totpSecret), code.trim());
+      const opened = unsealWithKey(user.totpSecret);
+      const step = verifyCode(opened.plain, code.trim());
       const recovery = !step ? user.recoveryCodes.indexOf(sha256(code.trim().toLowerCase())) : -1;
       if ((!step || (user.totpLastStep != null && step <= user.totpLastStep)) && recovery < 0) {
         await this.fail(user.id, user.failedLogins);
         throw new UnauthorizedException({ message: "Code incorrect ou déjà utilisé.", code: "TOTP_REQUIRED" });
       }
       if (recovery >= 0) await this.prisma.user.update({ where: { id: user.id }, data: { recoveryCodes: user.recoveryCodes.filter((_, i) => i !== recovery) } });
-      else await this.prisma.user.update({ where: { id: user.id }, data: { totpLastStep: step } });
+      else await this.prisma.user.update({ where: { id: user.id }, data: { totpLastStep: step, ...(opened.old ? { totpSecret: seal(opened.plain) } : {}) } }); // ancienne clé : rechiffré avec la clé actuelle
     }
     await this.prisma.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } });
     await this.audit.log(user.id, "login", "User", user.id);
@@ -192,7 +196,7 @@ export class AuthService {
 
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { accesses: { select: { playerId: true, relation: true } } } });
-    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, phone: user.phone, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, accesses: user.accesses };
+    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, phone: user.phone, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, ...(user.totpEnabled && !totpKeyIsDedicated() ? { totpKeyShared: true } : {}), accesses: user.accesses };
   }
 
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.

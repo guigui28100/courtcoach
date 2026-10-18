@@ -8,6 +8,9 @@ import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES } from "./dto";
 export const CHUNK_SIZE = 2 * 1024 * 1024; // le fichier est envoyé et gardé par morceaux de 2 Mo
 const RETENTION_MS = 365 * 24 * 3600 * 1000; // conservation : 12 mois
 const STALE_UPLOAD_MS = 24 * 3600 * 1000;
+// Les adultes (demandes de coaching) ont une place limitée, pour qu'une inscription ouverte à tous ne puisse jamais remplir le stockage du club
+const adultUserBytes = () => (Number(process.env.ADULT_QUOTA_MB) || 100) * 1024 * 1024; // par adulte
+const adultTotalBytes = () => Math.floor(quotaBytes() * ((Number(process.env.ADULT_SHARE_PERCENT) || 40) / 100)); // pour tous les adultes ensemble
 const quotaBytes = () => (Number(process.env.VIDEO_QUOTA_MB) || 350) * 1024 * 1024;
 
 // Reconnaît le vrai format du fichier (et pas seulement son nom) : MP4/MOV ou WebM.
@@ -93,6 +96,10 @@ export class VideosService {
       if (dto.playerId) throw new ForbiddenException("Accès non autorisé");
       ownerId = user.id;
       if ((await this.prisma.video.count({ where: { ownerId } })) >= 10) throw new BadRequestException("Tu as déjà 10 vidéos : supprime-en une avant d'en ajouter.");
+      const mine = (await this.prisma.video.aggregate({ where: { ownerId }, _sum: { sizeBytes: true } }))._sum.sizeBytes ?? 0;
+      if (mine + dto.sizeBytes > adultUserBytes()) throw new BadRequestException(`Tu as atteint ta place de stockage (${Math.round(adultUserBytes() / 1024 / 1024)} Mo) : supprime une vidéo avant d'en ajouter.`);
+      const allAdults = (await this.prisma.video.aggregate({ where: { ownerId: { not: null }, playerId: null }, _sum: { sizeBytes: true } }))._sum.sizeBytes ?? 0;
+      if (allAdults + dto.sizeBytes > adultTotalBytes()) throw new HttpException("La place réservée aux vidéos d'adultes est pleine pour le moment. Préviens le coach.", 507);
     } else {
       if (!dto.playerId) throw new BadRequestException("Choisis le joueur concerné.");
       if (user.role !== Role.COACH && !(await this.prisma.playerAccess.findUnique({ where: { userId_playerId: { userId: user.id, playerId: dto.playerId } } }))) throw new NotFoundException("Fiche introuvable");
