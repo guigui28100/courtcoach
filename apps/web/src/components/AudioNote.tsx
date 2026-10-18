@@ -54,7 +54,6 @@ export function AudioRecorder({ v, onChanged }: { v: VideoRow; onChanged: () => 
 
   return (
     <section className="grid gap-2" aria-label="Commentaire audio">
-      <h3 className="m-0 text-base">🎙️ Commentaire audio</h3>
       {v.audio && phase === "idle" && (
         <div className="grid gap-2 rounded-xl border border-line bg-white p-2">
           <audio controls preload="none" src={`/api/videos/${v.id}/audio`} className="w-full" aria-label="Commentaire audio enregistré" />

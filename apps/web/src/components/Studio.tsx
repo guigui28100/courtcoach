@@ -461,8 +461,9 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
     try { await put(`/videos/${v.id}/mark`, m ? { mark: m, note } : { mark: null }); setVersion((x) => x + 1); onChanged(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   return (
-    <details className="card grid gap-3" aria-labelledby="geste-mark" open={!!err}>
-      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste de départ / maintenant</h3><MarkBadge v={v} /></summary>
+    <details className="card" aria-labelledby="geste-mark" open={!!err}>
+      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste de départ / maintenant</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
+      <div className="mt-2 grid gap-3">
       <p className="hint m-0">{v.mark === "DEPART" ? `Cette vidéo est le geste de départ de ${v.player.firstName} (${v.shot.toLowerCase()}).` : v.mark === "MAINTENANT" ? `Cette vidéo est le geste « maintenant » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le défaut du début d'année, puis son geste d'aujourd'hui. ${v.player.firstName} ne le voit qu'une fois la vidéo envoyée.`}</p>
       <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
         <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
@@ -474,6 +475,7 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
       {oldNow && v.mark !== "MAINTENANT" && <p className="hint m-0">Le geste « maintenant » actuel est « {oldNow.title} » : il sera remplacé.</p>}
       {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
       <Err msg={err} />
+      </div>
     </details>
   );
 }
@@ -537,12 +539,12 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         <video ref={vid} controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="block max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
         <PoseOverlay video={vid} active={pose} guides={guides} onSkeleton={(s) => { poseSk.current = s; }} onStatus={(s, msg) => setPoseStatus({ s, msg })} />
       </div>
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Commandes du lecteur">
-        <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ 1 image</button>
-        <button className="btn-outline btn-sm" onClick={() => seek(1 / FPS)} aria-label="Avancer d'une image">1 image ▶</button>
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Commandes du lecteur">
+        <button className="btn-outline btn-sm" onClick={() => seek(-1 / FPS)} aria-label="Reculer d'une image">◀ image</button>
+        <button className="btn-outline btn-sm" onClick={() => seek(1 / FPS)} aria-label="Avancer d'une image">image ▶</button>
         <button className="btn-outline btn-sm" onClick={() => seek(-1)}>−1 s</button>
         <button className="btn-outline btn-sm" onClick={() => seek(1)}>+1 s</button>
-        {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
+        {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm !px-3 " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
       </div>
       <div className="flex flex-wrap gap-2">
         <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
