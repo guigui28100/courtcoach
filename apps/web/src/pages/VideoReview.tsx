@@ -64,7 +64,7 @@ export default function VideoReview() {
               <p className="alert m-0" role="status"><strong>📝 Brouillon :</strong> {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</p>
             )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
-            {v.question && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
+            {v.question && !v.fromCoach && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
             <details className="text-sm"><summary className="cursor-pointer font-bold">⋯ Plus</summary>
             {draft && <button type="button" className="btn-outline btn-sm mb-2 self-start" onClick={sendVideo}>📤 Envoyer la vidéo seule, sans analyse</button>}
             <p className="hint">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
