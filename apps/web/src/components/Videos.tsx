@@ -208,10 +208,10 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
   return (
     <section className="grid gap-3 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
       <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : avant et maintenant</h3><p className="hint m-0">Je me compare à moi, pas aux autres. Touche un coup pour voir ses vidéos.</p></div>
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Mes coups">
+      <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Mes coups">
         {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot; return (
           <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
-            className={"min-h-11 rounded-full border-2 px-4 font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+            className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
             {shot}{has ? " 📍" : ""}
           </button>
         ); })}
