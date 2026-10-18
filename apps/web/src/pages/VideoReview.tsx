@@ -43,7 +43,7 @@ export default function VideoReview() {
   async function save(thenSend: boolean) {
     const f = formRef.current ? new FormData(formRef.current) : new FormData();
     setMsg(null);
-    if (centre && thenSend && !(bien.trim() && travaille.trim()) && !mot.trim()) { setMsg({ ok: false, text: "Écris « Ce qui est bien » et « Ce qu'on travaille » avant d'envoyer." }); return; }
+    if (centre && thenSend && !(bien.trim() && travaille.trim()) && !mot.trim()) { setMsg({ ok: false, text: "Écris « Ce qui est bien » et « Ce que tu dois travailler » avant d'envoyer." }); return; }
     try {
       await put(`/videos/${id}/analysis`, centre ? { observation: mot, strengths: bien, improve: travaille, goalIds } : { observation: String(f.get("observation") || ""), strengths: String(f.get("strengths") || ""), improve: String(f.get("improve") || ""), exercises: exercises.filter((x) => x.trim()) });
       if (thenSend) await post(`/videos/${id}/analysis/send`);
@@ -121,7 +121,7 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
     <section className="card grid gap-4" aria-labelledby="vr-simple">
       <h2 id="vr-simple" className="m-0 text-xl">Mon analyse {v.analysis?.authorName && <AuthorBadge a={v.analysis} prefix="Rédigée par" />} {sent ? <span className="badge ml-2 !border-ok !text-ok">Envoyée</span> : <span className="badge ml-2">Brouillon</span>}</h2>
       <Field label="👍 Ce qui est bien" id="vr-bien" hint="Une phrase, simple et encourageante."><textarea id="vr-bien" className="input min-h-20" maxLength={2000} value={bien} onChange={(e) => setBien(e.target.value)} placeholder="Ex. : Belle rotation d'épaules sur ton coup droit !" /></Field>
-      <Field label="🎯 Ce qu'on travaille" id="vr-trav" hint="Une phrase : le point sur lequel on se concentre."><textarea id="vr-trav" className="input min-h-20" maxLength={2000} value={travaille} onChange={(e) => setTravaille(e.target.value)} placeholder="Ex. : Lancer la balle un peu plus haut au service." /></Field>
+      <Field label="🎯 Ce que tu dois travailler" id="vr-trav" hint="Une phrase : le point sur lequel on se concentre."><textarea id="vr-trav" className="input min-h-20" maxLength={2000} value={travaille} onChange={(e) => setTravaille(e.target.value)} placeholder="Ex. : Lancer la balle un peu plus haut au service." /></Field>
       {mot.trim() && <Field label={`💬 Ancien mot pour ${name}`} id="vr-mot" hint="Écrit avant : il reste visible. Tu peux le vider."><textarea id="vr-mot" className="input" maxLength={3000} value={mot} onChange={(e) => setMot(e.target.value)} /></Field>}
       <fieldset className="field"><legend>🚀 Relier à une mission</legend>
         <p className="hint m-0">{name} verra un bouton « 🎬 Voir la vidéo » sur la mission, dans « Mes missions ». C'est enregistré tout de suite.</p>
