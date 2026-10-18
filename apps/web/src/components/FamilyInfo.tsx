@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { put } from "../api";
 import { fmtDate, HEIGHTS, Player, RANKINGS, TRAINING_VOLUMES } from "../types";
-import { Field } from "./ui";
+import { Field, SelectOrText } from "./ui";
 
 // Les renseignements qui manquent encore sur la fiche (pour guider les parents)
 export const infoMissing = (p: Player) => [p.sex, p.club, p.licence, p.heightCm, p.ranking, p.hand, p.backhand, p.training].filter((v) => v === null || v === undefined || v === "").length;
@@ -19,10 +19,9 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
   const text = (id: keyof Player, label: string, extra?: { hint?: string; type?: string; placeholder?: string }) => (
     <Field label={label} id={id} hint={extra?.hint}><input id={id} name={id} type={extra?.type ?? "text"} defaultValue={(p[id] as string | number | null) ?? ""} className="input" placeholder={extra?.placeholder} /></Field>
   );
-  const choice = (id: "sex" | "hand" | "backhand" | "ranking" | "heightCm" | "training", label: string, options: string[], suffix = "") => {
-    const cur = p[id] === null || p[id] === undefined ? "" : String(p[id]); // une ancienne valeur saisie à la main reste proposée
-    return <Field label={label} id={id}><select id={id} name={id} className="input" defaultValue={cur}><option value="">Choisir…</option>{cur && !options.includes(cur) && <option>{cur}</option>}{options.map((o) => <option key={o} value={o}>{o}{suffix}</option>)}</select></Field>;
-  };
+  const choice = (id: "sex" | "hand" | "backhand" | "ranking" | "heightCm" | "training", label: string, options: string[], suffix = "") => (
+    <Field label={label} id={id}><SelectOrText id={id} name={id} options={options} value={p[id] as string | number | null} suffix={suffix} type={id === "heightCm" ? "number" : "text"} maxLength={id === "training" ? 200 : id === "ranking" ? 20 : 30} /></Field>
+  );
   return (
     <form onSubmit={save} className="grid gap-4" noValidate key={p.id}>
       <section className="card grid gap-2">

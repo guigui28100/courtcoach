@@ -166,10 +166,31 @@ export function AuthorBadge({ a, prefix = "Saisi par" }: { a: Authored | null | 
   return <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ borderColor: c, color: c, background: `${c}14` }}><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />{prefix} {a.authorName}{a.authorRole === "COACH" ? " (coach)" : ""}</span>;
 }
 
+// Menu déroulant avec « Autre : je l'écris » : on choisit dans la liste ou on écrit sa propre réponse ; la valeur part dans un champ caché
+const OTHER = "__autre";
+export function SelectOrText({ id, name, options, value, suffix = "", type = "text", maxLength = 100 }: { id: string; name: string; options: string[]; value?: string | number | null; suffix?: string; type?: "text" | "number"; maxLength?: number }) {
+  const start = value === null || value === undefined ? "" : String(value);
+  const [custom, setCustom] = useState(start !== "" && !options.includes(start));
+  const [val, setVal] = useState(start);
+  return (
+    <div className="grid gap-2">
+      <select id={id} className="input" value={custom ? OTHER : val} onChange={(e) => { if (e.target.value === OTHER) { setCustom(true); setVal(""); } else { setCustom(false); setVal(e.target.value); } }}>
+        <option value="">Choisir…</option>
+        {options.map((o) => <option key={o} value={o}>{o}{suffix}</option>)}
+        <option value={OTHER}>✏️ Autre : je l'écris moi-même</option>
+      </select>
+      {custom && <input type={type} className="input" aria-label="Ma réponse" placeholder="Écris ta réponse ici" maxLength={maxLength} value={val} onChange={(e) => setVal(e.target.value)} />}
+      <input type="hidden" name={name} value={val} />
+    </div>
+  );
+}
+
 // Menu déroulant à choix multiples (cases à cocher) ; la valeur est envoyée dans un champ caché, séparée par des virgules
-export function MultiSelect({ id, name, options, value }: { id: string; name: string; options: string[]; value?: string | null }) {
+export function MultiSelect({ id, name, options, value, allowOther }: { id: string; name: string; options: string[]; value?: string | null; allowOther?: boolean }) {
+  const [extra, setExtra] = useState("");
   const [chosen, setChosen] = useState<string[]>(() => (value ?? "").split(",").map((s) => s.trim()).filter(Boolean));
   const all = [...options, ...chosen.filter((c) => !options.includes(c))]; // une ancienne valeur libre reste cochée
+  const add = () => { const v = extra.replace(/,/g, " ").trim(); if (v && !chosen.includes(v)) setChosen((c) => [...c, v]); setExtra(""); };
   const toggle = (o: string) => setChosen((c) => (c.includes(o) ? c.filter((x) => x !== o) : [...c, o]));
   return (
     <details className="relative">
@@ -182,6 +203,13 @@ export function MultiSelect({ id, name, options, value }: { id: string; name: st
             <input type="checkbox" className="h-5 w-5" checked={chosen.includes(o)} onChange={() => toggle(o)} />{o}
           </label>
         ))}
+        {allowOther && (
+          <div className="flex gap-2 px-1 pt-1">
+            <input className="input !min-h-11" aria-label="Autre : je l'écris moi-même" placeholder="✏️ Autre : je l'écris" maxLength={40} value={extra} onChange={(e) => setExtra(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+            <button type="button" className="btn-outline btn-sm" onClick={add}>Ajouter</button>
+          </div>
+        )}
       </div>
       <input type="hidden" name={name} value={chosen.join(", ")} />
     </details>
