@@ -366,16 +366,7 @@ function PreviewVideos({ mine }: { mine: VideoRow[] }) {
       <h2 id="gal-videos-apercu" className="m-0 text-2xl">🎬 Mes vidéos</h2>
       <VideosIntro who="apercu" dark />
       <GestureBeforeAfter videos={mine} onChanged={() => undefined} preview />
-      {mine.filter((v) => !gestureVideo(v, mine)).length === 0 ? <p className="m-0 text-white/80">Aucune vidéo pour l'instant.</p> : (
-        <ul className="m-0 grid list-none gap-2 p-0">
-          {mine.filter((v) => !gestureVideo(v, mine)).map((v) => (
-            <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/10 p-3">
-              <span><strong>{v.title}</strong><br /><small className="text-white/75">{v.shot} · {v.fromCoach ? (v.seenAt ? "envoyée par toi, vue par le joueur ✅" : "envoyée par toi, pas encore vue") : v.analysis?.sentAt ? (v.seenAt ? "analyse envoyée et vue ✅" : "analyse envoyée, pas encore vue") : "analyse pas encore envoyée"}</small></span>
-              <Link to={`/coach/videos/${v.id}`} className="gal-btn btn-sm no-underline">Ouvrir dans mon studio</Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <VideoList videos={mine.filter((v) => !gestureVideo(v, mine))} onChanged={() => undefined} preview empty="Aucune autre vidéo pour l'instant." />
     </section>
   );
 }

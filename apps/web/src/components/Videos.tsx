@@ -96,13 +96,13 @@ export const VideoBadge = ({ v, forCoach = false }: { v: VideoRow; forCoach?: bo
   : <span className="badge !border-[#c08a00] !bg-[#fff3cd] !text-[#7a5a00]">En attente d'analyse</span>;
 
 // Lecteur + analyse + discussion d'une vidéo, vus par l'adhérent ou la famille (lecture seule + discussion).
-export function VideoPanel({ id, onChanged, onSeen }: { id: string; onChanged: () => void; onSeen?: () => void }) {
+export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: string; onChanged: () => void; onSeen?: () => void; preview?: boolean }) {
   const [v, setV] = useState<VideoDetail | null>(null);
   const [text, setText] = useState("");
   const [err, setErr] = useState("");
   const load = useCallback(() => { get<VideoDetail>(`/videos/${id}`).then(setV).catch(() => setV(null)); }, [id]);
   useEffect(load, [load]);
-  useEffect(() => { if ((v?.fromCoach || v?.analysis?.sentAt) && !v.seenAt) post(`/videos/${id}/seen`).then(() => { load(); onSeen?.(); }).catch(() => undefined); }, [v?.fromCoach, v?.analysis?.sentAt, v?.seenAt, id, load, onSeen]);
+  useEffect(() => { if (!preview && (v?.fromCoach || v?.analysis?.sentAt) && !v.seenAt) post(`/videos/${id}/seen`).then(() => { load(); onSeen?.(); }).catch(() => undefined); }, [preview, v?.fromCoach, v?.analysis?.sentAt, v?.seenAt, id, load, onSeen]);
   if (!v) return <p className="text-muted">Chargement…</p>;
   async function say(e: FormEvent) {
     e.preventDefault(); setErr("");
@@ -111,7 +111,7 @@ export function VideoPanel({ id, onChanged, onSeen }: { id: string; onChanged: (
   return (
     <div className="grid gap-3">
       <video controls playsInline preload="none" src={`/api/videos/${id}/file`} className="max-h-[70vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />
-      {v.fromCoach && <p className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3"><strong>🎓 Vidéo envoyée par ton coach.</strong>{v.question ? <> Son message : « {v.question} »</> : " Regarde-la bien !"}</p>}
+      {v.fromCoach && v.question && <p className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3"><strong>🎓 Message de ton coach :</strong> « {v.question} »</p>}
       {!v.fromCoach && v.question && <p className="m-0"><strong>Ta question :</strong> {v.question}</p>}
       <AudioPlayer v={v} />
       {v.analysis?.sentAt ? <Analysis v={v} /> : !v.fromCoach && <p className="m-0 rounded-xl bg-sand p-3">Le coach n'a pas encore analysé cette vidéo. Tu seras prévenu ici dès que ce sera fait.</p>}
@@ -119,15 +119,14 @@ export function VideoPanel({ id, onChanged, onSeen }: { id: string; onChanged: (
         <section className="grid gap-2" aria-label="Discussion avec le coach">
           <h4 className="m-0 font-display font-bold">Discussion avec le coach</h4>
           <Thread messages={v.messages} />
-          <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
+          {!preview && <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
             <input className="input min-w-52 flex-1" aria-label="Ton message" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
             <button className="btn-clay btn-sm" disabled={!text.trim()}>Envoyer</button>
-          </form>
+          </form>}
           <Err msg={err} />
         </section>
       )}
-      <p className="hint m-0">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
-      {!v.fromCoach && <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); onChanged(); } }}>Supprimer la vidéo</button>}
+      {!v.fromCoach && !preview && <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); onChanged(); } }}>Supprimer la vidéo</button>}
     </div>
   );
 }
@@ -138,12 +137,12 @@ export function Analysis({ v }: { v: VideoDetail }) {
     <section className="grid gap-2 rounded-xl border border-line bg-[#fffaf5] p-3" aria-label="Analyse du coach">
       <h4 className="m-0 font-display font-bold">Analyse du coach · {a.sentAt && fmtDate(a.sentAt)}</h4>
       {a.observation && <p className="m-0 whitespace-pre-line">{a.observation}</p>}
-      {a.strengths && <p className="m-0"><strong>Points forts : </strong>{a.strengths}</p>}
-      {a.improve && <p className="m-0"><strong>À améliorer : </strong>{a.improve}</p>}
+      {a.strengths && <p className="m-0"><strong>{v.kind === "centre" ? "👍 Ce qui est bien : " : "Points forts : "}</strong>{a.strengths}</p>}
+      {a.improve && <p className="m-0"><strong>{v.kind === "centre" ? "🎯 Ce qu'on travaille : " : "À améliorer : "}</strong>{a.improve}</p>}
       {v.linkedGoals.length > 0 && <p className="m-0"><strong>Objectifs travaillés : </strong>{v.linkedGoals.map((g) => g.title).join(" ; ")}</p>}
       {v.images.length > 0 && (
         <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2" aria-label="Images annotées par le coach">
-          {v.images.map((i) => <li key={i.id} className="grid gap-1"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée par le coach"} className="w-full rounded-lg" loading="lazy" />{i.note && <small>{i.note}</small>}</li>)}
+          {v.images.map((i) => <li key={i.id} className="grid gap-1"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée par le coach"} className="w-full rounded-lg" loading="lazy" /></li>)}
         </ul>
       )}
       {a.exercises.length > 0 && <div><strong>Exercices proposés :</strong><ul className="m-0 mt-1 pl-5">{a.exercises.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
@@ -165,7 +164,7 @@ export function Thread({ messages }: { messages: VideoDetail["messages"] }) {
 }
 
 // Liste de vidéos ouvrables (une à la fois)
-export function VideoList({ videos, onChanged, empty, openId }: { videos: VideoRow[]; onChanged: () => void; empty: string; openId?: string | null }) {
+export function VideoList({ videos, onChanged, empty, openId, preview = false }: { videos: VideoRow[]; onChanged: () => void; empty: string; openId?: string | null; preview?: boolean }) {
   const [open, setOpen] = useState<string | null>(openId && videos.some((v) => v.id === openId) ? openId : null);
   // Arrivée depuis une mission : on fait défiler jusqu'à la vidéo ouverte
   useEffect(() => { if (openId) document.getElementById(`video-${openId}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [openId]);
@@ -178,7 +177,7 @@ export function VideoList({ videos, onChanged, empty, openId }: { videos: VideoR
             <div><strong>{v.title}</strong><p className="m-0 text-sm text-muted">{v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</p></div>
             <div className="flex items-center gap-2"><VideoBadge v={v} /><button className="btn-outline btn-sm" aria-expanded={open === v.id} onClick={() => setOpen(open === v.id ? null : v.id)}>{open === v.id ? "Fermer" : "Ouvrir"}</button></div>
           </div>
-          {open === v.id && <div className="mt-3"><VideoPanel id={v.id} onChanged={() => { setOpen(null); onChanged(); }} onSeen={onChanged} /></div>}
+          {open === v.id && <div className="mt-3"><VideoPanel id={v.id} preview={preview} onChanged={() => { setOpen(null); onChanged(); }} onSeen={onChanged} /></div>}
         </li>
       ))}
     </ul>
@@ -193,6 +192,15 @@ export const MarkBadge = ({ v }: { v: VideoRow }) => {
 };
 
 // Les vidéos de gestes (départ, fin de trimestre) vivent dans « Mon geste » : elles n'apparaissent pas une deuxième fois dans la liste
+// Date d'ouverture d'un geste de trimestre (comme les bulletins) : le coach le voit tout de suite, pas le jeune
+const OPENS = { T1: [11, 1], T2: [2, 1], T3: [5, 1] } as const;
+function openDate(mark: string | null | undefined, markedAt?: string | null) {
+  if (!mark || !(mark in OPENS) || !markedAt) return null;
+  const d = new Date(markedAt), y = d.getUTCMonth() >= 8 ? d.getUTCFullYear() : d.getUTCFullYear() - 1, [m, day] = OPENS[mark as keyof typeof OPENS];
+  return new Date(Date.UTC(mark === "T1" ? y : y + 1, m, day));
+}
+const visibleToChild = (v: VideoRow) => { const o = openDate(v.mark, v.markedAt); return !o || new Date() >= o; };
+const opensOn = (mark?: string | null) => ({ T1: "1er décembre", T2: "1er mars", T3: "1er juin" } as Record<string, string>)[mark ?? ""] ?? "";
 export function gestureVideo(v: VideoRow, all: VideoRow[]) {
   return GESTURE_MARKS.some((g) => g.key === v.mark) && (DEPART_SHOTS.includes(v.shot) || all.some((o) => o.mark === "DEPART" && o.shot === v.shot));
 }
@@ -211,10 +219,8 @@ export function GestureBeforeAfter({ videos, openId, onChanged, preview = false 
         <strong>{g.emoji} {g.key === "DEPART" ? "Au départ" : g.label} <span className="font-normal text-muted">· {v ? fmtDate(v.recordedAt) : g.when}</span></strong>
         {v ? (
           <>
-            {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
-            {preview
-              ? <p className="m-0 text-sm">{v.draft ? "📝 Brouillon : le jeune ne la voit pas encore. " : ""}<Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">Ouvrir dans mon studio</Link></p>
-              : <VideoPanel id={v.id} onChanged={onChanged} onSeen={onChanged} />}
+            {preview && (v.draft || !visibleToChild(v)) && <p className="m-0 rounded-lg bg-[#fff3cd] p-2 text-sm font-bold text-[#7a5a00]">{v.draft ? "📝 Brouillon : le jeune ne la voit pas encore (envoie-la depuis la fiche)." : `🔒 Le jeune ne la verra qu'à partir du ${opensOn(v.mark)}.`}</p>}
+            <VideoPanel id={v.id} preview={preview} onChanged={onChanged} onSeen={onChanged} />
           </>
         ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">{g.key === "DEPART" ? "Ton coach filmera ton geste de départ." : "Le geste de ce trimestre viendra ici."}</p>}
       </div>
