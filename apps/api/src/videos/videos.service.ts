@@ -218,7 +218,20 @@ export class VideosService {
       : user.role === Role.ADULT ? { complete: true, ownerId: user.id, playerId: null }
       : { complete: true, player: { accesses: { some: { userId: user.id } } }, ...(isStaff(user) ? {} : { NOT: { fromCoach: true, sentToPlayerAt: null } }) };
     const rows = await this.prisma.video.findMany({ where, include: this.include, orderBy: { recordedAt: "desc" } });
-    return rows.filter((v) => !gestureLocked(v, user)).map((v) => this.summary(v, user));
+    const shown = rows.filter((v) => !gestureLocked(v, user));
+    const awaiting = isStaff(user) ? await this.awaitingReply(shown.map((v) => v.id)) : new Set<string>();
+    return shown.map((v) => (isStaff(user) ? { ...this.summary(v, user), awaitingReply: awaiting.has(v.id) } : this.summary(v, user)));
+  }
+
+  // Vidéos dont le DERNIER message vient de l'enfant ou de l'adulte (le coach n'a pas encore répondu) : sert à prévenir le coach (lui seul le voit)
+  private async awaitingReply(ids: string[]) {
+    if (!ids.length) return new Set<string>();
+    const msgs = await this.prisma.message.findMany({ where: { videoId: { in: ids } }, orderBy: { createdAt: "desc" }, select: { videoId: true, authorId: true } });
+    const last = new Map<string, string>();
+    for (const m of msgs) if (!last.has(m.videoId)) last.set(m.videoId, m.authorId);
+    const authors = await this.prisma.user.findMany({ where: { id: { in: [...new Set(last.values())] } }, select: { id: true, role: true } });
+    const staff = new Set(authors.filter((a) => a.role === Role.COACH || a.role === Role.TRAINER).map((a) => a.id));
+    return new Set([...last].filter(([, author]) => !staff.has(author)).map(([vid]) => vid));
   }
 
   async storage() {

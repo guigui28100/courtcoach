@@ -125,7 +125,7 @@ export const DEPART_SHOTS = ["Coup droit", "Revers", "Service", "Volée de coup 
 export interface AnalysisOut { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; observation: string; strengths: string; improve: string; exercises: string[]; sentAt: string | null; goalIds: string[]; }
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
-  kind: "coaching" | "centre"; fromCoach: boolean; draft?: boolean; images: { id: string; note: string; editable?: boolean }[]; audio: { seconds: number } | null; goalIds?: string[]; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
+  kind: "coaching" | "centre"; fromCoach: boolean; draft?: boolean; awaitingReply?: boolean; images: { id: string; note: string; editable?: boolean }[]; audio: { seconds: number } | null; goalIds?: string[]; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
   mark?: "DEPART" | "T1" | "T2" | "T3" | "ANCIEN_DEPART" | null; markNote?: string | null; markedAt?: string | null; // geste de départ / geste « maintenant » du joueur (marqué par le coach)
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }

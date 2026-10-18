@@ -119,10 +119,11 @@ export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: str
         <section className="grid gap-2" aria-label="Discussion avec le coach">
           <h4 className="m-0 font-display font-bold">Discussion avec le coach</h4>
           <Thread messages={v.messages} />
-          {!preview && <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
-            <input className="input min-w-52 flex-1" aria-label="Ton message" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
-            <button className="btn-clay btn-sm" disabled={!text.trim()}>Envoyer</button>
-          </form>}
+          <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
+            <input className="input min-w-52 flex-1" aria-label="Ton message" value={preview ? "" : text} maxLength={1000} disabled={preview} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
+            <button className="btn-clay btn-sm" disabled={preview || !text.trim()}>Envoyer</button>
+          </form>
+          {preview && <p className="m-0 text-sm font-bold">👀 Aperçu : c'est ici que le jeune t'écrit. Le champ est grisé pour que rien ne soit envoyé à sa place.</p>}
           <Err msg={err} />
         </section>
       )}

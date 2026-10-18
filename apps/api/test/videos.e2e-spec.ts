@@ -132,7 +132,12 @@ describe("Vidéos et analyses", () => {
     const seen = (await A.adultA.get(`/api/videos/${adultVideo}`).expect(200)).body;
     expect(seen.analysis).toMatchObject({ observation: "Lancer de balle trop bas", exercises: ["10 lancers de balle", "Service à genoux"] });
     await A.adultA.post(`/api/videos/${adultVideo}/messages`).set(ORIGIN).send({ text: "Merci coach !" }).expect(201);
+    // le coach est prévenu qu'une réponse l'attend (lui seul le voit) ; sa réponse l'efface
+    const awaiting = async (who: any) => (await who.get("/api/videos").expect(200)).body.find((v: any) => v.id === adultVideo);
+    expect((await awaiting(A.coach)).awaitingReply).toBe(true);
+    expect((await awaiting(A.adultA)).awaitingReply).toBeUndefined();
     await A.coach.post(`/api/videos/${adultVideo}/messages`).set(ORIGIN).send({ text: "Avec plaisir" }).expect(201);
+    expect((await awaiting(A.coach)).awaitingReply).toBe(false);
     const talk = (await A.adultA.get(`/api/videos/${adultVideo}`).expect(200)).body.messages;
     expect(talk.map((m: any) => [m.text, m.fromCoach, m.mine])).toEqual([["Merci coach !", false, true], ["Avec plaisir", true, false]]);
     await A.adultA.post(`/api/videos/${adultVideo}/seen`).set(ORIGIN).expect(204);
