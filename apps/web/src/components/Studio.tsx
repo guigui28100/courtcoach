@@ -1,7 +1,7 @@
 import { PointerEvent, useCallback, useEffect, useRef, useState } from "react";
-import { api, del } from "../api";
+import { api, del, put } from "../api";
 import { Err } from "./ui";
-import { useVideos } from "./Videos";
+import { MarkBadge, useVideos } from "./Videos";
 import { VideoDetail } from "../types";
 import { PoseOverlay } from "./PoseOverlay";
 import { AudioRecorder } from "./AudioNote";
@@ -407,6 +407,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   return (
     <section className="card grid gap-4" aria-label="Comparer deux vidéos">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-xl">Comparer deux vidéos</h2><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
+      {(() => { const ref = options.find((o) => o.shot === v.shot && o.mark === (v.mark === "DEPART" ? "MAINTENANT" : "DEPART")); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? "🎯 Comparer avec le geste maintenant" : "📍 Comparer avec le geste de départ"}</button></div> : null; })()}
       {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer. Quand une deuxième vidéo aura été envoyée, tu pourras suivre l'évolution du geste ici.</p> : (
         <div className="field"><label htmlFor="cmp">Vidéo à comparer (de la plus ancienne à la plus récente)</label>
           <select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>
@@ -440,6 +441,39 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
           {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note, extra) => { await saveImage(v.id, blob, note, extra); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
         </>
       )}
+    </section>
+  );
+}
+
+// Marquer une vidéo du joueur comme son « geste de départ » (le défaut de début d'année) ou son « geste maintenant » (à remplacer quand tu veux)
+function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }) {
+  const [version, setVersion] = useState(0);
+  const all = useVideos(version) ?? [];
+  const [note, setNote] = useState(v.markNote ?? "");
+  const [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  useEffect(() => { setNote(v.markNote ?? ""); }, [v.id, v.markNote]);
+  if (!v.player) return null;
+  const same = all.filter((o) => o.id !== v.id && o.player?.id === v.player!.id && o.shot === v.shot);
+  const oldDepart = same.find((o) => o.mark === "DEPART"), oldNow = same.find((o) => o.mark === "MAINTENANT"), history = same.filter((o) => o.mark === "ANCIEN_DEPART");
+  async function mark(m: "DEPART" | "MAINTENANT" | null) {
+    if (m === "DEPART" && oldDepart && !confirm(`« ${oldDepart.title} » est déjà le geste de départ de ${v.player!.firstName} pour ${v.shot.toLowerCase()}. Ce geste le remplace : l'ancien reste dans l'historique, que toi seul vois. Continuer ?`)) return;
+    setErr(""); setBusy(true);
+    try { await put(`/videos/${v.id}/mark`, m ? { mark: m, note } : { mark: null }); setVersion((x) => x + 1); onChanged(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <section className="card grid gap-3" aria-labelledby="geste-mark">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h3 id="geste-mark" className="m-0 text-base">🎬 Geste de {v.player.firstName} : départ et maintenant</h3><MarkBadge v={v} /></div>
+      <p className="hint m-0">{v.mark === "DEPART" ? `Cette vidéo est le geste de départ de ${v.player.firstName} (${v.shot.toLowerCase()}).` : v.mark === "MAINTENANT" ? `Cette vidéo est le geste « maintenant » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le défaut du début d'année, puis son geste d'aujourd'hui. ${v.player.firstName} ne le voit qu'une fois la vidéo envoyée.`}</p>
+      <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
+        <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-clay btn-sm" disabled={busy} onClick={() => mark("DEPART")}>📍 {v.mark === "DEPART" ? "Enregistrer le mot" : "Marquer comme geste de départ"}</button>
+        <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark("MAINTENANT")}>🎯 {v.mark === "MAINTENANT" ? "Enregistrer le mot" : "Marquer comme geste maintenant"}</button>
+        {v.mark && v.mark !== "ANCIEN_DEPART" && <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark(null)}>Retirer l'étiquette</button>}
+      </div>
+      {oldNow && v.mark !== "MAINTENANT" && <p className="hint m-0">Le geste « maintenant » actuel est « {oldNow.title} » : il sera remplacé.</p>}
+      {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
+      <Err msg={err} />
     </section>
   );
 }
@@ -523,6 +557,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         </div>
       )}
       <Err msg={err} />
+      <GestureMark v={v} onChanged={onChanged} />
       {frame && !editing && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
       {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">

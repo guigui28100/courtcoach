@@ -124,6 +124,7 @@ export interface AnalysisOut { authorId?: string | null; authorName?: string | n
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
   kind: "coaching" | "centre"; fromCoach: boolean; draft?: boolean; images: { id: string; note: string; editable?: boolean }[]; audio: { seconds: number } | null; goalIds?: string[]; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
+  mark?: "DEPART" | "MAINTENANT" | "ANCIEN_DEPART" | null; markNote?: string | null; markedAt?: string | null; // geste de départ / geste « maintenant » du joueur (marqué par le coach)
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }

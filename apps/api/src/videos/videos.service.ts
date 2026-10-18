@@ -3,7 +3,7 @@ import { ConsentKind, Role, Video, VideoStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
-import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES } from "./dto";
+import { AnalysisDto, CreateVideoDto, MAX_VIDEO_BYTES, VideoMarkDto } from "./dto";
 
 export const CHUNK_SIZE = 2 * 1024 * 1024; // le fichier est envoyé et gardé par morceaux de 2 Mo
 const RETENTION_MS = 365 * 24 * 3600 * 1000; // conservation : 12 mois
@@ -183,6 +183,9 @@ export class VideosService {
       kind: v.playerId ? "centre" : "coaching",
       fromCoach: v.fromCoach,
       draft: v.fromCoach && !v.sentToPlayerAt,
+      mark: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.mark : null,
+      markNote: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.markNote ?? null : null,
+      markedAt: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.markedAt : null,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, phone: v.owner.phone ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
@@ -273,6 +276,25 @@ export class VideosService {
   }
 
   // Rattacher la vidéo à des missions du joueur (coach, ou entraîneur de ce joueur) : le joueur la retrouve en cliquant sur la mission
+  // Marque une vidéo du joueur comme « geste de départ » ou « geste maintenant » (un seul de chaque par joueur et par coup) ; null retire l'étiquette.
+  // Un départ remplacé n'est pas perdu : il devient ANCIEN_DEPART (historique, visible du coach seulement).
+  async setMark(user: AuthUser, id: string, dto: VideoMarkDto) {
+    if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
+    await this.load(user, id);
+    const v = await this.prisma.video.findUnique({ where: { id } });
+    if (!v || !v.complete) throw new NotFoundException("Vidéo introuvable");
+    if (!v.playerId) throw new BadRequestException("Le geste de départ concerne seulement les jeunes du Centre.");
+    const note = (dto.note ?? "").trim().slice(0, 200);
+    const same = { playerId: v.playerId, shot: v.shot, id: { not: id } };
+    await this.prisma.$transaction([
+      ...(dto.mark === "DEPART" ? [this.prisma.video.updateMany({ where: { ...same, mark: "DEPART" }, data: { mark: "ANCIEN_DEPART" } })] : []),
+      ...(dto.mark === "MAINTENANT" ? [this.prisma.video.updateMany({ where: { ...same, mark: "MAINTENANT" }, data: { mark: null, markNote: null, markedAt: null } })] : []),
+      this.prisma.video.update({ where: { id }, data: dto.mark ? { mark: dto.mark, markNote: note || null, markedAt: new Date() } : { mark: null, markNote: null, markedAt: null } }),
+    ]);
+    await this.audit.log(user.id, "video-mark", "Video", id);
+    return { mark: dto.mark, markNote: dto.mark ? note || null : null };
+  }
+
   async setGoals(user: AuthUser, id: string, goalIds: string[]) {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
     await this.load(user, id);

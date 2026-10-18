@@ -17,7 +17,7 @@ import { useStars } from "../components/Stars";
 import { ThemeRadar } from "../components/ThemeRadar";
 import { useFollowUp } from "../components/Suivi";
 import { BackLink } from "../components/ui";
-import { useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
+import { GestureBeforeAfter, useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
 import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
@@ -386,6 +386,7 @@ function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow
       <VideosIntro who="jeune" />
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
       {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
+      <GestureBeforeAfter videos={mine} />
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine} openId={openId} onChanged={refresh} empty="Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !" />
     </section>

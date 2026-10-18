@@ -228,6 +228,51 @@ describe("Vidéos et analyses", () => {
     expect((await A.par1.get(`/api/videos/${playerVideo}`).expect(200)).body.images.every((i: any) => i.editable === undefined)).toBe(true); // la famille ne voit même pas l'indicateur
   });
 
+  it("geste de départ / geste « maintenant » : étiquettes posées par le coach, un seul de chaque par joueur et par coup ; la famille ne voit que ce qui lui est déjà visible, jamais un ancien départ", async () => {
+    const small = fakeMp4(5000);
+    const up = async (title: string, shot = "Coup droit") => (await upload(A.coach, { playerId: p1, title, shot }, small) as any).vid as string;
+    const v1 = await up("Septembre"), v2 = await up("Décembre"), v3 = await up("Service de septembre", "Service");
+    const row = async (who: any, id: string) => (await who.get("/api/videos").expect(200)).body.find((v: any) => v.id === id);
+    const mark = (who: any, id: string, body: object) => who.put(`/api/videos/${id}/mark`).set(ORIGIN).send(body);
+    // seul le coach (ou l'entraîneur du joueur) marque ; valeurs contrôlées ; vidéo d'adulte refusée
+    await mark(A.par1, v1, { mark: "DEPART" }).expect(403);
+    await mark(A.adultA, v1, { mark: "DEPART" }).expect(403);
+    await mark(A.coach, v1, { mark: "FAVORI" }).expect(400);
+    await mark(A.coach, v1, { mark: "DEPART", note: "x".repeat(201) }).expect(400);
+    await mark(A.coach, adultVideo, { mark: "DEPART" }).expect(400);
+    await mark(A.coach, "inconnue", { mark: "DEPART" }).expect(404);
+    // départ puis nouveau départ : l'ancien est gardé dans l'historique (coach seulement)
+    await mark(A.coach, v1, { mark: "DEPART", note: "Le coude reste collé au corps" }).expect(200);
+    expect(await row(A.coach, v1)).toMatchObject({ mark: "DEPART", markNote: "Le coude reste collé au corps" });
+    await mark(A.coach, v3, { mark: "DEPART", note: "Lancer de balle trop bas" }).expect(200); // autre coup : l'autre départ ne bouge pas
+    expect((await row(A.coach, v1)).mark).toBe("DEPART");
+    await mark(A.coach, v2, { mark: "DEPART", note: "Nouveau départ" }).expect(200);
+    expect((await row(A.coach, v1)).mark).toBe("ANCIEN_DEPART");
+    expect((await row(A.coach, v2)).mark).toBe("DEPART");
+    // « maintenant » : un seul ; l'ancien « maintenant » perd son étiquette
+    await mark(A.coach, v1, { mark: "MAINTENANT", note: "Le coude s'ouvre" }).expect(200);
+    expect(await row(A.coach, v1)).toMatchObject({ mark: "MAINTENANT", markNote: "Le coude s'ouvre" });
+    await mark(A.coach, v2, { mark: "MAINTENANT" }).expect(200);
+    expect(await row(A.coach, v1)).toMatchObject({ mark: null, markNote: null });
+    await mark(A.coach, v2, { mark: "DEPART", note: "Départ de décembre" }).expect(200);
+    await mark(A.coach, v1, { mark: "MAINTENANT", note: "Le coude s'ouvre" }).expect(200);
+    // brouillons : la famille ne voit rien tant que les vidéos ne lui sont pas envoyées
+    expect(await row(A.par1, v1)).toBeUndefined();
+    await A.coach.post(`/api/videos/${v1}/send-to-player`).set(ORIGIN).expect(204);
+    await A.coach.post(`/api/videos/${v2}/send-to-player`).set(ORIGIN).expect(204);
+    expect(await row(A.par1, v1)).toMatchObject({ mark: "MAINTENANT", markNote: "Le coude s'ouvre" });
+    expect(await row(A.par1, v2)).toMatchObject({ mark: "DEPART", markNote: "Départ de décembre" });
+    // un ancien départ n'est jamais montré à la famille, même si la vidéo lui est visible
+    await mark(A.coach, v1, { mark: "DEPART", note: "Encore un départ" }).expect(200); // v2 devient ancien départ
+    expect(await row(A.coach, v2)).toMatchObject({ mark: "ANCIEN_DEPART" });
+    expect(await row(A.par1, v2)).toMatchObject({ mark: null, markNote: null });
+    // l'autre famille et les adultes ne voient rien de tout cela
+    expect(await row(A.par2, v1)).toBeUndefined();
+    // retirer l'étiquette
+    await mark(A.coach, v1, { mark: null }).expect(200);
+    expect(await row(A.coach, v1)).toMatchObject({ mark: null, markNote: null });
+  });
+
   it("commentaire audio : seul le coach l'ajoute ; la personne concernée l'entend une fois l'analyse envoyée ; cloisonné", async () => {
     const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(3000, 5)]);
     const put = (who: any, id: string, body: Buffer, seconds = 12) => who.put(`/api/videos/${id}/audio`).query({ seconds }).set(ORIGIN).set("Content-Type", "application/octet-stream").send(body);
