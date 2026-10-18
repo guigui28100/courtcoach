@@ -6,8 +6,8 @@ import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
-import { useVideos } from "../components/Videos";
-import { adultFacts, adultName, currentSeason, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
+import { MarkBadge, useVideos } from "../components/Videos";
+import { adultFacts, adultName, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
@@ -86,6 +86,62 @@ function VideoQueue({ videos, label, mode }: { videos: VideoRow[]; label: (v: Vi
   );
 }
 
+// Centre d'analyse vidéo (onglet « Vidéos » du Centre) : ce qu'il y a à analyser, ce qui attend d'être envoyé, et l'avancement des gestes de chaque joueur
+function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player[] }) {
+  const [rdv, setRdv] = useState<string>("DEPART");
+  const drafts = videos.filter((v) => v.draft);
+  const g = GESTURE_MARKS.find((x) => x.key === rdv)!;
+  const done = (pid: string, shot: string) => videos.find((v) => v.player?.id === pid && v.shot === shot && v.mark === rdv);
+  const filmed = players.reduce((n, p) => n + DEPART_SHOTS.filter((sh) => done(p.id, sh)).length, 0);
+  return (
+    <div className="grid gap-6">
+      <section className="grid gap-2" aria-label="Vidéos à analyser">
+        <h2 className="m-0 text-lg">📥 À analyser</h2>
+        <VideoQueue videos={videos} label={(v) => v.player?.firstName ?? "Joueur"} mode="todo" />
+      </section>
+      {drafts.length > 0 && (
+        <section className="grid gap-2" aria-label="Brouillons à envoyer">
+          <h2 className="m-0 text-lg">📝 À envoyer ({drafts.length})</h2>
+          <p className="hint m-0">Déposées par toi : les joueurs ne les voient pas encore.</p>
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {drafts.map((v) => <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.player?.firstName ?? "Joueur"} · {v.shot} · {fmtDate(v.recordedAt)}</small></span><span className="flex items-center gap-2"><MarkBadge v={v} /><span className="btn-clay btn-sm">Ouvrir et envoyer</span></span></Link></li>)}
+          </ul>
+        </section>
+      )}
+      <section className="grid gap-3" aria-label="Gestes des joueurs">
+        <div>
+          <h2 className="m-0 text-lg">🎬 Gestes des joueurs</h2>
+          <p className="hint m-0">Choisis un rendez-vous : ✅ = déjà filmé (touche pour l'ouvrir), ＋ = à filmer (touche pour l'ajouter). {filmed} sur {players.length * DEPART_SHOTS.length}.</p>
+        </div>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Rendez-vous">
+          {GESTURE_MARKS.map((m) => <button key={m.key} type="button" role="tab" aria-selected={rdv === m.key} onClick={() => setRdv(m.key)} className={"min-h-11 rounded-full border-2 px-4 text-sm font-bold " + (rdv === m.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>{m.emoji} {m.key === "DEPART" ? "Départ (septembre)" : `${m.label} (${m.when})`}</button>)}
+        </div>
+        {players.length === 0 ? <Empty>Aucun joueur pour l'instant.</Empty> : (
+          <div className="overflow-x-auto rounded-xl border-2 border-line bg-white">
+            <table className="w-full min-w-[640px] border-collapse text-sm">
+              <caption className="sr-only">Avancement de « {g.label} » par joueur et par coup</caption>
+              <thead><tr className="bg-sand text-left"><th scope="col" className="p-2">Joueur</th>{DEPART_SHOTS.map((sh) => <th key={sh} scope="col" className="p-2 text-center">{sh}</th>)}</tr></thead>
+              <tbody>
+                {players.map((p) => (
+                  <tr key={p.id} className="border-t border-line">
+                    <th scope="row" className="p-2 text-left"><Link to={`/coach/centre/${p.id}?onglet=videos`} className="font-bold text-ink underline">{p.firstName}</Link></th>
+                    {DEPART_SHOTS.map((sh) => { const v = done(p.id, sh); return (
+                      <td key={sh} className="p-1 text-center">
+                        {v ? <Link to={`/coach/videos/${v.id}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-ok bg-[#eef8f1] px-2 py-1 font-bold text-ok no-underline" aria-label={`${p.firstName} : ${sh}, déjà filmé${v.draft ? " (brouillon)" : ""}`}>{v.draft ? "📝" : "✅"}</Link>
+                          : <Link to={`/coach/centre/${p.id}?onglet=videos&coup=${encodeURIComponent(sh)}&rdv=${rdv}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-dashed border-line px-2 py-1 font-bold text-muted no-underline hover:bg-sand" aria-label={`${p.firstName} : ${sh}, à filmer`}>＋</Link>}
+                      </td>
+                    ); })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 const waitingOf = (videos: VideoRow[]) => videos.filter((v) => !v.analysis?.sentAt && !v.fromCoach);
 
 // Onglet choisi, gardé dans l'adresse (?onglet=…) : le bouton « retour » et l'actualisation fonctionnent
@@ -138,6 +194,7 @@ export function CoachHome() {
     ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} a confirmé son cours : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
     ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
+    ...(d.youthVideos.some((v) => v.draft) ? [{ space: "Jeunes" as const, text: `📝 ${d.youthVideos.filter((v) => v.draft).length} vidéo${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} déposée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} par toi, pas encore envoyée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""}`, to: "/coach/centre?onglet=videos", cta: "Voir" }] : []),
     ...(d.reports.length ? [{ space: "Jeunes" as const, text: `🏆 ${d.reports.length} bilan${d.reports.length > 1 ? "s" : ""} de tournoi à valider`, to: "/coach/centre?onglet=bilans", cta: "Valider" }] : []),
     ...d.selfEvals.map((x) => ({ space: "Jeunes" as const, text: `${x.player.firstName} a envoyé son bulletin du trimestre ${x.ev.trimester}`, to: `/coach/centre/${x.player.id}?onglet=evaluations`, cta: "Lire" })),
     ...(d.inactive.length ? [{ space: "Jeunes" as const, text: `${d.inactive.length} dossier${d.inactive.length > 1 ? "s" : ""} inactif${d.inactive.length > 1 ? "s" : ""} depuis plus de 12 mois`, to: "/coach/centre?onglet=dossiers", cta: "Voir" }] : []),
@@ -261,7 +318,7 @@ export function Centre() {
   const [open, setOpen] = useState(false);
   const [err, setErr] = useState("");
   const [busyExample, setBusyExample] = useState(false);
-  const youthWait = waitingOf(d.youthVideos);
+  const youthWait = waitingOf(d.youthVideos), youthDrafts = d.youthVideos.filter((v) => v.draft).length;
 
   async function add(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -284,7 +341,7 @@ export function Centre() {
       />
       <Page>
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
-        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos à analyser", youthWait.length], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "🏆 Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
+        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos et gestes", youthWait.length + youthDrafts], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "🏆 Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
 
         {tab === "joueurs" && (
           <>
@@ -332,7 +389,7 @@ export function Centre() {
           </>
         )}
 
-        {tab === "videos" && <VideoQueue videos={d.youthVideos} label={(v) => v.player?.firstName ?? "Joueur"} mode="todo" />}
+        {tab === "videos" && <CentreVideos videos={d.youthVideos} players={players} />}
 
         {tab === "bulletins" && (
           <ul className="m-0 grid list-none gap-2 p-0">
