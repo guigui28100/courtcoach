@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { AudioPlayer } from "./AudioNote";
 import { api, del, get, post, put } from "../api";
@@ -131,6 +132,31 @@ export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: str
   );
 }
 
+// Image annotée : on la touche pour l'agrandir en plein écran (se ferme au toucher, par Échap ou par le bouton)
+function ZoomImage({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
+  }, [open]);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="block w-full cursor-zoom-in rounded-lg border-0 bg-transparent p-0" aria-label={`Agrandir l'image : ${alt}`}>
+        <img src={src} alt={alt} className="w-full rounded-lg" loading="lazy" />
+        <span className="mt-1 block text-left text-xs font-bold text-muted">🔍 Touche pour agrandir</span>
+      </button>
+      {open && createPortal(
+        <div role="dialog" aria-modal="true" aria-label="Image agrandie" className="fixed inset-0 z-[100] grid place-items-center overflow-auto bg-black/90 p-3" onClick={() => setOpen(false)}>
+          <img src={src} alt={alt} className="max-h-[92vh] w-[min(96vw,1100px)] rounded-lg object-contain" />
+          <button type="button" autoFocus className="btn-clay btn-sm fixed right-3 top-3" onClick={() => setOpen(false)}>✕ Fermer</button>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 export function Analysis({ v }: { v: VideoDetail }) {
   const a = v.analysis!;
   return (
@@ -138,11 +164,10 @@ export function Analysis({ v }: { v: VideoDetail }) {
       <h4 className="m-0 font-display font-bold">Analyse du coach · {a.sentAt && fmtDate(a.sentAt)}</h4>
       {a.observation && <p className="m-0 whitespace-pre-line">{a.observation}</p>}
       {a.strengths && <p className="m-0"><strong>{v.kind === "centre" ? "👍 Ce qui est bien : " : "Points forts : "}</strong>{a.strengths}</p>}
-      {a.improve && <p className="m-0"><strong>{v.kind === "centre" ? "🎯 Ce qu'on travaille : " : "À améliorer : "}</strong>{a.improve}</p>}
-      {v.linkedGoals.length > 0 && <p className="m-0"><strong>Objectifs travaillés : </strong>{v.linkedGoals.map((g) => g.title).join(" ; ")}</p>}
+      {a.improve && <p className="m-0"><strong>{v.kind === "centre" ? "🎯 Ce que tu dois travailler : " : "À améliorer : "}</strong>{a.improve}</p>}
       {v.images.length > 0 && (
         <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2" aria-label="Images annotées par le coach">
-          {v.images.map((i) => <li key={i.id} className="grid gap-1"><img src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée par le coach"} className="w-full rounded-lg" loading="lazy" /></li>)}
+          {v.images.map((i) => <li key={i.id} className="grid gap-1"><ZoomImage src={`/api/videos/${v.id}/images/${i.id}`} alt={i.note || "Image annotée par le coach"} /></li>)}
         </ul>
       )}
       {a.exercises.length > 0 && <div><strong>Exercices proposés :</strong><ul className="m-0 mt-1 pl-5">{a.exercises.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}

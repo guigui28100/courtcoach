@@ -467,7 +467,8 @@ function PlayerVideosTab({ p }: { p: Player }) {
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
-  const [shot, setShot] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const [shot, setShot] = useState<string | null>(() => { const c = params.get("coup"); return c && DEPART_SHOTS.includes(c) ? c : null; });
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}

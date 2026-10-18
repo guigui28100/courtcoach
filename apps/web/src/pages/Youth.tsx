@@ -99,6 +99,17 @@ function StartBilan({ p, base, goals, stars }: { p: Player; base: string; goals:
   );
 }
 
+// Vidéo reliée à une mission : un toucher la lance sur place (rien ne se charge avant), un second la ferme
+function MissionVideo({ v }: { v: VideoRow }) {
+  const [on, setOn] = useState(false);
+  return (
+    <div className="grid gap-2">
+      <button type="button" className="mdesc-video text-left" aria-expanded={on} onClick={() => setOn(!on)}>{on ? "✕ Fermer la vidéo" : `🎬 Voir la vidéo : ${v.title}`}</button>
+      {on && <video controls autoPlay playsInline src={`/api/videos/${v.id}/file`} className="max-h-[60vh] w-full rounded-xl bg-black" aria-label={`Vidéo : ${v.title}`} />}
+    </div>
+  );
+}
+
 function Missions({ goals, p, base, stars, videos = [] }: { goals: Goal[]; p: Player; base: string; stars: CourseStar[] | null; videos?: VideoRow[] }) {
   const t = trimesterOf();
   const here = goals.filter((g) => goalApplies(g, t)); // les missions de CE trimestre
@@ -116,7 +127,7 @@ function Missions({ goals, p, base, stars, videos = [] }: { goals: Goal[]; p: Pl
                 <div className="mdesc-extra">
                   {g.indicator && <span className="mdesc-how"><RulerIcon /><span><b>Comment on le mesure :</b> {g.indicator}</span></span>}
                   {videos.filter((v) => v.goalIds?.includes(g.id)).map((v) => (
-                    <Link key={v.id} to={{ search: `?onglet=videos&video=${v.id}` }} className="mdesc-video no-underline" aria-label={`Ouvrir la vidéo : ${v.title}`}>🎬 Voir la vidéo : {v.title}</Link>
+                    <MissionVideo key={v.id} v={v} />
                   ))}
                 </div>
                 <span className="mdesc-wm" aria-hidden="true"><AxisIcon axis={g.axis} size={120} /></span>
