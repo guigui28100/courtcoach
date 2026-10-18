@@ -34,6 +34,16 @@ export class VideosController {
     const r = await this.svc.imageFile(u, id, imageId);
     res.status(200).set({ "Content-Type": r.mime, "Content-Length": String(r.data.length), "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" }).end(r.data);
   }
+  // Modifier une image annotée après coup (coach / entraîneur de ce joueur) : nouvelle version, image d'origine et tracés
+  @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/images/:imageId") replaceImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Query("note") note: string | undefined, @Req() req: Request) { return this.svc.replaceImage(u, id, imageId, req.body, note); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/images/:imageId/source") putImageSource(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Req() req: Request) { return this.svc.putImageSource(u, id, imageId, req.body); }
+  @Roles(Role.COACH, Role.TRAINER) @Put("videos/:id/images/:imageId/edit") putImageEdit(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Body() body: Record<string, unknown>) { return this.svc.putImageEdit(u, id, imageId, body); }
+  @Roles(Role.COACH, Role.TRAINER) @Get("videos/:id/images/:imageId/source")
+  async imageSource(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string, @Res() res: Response) {
+    const r = await this.svc.imageSource(u, id, imageId);
+    res.status(200).set({ "Content-Type": r.mime, "Content-Length": String(r.data.length), "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" }).end(r.data);
+  }
+  @Roles(Role.COACH, Role.TRAINER) @Get("videos/:id/images/:imageId/edit") imageEdit(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.imageEdit(u, id, imageId); }
   @Roles(Role.COACH, Role.TRAINER) @Delete("videos/:id/images/:imageId") @HttpCode(204) removeImage(@CurrentUser() u: AuthUser, @Param("id") id: string, @Param("imageId") imageId: string) { return this.svc.removeImage(u, id, imageId); }
 
   // Commentaire audio du coach (un par vidéo)
