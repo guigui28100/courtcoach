@@ -2,7 +2,7 @@ import { PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { api, del, put } from "../api";
 import { Err } from "./ui";
 import { MarkBadge, useVideos } from "./Videos";
-import { VideoDetail } from "../types";
+import { GESTURE_MARKS, VideoDetail } from "../types";
 import { PoseOverlay } from "./PoseOverlay";
 import { AudioRecorder } from "./AudioNote";
 import { createLandmarker, defaultSkeleton, drawSkeleton, JOINT_LABEL, Joint, measures, nearestJoint, Skeleton, toSkeleton } from "./skeleton";
@@ -407,7 +407,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   return (
     <section className="card grid gap-4" aria-label="Comparer deux vidéos">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-xl">Comparer deux vidéos</h2><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
-      {(() => { const ref = options.find((o) => o.shot === v.shot && o.mark === (v.mark === "DEPART" ? "MAINTENANT" : "DEPART")); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? "🎯 Comparer avec le geste maintenant" : "📍 Comparer avec le geste de départ"}</button></div> : null; })()}
+      {(() => { const last = ["T3", "T2", "T1"].map((k) => options.find((o) => o.shot === v.shot && o.mark === k)).find(Boolean); const ref = v.mark === "DEPART" ? last : options.find((o) => o.shot === v.shot && o.mark === "DEPART"); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? `🎯 Comparer avec le dernier geste (${GESTURE_MARKS.find((g) => g.key === ref.mark)?.label})` : "📍 Comparer avec le geste de départ"}</button></div> : null; })()}
       {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer. Quand une deuxième vidéo aura été envoyée, tu pourras suivre l'évolution du geste ici.</p> : (
         <div className="field"><label htmlFor="cmp">Vidéo à comparer (de la plus ancienne à la plus récente)</label>
           <select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>
@@ -454,25 +454,24 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
   useEffect(() => { setNote(v.markNote ?? ""); }, [v.id, v.markNote]);
   if (!v.player) return null;
   const same = all.filter((o) => o.id !== v.id && o.player?.id === v.player!.id && o.shot === v.shot);
-  const oldDepart = same.find((o) => o.mark === "DEPART"), oldNow = same.find((o) => o.mark === "MAINTENANT"), history = same.filter((o) => o.mark === "ANCIEN_DEPART");
-  async function mark(m: "DEPART" | "MAINTENANT" | null) {
-    if (m === "DEPART" && oldDepart && !confirm(`« ${oldDepart.title} » est déjà le geste de départ de ${v.player!.firstName} pour ${v.shot.toLowerCase()}. Ce geste le remplace : l'ancien reste dans l'historique, que toi seul vois. Continuer ?`)) return;
+  const history = same.filter((o) => o.mark === "ANCIEN_DEPART");
+  async function mark(m: "DEPART" | "T1" | "T2" | "T3" | null) {
+    const old = m ? same.find((o) => o.mark === m) : undefined, g = GESTURE_MARKS.find((x) => x.key === m);
+    if (m && old && !confirm(`« ${old.title} » est déjà le geste « ${g?.label} » de ${v.player!.firstName} pour ${v.shot.toLowerCase()}. Ce geste le remplace${m === "DEPART" ? " : l'ancien reste dans l'historique, que toi seul vois" : " : l'ancien perd son étiquette"}. Continuer ?`)) return;
     setErr(""); setBusy(true);
     try { await put(`/videos/${v.id}/mark`, m ? { mark: m, note } : { mark: null }); setVersion((x) => x + 1); onChanged(); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   return (
     <details className="card" aria-labelledby="geste-mark" open={!!err}>
-      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste de départ / maintenant</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
+      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste : départ et fin de trimestre</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
       <div className="mt-2 grid gap-3">
-      <p className="hint m-0">{v.mark === "DEPART" ? `Cette vidéo est le geste de départ de ${v.player.firstName} (${v.shot.toLowerCase()}).` : v.mark === "MAINTENANT" ? `Cette vidéo est le geste « maintenant » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le défaut du début d'année, puis son geste d'aujourd'hui. ${v.player.firstName} ne le voit qu'une fois la vidéo envoyée.`}</p>
+      <p className="hint m-0">{GESTURE_MARKS.some((g) => g.key === v.mark) ? `Cette vidéo est le geste « ${GESTURE_MARKS.find((g) => g.key === v.mark)!.label} » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le départ (septembre), puis le geste de chaque fin de trimestre. ${v.player.firstName} voit un geste de trimestre à l'ouverture du bulletin (1er décembre, 1er mars, 1er juin), une fois la vidéo envoyée.`}</p>
       <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
         <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
       <div className="flex flex-wrap gap-2">
-        <button className="btn-clay btn-sm" disabled={busy} onClick={() => mark("DEPART")}>📍 {v.mark === "DEPART" ? "Enregistrer le mot" : "Marquer comme geste de départ"}</button>
-        <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark("MAINTENANT")}>🎯 {v.mark === "MAINTENANT" ? "Enregistrer le mot" : "Marquer comme geste maintenant"}</button>
+        {GESTURE_MARKS.map((g) => <button key={g.key} className={g.key === "DEPART" ? "btn-clay btn-sm" : "btn-outline btn-sm"} disabled={busy} onClick={() => mark(g.key)}>{g.emoji} {v.mark === g.key ? "Enregistrer le mot" : g.key === "DEPART" ? "Départ (septembre)" : `${g.label} (${g.when})`}</button>)}
         {v.mark && v.mark !== "ANCIEN_DEPART" && <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark(null)}>Retirer l'étiquette</button>}
       </div>
-      {oldNow && v.mark !== "MAINTENANT" && <p className="hint m-0">Le geste « maintenant » actuel est « {oldNow.title} » : il sera remplacé.</p>}
       {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
       <Err msg={err} />
       </div>

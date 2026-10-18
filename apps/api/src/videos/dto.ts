@@ -23,7 +23,8 @@ export class AnalysisDto {
 }
 
 // Geste de départ / geste « maintenant » : étiquette posée par le coach sur une vidéo du joueur (null = retirer)
-export const VIDEO_MARKS = ["DEPART", "MAINTENANT"];
+// DEPART = début d'année (septembre) ; T1 / T2 / T3 = geste filmé à la fin de chaque trimestre
+export const VIDEO_MARKS = ["DEPART", "T1", "T2", "T3"];
 export class VideoMarkDto {
   @ValidateIf((o) => o.mark !== null) @IsIn(VIDEO_MARKS) mark: string | null;
   @IsOptional() @IsString() @MaxLength(200) note?: string;

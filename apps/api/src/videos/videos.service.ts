@@ -11,6 +11,14 @@ const STALE_UPLOAD_MS = 24 * 3600 * 1000;
 // Les adultes (demandes de coaching) ont une place limitée, pour qu'une inscription ouverte à tous ne puisse jamais remplir le stockage du club
 const adultUserBytes = () => (Number(process.env.ADULT_QUOTA_MB) || 100) * 1024 * 1024; // par adulte
 const adultTotalBytes = () => Math.floor(quotaBytes() * ((Number(process.env.ADULT_SHARE_PERCENT) || 40) / 100)); // pour tous les adultes ensemble
+// Un geste de fin de trimestre (T1, T2, T3) n'est visible du jeune et de sa famille qu'à l'ouverture du trimestre (1er déc., 1er mars, 1er juin), comme les bulletins
+export function markVisible(mark: string | null, markedAt: Date | null, staff: boolean, now = new Date()) {
+  if (!mark || mark === "ANCIEN_DEPART") return staff && !!mark;
+  if (staff || mark === "DEPART") return true;
+  const t = Number(mark.slice(1)); if (!t || !markedAt) return false;
+  const y = markedAt.getUTCMonth() >= 8 ? markedAt.getUTCFullYear() : markedAt.getUTCFullYear() - 1; // la saison commence en septembre
+  return now >= new Date(Date.UTC(t === 1 ? y : y + 1, t === 1 ? 11 : t === 2 ? 2 : 5, 1));
+}
 const quotaBytes = () => (Number(process.env.VIDEO_QUOTA_MB) || 350) * 1024 * 1024;
 
 // Reconnaît le vrai format du fichier (et pas seulement son nom) : MP4/MOV ou WebM.
@@ -183,9 +191,9 @@ export class VideosService {
       kind: v.playerId ? "centre" : "coaching",
       fromCoach: v.fromCoach,
       draft: v.fromCoach && !v.sentToPlayerAt,
-      mark: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.mark : null,
-      markNote: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.markNote ?? null : null,
-      markedAt: v.mark && (coach || v.mark !== "ANCIEN_DEPART") ? v.markedAt : null,
+      mark: markVisible(v.mark, v.markedAt, coach) ? v.mark : null,
+      markNote: markVisible(v.mark, v.markedAt, coach) ? v.markNote ?? null : null,
+      markedAt: markVisible(v.mark, v.markedAt, coach) ? v.markedAt : null,
       player: v.player ? { id: v.player.id, firstName: v.player.firstName } : null,
       owner: coach && v.owner ? { id: v.owner.id, firstName: v.owner.firstName, lastName: v.owner.lastName ?? null, birthYear: v.owner.birthYear ?? null, level: v.owner.level ?? null, phone: v.owner.phone ?? null, email: v.owner.email } : null,
       analysis: visible ? this.analysisOut(a, coach) : null,
@@ -276,7 +284,7 @@ export class VideosService {
   }
 
   // Rattacher la vidéo à des missions du joueur (coach, ou entraîneur de ce joueur) : le joueur la retrouve en cliquant sur la mission
-  // Marque une vidéo du joueur comme « geste de départ » ou « geste maintenant » (un seul de chaque par joueur et par coup) ; null retire l'étiquette.
+  // Marque une vidéo du joueur comme « geste de départ » ou « geste de fin de trimestre » T1 / T2 / T3 (un seul de chaque par joueur et par coup) ; null retire l'étiquette.
   // Un départ remplacé n'est pas perdu : il devient ANCIEN_DEPART (historique, visible du coach seulement).
   async setMark(user: AuthUser, id: string, dto: VideoMarkDto) {
     if (!isStaff(user)) throw new ForbiddenException("Réservé au coach");
@@ -288,7 +296,7 @@ export class VideosService {
     const same = { playerId: v.playerId, shot: v.shot, id: { not: id } };
     await this.prisma.$transaction([
       ...(dto.mark === "DEPART" ? [this.prisma.video.updateMany({ where: { ...same, mark: "DEPART" }, data: { mark: "ANCIEN_DEPART" } })] : []),
-      ...(dto.mark === "MAINTENANT" ? [this.prisma.video.updateMany({ where: { ...same, mark: "MAINTENANT" }, data: { mark: null, markNote: null, markedAt: null } })] : []),
+      ...(dto.mark && dto.mark !== "DEPART" ? [this.prisma.video.updateMany({ where: { ...same, mark: dto.mark }, data: { mark: null, markNote: null, markedAt: null } })] : []),
       this.prisma.video.update({ where: { id }, data: dto.mark ? { mark: dto.mark, markNote: note || null, markedAt: new Date() } : { mark: null, markNote: null, markedAt: null } }),
     ]);
     await this.audit.log(user.id, "video-mark", "Video", id);

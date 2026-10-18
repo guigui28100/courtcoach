@@ -2,7 +2,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AudioPlayer } from "./AudioNote";
 import { api, del, get, post } from "../api";
 import { Err, Field } from "./ui";
-import { DEPART_SHOTS, fmtDate, fmtMo, MAX_VIDEO_BYTES, SHOTS, VideoDetail, VideoRow } from "../types";
+import { DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtMo, MAX_VIDEO_BYTES, SHOTS, VideoDetail, VideoRow } from "../types";
 
 export function useVideos(version = 0) {
   const [videos, setVideos] = useState<VideoRow[] | null>(null);
@@ -183,8 +183,12 @@ export function VideoList({ videos, onChanged, empty, openId }: { videos: VideoR
   );
 }
 
-// Étiquette « geste de départ » / « geste maintenant » sur une vidéo (vue du coach ; le joueur ne voit jamais un ancien départ)
-export const MarkBadge = ({ v }: { v: VideoRow }) => v.mark === "DEPART" ? <span className="badge !border-[#1d4ed8] !bg-[#dbeafe]">📍 Départ</span> : v.mark === "MAINTENANT" ? <span className="badge !border-ok !bg-[#eef8f1]">🎯 Maintenant</span> : v.mark === "ANCIEN_DEPART" ? <span className="badge">🕘 Ancien départ</span> : null;
+// Étiquette du geste sur une vidéo (vue du coach ; le joueur ne voit jamais un ancien départ)
+export const MarkBadge = ({ v }: { v: VideoRow }) => {
+  const m = GESTURE_MARKS.find((g) => g.key === v.mark);
+  if (m) return <span className={"badge " + (m.key === "DEPART" ? "!border-[#1d4ed8] !bg-[#dbeafe]" : "!border-ok !bg-[#eef8f1]")}>{m.emoji} {m.label}</span>;
+  return v.mark === "ANCIEN_DEPART" ? <span className="badge">🕘 Ancien départ</span> : null;
+};
 
 // Chez le joueur et sa famille, tout en haut de « Mes vidéos » : le geste de départ de l'année et le geste d'aujourd'hui, côte à côte.
 // Les vidéos ne se chargent qu'au clic (jamais toutes ensemble) ; seules celles qui sont déjà visibles du joueur apparaissent.
@@ -193,21 +197,23 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
   const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
   const dep = sel ? videos.find((v) => v.mark === "DEPART" && v.shot === sel) : undefined;
-  const now = sel ? videos.find((v) => v.mark === "MAINTENANT" && v.shot === sel) : undefined;
-  const cell = (v: VideoRow | undefined, kind: "dep" | "now") => (
-    <div className="grid content-start gap-2 rounded-xl border border-line bg-white p-3">
-      {v ? (
-        <>
-          <strong>{kind === "dep" ? "📍 Au départ" : "🎯 Aujourd'hui"} <span className="font-normal text-muted">· {fmtDate(v.recordedAt)}</span></strong>
-          <video controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="max-h-[50vh] w-full rounded-lg bg-black" aria-label={`${kind === "dep" ? "Geste de départ" : "Geste d'aujourd'hui"} : ${v.title}`} />
-          {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
-        </>
-      ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">🎯 Ton prochain geste viendra ici : ton coach le choisira parmi tes vidéos.</p>}
-    </div>
-  );
+  const cell = (g: (typeof GESTURE_MARKS)[number]) => {
+    const v = videos.find((x) => x.mark === g.key && x.shot === sel);
+    return (
+      <div key={g.key} className="grid content-start gap-2 rounded-xl border border-line bg-white p-3">
+        <strong>{g.emoji} {g.key === "DEPART" ? "Au départ" : g.label} <span className="font-normal text-muted">· {v ? fmtDate(v.recordedAt) : g.when}</span></strong>
+        {v ? (
+          <>
+            <video controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="max-h-[50vh] w-full rounded-lg bg-black" aria-label={`${g.label} : ${v.title}`} />
+            {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
+          </>
+        ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">{g.key === "DEPART" ? "Ton coach filmera ton geste de départ." : "Le geste de ce trimestre viendra ici."}</p>}
+      </div>
+    );
+  };
   return (
     <section className="grid gap-3 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
-      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : avant et maintenant</h3><p className="hint m-0">Je me compare à moi, pas aux autres. Touche un coup pour voir ses vidéos.</p></div>
+      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : septembre et chaque trimestre</h3><p className="hint m-0">Je me compare à moi, pas aux autres : septembre, puis chaque fin de trimestre. Touche un coup pour voir ses vidéos.</p></div>
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Mes coups">
         {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot; return (
           <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
@@ -216,7 +222,7 @@ export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
           </button>
         ); })}
       </div>
-      {sel && dep && <div className="grid gap-3 sm:grid-cols-2" role="tabpanel">{cell(dep, "dep")}{cell(now, "now")}</div>}
+      {sel && dep && <div className="grid gap-3 sm:grid-cols-2" role="tabpanel">{GESTURE_MARKS.map(cell)}</div>}
       {sel && !dep && <p role="tabpanel" className="m-0 rounded-xl border-2 border-dashed border-line bg-white/70 p-4 text-center text-muted">Ton coach filmera ton geste de départ pour ce coup.</p>}
     </section>
   );

@@ -370,7 +370,7 @@ model Video {
   seenAt      DateTime?   // date à laquelle l'élève / la famille a vu l'analyse
   deleteAfter DateTime?   // suppression automatique prévue
   fromCoach   Boolean     @default(false) // vidéo envoyée PAR le coach au joueur (démonstration, vidéo de son jeu…)
-  mark        String?     // « geste de départ » ou « geste maintenant » du joueur (par coup) ; ANCIEN_DEPART = un départ remplacé, vu du coach seulement
+  mark        String?     // « geste de départ » (DEPART) ou geste de fin de trimestre (T1, T2, T3) du joueur (par coup) ; ANCIEN_DEPART = un départ remplacé, vu du coach seulement
   markNote    String?     // ce qu'on voit sur cette vidéo (mot du coach, 200 caractères)
   markedAt    DateTime?
   sentToPlayerAt DateTime? // vidéo du coach : BROUILLON (invisible du joueur et de sa famille) tant que cette date est vide

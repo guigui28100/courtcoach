@@ -4,6 +4,7 @@ import request from "supertest";
 import { Role } from "@prisma/client";
 import { createApp } from "../src/app.factory";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { markVisible } from "../src/videos/videos.service";
 
 process.env.NODE_ENV = "test";
 process.env.WEB_ORIGIN = "http://localhost:5173";
@@ -228,7 +229,7 @@ describe("Vidéos et analyses", () => {
     expect((await A.par1.get(`/api/videos/${playerVideo}`).expect(200)).body.images.every((i: any) => i.editable === undefined)).toBe(true); // la famille ne voit même pas l'indicateur
   });
 
-  it("geste de départ / geste « maintenant » : étiquettes posées par le coach, un seul de chaque par joueur et par coup ; la famille ne voit que ce qui lui est déjà visible, jamais un ancien départ", async () => {
+  it("geste de départ / gestes de fin de trimestre (T1, T2, T3) : étiquettes posées par le coach, un seul de chaque par joueur et par coup ; la famille ne voit que ce qui lui est déjà visible, jamais un ancien départ", async () => {
     const small = fakeMp4(5000);
     const up = async (title: string, shot = "Coup droit") => (await upload(A.coach, { playerId: p1, title, shot }, small) as any).vid as string;
     const v1 = await up("Septembre"), v2 = await up("Décembre"), v3 = await up("Service de septembre", "Service");
@@ -238,6 +239,17 @@ describe("Vidéos et analyses", () => {
     await mark(A.par1, v1, { mark: "DEPART" }).expect(403);
     await mark(A.adultA, v1, { mark: "DEPART" }).expect(403);
     await mark(A.coach, v1, { mark: "FAVORI" }).expect(400);
+    await mark(A.coach, v1, { mark: "MAINTENANT" }).expect(400); // l'ancien « maintenant » n'existe plus
+    // ouverture des trimestres : T1 le 1er décembre, T2 le 1er mars, T3 le 1er juin (saison qui commence en septembre)
+    const at = (m: string, d: string, now: string) => markVisible(m, new Date(d), false, new Date(now));
+    expect(at("T1", "2026-11-20", "2026-11-30")).toBe(false);
+    expect(at("T1", "2026-11-20", "2026-12-01")).toBe(true);
+    expect(at("T2", "2027-02-20", "2027-02-28")).toBe(false);
+    expect(at("T2", "2027-02-20", "2027-03-01")).toBe(true);
+    expect(at("T3", "2027-05-20", "2027-05-31")).toBe(false);
+    expect(at("T3", "2027-05-20", "2027-06-01")).toBe(true);
+    expect(at("DEPART", "2026-09-10", "2026-09-10")).toBe(true);
+    expect(markVisible("T1", new Date("2026-11-20"), true, new Date("2026-11-21"))).toBe(true); // le coach voit tout
     await mark(A.coach, v1, { mark: "DEPART", note: "x".repeat(201) }).expect(400);
     await mark(A.coach, adultVideo, { mark: "DEPART" }).expect(400);
     await mark(A.coach, "inconnue", { mark: "DEPART" }).expect(404);
@@ -250,17 +262,19 @@ describe("Vidéos et analyses", () => {
     expect((await row(A.coach, v1)).mark).toBe("ANCIEN_DEPART");
     expect((await row(A.coach, v2)).mark).toBe("DEPART");
     // « maintenant » : un seul ; l'ancien « maintenant » perd son étiquette
-    await mark(A.coach, v1, { mark: "MAINTENANT", note: "Le coude s'ouvre" }).expect(200);
-    expect(await row(A.coach, v1)).toMatchObject({ mark: "MAINTENANT", markNote: "Le coude s'ouvre" });
-    await mark(A.coach, v2, { mark: "MAINTENANT" }).expect(200);
+    await mark(A.coach, v1, { mark: "T1", note: "Le coude s'ouvre" }).expect(200);
+    expect(await row(A.coach, v1)).toMatchObject({ mark: "T1", markNote: "Le coude s'ouvre" });
+    await mark(A.coach, v2, { mark: "T1" }).expect(200); // un seul geste T1 par coup : v1 perd l'étiquette
     expect(await row(A.coach, v1)).toMatchObject({ mark: null, markNote: null });
     await mark(A.coach, v2, { mark: "DEPART", note: "Départ de décembre" }).expect(200);
-    await mark(A.coach, v1, { mark: "MAINTENANT", note: "Le coude s'ouvre" }).expect(200);
+    await mark(A.coach, v1, { mark: "T1", note: "Le coude s'ouvre" }).expect(200);
     // brouillons : la famille ne voit rien tant que les vidéos ne lui sont pas envoyées
     expect(await row(A.par1, v1)).toBeUndefined();
     await A.coach.post(`/api/videos/${v1}/send-to-player`).set(ORIGIN).expect(204);
     await A.coach.post(`/api/videos/${v2}/send-to-player`).set(ORIGIN).expect(204);
-    expect(await row(A.par1, v1)).toMatchObject({ mark: "MAINTENANT", markNote: "Le coude s'ouvre" });
+    // un geste de fin de trimestre n'apparaît chez la famille qu'à l'ouverture du trimestre (comme les bulletins)
+    expect(await row(A.par1, v1)).toMatchObject(markVisible("T1", new Date(), false) ? { mark: "T1", markNote: "Le coude s'ouvre" } : { mark: null, markNote: null });
+    expect(await row(A.coach, v1)).toMatchObject({ mark: "T1" });
     expect(await row(A.par1, v2)).toMatchObject({ mark: "DEPART", markNote: "Départ de décembre" });
     // un ancien départ n'est jamais montré à la famille, même si la vidéo lui est visible
     await mark(A.coach, v1, { mark: "DEPART", note: "Encore un départ" }).expect(200); // v2 devient ancien départ

@@ -126,10 +126,17 @@ export interface AnalysisOut { authorId?: string | null; authorName?: string | n
 export interface VideoRow {
   id: string; title: string; shot: string; question: string; status: "WAITING" | "ANALYSED" | "REFERENCE" | "FOLLOW_UP"; sizeBytes: number; recordedAt: string; deleteAfter: string | null; seenAt: string | null;
   kind: "coaching" | "centre"; fromCoach: boolean; draft?: boolean; images: { id: string; note: string; editable?: boolean }[]; audio: { seconds: number } | null; goalIds?: string[]; player: { id: string; firstName: string } | null; owner: (AdultInfo & { id: string; email: string }) | null; analysis: AnalysisOut | null; messageCount: number;
-  mark?: "DEPART" | "MAINTENANT" | "ANCIEN_DEPART" | null; markNote?: string | null; markedAt?: string | null; // geste de départ / geste « maintenant » du joueur (marqué par le coach)
+  mark?: "DEPART" | "T1" | "T2" | "T3" | "ANCIEN_DEPART" | null; markNote?: string | null; markedAt?: string | null; // geste de départ / geste « maintenant » du joueur (marqué par le coach)
 }
 export interface VideoMessage { id: string; text: string; createdAt: string; fromCoach: boolean; mine: boolean; }
 export interface VideoDetail extends VideoRow { messages: VideoMessage[]; goals: { id: string; axis: string; title: string; season: string }[]; linkedGoals: { id: string; axis: string; title: string }[]; }
+// Les rendez-vous d'un geste : le départ (septembre) puis la fin de chaque trimestre
+export const GESTURE_MARKS = [
+  { key: "DEPART", emoji: "📍", label: "Départ", when: "septembre" },
+  { key: "T1", emoji: "🎯", label: "Fin T1", when: "décembre" },
+  { key: "T2", emoji: "🎯", label: "Fin T2", when: "mars" },
+  { key: "T3", emoji: "🎯", label: "Fin T3", when: "juin" },
+] as const;
 export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
 export const fmtMo = (b: number) => `${(b / 1024 / 1024).toFixed(b < 10 * 1024 * 1024 ? 1 : 0).replace(".", ",")} Mo`;
 
