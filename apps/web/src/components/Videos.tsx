@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AudioPlayer } from "./AudioNote";
-import { api, del, get, post } from "../api";
+import { api, del, get, post, put } from "../api";
 import { Err, Field } from "./ui";
 import { DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtMo, MAX_VIDEO_BYTES, SHOTS, VideoDetail, VideoRow } from "../types";
 
@@ -11,7 +11,7 @@ export function useVideos(version = 0) {
 }
 
 // Envoi d'une vidéo, morceau par morceau (2 Mo), avec barre de progression.
-export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string }) {
+export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label }: { playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string; shot?: string; mark?: string; label?: string }) {
   const [err, setErr] = useState("");
   const [pct, setPct] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -38,6 +38,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
         setPct(Math.round(((i + 1) / c.chunkCount) * 100));
       }
       await post(`/videos/${c.id}/complete`);
+      if (mark) await put(`/videos/${c.id}/mark`, { mark, note: "" }); // dépôt depuis « Mon geste » : la vidéo est marquée tout de suite
       form.reset(); setOpen(false); onDone(c.id);
     } catch (x) { setErr((x as Error).message); }
     setPct(null);
@@ -45,7 +46,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
 
   return (
     <div className="grid gap-3">
-      <button type="button" className="btn-clay self-start" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Masquer le formulaire" : toPlayer ? `🎬 Envoyer une vidéo à ${toPlayer}` : "+ Envoyer une vidéo"}</button>
+      <button type="button" className="btn-clay self-start" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Masquer le formulaire" : label ?? (toPlayer ? `🎬 Envoyer une vidéo à ${toPlayer}` : "+ Envoyer une vidéo")}</button>
       {open && (
         <form onSubmit={send} className="grid gap-4" noValidate>
           {toPlayer ? (
@@ -55,7 +56,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer }: { playerId?: st
           )}
           <div className={"grid gap-4 " + (toPlayer ? "" : "sm:grid-cols-2")}>
             {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
-            <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>
+            {shot ? <input type="hidden" name="shot" value={shot} /> : <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>}
           </div>
           <Field label={toPlayer ? `Ton message pour ${toPlayer} (facultatif)` : "Une question pour le coach ? (facultatif)"} id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>
           <Field label="Fichier vidéo (MP4, MOV ou WebM)" id="v-file"><input id="v-file" ref={file} type="file" accept="video/mp4,video/quicktime,video/webm" className="input !py-2.5" /></Field>
