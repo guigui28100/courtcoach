@@ -273,7 +273,6 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
         )}
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
-        <div className="field"><label htmlFor="cap-note">Commentaire sur cette image (facultatif)</label><input id="cap-note" className="input" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude est trop bas à l'impact" enterKeyHint="done" /></div>
         {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
         <Err msg={err} />
         <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : initial ? "Enregistrer les modifications" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
@@ -465,9 +464,7 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
     <details className="card" aria-labelledby="geste-mark" open={!!err}>
       <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste : départ et fin de trimestre</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
       <div className="mt-2 grid gap-3">
-      <p className="hint m-0">{GESTURE_MARKS.some((g) => g.key === v.mark) ? `Cette vidéo est le geste « ${GESTURE_MARKS.find((g) => g.key === v.mark)!.label} » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le départ (septembre), puis le geste de chaque fin de trimestre. ${v.player.firstName} voit un geste de trimestre à l'ouverture du bulletin (1er décembre, 1er mars, 1er juin), une fois la vidéo envoyée.`}</p>
-      <div className="field"><label htmlFor="mk-note">Ce qu'on voit sur cette vidéo ({v.player.firstName} le lira)</label>
-        <input id="mk-note" className="input" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Le coude reste collé au corps au moment de frapper" /></div>
+      <p className="hint m-0">{GESTURE_MARKS.some((g) => g.key === v.mark) ? `Cette vidéo est le geste « ${GESTURE_MARKS.find((g) => g.key === v.mark)!.label} » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le départ (septembre), puis le geste de chaque fin de trimestre. Ce que tu écris pour ${v.player.firstName} se met dans l'analyse, à droite.`}</p>
       <div className="flex flex-wrap gap-2">
         {GESTURE_MARKS.map((g) => <button key={g.key} className={g.key === "DEPART" ? "btn-clay btn-sm" : "btn-outline btn-sm"} disabled={busy} onClick={() => mark(g.key)}>{g.emoji} {v.mark === g.key ? "Enregistrer le mot" : g.key === "DEPART" ? "Départ (septembre)" : `${g.label} (${g.when})`}</button>)}
         {v.mark && v.mark !== "ANCIEN_DEPART" && <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark(null)}>Retirer l'étiquette</button>}
@@ -568,7 +565,6 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
             {v.images.map((i) => (
               <li key={i.id} className="grid gap-1 rounded-xl border border-line bg-white p-2">
                 <img src={`/api/videos/${v.id}/images/${i.id}?r=${rev}`} alt={i.note || "Image annotée"} className="w-full rounded-lg" loading="lazy" />
-                {i.note && <p className="m-0 text-sm">{i.note}</p>}
                 <div className="flex flex-wrap gap-2">
                   {i.editable
                     ? <button className="btn-outline btn-sm" disabled={!!editing || !!frame} onClick={() => void openEdit(i.id, i.note)}>✏️ Modifier</button>

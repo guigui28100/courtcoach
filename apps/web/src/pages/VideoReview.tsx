@@ -122,7 +122,7 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
       <h2 id="vr-simple" className="m-0 text-xl">Mon analyse {v.analysis?.authorName && <AuthorBadge a={v.analysis} prefix="Rédigée par" />} {sent ? <span className="badge ml-2 !border-ok !text-ok">Envoyée</span> : <span className="badge ml-2">Brouillon</span>}</h2>
       <Field label="👍 Ce qui est bien" id="vr-bien" hint="Une phrase, simple et encourageante."><textarea id="vr-bien" className="input min-h-20" maxLength={2000} value={bien} onChange={(e) => setBien(e.target.value)} placeholder="Ex. : Belle rotation d'épaules sur ton coup droit !" /></Field>
       <Field label="🎯 Ce qu'on travaille" id="vr-trav" hint="Une phrase : le point sur lequel on se concentre."><textarea id="vr-trav" className="input min-h-20" maxLength={2000} value={travaille} onChange={(e) => setTravaille(e.target.value)} placeholder="Ex. : Lancer la balle un peu plus haut au service." /></Field>
-      <Field label={`💬 Un mot pour ${name} (facultatif)`} id="vr-mot"><textarea id="vr-mot" className="input" maxLength={3000} value={mot} onChange={(e) => setMot(e.target.value)} placeholder="Un encouragement, un conseil en plus…" /></Field>
+      {mot.trim() && <Field label={`💬 Ancien mot pour ${name}`} id="vr-mot" hint="Écrit avant : il reste visible. Tu peux le vider."><textarea id="vr-mot" className="input" maxLength={3000} value={mot} onChange={(e) => setMot(e.target.value)} /></Field>}
       <fieldset className="field"><legend>🚀 Relier à une mission</legend>
         <p className="hint m-0">{name} verra un bouton « 🎬 Voir la vidéo » sur la mission, dans « Mes missions ». C'est enregistré tout de suite.</p>
         {v.goals.length === 0 && <p className="hint m-0">Aucune mission pour ce joueur : crée-en une dans « Définir les objectifs de travail ».</p>}
@@ -131,20 +131,6 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
           return <button key={g.id} type="button" aria-pressed={on} onClick={() => toggleGoal(g.id, !on)} className={"min-h-11 rounded-full border-2 px-4 text-left text-sm font-bold " + (on ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{on ? "✔ " : ""}{ax?.label} · {g.title}</button>;
         })}</div>
       </fieldset>
-      <details>
-      <summary className="mb-2 cursor-pointer font-bold">👀 Voir ce que {name} va voir</summary>
-      <div className="grid gap-2 rounded-2xl p-4 text-white" style={{ background: "linear-gradient(160deg,#4338ca,#3730a3)" }} aria-label={`Aperçu de ce que ${name} va voir`}>
-        <div className="grid gap-2 rounded-xl border-2 border-white/35 bg-white/15 p-3">
-          <p className="m-0 font-bold">🎓 Analyse de ton coach</p>
-          <p className="m-0">{bien.trim() ? <>👍 <strong>Ce qui est bien :</strong> {bien}</> : <span className="text-white/60">👍 Ce qui est bien : à écrire…</span>}</p>
-          <p className="m-0">{travaille.trim() ? <>🎯 <strong>Ce qu'on travaille :</strong> {travaille}</> : <span className="text-white/60">🎯 Ce qu'on travaille : à écrire…</span>}</p>
-          {mot.trim() && <p className="m-0">💬 {mot}</p>}
-          {linked.length > 0 && <p className="m-0">🚀 Mission : {linked.map((g) => g.title).join(" ; ")}</p>}
-          {v.audio && <p className="m-0">🎙️ La voix de ton coach ({v.audio.seconds} s)</p>}
-          {v.images.length > 0 && <p className="m-0">🖼️ {v.images.length} image{v.images.length > 1 ? "s" : ""} annotée{v.images.length > 1 ? "s" : ""}</p>}
-        </div>
-      </div>
-      </details>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
         <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `📤 Envoyer à ${name}`}</button>
