@@ -189,36 +189,33 @@ export const MarkBadge = ({ v }: { v: VideoRow }) => v.mark === "DEPART" ? <span
 // Chez le joueur et sa famille, tout en haut de « Mes vidéos » : le geste de départ de l'année et le geste d'aujourd'hui, côte à côte.
 // Les vidéos ne se chargent qu'au clic (jamais toutes ensemble) ; seules celles qui sont déjà visibles du joueur apparaissent.
 export function GestureBeforeAfter({ videos }: { videos: VideoRow[] }) {
-  const [open, setOpen] = useState<{ shot: string; which: "dep" | "now" | "both" } | null>(null);
+  const [opened, setOpened] = useState<string[]>([]); // rien n'est ouvert tant que le jeune ne touche pas un coup
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
   const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
+  const cell = (v: VideoRow | undefined, kind: "dep" | "now") => (
+    <div className="grid content-start gap-2 rounded-xl border border-line bg-white p-3">
+      {v ? (
+        <>
+          <strong>{kind === "dep" ? "📍 Au départ" : "🎯 Aujourd'hui"} <span className="font-normal text-muted">· {fmtDate(v.recordedAt)}</span></strong>
+          <video controls playsInline preload="metadata" src={`/api/videos/${v.id}/file`} className="max-h-[50vh] w-full rounded-lg bg-black" aria-label={`${kind === "dep" ? "Geste de départ" : "Geste d'aujourd'hui"} : ${v.title}`} />
+          {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
+        </>
+      ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">🎯 Ton prochain geste viendra ici : ton coach le choisira parmi tes vidéos.</p>}
+    </div>
+  );
   return (
-    <section className="grid gap-4 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
-      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : avant et maintenant</h3><p className="hint m-0">Je me compare à moi, pas aux autres. Touche « Regarder » pour voir la vidéo.</p></div>
+    <section className="grid gap-3 rounded-2xl border-2 border-line bg-sand/60 p-4" aria-labelledby="geste-av-ap">
+      <div><h3 id="geste-av-ap" className="m-0 text-xl">🎬 Mon geste : avant et maintenant</h3><p className="hint m-0">Je me compare à moi, pas aux autres. Touche un coup pour voir ses vidéos.</p></div>
       {slots.map((shot) => {
         const dep = videos.find((v) => v.mark === "DEPART" && v.shot === shot);
         if (!dep) return <p key={shot} className="m-0 flex flex-wrap items-center gap-2 rounded-xl border-2 border-dashed border-line bg-white/70 p-3"><strong className="font-display">{shot}</strong><span className="text-muted">· ton coach filmera ton geste de départ</span></p>;
         const now = videos.find((v) => v.mark === "MAINTENANT" && v.shot === shot);
-        const shown = open?.shot === shot ? open.which : null;
-        const cell = (v: VideoRow | undefined, kind: "dep" | "now") => (
-          <div className="grid content-start gap-2 rounded-xl border border-line bg-white p-3">
-            {v ? (
-              <>
-                <strong>{kind === "dep" ? "📍 Au départ" : "🎯 Aujourd'hui"} <span className="font-normal text-muted">· {fmtDate(v.recordedAt)}</span></strong>
-                {(shown === kind || shown === "both")
-                  ? <video controls playsInline autoPlay preload="none" src={`/api/videos/${v.id}/file`} className="max-h-[50vh] w-full rounded-lg bg-black" aria-label={`${kind === "dep" ? "Geste de départ" : "Geste d'aujourd'hui"} : ${v.title}`} />
-                  : <button className="btn-outline btn-sm self-start" onClick={() => setOpen({ shot, which: kind })}>▶ Regarder</button>}
-                {v.markNote && <p className="m-0 rounded-lg bg-sand p-2 text-sm">🎓 <strong>Ton coach :</strong> « {v.markNote} »</p>}
-              </>
-            ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">🎯 Ton prochain geste viendra ici : ton coach le choisira parmi tes vidéos.</p>}
-          </div>
-        );
+        const on = opened.includes(shot);
         return (
-          <div key={dep.id} className="grid gap-2">
-            <h4 className="m-0 font-display font-bold">{shot}</h4>
-            <div className="grid gap-3 sm:grid-cols-2">{cell(dep, "dep")}{cell(now, "now")}</div>
-            {now && <div><button className="btn-clay btn-sm" onClick={() => setOpen(shown === "both" ? null : { shot, which: "both" })}>{shown === "both" ? "Fermer les deux vidéos" : "🎞️ Voir les deux vidéos"}</button></div>}
-          </div>
+          <details key={shot} open={on} onToggle={(e) => { const o = (e.currentTarget as HTMLDetailsElement).open; setOpened((l) => (o ? (l.includes(shot) ? l : [...l, shot]) : l.filter((x) => x !== shot))); }} className="rounded-xl border-2 border-line bg-white p-3">
+            <summary className="cursor-pointer font-display font-bold">{shot} <span className="font-sans text-sm font-normal text-muted">· 📍 départ{now ? " · 🎯 aujourd'hui" : ""}</span></summary>
+            {on && <div className="mt-3 grid gap-3 sm:grid-cols-2">{cell(dep, "dep")}{cell(now, "now")}</div>}
+          </details>
         );
       })}
     </section>
