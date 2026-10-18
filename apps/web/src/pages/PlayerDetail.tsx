@@ -487,7 +487,12 @@ function PlayerVideosTab({ p }: { p: Player }) {
             {GESTURE_MARKS.map((g) => { const v = videos.find((x) => x.mark === g.key && x.shot === shot); return (
               <div key={g.key} className="grid content-start gap-2 rounded-xl border border-line bg-sand/40 p-3">
                 <strong>{g.emoji} {g.key === "DEPART" ? "Départ" : g.label} <span className="font-normal text-muted">· {g.when}</span></strong>
-                {v ? <Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">{v.title} · {fmtDate(v.recordedAt)} → ouvrir dans le studio</Link>
+                {v ? <>
+                  <Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">{v.title} · {fmtDate(v.recordedAt)} → ouvrir dans le studio</Link>
+                  {v.draft
+                    ? <div className="grid gap-1"><VideoBadge v={v} forCoach /><button type="button" className="btn-clay btn-sm self-start" onClick={async () => { await post(`/videos/${v.id}/send-to-player`); setVersion((x) => x + 1); }}>📤 Envoyer à {p.firstName}</button></div>
+                    : <span className="badge self-start !border-ok !text-ok">✅ Visible par {p.firstName}{g.key !== "DEPART" ? " à l'ouverture du trimestre" : ""}</span>}
+                </>
                   : imageOk ? <VideoUpload playerId={p.id} toPlayer={p.firstName} shot={shot} mark={g.key} label={`＋ Ajouter la vidéo ${g.key === "DEPART" ? "de départ" : g.label}`} onDone={(id) => { setVersion((x) => x + 1); if (id) nav(`/coach/videos/${id}`); }} />
                   : <p className="hint m-0">Accord « droit à l'image » manquant.</p>}
               </div>
