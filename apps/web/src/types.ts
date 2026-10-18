@@ -299,4 +299,4 @@ export const fmtPeriod = (a: string, b: string) => (a === b ? fmtDay(a) : `${new
 
 // Menus déroulants des renseignements (coach et parents)
 export const HEIGHTS = Array.from({ length: 111 }, (_, i) => String(100 + i)); // 100 à 210 cm
-export const TRAINING_VOLUMES = ["Moins d'1 h par semaine", "1 h par semaine", "2 h par semaine", "3 h par semaine", "4 h par semaine", "5 h par semaine", "6 h par semaine", "7 h par semaine", "8 h par semaine", "9 h par semaine", "10 h par semaine ou plus"];
+export const TRAINING_VOLUMES = ["1 cours par semaine", "2 cours par semaine", "3 cours par semaine", "4 cours par semaine"];
