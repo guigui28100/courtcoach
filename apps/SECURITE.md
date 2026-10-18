@@ -35,7 +35,7 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 2. **Activer la double authentification du coach** sur CourtCoach (menu Sécurité), ranger les 8 codes de secours sur papier, puis ajouter `REQUIRE_STAFF_2FA=true` dans Vercel (projet courtcoach-api) et redéployer.
 3. **GitHub** : protéger la branche `main` (Settings → Branches : « Require a pull request before merging »), et n'inviter personne d'autre sans réfléchir.
 4. **Vercel** : marquer les variables `JWT_SECRET`, `DATABASE_URL`, `CRON_SECRET`, `TOTP_KEY` comme « Sensitive » ; ne jamais les copier dans un message, un e-mail ou une capture d'écran.
-5. **Changer `JWT_SECRET` et `CRON_SECRET` une fois par an** (cela déconnecte tout le monde une fois : c'est normal). **Ne jamais changer `TOTP_KEY`** : cela casserait la double authentification déjà activée. Supprimer `SETUP_TOKEN` de Vercel une fois le compte coach créé.
+5. **Ajouter `TOTP_KEY`** (longue phrase secrète au hasard, jamais copiée dans un message), puis **changer `JWT_SECRET` et `CRON_SECRET` une fois par an** (cela déconnecte tout le monde une fois : c'est normal). **Ne jamais changer `TOTP_KEY`** : cela casserait la double authentification déjà activée (si tu dois changer `JWT_SECRET` sans avoir `TOTP_KEY`, mets l'ancienne valeur dans `JWT_SECRET_OLD` le temps qu'un code valide soit saisi). Supprimer `SETUP_TOKEN` de Vercel une fois le compte coach créé.
 6. **Neon** : vérifier que les sauvegardes sont actives et que la base est en Europe ; ne pas partager l'adresse de la base.
 7. **Une fois par trimestre** : relire le journal de connexions (page Sécurité) et lancer `npm audit` dans `apps/api` et `apps/web` (je peux le faire pour toi).
 8. **Ordinateur et téléphone** : mises à jour faites, verrouillage de l'écran, pas de session coach ouverte sur un appareil prêté.
@@ -75,3 +75,9 @@ Ce document résume ce qui a été contrôlé, ce qui a été corrigé, et ce qu
 
 ## Vidéos (13/10/2026)
 - Alerte `video-bulk-view` au journal (15 vidéos différentes en 10 min) et limite de 300 lectures/minute sur le fichier. À surveiller dans le journal du coach.
+
+## Renforcements du 18 octobre 2026 (troisième passage)
+- **Place des adultes limitée** : une inscription « adulte » est ouverte à tous ; pour qu'elle ne puisse jamais remplir le stockage du club, chaque adulte a 100 Mo (réglable : `ADULT_QUOTA_MB`) et tous les adultes ensemble 40 % du stockage (`ADULT_SHARE_PERCENT`). Le coach et les jeunes du Centre gardent leur place. Testé dans `hardening.e2e-spec.ts`.
+- **Inscriptions limitées dans la base** : au plus 20 nouveaux comptes adultes par heure pour tout le site (réglable : `SIGNUP_PER_HOUR`). Cette limite vaut pour tous les serveurs Vercel à la fois (contrairement à la limite « par adresse », comptée serveur par serveur).
+- **Clé de la double authentification** : elle peut avoir sa propre clé `TOTP_KEY`. L'ancien réglage (clé liée à `JWT_SECRET`) continue de marcher, et la clé est rechiffrée toute seule à la prochaine connexion. Pendant un changement de `JWT_SECRET`, `JWT_SECRET_OLD` permet de rouvrir l'ancienne clé. Tant que `TOTP_KEY` n'existe pas, la page « Sécurité » du coach affiche un avertissement jaune avec la marche à suivre.
+- Tests : 141 verts.

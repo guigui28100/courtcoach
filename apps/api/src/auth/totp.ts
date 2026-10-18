@@ -36,15 +36,26 @@ export function verifyCode(secret: string, code: string, now = Date.now()): numb
 export const otpauthUrl = (secret: string, account: string) => `otpauth://totp/CourtCoach:${encodeURIComponent(account)}?secret=${secret}&issuer=CourtCoach&algorithm=SHA1&digits=6&period=30`;
 
 // La clé du coach est chiffrée dans la base (AES-256-GCM) : une copie de la base seule ne donne pas les codes.
-const key = () => createHash("sha256").update("totp|" + (process.env.TOTP_KEY || process.env.JWT_SECRET || "")).digest();
+// Clés essayées dans l'ordre : TOTP_KEY (clé dédiée, la seule utilisée pour chiffrer), puis JWT_SECRET (ancien réglage), puis JWT_SECRET_OLD (à mettre le temps de changer JWT_SECRET).
+// Ainsi, régler TOTP_KEY ou changer JWT_SECRET ne casse jamais une double authentification déjà activée : au prochain code valide, la clé est rechiffrée avec la bonne clé.
+const keyOf = (s: string) => createHash("sha256").update("totp|" + s).digest();
+const keys = () => [process.env.TOTP_KEY, process.env.JWT_SECRET, process.env.JWT_SECRET_OLD].filter((x): x is string => !!x).map(keyOf);
+const key = () => keys()[0] ?? keyOf("");
+export const totpKeyIsDedicated = () => !!process.env.TOTP_KEY;
 export function seal(plain: string) {
   const iv = randomBytes(12), c = createCipheriv("aes-256-gcm", key(), iv);
   const enc = Buffer.concat([c.update(plain, "utf8"), c.final()]);
   return [iv, c.getAuthTag(), enc].map((b) => b.toString("base64")).join(".");
 }
-export function unseal(sealed: string) {
+// Déchiffre ; « old » vaut vrai si une ancienne clé a servi (il faut alors rechiffrer avec la clé actuelle)
+export function unsealWithKey(sealed: string): { plain: string; old: boolean } {
   const [iv, tag, enc] = sealed.split(".").map((x) => Buffer.from(x, "base64"));
-  const d = createDecipheriv("aes-256-gcm", key(), iv); d.setAuthTag(tag);
-  return Buffer.concat([d.update(enc), d.final()]).toString("utf8");
+  const all = keys(); if (!all.length) all.push(keyOf(""));
+  let last: unknown = new Error("clé introuvable");
+  for (let i = 0; i < all.length; i++) {
+    try { const d = createDecipheriv("aes-256-gcm", all[i], iv); d.setAuthTag(tag); return { plain: Buffer.concat([d.update(enc), d.final()]).toString("utf8"), old: i > 0 }; } catch (e) { last = e; }
+  }
+  throw last;
 }
+export const unseal = (sealed: string) => unsealWithKey(sealed).plain;
 export const newRecoveryCodes = () => Array.from({ length: 8 }, () => { const r = base32(randomBytes(7)).slice(0, 10).toLowerCase(); return `${r.slice(0, 5)}-${r.slice(5)}`; });

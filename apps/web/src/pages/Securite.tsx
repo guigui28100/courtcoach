@@ -30,6 +30,13 @@ export default function Securite() {
     <>
       <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : "Espace coach"} title="Sécurité de mon compte">{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
       <Page>
+        {me?.role === "COACH" && me.totpKeyShared && (
+          <section className="grid gap-2 rounded-2xl border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-cle">
+            <h2 id="s-cle" className="m-0 text-lg">⚠️ La clé de ta double authentification n'a pas sa propre clé</h2>
+            <p className="m-0">Elle dépend du secret de connexion (<code>JWT_SECRET</code>). Si tu changes un jour ce secret, ta double authentification ne marcherait plus et tu pourrais être enfermé dehors.</p>
+            <p className="m-0"><strong>À faire une fois :</strong> dans Vercel, projet <strong>courtcoach-api</strong>, ajoute une variable <code>TOTP_KEY</code> avec une longue phrase secrète au hasard (au moins 32 caractères, jamais copiée dans un message), puis redéploie. Personne n'est déconnecté, et ta double authentification continue de marcher. Une fois qu'elle existe, ne la change plus.</p>
+          </section>
+        )}
         {storage && (
           <section className="card grid gap-2" aria-labelledby="s-place">
             <h2 id="s-place" className="m-0">Place utilisée par les vidéos</h2>
