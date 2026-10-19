@@ -175,18 +175,13 @@ function useCoachData(version = 0) {
   const videos = useVideos(version);
   const [reports, setReports] = useState<TournamentReport[]>([]);
   const [profsWaiting, setProfsWaiting] = useState(0);
+  // UNE seule demande pour tout l'accueil (avant : une dizaine, dont une par jeune)
   const load = useCallback(() => {
-    get<{ status: string }[]>("/profs/admin").then((r) => setProfsWaiting(r.filter((x) => x.status === "waiting").length)).catch(() => setProfsWaiting(0)); // professeurs à valider (coach seulement)
-    get<TournamentReport[]>("/tournament-reports/pending").then(setReports).catch(() => setReports([])); // bilans de tournoi à valider (coach seulement : sinon 403, liste vide)
-    get<Lesson[]>("/lessons").then(setLessons).catch(() => undefined);
-    get<Player[]>("/players").then(async (all0) => {
-      const ps = mine(all0, (p) => p.id);
-      setPlayers(ps);
-      const all = await Promise.all(ps.map(async (p) => (await get<SelfEvaluation[]>(`/players/${p.id}/self-evaluations`).catch(() => [])).filter((e) => !e.readAt).map((ev) => ({ player: p, ev }))));
-      setSelfEvals(all.flat());
+    get<{ players: Player[]; lessons: Lesson[]; inactive: typeof inactive; storage: typeof storage; reports: TournamentReport[]; selfEvals: { player: Player; ev: SelfEvaluation }[]; profsWaiting: number }>("/dashboard").then((d) => {
+      setPlayers(mine(d.players, (p) => p.id));
+      setLessons(d.lessons); setInactive(d.inactive); setStorage(d.storage); setReports(d.reports); setProfsWaiting(d.profsWaiting);
+      setSelfEvals(mine(d.selfEvals, (x) => x.player.id));
     }).catch(() => undefined);
-    get<typeof inactive>("/players/inactive").then(setInactive).catch(() => undefined);
-    get<{ usedBytes: number; quotaBytes: number }>("/videos/storage").then(setStorage).catch(() => undefined);
   }, [mine]);
   useEffect(load, [load, version]);
   const pending = lessons.filter((l) => l.status === "PENDING");

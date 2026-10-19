@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { COOKIE_ACCESS, passwordStamp } from "./auth.types";
+import { cachedUser } from "./user-cache";
 
 // Toute route exige une connexion, sauf celles marquées @Public().
 @Injectable()
@@ -16,7 +17,7 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException();
     try {
       const payload = await this.jwt.verifyAsync(token);
-      const user = await this.prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true, role: true, email: true, deletedAt: true, mustChangePassword: true, passwordHash: true, totpEnabled: true } });
+      const user = await cachedUser(this.prisma, payload.sub);
       if (!user || user.deletedAt) throw new UnauthorizedException();
       if (payload.pv !== passwordStamp(user.passwordHash)) throw new UnauthorizedException(); // mot de passe changé depuis : cette session n'est plus valable
       req.user = { id: user.id, role: user.role, email: user.email };

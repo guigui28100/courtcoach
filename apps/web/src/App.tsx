@@ -1,25 +1,33 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes, useParams } from "react-router-dom";
-import { BackLink } from "./components/ui";
+import { BackLink, Skeleton } from "./components/ui";
 import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
-import { AdultsPage, Centre, CoachHome } from "./pages/Coach";
-import Bulletin from "./pages/Bulletin";
-import TournamentReportPrint from "./pages/TournamentReportPrint";
-import TrainerPreview from "./pages/TrainerPreview";
-import FinDeCours from "./pages/FinDeCours";
 import ChangePassword from "./pages/ChangePassword";
 import Connexion from "./pages/Connexion";
 import Home from "./pages/Home";
 import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
-import { AdultPreview, AdultSpace } from "./pages/Member";
-import { ProfSpace } from "./pages/Prof";
-import Securite from "./pages/Securite";
-import VideoReview from "./pages/VideoReview";
-import YouthSpace from "./pages/Youth";
-import PlayerDetail from "./pages/PlayerDetail";
-import { Authorization, Privacy } from "./pages/Static";
+
+// Chaque grande page n'est téléchargée que quand on l'ouvre : le premier affichage est plus rapide
+const named = <T extends Record<string, any>>(load: () => Promise<T>, key: keyof T) => lazy(() => load().then((m) => ({ default: m[key] })));
+const CoachHome = named(() => import("./pages/Coach"), "CoachHome");
+const AdultsPage = named(() => import("./pages/Coach"), "AdultsPage");
+const Centre = named(() => import("./pages/Coach"), "Centre");
+const AdultSpace = named(() => import("./pages/Member"), "AdultSpace");
+const AdultPreview = named(() => import("./pages/Member"), "AdultPreview");
+const ProfSpace = named(() => import("./pages/Prof"), "ProfSpace");
+const Privacy = named(() => import("./pages/Static"), "Privacy");
+const Authorization = named(() => import("./pages/Static"), "Authorization");
+const Bulletin = lazy(() => import("./pages/Bulletin"));
+const TournamentReportPrint = lazy(() => import("./pages/TournamentReportPrint"));
+const TrainerPreview = lazy(() => import("./pages/TrainerPreview"));
+const FinDeCours = lazy(() => import("./pages/FinDeCours"));
+const Securite = lazy(() => import("./pages/Securite"));
+const VideoReview = lazy(() => import("./pages/VideoReview"));
+const YouthSpace = lazy(() => import("./pages/Youth"));
+const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
 
 // Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
 function Apercu() { const { id = "" } = useParams(); return <YouthSpace previewId={id} />; }
@@ -28,6 +36,7 @@ function Suivi() { return <YouthSpace />; } // un seul espace : celui de l'enfan
 export default function App() {
   return (
     <Layout>
+      <Suspense fallback={<Skeleton />}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/installation" element={<Installation />} />
@@ -55,6 +64,7 @@ export default function App() {
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />
         <Route path="*" element={<div className="grid justify-items-center gap-3 p-10 text-center"><p className="m-0 text-lg">Page introuvable.</p><BackLink fallback="/" className="btn-clay no-underline">← Retour</BackLink></div>} />
       </Routes>
+      </Suspense>
     </Layout>
   );
 }

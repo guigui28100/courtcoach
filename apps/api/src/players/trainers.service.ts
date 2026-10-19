@@ -1,3 +1,4 @@
+import { forgetUser } from "../common/user-cache";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { randomInt } from "crypto";
@@ -63,6 +64,7 @@ export class TrainersService {
       this.prisma.user.update({ where: { id }, data: { passwordHash: await hash(temporaryPassword), mustChangePassword: true, failedLogins: 0, lockedUntil: null } }),
       this.prisma.refreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
+    forgetUser(id);
     await this.audit.log(user.id, "reset-password", "User", id);
     return { email: u.email, temporaryPassword };
   }
@@ -76,6 +78,7 @@ export class TrainersService {
       this.prisma.refreshToken.deleteMany({ where: { userId: id } }),
       this.prisma.user.update({ where: { id }, data: { email: `supprime-${id}@invalid`, firstName: null, lastName: null, passwordHash: "-", totpEnabled: false, deletedAt: new Date() } }),
     ]);
+    forgetUser(id);
     await this.audit.log(user.id, "remove-trainer", "User", id);
   }
 }
