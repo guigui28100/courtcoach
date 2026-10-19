@@ -1,3 +1,4 @@
+import { offDay } from "./holidays";
 // Planning d'un professeur : ses disponibilités découpées en créneaux d'UNE HEURE, sur les 28 prochains jours, moins ce qui est déjà pris.
 export const SLOT_MINUTES = 60;
 export const NOTICE_HOURS = 12; // on ne réserve pas un cours qui commence dans moins de 12 h
@@ -29,13 +30,14 @@ export function hourlyStarts(start: string, end: string): string[] {
   return out;
 }
 
-export function buildPlanning(avail: AvailSlot[], busy: Busy[], now = nowParis()): PlanDay[] {
+export function buildPlanning(avail: AvailSlot[], busy: Busy[], now = nowParis(), skipHolidays = true): PlanDay[] {
   const days: PlanDay[] = [];
   for (let i = 0; i <= HORIZON_DAYS; i++) {
     const date = addDays(now.date, i);
     const wd = weekdayOf(date);
+    const off = skipHolidays && !!offDay(date); // le professeur ne donne pas cours pendant les vacances et jours fériés : ses créneaux « chaque semaine » ne sont pas proposés (une date précise qu'il a ajoutée l'est toujours)
     const starts = new Set<string>();
-    for (const a of avail) if ((a.weekday !== null && a.weekday === wd) || (a.date !== null && a.date === date)) hourlyStarts(a.start, a.end).forEach((s) => starts.add(s));
+    for (const a of avail) if ((a.weekday !== null && a.weekday === wd && !off) || (a.date !== null && a.date === date)) hourlyStarts(a.start, a.end).forEach((s) => starts.add(s));
     const slots = [...starts].sort()
       .filter((s) => i * 1440 + toMin(s) - now.minutes >= NOTICE_HOURS * 60)
       .map((s) => ({ time: s, end: fromMin(toMin(s) + SLOT_MINUTES), free: !busy.some((b) => b.date === date && overlaps(b.time, s)) }));
@@ -45,7 +47,7 @@ export function buildPlanning(avail: AvailSlot[], busy: Busy[], now = nowParis()
 }
 
 // Un cours (date + heure de début) tombe-t-il encore dans les disponibilités ? (sert à prévenir quand le professeur les change)
-export function coversSlot(avail: AvailSlot[], date: string, time: string): boolean {
-  const wd = weekdayOf(date);
-  return avail.some((a) => ((a.weekday !== null && a.weekday === wd) || (a.date !== null && a.date === date)) && hourlyStarts(a.start, a.end).includes(time));
+export function coversSlot(avail: AvailSlot[], date: string, time: string, skipHolidays = true): boolean {
+  const wd = weekdayOf(date); const off = skipHolidays && !!offDay(date);
+  return avail.some((a) => ((a.weekday !== null && a.weekday === wd && !off) || (a.date !== null && a.date === date)) && hourlyStarts(a.start, a.end).includes(time));
 }

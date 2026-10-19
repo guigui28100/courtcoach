@@ -1,13 +1,7 @@
-// Copie de apps/api/src/profs/series.ts (le serveur recalcule tout : ce fichier sert seulement à montrer le nombre de cours avant de réserver).
+// Copie de apps/api/src/profs/holidays.ts et series.ts (le serveur recalcule tout : ce fichier sert seulement à montrer le nombre de cours avant de réserver).
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
 const addDays = (d: string, n: number) => new Date(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) + n * 86_400_000).toISOString().slice(0, 10);
-
-// Un créneau pris « à l'année » : chaque semaine, à la même heure, jusqu'à la fin de la saison (30 juin).
-export const seasonEnd = (from: string) => {
-  const y = Number(from.slice(0, 4));
-  return from <= `${y}-06-30` ? `${y}-06-30` : `${y + 1}-06-30`;
-};
 
 // Jours fériés français (fixes + Pâques, Ascension, Pentecôte)
 export function publicHolidays(year: number): Map<string, string> {
@@ -21,15 +15,26 @@ export function publicHolidays(year: number): Map<string, string> {
   return out;
 }
 
+// Phrase si ce jour est en vacances scolaires (zone C) ou férié, sinon undefined
+export function offDay(date: string): string | undefined {
+  const vac = HOLIDAYS_ZONE_C.find((x) => date >= x.from && date <= x.to);
+  if (vac) return `vacances scolaires (${vac.name})`;
+  const fer = publicHolidays(Number(date.slice(0, 4))).get(date);
+  return fer ? `jour férié (${fer})` : undefined;
+}
+
+
+// Un créneau pris « à l'année » : chaque semaine, à la même heure, jusqu'à la fin de la saison (30 juin).
+export const seasonEnd = (from: string) => {
+  const y = Number(from.slice(0, 4));
+  return from <= `${y}-06-30` ? `${y}-06-30` : `${y + 1}-06-30`;
+};
+
 export interface SeriesDate { date: string; skip?: string }
 
-// Toutes les semaines à partir de `start` (comprise) jusqu'au 30 juin : les vacances scolaires (zone C) et les jours fériés sont sautés
-export function seriesDates(start: string): SeriesDate[] {
+// Toutes les semaines à partir de `start` (comprise) jusqu'au 30 juin. Si le professeur ne travaille pas pendant les vacances (`skipHolidays`), les vacances scolaires (zone C) et les jours fériés sont sautés.
+export function seriesDates(start: string, skipHolidays = true): SeriesDate[] {
   const end = seasonEnd(start), out: SeriesDate[] = [];
-  for (let d = start; d <= end; d = addDays(d, 7)) {
-    const vac = HOLIDAYS_ZONE_C.find((x) => d >= x.from && d <= x.to);
-    const fer = publicHolidays(Number(d.slice(0, 4))).get(d);
-    out.push({ date: d, skip: vac ? `vacances scolaires (${vac.name})` : fer ? `jour férié (${fer})` : undefined });
-  }
+  for (let d = start; d <= end; d = addDays(d, 7)) out.push({ date: d, skip: skipHolidays ? offDay(d) : undefined });
   return out;
 }

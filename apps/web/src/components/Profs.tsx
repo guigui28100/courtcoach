@@ -34,24 +34,60 @@ export function ClayHero({ title, text, step }: { title: string; text: string; s
 
 const dayOfIso = (iso: string) => (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
 
-// Carte d'un professeur : présentation rapide, jours de disponibilité, tarif, bouton pour choisir
+const shortSlot = (x: { date: string; time: string }) => {
+  const d = new Date(`${x.date}T12:00:00`); const w = d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
+  return `${w.charAt(0).toUpperCase()}${w.slice(1)} ${d.getDate()} · ${hour(x.time)}`;
+};
+const ROWS = 8; // la carte a 8 « lignes » partagées avec ses voisines (sous-grille) : les textes sont donc à la MÊME hauteur d'une carte à l'autre
+
+// Carte d'un professeur (version « carte de joueur ») : bandeau terre battue, classements, jours disponibles en toutes lettres, prochains créneaux libres, tarif, bouton pour choisir.
+// À mettre dans une grille `.prof-grid` : chaque carte occupe 8 lignes de la grille, alignées entre les cartes.
 export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfCard; onPick?: (p: ProfCard) => void; preview?: boolean; price?: number; selected?: boolean }) {
   const name = profName(p);
   const weekly = [...new Set(p.slots.flatMap((s) => (s.weekday !== null ? [s.weekday] : [])))].sort((a, b) => a - b); // seulement les jours disponibles, en toutes lettres
   const allWeek = weekly.length === 7; // tous les jours : Lun Mar Mer Jeu Ven Sam Dim
   const dates = [...new Set(p.slots.flatMap((s) => (s.date ? [s.date] : [])))].sort();
+  const pad = "px-4";
+  const label = "m-0 text-[0.7rem] font-black uppercase tracking-[0.12em] text-muted";
   return (
-    <article className={"relative grid content-start gap-3 rounded-[1.2rem] border-2 bg-white p-4 " + (selected ? "border-clay shadow-[0_6px_0_var(--color-clay)]" : "border-line")} aria-label={`Professeur : ${name}`}>
-      {price ? <div className="absolute right-4 top-3 text-right leading-tight"><b className="font-display text-2xl font-black text-clay">{price} €</b><small className="block text-xs text-muted">{price === PRICE_MEMBER ? `${PRICE_OTHER} € non adhérent` : `${PRICE_MEMBER} € adhérent`}</small></div> : null}
-      <div className="flex items-center gap-3 pr-24">
-        <span className="rounded-full ring-[3px] ring-ball"><Avatar name={name} size={60} /></span>
-        <div><h3 className="m-0 text-xl">{name}</h3><small className="text-muted">{[p.age !== null ? `${p.age} ans` : null, p.ranking ? `classement ${p.ranking}` : null, p.bestRanking ? `meilleur ${p.bestRanking}` : null].filter(Boolean).join(" · ") || "Professeur de tennis"}</small></div>
+    <article className={"prof-card mb-4 grid min-w-0 gap-y-0 overflow-hidden rounded-[1.4rem] border-2 bg-white " + (selected ? "border-clay shadow-[0_6px_0_var(--color-clay)]" : "border-line")} style={{ gridRow: `span ${ROWS}`, gridTemplateRows: "subgrid" }} aria-label={`Professeur : ${name}`}>
+      {/* 1 · bandeau + avatar + nom + prix */}
+      <div className="relative">
+        <div className="relative h-20 overflow-hidden bg-gradient-to-br from-clay to-clay-dark" aria-hidden="true">
+          <span className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 46px),repeating-linear-gradient(0deg,#fff 0 2px,transparent 2px 46px)" }} />
+          <span className="absolute right-4 top-3 h-10 w-10 rounded-full bg-ball shadow-[0_4px_0_#a9bd1c]" />
+        </div>
+        <div className={"flex items-end justify-between gap-3 " + pad}>
+          <span className="relative z-10 -mt-10 rounded-full ring-[3px] ring-ball"><span className="block rounded-full ring-4 ring-white"><Avatar name={name} size={80} /></span></span>
+          {price ? <div className="pb-1 text-right leading-tight"><b className="font-display text-3xl font-black text-clay">{price} €</b><small className="block text-xs text-muted">la séance</small></div> : null}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2">{p.paused ? <span className="rounded-full bg-[#fff3cd] px-3 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ En pause</span> : p.slots.length ? <span className="rounded-full bg-[#dff3e8] px-3 py-0.5 text-xs font-bold text-[#1c6b42]">● Disponible</span> : <span className="rounded-full bg-sand px-3 py-0.5 text-xs font-bold">Pas de disponibilité</span>}</div>
-      {p.bio && <p className="m-0 text-sm">« {p.bio} »</p>}
-      {(weekly.length > 0 || dates.length > 0) && <div className="flex flex-wrap gap-1.5" aria-label="Jours où il est disponible"><span className="sr-only">Disponible : </span>{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-3 py-1 text-sm font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-3 py-0.5 text-sm font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}</div>}
-      {p.paused && <p className="m-0 rounded-xl bg-[#fff3cd] p-2.5 text-sm font-bold text-[#7a5a00]">⏸ {p.firstName ?? "Ce professeur"} ne prend plus de demandes pour le moment.</p>}
-      {onPick && <div><button className={selected ? "btn-clay" : "btn-outline"} disabled={p.paused} onClick={() => onPick(p)}>{selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"}`}</button>{preview && <small className="hint ml-2">(aperçu)</small>}</div>}
+      {/* 2 · nom et âge */}
+      <div className={pad + " pt-2"}><h3 className="m-0 text-xl leading-tight [overflow-wrap:anywhere]">{name}</h3><small className="text-muted">{p.age !== null ? `${p.age} ans` : "Âge non précisé"}</small></div>
+      {/* 3 · état */}
+      <div className={pad + " pt-2"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-3 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : (p.freeThisWeek ?? 0) > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-3 py-0.5 text-xs font-bold text-[#1c6b42]">● {p.freeThisWeek} créneau{(p.freeThisWeek ?? 0) > 1 ? "x" : ""} libre{(p.freeThisWeek ?? 0) > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-3 py-0.5 text-xs font-bold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
+      {/* 4 · classements */}
+      <div className={pad + " grid grid-cols-2 gap-2 pt-3"}>
+        <div className="rounded-xl bg-sand px-2 py-1.5 text-center"><b className="block font-display text-xl">{p.ranking ?? "—"}</b><small className="text-xs text-muted">classement</small></div>
+        <div className="rounded-xl bg-sand px-2 py-1.5 text-center"><b className="block font-display text-xl">{p.bestRanking ?? "—"}</b><small className="text-xs text-muted">meilleur classement</small></div>
+      </div>
+      {/* 5 · présentation (3 lignes au plus : la hauteur ne dépend plus du texte) */}
+      <div className={pad + " pt-3"}>{p.bio && <p className="m-0 line-clamp-3 text-sm italic">« {p.bio} »</p>}</div>
+      {/* 6 · jours disponibles */}
+      <div className={pad + " pt-3"}>
+        <p className={label}>Disponible le</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Jours où il est disponible">{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-3 py-1 text-sm font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-3 py-0.5 text-sm font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}{weekly.length + dates.length === 0 && <span className="text-sm text-muted">Aucune pour le moment</span>}</div>
+      </div>
+      {/* 7 · prochains créneaux libres */}
+      <div className={pad + " pt-3"}>
+        <p className={label}>Prochains créneaux libres</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">{(p.nextFree ?? []).map((x) => <span key={x.date + x.time} className="rounded-[0.65rem] border-2 border-[#b7dfc8] bg-[#e3f4ea] px-2.5 py-0.5 text-sm font-bold text-[#1c6b42]">{shortSlot(x)}</span>)}{(p.nextFree ?? []).length === 0 && <span className="text-sm text-muted">—</span>}</div>
+      </div>
+      {/* 8 · bouton */}
+      <div className={pad + " pb-4 pt-4"}>
+        {onPick ? <button className={"w-full " + (selected ? "btn-clay" : "btn-outline")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisie" : `Choisir ${p.firstName ?? "ce professeur"}`}</button> : null}
+        {preview && onPick && <small className="hint mt-1 block text-center">(aperçu)</small>}
+      </div>
     </article>
   );
 }
@@ -64,9 +100,9 @@ export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
 }
 
 // Choix du professeur (adulte) : liste, filtre par jour, tarif
-export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onNoPref: () => void; onClose: () => void }) {
+export function ProfChooser({ preview, onPick, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onClose: () => void }) {
   const { me, reload } = useAuth();
-  const [profs, setProfs] = useState<ProfCard[] | null>(preview ? EXAMPLE_PROFS : null);
+  const [profs, setProfs] = useState<ProfCard[] | null>(preview ? withExampleFree(EXAMPLE_PROFS) : null);
   const [yourPrice, setYourPrice] = useState<number>(PRICE_OTHER);
   const [pvMember, setPvMember] = useState(false); // aperçu : on peut cocher / décocher pour voir le tarif changer (rien n'est enregistré)
   const [day, setDay] = useState<number | null>(null);
@@ -95,9 +131,8 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
         {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
       </div>
       {profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
-        <div className="grid gap-4 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
+        <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
-      <p className="m-0 text-sm text-muted">Tu préfères que le coach choisisse pour toi ? <button className="font-bold text-clay underline" onClick={onNoPref}>Demander au coach directement</button></p>
     </section>
   );
 }
@@ -175,6 +210,16 @@ export function previewPlanning(slots: ProfCard["slots"]): PlanDay[] {
     if (list.length) days.push({ date: iso, slots: list });
   }
   return days;
+}
+
+// Aperçu du coach : créneaux libres calculés avec les disponibilités d'exemple
+function withExampleFree(list: ProfCard[]): ProfCard[] {
+  const limit = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  return list.map((p) => {
+    if (p.paused) return { ...p, nextFree: [], freeThisWeek: 0 };
+    const free = previewPlanning(p.slots).flatMap((d) => d.slots.filter((x) => x.free).map((x) => ({ date: d.date, time: x.time })));
+    return { ...p, nextFree: free.slice(0, 3), freeThisWeek: free.filter((x) => x.date <= limit).length };
+  });
 }
 
 const isoOf = (d: Date) => d.toISOString().slice(0, 10);

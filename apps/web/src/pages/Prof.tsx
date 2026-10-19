@@ -40,7 +40,9 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const setP = (x: ProfMe) => setResp({ ...x, optedIn: true });
   async function optIn() { if (preview) { setResp({ ...EXAMPLE_ME, optedIn: true }); setLessons(EXAMPLE_LESSONS); setParams({ onglet: "presentation" }); return; } setErr(""); try { setResp(await post<ProfMeResp>("/profs/me/optin")); loadLessons(); setParams({ onglet: "presentation" }); } catch (x) { setErr((x as Error).message); } }
   async function optOut() {
-    if (!confirm("Arrêter les cours particuliers ? Ta présentation, tes disponibilités et tes documents seront effacés, et tes demandes en cours reviendront au coach.")) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const n = (lessons ?? []).filter((l) => ["BOOKED", "PROPOSED", "ACCEPTED"].includes(l.status) && (!l.finalSlot || l.finalSlot.date >= today)).length;
+    if (!confirm(`Arrêter les cours particuliers ?\n\n• ${n > 0 ? `Tes ${n} cours à venir (séries comprises) seront ANNULÉS, les créneaux libérés et les adultes prévenus.` : "Tu n'as aucun cours à venir."}\n• Ta présentation, tes disponibilités et tes documents seront effacés : si tu recommences, il faudra tout ressaisir et le coach devra te revalider.\n\nPour une simple coupure, utilise plutôt la « Pause » (dans « Mes disponibilités »).`)) return;
     if (preview) { setResp({ optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } }); setLessons(null); return; }
     try { setResp(await del<ProfMeResp>("/profs/me")); setLessons(null); } catch (x) { setErr((x as Error).message); }
   }
@@ -80,7 +82,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
           <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Mes cours", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
             {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} />}
             {tab === "dispos" && <Availability p={p} onSaved={setP} />}
-            {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Ta fiche, tes disponibilités et tes documents sont effacés. Tes demandes en cours reviennent au coach. Tu pourras recommencer plus tard.</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
+            {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Tes cours à venir sont annulés (les adultes sont prévenus), ta fiche, tes disponibilités et tes documents sont effacés. Tu pourras recommencer plus tard, mais il faudra tout ressaisir et le coach devra te revalider. Pour une simple coupure, utilise la « Pause » dans « Mes disponibilités ».</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
             {tab === "documents" && <Documents p={p} id={me?.id ?? ""} onChanged={setP} />}
           </SideLayout>
         )}
@@ -130,6 +132,10 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
     setMsg(null);
     try { const saved = await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
+  async function setHolidays(v: boolean) {
+    setMsg(null);
+    try { onSaved(await put<ProfMe>("/profs/me", { skipHolidays: v })); setMsg({ ok: true, text: v ? "Pas de cours en vacances ni les jours fériés ✓" : "Tes créneaux sont aussi proposés pendant les vacances ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+  }
   async function pause(v: boolean) {
     setMsg(null);
     try { onSaved(await put<ProfMe>("/profs/me", { paused: v })); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
@@ -155,6 +161,10 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
       )}
       <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={save}>🔄 Actualiser mes disponibilités</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       <div className="card grid gap-1 text-sm"><strong>Ce qui se passe quand tu actualises</strong><ul className="m-0 grid gap-1 pl-5"><li>Les <strong>nouveaux créneaux</strong> sont proposés aux adultes tout de suite.</li><li>Les <strong>cours déjà réservés ne bougent pas</strong>.</li><li>Si un cours déjà réservé ne tombe plus dans tes disponibilités, on te le signale : rien n'est annulé tout seul.</li></ul></div>
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-line bg-white p-4 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
+        <input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={p.skipHolidays !== false} onChange={(e) => setHolidays(e.target.checked)} />
+        <span className="grid"><strong>🏖️ Je ne donne pas de cours pendant les vacances scolaires et les jours fériés</strong><span className="text-sm text-muted">Vacances de la zone C (Paris) et jours fériés : tes créneaux « chaque semaine » ne sont pas proposés ces jours-là. Décoche si tu donnes cours en vacances (stages…). Une date précise que tu ajoutes est toujours proposée.</span></span>
+      </label>
       <div className="card grid gap-2 border-dashed">
         <strong>⏸ Pause</strong>
         <p className="m-0 text-sm text-muted">Si tu ne veux plus recevoir de demandes pour le moment, mets-toi en pause : les adultes te voient toujours, mais ne peuvent plus te demander de cours.</p>
@@ -191,7 +201,7 @@ function Presentation({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
       <h3 className="m-0 text-lg">👀 Voici comment les adultes te voient</h3>
-      <ProfCardView p={preview} />
+      <div className="prof-grid grid max-w-sm"><ProfCardView p={preview} /></div>
     </section>
   );
 }

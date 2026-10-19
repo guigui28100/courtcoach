@@ -61,15 +61,15 @@ export class LessonsService {
 
   // « Toute l'année » : le même créneau chaque semaine jusqu'au 30 juin. Vacances scolaires et jours fériés sont sautés, ainsi que les dates où le professeur n'est pas disponible ou déjà pris : on les renvoie pour les montrer.
   private async createSeries(user: AuthUser, dto: CreateLessonDto, common: object) {
-    const slot = dto.slot!; const { slots, busy } = await this.profs.availabilityOf(dto.profId!);
+    const slot = dto.slot!; const { slots, busy, skipHolidays } = await this.profs.availabilityOf(dto.profId!);
     const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { finalSlot: true } });
     const wd = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"][(new Date(`${slot.date}T12:00:00Z`).getUTCDay() + 6) % 7];
     const h = Number(slot.time.slice(0, 2)); const seriesId = randomUUID();
     const avail = slots.map((x) => ({ weekday: x.weekday, date: x.date, start: x.start, end: x.end }));
     const rows: string[] = []; const skipped: { date: string; why: string }[] = [];
-    for (const d of seriesDates(slot.date)) {
+    for (const d of seriesDates(slot.date, skipHolidays)) {
       if (d.skip && d.date !== slot.date) { skipped.push({ date: d.date, why: d.skip }); continue; }
-      if (d.date !== slot.date && !coversSlot(avail, d.date, slot.time)) { skipped.push({ date: d.date, why: "le professeur n'est pas disponible" }); continue; }
+      if (d.date !== slot.date && !coversSlot(avail, d.date, slot.time, skipHolidays)) { skipped.push({ date: d.date, why: "le professeur n'est pas disponible" }); continue; }
       if (d.date !== slot.date && busy.some((b) => b.date === d.date && overlaps(b.time, slot.time))) { skipped.push({ date: d.date, why: "créneau déjà pris" }); continue; }
       if (mine.some((m) => { const f = m.finalSlot as { date?: string; time?: string } | null; return f?.date === d.date && !!f.time && overlaps(f.time, slot.time); })) { skipped.push({ date: d.date, why: "tu as déjà un cours à ce moment-là" }); continue; }
       rows.push(d.date);

@@ -110,6 +110,8 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(l.profs).toHaveLength(1); expect(l.profs[0]).toMatchObject({ id: profId, firstName: "Claire", lastName: "Dupuis", ranking: "15/1", bestRanking: "4/6", age: null, paused: false });
     expect(JSON.stringify(l)).not.toMatch(/exemple\.fr|documents|birthYear|1992/);
     expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50 });
+    // la carte montre les 3 prochains créneaux libres et le nombre de créneaux libres cette semaine (sans dire par qui les autres sont pris)
+    expect(Array.isArray(l.profs[0].nextFree)).toBe(true); expect(l.profs[0].nextFree.length).toBeLessThanOrEqual(3); expect(typeof l.profs[0].freeThisWeek).toBe("number");
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ showAge: true }).expect(200);
     expect((await adultList()).profs[0].age).toBe(new Date().getFullYear() - 1992);
     await A.parent.get("/api/profs").expect(403); // les familles n'y ont pas accès
@@ -150,6 +152,7 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
   });
 
   it("planning : créneaux d'une heure sur les disponibilités, réservation immédiate, jamais deux cours au même moment, annulation qui libère", async () => {
+    await A.prof.put("/api/profs/me").set(ORIGIN).send({ skipHolidays: false }).expect(200); // ce test réserve aussi pendant les vacances
     await A.prof.put("/api/profs/me/slots").set(ORIGIN).send({ slots: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: "08:00", end: "20:00" })) }).expect(200);
     const plan = async (who = "adulte") => (await A[who].get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string; slots: { time: string; end: string; free: boolean }[] }[];
     const days = await plan();
@@ -244,6 +247,18 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(seriesDates("2027-05-06")[0].skip).toMatch(/Ascension/);
   });
 
+  it("pas de cours en vacances : la case du professeur change le planning", async () => {
+    await A.prof.put("/api/profs/me/slots").set(ORIGIN).send({ slots: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: "08:00", end: "20:00" })) }).expect(200);
+    await A.prof.put("/api/profs/me").set(ORIGIN).send({ skipHolidays: true }).expect(200);
+    expect((await A.prof.get("/api/profs/me").expect(200)).body.skipHolidays).toBe(true);
+    const { offDay } = await import("../src/profs/holidays");
+    const plan = (await A.adulte.get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string }[];
+    expect(plan.some((d) => offDay(d.date))).toBe(false); // aucun jour de vacances ni férié proposé
+    await A.prof.put("/api/profs/me").set(ORIGIN).send({ skipHolidays: false }).expect(200);
+    const open = (await A.adulte.get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string }[];
+    expect(open.length).toBeGreaterThan(plan.length); // la case décochée rouvre les vacances (si une vacance tombe dans les 28 jours)
+  });
+
   it("changer un document retire la visibilité jusqu'à nouvelle validation ; pause ; carte expirée", async () => {
     await upload("prof", "DIPLOME").expect(200);
     expect((await adultList()).profs).toEqual([]);
@@ -263,6 +278,13 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.prof2.delete("/api/profs/me").set(ORIGIN).expect(200);
     expect((await A.prof2.get("/api/profs/me").expect(200)).body.optedIn).toBe(false);
     await A.prof2.get("/api/lessons").expect(403);
+    // le professeur arrête tout : ses cours à venir (confirmés ou réservés) sont annulés, les créneaux libérés, l'adulte est prévenu ; les cours passés restent
+    const future = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10), past = new Date(Date.now() - 10 * 86_400_000).toISOString().slice(0, 10);
+    const mk = (status: "ACCEPTED" | "BOOKED", date: string) => prisma.lessonRequest.create({ data: { memberId: adultId, type: "individuel", objective: "Service", profId, status, finalSlot: { date, time: "18:00" }, slotKey: `${date}T18:00` } });
+    const [lf, lb, lp] = [await mk("ACCEPTED", future), await mk("BOOKED", new Date(Date.now() + 11 * 86_400_000).toISOString().slice(0, 10)), await mk("ACCEPTED", past)];
+    await A.prof.delete("/api/profs/me").set(ORIGIN).expect(200);
+    for (const l of [lf, lb]) { const r = await prisma.lessonRequest.findUnique({ where: { id: l.id } }); expect(r).toMatchObject({ status: "REFUSED", slotKey: null }); expect(r!.coachReply).toMatch(/arrêté les cours particuliers/); expect(r!.seenByMemberAt).toBeNull(); }
+    expect(await prisma.lessonRequest.findUnique({ where: { id: lp.id } })).toMatchObject({ status: "ACCEPTED" }); // un cours passé reste
     await A.coach.delete(`/api/trainers/${profId}`).set(ORIGIN).expect(204);
     expect(await prisma.profDocument.count({ where: { userId: profId } })).toBe(0);
     expect(await prisma.profProfile.count({ where: { userId: profId } })).toBe(0);
