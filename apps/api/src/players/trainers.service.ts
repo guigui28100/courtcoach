@@ -1,3 +1,4 @@
+import { releaseProfLessons } from "../profs/bookings";
 import { forgetUser } from "../common/user-cache";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Role } from "@prisma/client";
@@ -71,6 +72,7 @@ export class TrainersService {
 
   async remove(user: AuthUser, id: string) {
     await this.trainer(id);
+    await releaseProfLessons(this.prisma, id); // ses cours à venir sont annulés et les adultes prévenus
     await this.prisma.$transaction([
       this.prisma.playerAccess.deleteMany({ where: { userId: id } }),
       this.prisma.profProfile.deleteMany({ where: { userId: id } }), // présentation, disponibilités et pièces justificatives (carte pro, diplôme, auto-entrepreneur)

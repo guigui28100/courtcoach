@@ -327,7 +327,7 @@ export const DOC_KINDS: { kind: DocKind; label: string; icon: string; help: stri
 ];
 export interface ProfDocMeta { kind: DocKind; fileName: string; mimeType?: string; sizeBytes: number; validUntil: string | null; uploadedAt: string; }
 export type ProfMeResp = { optedIn: false; prices: { member: number; other: number } } | (ProfMe & { optedIn: true });
-export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; updatedAt?: string; outsideCount?: number; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
+export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; skipHolidays?: boolean; updatedAt?: string; outsideCount?: number; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
 export interface ProfAdmin { id: string; email: string; firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approvedAt: string | null; documents: ProfDocMeta[]; slotCount: number; requests: number; }
 export interface PlanDay { date: string; slots: { time: string; end: string; free: boolean }[]; }
 export const profName = (p: { firstName: string | null; lastName?: string | null } | null | undefined) => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "Professeur";

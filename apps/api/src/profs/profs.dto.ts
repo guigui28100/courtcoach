@@ -16,6 +16,7 @@ export class ProfProfileDto {
   @IsOptional() @Transform(trim) @Matches(RANK, { message: "Classement invalide." }) bestRanking?: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(200) bio?: string;
   @IsOptional() @IsBoolean() paused?: boolean;
+  @IsOptional() @IsBoolean() skipHolidays?: boolean; // « je ne donne pas de cours pendant les vacances scolaires et les jours fériés »
 }
 
 export class SlotDto {

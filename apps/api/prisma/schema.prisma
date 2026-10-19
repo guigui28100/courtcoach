@@ -517,6 +517,7 @@ model ProfProfile {
   bestRanking String?
   bio        String   @default("")
   paused     Boolean  @default(false) // « je ne prends plus de demandes pour le moment »
+  skipHolidays Boolean @default(true) // pas de cours pendant les vacances scolaires (zone C) et les jours fériés : ses créneaux « chaque semaine » ne sont pas proposés ces jours-là
   approvedAt DateTime? // le coach a vérifié les trois documents : seulement alors le professeur est visible des adultes
   updatedAt  DateTime @updatedAt
   slots      ProfSlot[]

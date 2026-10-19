@@ -6,7 +6,7 @@ import { AuthUser } from "../common/auth.types";
 import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
 import { PRICE_MEMBER, PRICE_OTHER } from "./pricing";
-import { expireStaleBookings } from "./bookings";
+import { expireStaleBookings, releaseProfLessons } from "./bookings";
 import { buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
 
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
@@ -82,21 +82,21 @@ export class ProfsService {
   async availabilityOf(profId: string) {
     await this.assertBookable(profId);
     const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
-    return { slots: p.slots, busy: await this.busyOf(profId) };
+    return { slots: p.slots, busy: await this.busyOf(profId), skipHolidays: p.skipHolidays };
   }
 
   // Planning visible par l'adulte (et le coach) : les créneaux d'une heure, libres ou déjà pris (sans dire par qui)
   async planning(profId: string): Promise<{ days: PlanDay[] }> {
     await this.assertBookable(profId);
     const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
-    return { days: buildPlanning(p.slots, await this.busyOf(profId)) };
+    return { days: buildPlanning(p.slots, await this.busyOf(profId), undefined, p.skipHolidays) };
   }
 
   // Vérifie qu'un créneau est proposé par le professeur ET libre : 400 s'il n'est pas dans son planning, 409 s'il est déjà pris
   async assertSlotFree(profId: string, slot: { date: string; time: string }, exceptLessonId?: string) {
     await this.assertBookable(profId);
     const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
-    const hit = buildPlanning(p.slots, await this.busyOf(profId, exceptLessonId)).find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time);
+    const hit = buildPlanning(p.slots, await this.busyOf(profId, exceptLessonId), undefined, p.skipHolidays).find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time);
     if (!hit) throw new BadRequestException("Ce créneau n'est pas proposé par le professeur.");
     if (!hit.free) throw new ConflictException("Ce créneau est déjà pris. Choisis-en un autre.");
   }
@@ -115,7 +115,7 @@ export class ProfsService {
     const p = await this.profile(user.id);
     return {
       optedIn: true,
-      firstName: u.firstName, lastName: u.lastName, birthYear: p.birthYear, showAge: p.showAge, ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: p.paused,
+      firstName: u.firstName, lastName: u.lastName, birthYear: p.birthYear, showAge: p.showAge, ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: p.paused, skipHolidays: p.skipHolidays,
       status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), updatedAt: p.updatedAt, documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER },
     };
   }
@@ -131,10 +131,8 @@ export class ProfsService {
   // Arrêter : la fiche, les disponibilités et les pièces sont effacées ; les demandes en cours reviennent au coach
   async optOut(user: AuthUser) {
     await this.assertProf(user.id);
-    await this.prisma.$transaction([
-      this.prisma.profProfile.deleteMany({ where: { userId: user.id } }),
-      this.prisma.lessonRequest.updateMany({ where: { profId: user.id }, data: { profId: null } }),
-    ]);
+    await releaseProfLessons(this.prisma, user.id);
+    await this.prisma.profProfile.deleteMany({ where: { userId: user.id } });
     await this.audit.log(user.id, "prof-optout", "User", user.id);
     return this.me(user);
   }
@@ -142,7 +140,7 @@ export class ProfsService {
   async updateMe(user: AuthUser, dto: ProfProfileDto) {
     await this.assertProf(user.id);
     if (dto.lastName !== undefined) await this.prisma.user.update({ where: { id: user.id }, data: { lastName: dto.lastName || null } });
-    const data = { ...(dto.birthYear !== undefined ? { birthYear: dto.birthYear } : {}), ...(dto.showAge !== undefined ? { showAge: dto.showAge } : {}), ...(dto.ranking !== undefined ? { ranking: dto.ranking || null } : {}), ...(dto.bestRanking !== undefined ? { bestRanking: dto.bestRanking || null } : {}), ...(dto.bio !== undefined ? { bio: dto.bio } : {}), ...(dto.paused !== undefined ? { paused: dto.paused } : {}) };
+    const data = { ...(dto.birthYear !== undefined ? { birthYear: dto.birthYear } : {}), ...(dto.showAge !== undefined ? { showAge: dto.showAge } : {}), ...(dto.ranking !== undefined ? { ranking: dto.ranking || null } : {}), ...(dto.bestRanking !== undefined ? { bestRanking: dto.bestRanking || null } : {}), ...(dto.bio !== undefined ? { bio: dto.bio } : {}), ...(dto.paused !== undefined ? { paused: dto.paused } : {}), ...(dto.skipHolidays !== undefined ? { skipHolidays: dto.skipHolidays } : {}) };
     await this.prisma.profProfile.upsert({ where: { userId: user.id }, update: data, create: { userId: user.id, ...data } });
     return this.me(user);
   }
