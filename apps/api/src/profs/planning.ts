@@ -43,3 +43,9 @@ export function buildPlanning(avail: AvailSlot[], busy: Busy[], now = nowParis()
   }
   return days;
 }
+
+// Un cours (date + heure de début) tombe-t-il encore dans les disponibilités ? (sert à prévenir quand le professeur les change)
+export function coversSlot(avail: AvailSlot[], date: string, time: string): boolean {
+  const wd = weekdayOf(date);
+  return avail.some((a) => ((a.weekday !== null && a.weekday === wd) || (a.date !== null && a.date === date)) && hourlyStarts(a.start, a.end).includes(time));
+}

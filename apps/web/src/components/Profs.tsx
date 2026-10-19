@@ -33,12 +33,13 @@ export function ClayHero({ title, text, step }: { title: string; text: string; s
 }
 
 const dayOfIso = (iso: string) => (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
-const SHORT_L = ["L", "M", "M", "J", "V", "S", "D"];
 
 // Carte d'un professeur : présentation rapide, jours de disponibilité, tarif, bouton pour choisir
 export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfCard; onPick?: (p: ProfCard) => void; preview?: boolean; price?: number; selected?: boolean }) {
   const name = profName(p);
-  const days = new Set(p.slots.map((s) => s.weekday ?? (s.date ? dayOfIso(s.date) : -1)));
+  const weekly = [...new Set(p.slots.flatMap((s) => (s.weekday !== null ? [s.weekday] : [])))].sort((a, b) => a - b); // seulement les jours disponibles, en toutes lettres
+  const allWeek = weekly.length === 7; // tous les jours : Lun Mar Mer Jeu Ven Sam Dim
+  const dates = [...new Set(p.slots.flatMap((s) => (s.date ? [s.date] : [])))].sort();
   return (
     <article className={"relative grid content-start gap-3 rounded-[1.2rem] border-2 bg-white p-4 " + (selected ? "border-clay shadow-[0_6px_0_var(--color-clay)]" : "border-line")} aria-label={`Professeur : ${name}`}>
       {price ? <div className="absolute right-4 top-3 text-right leading-tight"><b className="font-display text-2xl font-black text-clay">{price} €</b><small className="block text-xs text-muted">{price === PRICE_MEMBER ? `${PRICE_OTHER} € non adhérent` : `${PRICE_MEMBER} € adhérent`}</small></div> : null}
@@ -48,9 +49,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
       </div>
       <div className="flex flex-wrap gap-2">{p.paused ? <span className="rounded-full bg-[#fff3cd] px-3 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ En pause</span> : p.slots.length ? <span className="rounded-full bg-[#dff3e8] px-3 py-0.5 text-xs font-bold text-[#1c6b42]">● Disponible</span> : <span className="rounded-full bg-sand px-3 py-0.5 text-xs font-bold">Pas de disponibilité</span>}</div>
       {p.bio && <p className="m-0 text-sm">« {p.bio} »</p>}
-      <div className="flex gap-1.5" role="img" aria-label={"Jours où il est disponible : " + ([...days].filter((d) => d >= 0).sort().map((d) => WEEKDAYS[d]).join(", ") || "aucun")}>
-        {SHORT_L.map((l, i) => <span key={i} aria-hidden="true" className={"flex-1 rounded-lg py-1 text-center text-xs font-bold " + (days.has(i) ? "bg-ink text-white" : "bg-[#eee] text-[#8b8b8b]")}>{l}</span>)}
-      </div>
+      {(weekly.length > 0 || dates.length > 0) && <div className="flex flex-wrap gap-1.5" aria-label="Jours où il est disponible"><span className="sr-only">Disponible : </span>{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-3 py-1 text-sm font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-3 py-0.5 text-sm font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}</div>}
       {p.paused && <p className="m-0 rounded-xl bg-[#fff3cd] p-2.5 text-sm font-bold text-[#7a5a00]">⏸ {p.firstName ?? "Ce professeur"} ne prend plus de demandes pour le moment.</p>}
       {onPick && <div><button className={selected ? "btn-clay" : "btn-outline"} disabled={p.paused} onClick={() => onPick(p)}>{selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"}`}</button>{preview && <small className="hint ml-2">(aperçu)</small>}</div>}
     </article>
@@ -85,7 +84,7 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
   const shown = (profs ?? []).filter((p) => day === null || p.slots.some((s) => (s.weekday ?? (s.date ? dayOf(s.date) : -1)) === day));
   return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
-      <ClayHero title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. C'est confirmé tout de suite." step={1} />
+      <ClayHero title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. Ton professeur confirme ensuite (sous 48 h)." step={1} />
       <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
@@ -125,7 +124,7 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
     <section className="grid gap-4" aria-labelledby="pa-h">
       <div className="grid gap-1">
         <h2 id="pa-h" className="m-0 text-xl">👩‍🏫 Professeurs de cours particuliers</h2>
-        <p className="hint m-0">Tu crées les comptes dans <strong>Jeunes · Centre → 👥 Entraîneurs</strong> ; c'est l'entraîneur qui clique « Je souhaite donner des cours particuliers » dans son espace. Un professeur n'est visible des adultes que si les <strong>3 documents</strong> sont déposés, que la <strong>carte professionnelle est valable</strong> et que <strong>tu l'as validé</strong> ici. Si un document est remplacé, tu dois revalider. Le site ne peut pas vérifier la carte auprès de l'administration : c'est à toi de contrôler les pièces.</p>
+        <p className="hint m-0">Tu crées les comptes dans <strong>Jeunes · Centre de compétition → 👥 Entraîneurs</strong> ; c'est l'entraîneur qui clique « Je souhaite donner des cours particuliers » dans son espace. Un professeur n'est visible des adultes que si les <strong>3 documents</strong> sont déposés, que la <strong>carte professionnelle est valable</strong> et que <strong>tu l'as validé</strong> ici. Si un document est remplacé, tu dois revalider. Le site ne peut pas vérifier la carte auprès de l'administration : c'est à toi de contrôler les pièces.</p>
       </div>
       <Err msg={err} />
       {list === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <Empty>Aucun professeur pour l'instant.</Empty> : (
