@@ -1,4 +1,5 @@
 import { Route, Routes, useParams } from "react-router-dom";
+import { BackLink } from "./components/ui";
 import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
@@ -52,7 +53,7 @@ export default function App() {
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />
-        <Route path="*" element={<p className="p-10 text-center">Page introuvable.</p>} />
+        <Route path="*" element={<div className="grid justify-items-center gap-3 p-10 text-center"><p className="m-0 text-lg">Page introuvable.</p><BackLink fallback="/" className="btn-clay no-underline">← Retour</BackLink></div>} />
       </Routes>
     </Layout>
   );

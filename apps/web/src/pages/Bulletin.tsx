@@ -55,10 +55,10 @@ export default function Bulletin() {
   useYouthTheme(isTeen(p)); // thème « ados » à partir de 11 ans
   const staff = me?.role === "COACH" || me?.role === "TRAINER";
   const back = staff ? `/coach/centre/${id}?onglet=bulletins` : "/suivi?onglet=bulletins";
-  if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
+  if (missing) return <div className="mx-auto max-w-3xl p-6"><Empty>Ce bulletin est introuvable.</Empty><BackLink fallback={back} className="btn-clay no-underline">Retour</BackLink></div>;
   if (!p || !evals) return <p className="p-8 text-center text-muted">Chargement…</p>;
   // Le jeune et sa famille voient le bulletin d'un trimestre seulement à partir du 1er décembre (T1), du 1er mars (T2) et du 1er juin (T3)
-  if (!staff && t > 0 && !selfEvalIsOpen(season, t)) return <div className="mx-auto max-w-3xl p-6 text-center"><Empty>Le bulletin du trimestre {t} sera disponible en {SELF_EVAL_MONTH[t]}.</Empty><Link to={back} className="btn-clay no-underline">Retour</Link></div>;
+  if (!staff && t > 0 && !selfEvalIsOpen(season, t)) return <div className="mx-auto max-w-3xl p-6 text-center"><Empty>Le bulletin du trimestre {t} sera disponible en {SELF_EVAL_MONTH[t]}.</Empty><BackLink fallback={back} className="btn-clay no-underline">Retour</BackLink></div>;
 
   const ev = evals.find((e) => e.season === season && e.trimester === t);
   const pp = previousPeriod(season, t);

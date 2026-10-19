@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { get, post } from "../api";
-import { Err, Field, PageHead } from "../components/ui";
+import { BackLink, Err, Field, PageHead } from "../components/ui";
 
 // Page d'installation : sert une seule fois, pour créer le compte du coach. Elle se ferme ensuite toute seule.
 export default function Installation() {
@@ -28,7 +28,7 @@ export default function Installation() {
   if (!available) return (
     <>
       <PageHead title="Installation" />
-      <p className="mx-auto max-w-lg p-6">L'installation n'est pas disponible : le compte coach existe déjà, ou la clé d'installation n'a pas encore été réglée.</p>
+      <div className="mx-auto grid max-w-lg gap-3 p-6"><p className="m-0">L'installation n'est pas disponible : le compte coach existe déjà, ou la clé d'installation n'a pas encore été réglée.</p><BackLink fallback="/" className="font-bold text-ink underline">← Retour</BackLink></div>
     </>
   );
   return (

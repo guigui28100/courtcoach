@@ -23,7 +23,7 @@ export default function VideoReview() {
     get<VideoDetail>(`/videos/${id}`).then((d) => { setV(d); setBien(d.analysis?.strengths ?? ""); setTravaille(d.analysis?.improve ?? ""); setMot(d.analysis?.observation ?? ""); setExercises(d.analysis?.exercises ?? []); setGoalIds(d.goalIds ?? d.analysis?.goalIds ?? []); }).catch(() => setMissing(true));
   }, [id]);
   useEffect(load, [load]);
-  if (missing) return <Page><Empty>Cette vidéo est introuvable (elle a peut-être été supprimée).</Empty><Link to="/coach/adultes?onglet=videos" className="btn-clay no-underline">Retour</Link></Page>;
+  if (missing) return <Page><Empty>Cette vidéo est introuvable (elle a peut-être été supprimée).</Empty><BackLink fallback="/coach/adultes?onglet=videos" className="btn-clay no-underline">Retour</BackLink></Page>;
   if (!v) return <Skeleton lines={2} />;
   const centre = v.kind === "centre";
   const sent = !!v.analysis?.sentAt;
