@@ -19,6 +19,7 @@ const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString(
 const EXAMPLE_ME: ProfMe = { firstName: "Claire", lastName: "Exemple", birthYear: 1992, showAge: true, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route.", paused: false, status: "waiting", approved: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }, { weekday: null, date: inDays(9), start: "14:00", end: "16:00" }], documents: [{ kind: "DIPLOME", fileName: "diplome.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "AUTO_ENTREPRENEUR", fileName: "attestation.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "CARTE_PRO", fileName: "carte.pdf", sizeBytes: 1000, validUntil: inDays(300) + "T00:00:00.000Z", uploadedAt: new Date().toISOString() }], prices: { member: PRICE_MEMBER, other: PRICE_OTHER } };
 const EXAMPLE_LESSONS: Lesson[] = [
   { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi"], moment: "Soirée", message: "Je voudrais fiabiliser mon service avant le tournoi.", status: "ACCEPTED", finalSlot: { date: inDays(2), time: "18:00" }, confirmedAt: new Date().toISOString(), coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m1", firstName: "Marie", lastName: "Exemple", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" } },
+  { id: "ex4", type: "individuel", objective: "Volée", days: ["Mercredi"], moment: "Soirée", message: "", status: "BOOKED", finalSlot: { date: inDays(3), time: "19:00" }, coachReply: "", answeredAt: null, seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Marc", lastName: "Exemple", birthYear: 1973, level: "30/1", phone: "06 98 76 54 32" } },
   { id: "ex2", type: "duo", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "ACCEPTED", finalSlot: { date: inDays(6), time: "10:00" }, confirmedAt: new Date().toISOString(), partnerFirstName: "Paul", partnerLastName: "Exemple", partnerAge: 40, partnerLevel: "30", coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Luc", lastName: "Exemple", birthYear: 1979, level: "15/4", phone: "06 98 76 54 32" } },
   { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "Plus aucun créneau libre : peux-tu me proposer une date ?", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m3", firstName: "Anne", lastName: "Exemple", birthYear: 1990, level: "30", phone: "06 11 22 33 44" } },
 ];
@@ -43,7 +44,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
     if (preview) { setResp({ optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } }); setLessons(null); return; }
     try { setResp(await del<ProfMeResp>("/profs/me")); setLessons(null); } catch (x) { setErr((x as Error).message); }
   }
-  const todo = (lessons ?? []).filter((l) => l.status === "PENDING").length;
+  const todo = (lessons ?? []).filter((l) => l.status === "PENDING" || l.status === "BOOKED").length;
   const missing = p ? p.status === "missing" || p.status === "expired" : false;
   const go = (k: string) => { setParams(k === "demandes" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const st = p ? STATUS_TEXT[p.status] : null;
@@ -68,7 +69,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
               <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
               <li>Tu déposes tes <strong>3 documents</strong> : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (seul le coach les voit).</li>
               <li>Le coach vérifie et te rend <strong>visible</strong> des adultes.</li>
-              <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le cours est confirmé tout de suite, sans rien à valider. Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
+              <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le créneau est mis de côté et tu le confirmes (sous 48 h). Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
             </ol>
             <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
             <div><button className="btn-clay" onClick={optIn}>✋ Je souhaite donner des cours particuliers</button></div>
@@ -97,15 +98,16 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
-      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes réservent <strong>eux-mêmes</strong> un créneau libre dans ton planning : leur cours est confirmé tout de suite et apparaît ici. Tu n'as rien à valider. Tu peux changer la date ou annuler un cours si besoin.</p></div>
+      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré).</p></div>
       <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
         <div><b className="block font-display text-3xl font-black text-clay">{booked.length}</b><small className="text-muted">cours à venir</small></div>
         <div><b className="block font-display text-3xl font-black text-ok">{booked.filter((l) => l.price).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
-        <div><b className="block font-display text-3xl font-black">{lessons.filter((l) => l.status === "PENDING").length}</b><small className="text-muted">demandes sans créneau</small></div>
+        <div><b className="block font-display text-3xl font-black">{lessons.filter((l) => l.status === "BOOKED").length}</b><small className="text-muted">à confirmer</small></div>
       </div>
       <PriceNote />
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
-      {group("Cours réservés à venir", null, booked)}
+      {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", lessons.filter((l) => l.status === "BOOKED").sort(byDate))}
+      {group("Cours confirmés à venir", null, booked)}
       {group("Demandes sans créneau", "Un adulte t'écrit parce qu'il n'y avait plus de créneau libre : propose-lui une date (il confirmera).", lessons.filter((l) => l.status === "PENDING"))}
       {group("En attente de la confirmation de l'adulte", null, lessons.filter((l) => l.status === "PROPOSED"))}
       {group("Annulés ou refusés", null, lessons.filter((l) => l.status === "REFUSED"))}
@@ -126,7 +128,7 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
   }
   async function save() {
     setMsg(null);
-    try { onSaved(await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) })); setMsg({ ok: true, text: "Disponibilités enregistrées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { const saved = await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function pause(v: boolean) {
     setMsg(null);
@@ -134,7 +136,7 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
   }
   return (
     <section className="grid gap-4" aria-labelledby="pd-h">
-      <div className="grid gap-1"><h2 id="pd-h" className="m-0">📅 Mes disponibilités</h2><p className="m-0 text-muted">Les adultes voient ces créneaux sur ta carte. Ajoute des créneaux qui reviennent chaque semaine, ou une date précise.</p></div>
+      <div className="grid gap-1"><h2 id="pd-h" className="m-0">🕒 Mes disponibilités</h2><p className="m-0 text-muted">Les adultes voient ces créneaux sur ta carte. Ajoute des créneaux qui reviennent chaque semaine, ou une date précise. Tu peux les <strong>actualiser à tout moment</strong>.</p>{p.updatedAt && <p className="m-0 text-sm font-bold text-ink">Dernière mise à jour : {new Date(p.updatedAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).replace(":", " h ")}</p>}</div>
       <div className="card grid gap-3">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Type de créneau">
           {([["week", "🔁 Chaque semaine"], ["date", "📆 Une date précise"]] as const).map(([k, l]) => <button key={k} aria-pressed={mode === k} className={"rounded-full border-2 px-4 py-2 font-bold " + (mode === k ? "border-clay bg-[#fdf1ea] text-clay" : "border-line bg-white")} onClick={() => setMode(k)}>{l}</button>)}
@@ -151,7 +153,8 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
       {slots.length === 0 ? <Empty>Aucun créneau : les adultes verront « Aucune disponibilité indiquée ».</Empty> : (
         <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">{slots.map((s, i) => <li key={i} className="flex items-center justify-between gap-2 rounded-xl border-2 border-ok bg-[#f1faf5] px-3 py-2 font-bold text-[#1d6b43]">{fmtProfSlot(s)}<button className="btn-outline btn-sm" aria-label={`Retirer le créneau ${fmtProfSlot(s)}`} onClick={() => setSlots(slots.filter((_, j) => j !== i))}>✕</button></li>)}</ul>
       )}
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={save}>Enregistrer mes disponibilités</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={save}>🔄 Actualiser mes disponibilités</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="card grid gap-1 text-sm"><strong>Ce qui se passe quand tu actualises</strong><ul className="m-0 grid gap-1 pl-5"><li>Les <strong>nouveaux créneaux</strong> sont proposés aux adultes tout de suite.</li><li>Les <strong>cours déjà réservés ne bougent pas</strong>.</li><li>Si un cours déjà réservé ne tombe plus dans tes disponibilités, on te le signale : rien n'est annulé tout seul.</li></ul></div>
       <div className="card grid gap-2 border-dashed">
         <strong>⏸ Pause</strong>
         <p className="m-0 text-sm text-muted">Si tu ne veux plus recevoir de demandes pour le moment, mets-toi en pause : les adultes te voient toujours, mais ne peuvent plus te demander de cours.</p>

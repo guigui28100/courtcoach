@@ -9,7 +9,7 @@ const NAV: Record<Role, NavItem[]> = {
   COACH: [
     { to: "/coach", label: "Accueil", icon: "home" },
     { to: "/coach/adultes", label: "Adultes · Coaching", short: "Adultes", icon: "star" },
-    { to: "/coach/centre", label: "Jeunes · Centre", short: "Jeunes", icon: "users" },
+    { to: "/coach/centre", label: "Jeunes · Centre de compétition", short: "Jeunes", icon: "users" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   TRAINER: [

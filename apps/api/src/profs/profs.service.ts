@@ -6,7 +6,8 @@ import { AuthUser } from "../common/auth.types";
 import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
 import { PRICE_MEMBER, PRICE_OTHER } from "./pricing";
-import { buildPlanning, nowParis, overlaps, PlanDay } from "./planning";
+import { expireStaleBookings } from "./bookings";
+import { buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
 
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
 const cleanName = (n: string) => n.replace(/[\\/\0-\x1f"]/g, "_").trim().slice(0, 120) || "document";
@@ -70,9 +71,10 @@ export class ProfsService {
     if (!u?.profProfile || this.status(u.profProfile) !== "visible") throw new BadRequestException("Ce professeur n'est pas disponible pour le moment.");
   }
 
-  // Cours déjà placés chez ce professeur (proposés ou confirmés) : ils occupent son planning
+  // Cours déjà placés chez ce professeur (réservés, proposés ou confirmés) : ils occupent son planning
   private async busyOf(profId: string, exceptLessonId?: string) {
-    const rows = await this.prisma.lessonRequest.findMany({ where: { profId, status: { in: ["PROPOSED", "ACCEPTED"] }, ...(exceptLessonId ? { id: { not: exceptLessonId } } : {}) }, select: { finalSlot: true } });
+    await expireStaleBookings(this.prisma); // un créneau réservé sans réponse du professeur depuis plus de 48 h est libéré
+    const rows = await this.prisma.lessonRequest.findMany({ where: { profId, status: { in: ["PROPOSED", "BOOKED", "ACCEPTED"] }, ...(exceptLessonId ? { id: { not: exceptLessonId } } : {}) }, select: { finalSlot: true } });
     return rows.flatMap((r) => { const s = r.finalSlot as { date?: string; time?: string } | null; return s?.date && s?.time ? [{ date: s.date, time: s.time }] : []; });
   }
 
@@ -107,7 +109,7 @@ export class ProfsService {
     return {
       optedIn: true,
       firstName: u.firstName, lastName: u.lastName, birthYear: p.birthYear, showAge: p.showAge, ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: p.paused,
-      status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER },
+      status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), updatedAt: p.updatedAt, documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER },
     };
   }
 
@@ -154,8 +156,13 @@ export class ProfsService {
     await this.prisma.$transaction([
       this.prisma.profSlot.deleteMany({ where: { userId: user.id } }),
       this.prisma.profSlot.createMany({ data: slots.map((s) => ({ userId: user.id, weekday: s.weekday ?? null, date: s.date ?? null, start: s.start, end: s.end })) }),
+      this.prisma.profProfile.update({ where: { userId: user.id }, data: { updatedAt: new Date() } }), // « dernière mise à jour » des disponibilités
     ]);
-    return this.me(user);
+    // Cours déjà réservés ou confirmés qui ne tombent plus dans les nouvelles disponibilités : on les signale (rien n'est annulé tout seul)
+    const lessons = await this.prisma.lessonRequest.findMany({ where: { profId: user.id, status: { in: ["BOOKED", "ACCEPTED"] } }, select: { finalSlot: true } });
+    const today = todayIso();
+    const outside = lessons.filter((l) => { const f = l.finalSlot as { date?: string; time?: string } | null; return !!f?.date && !!f.time && f.date >= today && !coversSlot(slots.map((x) => ({ weekday: x.weekday ?? null, date: x.date ?? null, start: x.start, end: x.end })), f.date, f.time); }).length;
+    return { ...(await this.me(user)), outsideCount: outside };
   }
 
   async putDocument(user: AuthUser, kind: DocKind, q: { fileName?: string; validUntil?: string }, body: unknown) {

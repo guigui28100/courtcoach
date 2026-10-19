@@ -32,7 +32,7 @@ export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail 
 // « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
 export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; profId?: string | null; price?: number | null; memberDeclared?: boolean; prof?: { id: string; firstName: string | null; lastName: string | null } | null; member?: AdultInfo & { id: string; email?: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "BOOKED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; profId?: string | null; price?: number | null; memberDeclared?: boolean; prof?: { id: string; firstName: string | null; lastName: string | null } | null; member?: AdultInfo & { id: string; email?: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -327,7 +327,7 @@ export const DOC_KINDS: { kind: DocKind; label: string; icon: string; help: stri
 ];
 export interface ProfDocMeta { kind: DocKind; fileName: string; mimeType?: string; sizeBytes: number; validUntil: string | null; uploadedAt: string; }
 export type ProfMeResp = { optedIn: false; prices: { member: number; other: number } } | (ProfMe & { optedIn: true });
-export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
+export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; updatedAt?: string; outsideCount?: number; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
 export interface ProfAdmin { id: string; email: string; firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approvedAt: string | null; documents: ProfDocMeta[]; slotCount: number; requests: number; }
 export interface PlanDay { date: string; slots: { time: string; end: string; free: boolean }[]; }
 export const profName = (p: { firstName: string | null; lastName?: string | null } | null | undefined) => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "Professeur";
@@ -340,3 +340,8 @@ export const STATUS_TEXT: Record<ProfStatus, [string, string]> = {
   missing: ["📎 Il manque au moins un document. Tant que les 3 ne sont pas déposés, tu n'es pas visible des adultes.", "warn"],
   expired: ["⚠ Ta carte professionnelle a expiré : dépose la nouvelle pour redevenir visible.", "bad"],
 };
+
+// Un créneau réservé par l'adulte attend la confirmation du professeur pendant 48 h
+export const CONFIRM_HOURS = 48;
+export const confirmDeadline = (createdAt: string) => new Date(new Date(createdAt).getTime() + CONFIRM_HOURS * 3_600_000);
+export const fmtDeadline = (createdAt: string) => confirmDeadline(createdAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).replace(":", " h ").replace(/ h 00$/, " h");

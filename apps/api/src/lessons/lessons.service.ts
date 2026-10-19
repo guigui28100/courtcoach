@@ -4,6 +4,7 @@ import { overlaps } from "../profs/planning";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthUser } from "../common/auth.types";
 import { AnswerLessonDto, CreateLessonDto, RespondLessonDto, SlotDto } from "./lessons.dto";
+import { expireStaleBookings } from "../profs/bookings";
 import { ProfsService } from "../profs/profs.service";
 import { lessonPrice } from "../profs/pricing";
 
@@ -34,15 +35,15 @@ export class LessonsService {
       const me = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { clubMember: true } });
       prof = { profId: dto.profId, price: lessonPrice(me.clubMember), memberDeclared: me.clubMember };
     }
-    // Réservation d'un créneau du planning : le cours est confirmé tout de suite ; un seul cours par professeur et par créneau (garanti par la base)
+    // Réservation d'un créneau du planning : le créneau est mis de côté et le professeur doit confirmer (48 h) ; un seul cours par professeur et par créneau (garanti par la base)
     let booked: object = {};
     if (dto.slot && dto.profId) {
       await this.profs.assertSlotFree(dto.profId, dto.slot);
-      const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { finalSlot: true } });
+      const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { finalSlot: true } });
       if (mine.some((m) => { const s = m.finalSlot as { date?: string; time?: string } | null; return s?.date === dto.slot!.date && !!s.time && overlaps(s.time, dto.slot!.time); })) throw new ConflictException("Tu as déjà un cours à ce moment-là.");
       const wd = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"][(new Date(`${dto.slot.date}T12:00:00Z`).getUTCDay() + 6) % 7];
       const h = Number(dto.slot.time.slice(0, 2));
-      booked = { status: LessonStatus.ACCEPTED, finalSlot: { date: dto.slot.date, time: dto.slot.time }, slotKey: `${dto.slot.date}T${dto.slot.time}`, confirmedAt: new Date(), seenByMemberAt: new Date(), answeredAt: new Date(), days: [wd], moment: h < 12 ? "Matin" : h < 18 ? "Après-midi" : "Soirée" };
+      booked = { status: LessonStatus.BOOKED, finalSlot: { date: dto.slot.date, time: dto.slot.time }, slotKey: `${dto.slot.date}T${dto.slot.time}`, seenByMemberAt: new Date(), days: [wd], moment: h < 12 ? "Matin" : h < 18 ? "Après-midi" : "Soirée" };
     }
     try {
       return await this.prisma.lessonRequest.create({ data: { memberId: user.id, type: dto.type, objective: dto.objective, days: dto.days ?? [], moment: dto.moment ?? "Peu importe", message: dto.message ?? "", ...partner, ...prof, ...booked } });
@@ -61,6 +62,7 @@ export class LessonsService {
 
   // Un adulte voit les siennes ; le coach voit toutes les demandes ; un professeur ne voit QUE celles qui lui sont adressées.
   async list(user: AuthUser) {
+    await expireStaleBookings(this.prisma);
     if (user.role === Role.COACH) {
       return this.withProf(await this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } } } }));
     }
@@ -86,6 +88,16 @@ export class LessonsService {
     if (proposing && l.profId && dto.slot) await this.profs.assertNoClash(l.profId, dto.slot, id);
     const slotKey = proposing && l.profId && dto.slot ? `${dto.slot.date}T${dto.slot.time}` : null; // un créneau annulé ou changé se libère
     await this.prisma.lessonRequest.update({ where: { id }, data: { slotKey, status: dto.status, coachReply: dto.reply ?? "", answeredAt: new Date(), seenByMemberAt: null, finalSlot: proposing ? finalSlot : Prisma.JsonNull, place: proposing ? dto.place ?? "" : "", confirmedAt: null, adultReply: "", declinedSlot: Prisma.JsonNull } });
+    return this.prisma.lessonRequest.findUnique({ where: { id } });
+  }
+
+  // Le professeur (pour SES cours) ou le coach confirme un créneau réservé par l'adulte
+  async confirm(user: AuthUser, id: string) {
+    if (user.role !== Role.COACH) await this.profs.assertProf(user.id);
+    await expireStaleBookings(this.prisma);
+    const l = await this.prisma.lessonRequest.findFirst({ where: { id, status: LessonStatus.BOOKED, ...(user.role !== Role.COACH ? { profId: user.id } : {}) } });
+    if (!l) throw new NotFoundException("Aucune réservation à confirmer pour cette demande");
+    await this.prisma.lessonRequest.update({ where: { id }, data: { status: LessonStatus.ACCEPTED, confirmedAt: new Date(), answeredAt: new Date(), seenByMemberAt: null } });
     return this.prisma.lessonRequest.findUnique({ where: { id } });
   }
 

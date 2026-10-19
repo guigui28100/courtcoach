@@ -37,6 +37,7 @@ enum LessonStatus {
   PROPOSED // le coach a proposé une date : en attente de la confirmation de l'adulte
   ACCEPTED // date confirmée par l'adulte (les anciennes demandes acceptées restent ACCEPTED)
   REFUSED
+  BOOKED   // l'adulte a réservé un créneau du planning : le professeur doit confirmer (sans réponse sous 48 h, le créneau est libéré)
 }
 
 enum GoalStatus {

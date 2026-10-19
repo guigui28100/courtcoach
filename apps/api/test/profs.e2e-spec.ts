@@ -157,9 +157,9 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     const d1 = days.find((d) => d.slots.filter((s) => s.free).length >= 3)!; const [s1, s2, s3] = d1.slots.filter((s) => s.free);
     expect(s1.end).toBe(`${String(Number(s1.time.slice(0, 2)) + 1).padStart(2, "0")}:00`); // une heure
     const day = d1.date; const book = (who: string, time: string, extra: object = {}) => A[who].post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId, slot: { date: day, time }, ...extra });
-    // adulte2 réserve : cours confirmé tout de suite, tarif figé
+    // adulte2 réserve : le créneau est mis de côté, le professeur doit confirmer, tarif figé
     const b = (await book("adulte2", s1.time).expect(201)).body;
-    expect(b).toMatchObject({ status: "ACCEPTED", price: 50, finalSlot: { date: day, time: s1.time }, profId }); expect(b.confirmedAt).toBeTruthy();
+    expect(b).toMatchObject({ status: "BOOKED", price: 50, finalSlot: { date: day, time: s1.time }, profId }); expect(b.confirmedAt).toBeNull();
     // le créneau est pris pour tout le monde (sans dire par qui)
     const after = await plan(); const taken = after.find((d) => d.date === day)!.slots.find((s) => s.time === s1.time)!;
     expect(taken.free).toBe(false); expect(JSON.stringify(after)).not.toMatch(/adulte2|Durand|member/);
@@ -184,6 +184,27 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect((await A.prof.get("/api/lessons").expect(200)).body.some((l: any) => l.id === c.id)).toBe(true);
     await A.prof.post(`/api/lessons/${c.id}/answer`).set(ORIGIN).send({ status: "REFUSED", reply: "Désolé, imprévu" }).expect(200);
     await book("adulte2", s1.time).expect(201);
+    // confirmation : le professeur du cours (ou le coach) seulement ; ni l'adulte, ni un autre professeur
+    const d = (await book("adulte2", s3.time).expect(201)).body; // adulte2 (réservation précédente de s1 est à adulte2 aussi : s3 est libre)
+    await A.adulte2.post(`/api/lessons/${d.id}/confirm`).set(ORIGIN).expect(403);
+    await A.prof2.post(`/api/lessons/${d.id}/confirm`).set(ORIGIN).expect(404); // un autre professeur ne voit pas ce cours
+    await A.parent.post(`/api/lessons/${d.id}/confirm`).set(ORIGIN).expect(403);
+    const ok = (await A.prof.post(`/api/lessons/${d.id}/confirm`).set(ORIGIN).expect(200)).body;
+    expect(ok).toMatchObject({ status: "ACCEPTED" }); expect(ok.confirmedAt).toBeTruthy(); expect(ok.seenByMemberAt).toBeNull();
+    await A.prof.post(`/api/lessons/${d.id}/confirm`).set(ORIGIN).expect(404); // déjà confirmé
+    // sans réponse sous 48 h : le créneau est libéré et l'adulte est prévenu
+    const old = await prisma.lessonRequest.findFirstOrThrow({ where: { profId, status: "BOOKED" } });
+    await prisma.lessonRequest.update({ where: { id: old.id }, data: { createdAt: new Date(Date.now() - 49 * 3_600_000) } });
+    const slotOld = old.finalSlot as { date: string; time: string };
+    const freed = (await plan()).find((x) => x.date === slotOld.date)!.slots.find((x) => x.time === slotOld.time)!;
+    expect(freed.free).toBe(true);
+    expect(await prisma.lessonRequest.findUnique({ where: { id: old.id } })).toMatchObject({ status: "REFUSED", slotKey: null });
+    // le professeur actualise ses disponibilités : les cours déjà confirmés qui n'y tombent plus sont signalés (rien n'est annulé)
+    const other = ((new Date(`${day}T12:00:00Z`).getUTCDay() + 6) % 7 + 3) % 7;
+    const upd = (await A.prof.put("/api/profs/me/slots").set(ORIGIN).send({ slots: [{ weekday: other, start: "08:00", end: "10:00" }] }).expect(200)).body;
+    expect(upd.outsideCount).toBeGreaterThanOrEqual(1); expect(upd.updatedAt).toBeTruthy();
+    expect(await prisma.lessonRequest.findUnique({ where: { id: d.id } })).toMatchObject({ status: "ACCEPTED" });
+    await A.prof.put("/api/profs/me/slots").set(ORIGIN).send({ slots: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, start: "08:00", end: "20:00" })) }).expect(200);
     // accès : adultes et coach seulement ; une famille et un entraîneur non
     await A.coach.get(`/api/profs/${profId}/planning`).expect(200);
     for (const who of ["parent", "comite", "prof2"]) await A[who].get(`/api/profs/${profId}/planning`).expect(403);
