@@ -4,16 +4,17 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, patch, post, put } from "../api";
 import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
+import { ProfsAdmin } from "../components/Profs";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { MarkBadge, useVideos } from "../components/Videos";
-import { adultFacts, adultName, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
 const FRESH_MS = 3 * 86_400_000; // une confirmation reste signalée « nouvelle » 3 jours
 
-function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
+export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: () => void; asProf?: boolean }) {
   const [ask, setAsk] = useState<"PROPOSED" | "REFUSED" | null>(null);
   const [date, setDate] = useState(l.finalSlot?.date ?? ""), [time, setTime] = useState(l.finalSlot?.time ?? "18:00");
   const [place, setPlace] = useState(l.place ?? ""), [reply, setReply] = useState("");
@@ -32,6 +33,8 @@ function LessonRow({ l, onDone }: { l: Lesson; onDone: () => void }) {
         <div className="min-w-0">
           <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
           <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
+          {!asProf && l.prof && <p className="m-0 text-sm font-bold text-ink">👩‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
+          {!!l.price && <p className="m-0 text-sm font-bold text-ink">💶 {l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
           {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-bold text-ink">👥 Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
           <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
           {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
@@ -171,7 +174,9 @@ function useCoachData(version = 0) {
   const [storage, setStorage] = useState<{ usedBytes: number; quotaBytes: number } | null>(null);
   const videos = useVideos(version);
   const [reports, setReports] = useState<TournamentReport[]>([]);
+  const [profsWaiting, setProfsWaiting] = useState(0);
   const load = useCallback(() => {
+    get<{ status: string }[]>("/profs/admin").then((r) => setProfsWaiting(r.filter((x) => x.status === "waiting").length)).catch(() => setProfsWaiting(0)); // professeurs à valider (coach seulement)
     get<TournamentReport[]>("/tournament-reports/pending").then(setReports).catch(() => setReports([])); // bilans de tournoi à valider (coach seulement : sinon 403, liste vide)
     get<Lesson[]>("/lessons").then(setLessons).catch(() => undefined);
     get<Player[]>("/players").then(async (all0) => {
@@ -189,7 +194,7 @@ function useCoachData(version = 0) {
   const upcoming = lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso()).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
   const youthVideos = mine((videos ?? []).filter((v) => v.kind === "centre"), (v) => (v as { playerId?: string }).playerId);
-  return { lessons, pending, toConfirm, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, reload: load };
+  return { lessons, pending, toConfirm, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, profsWaiting, reload: load };
 }
 
 // ───────── ACCUEIL : ce qui demande l'attention, une seule fois, puis deux portes d'entrée ─────────
@@ -199,8 +204,9 @@ export function CoachHome() {
   const adultWait = waitingOf(d.adultVideos), youthWait = waitingOf(d.youthVideos);
   type Todo = { space: "Adultes" | "Jeunes" | "Compte"; text: string; to: string; cta: string };
   const todos: Todo[] = [
-    ...d.pending.map((l) => ({ space: "Adultes" as const, text: l.declinedSlot ? `${adultName(l.member, "Un adhérent")} n'est pas disponible le ${fmtSlot(l.declinedSlot)} : propose une autre date` : `${adultName(l.member, "Un adhérent")} te demande un cours`, to: "/coach/adultes", cta: "Répondre" })),
+    ...d.pending.map((l) => ({ space: "Adultes" as const, text: l.declinedSlot ? `${adultName(l.member, "Un adhérent")} n'est pas disponible le ${fmtSlot(l.declinedSlot)} : propose une autre date` : `${adultName(l.member, "Un adhérent")} demande un cours${l.prof ? ` à ${profName(l.prof)}` : ""}`, to: "/coach/adultes", cta: "Répondre" })),
     ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} a confirmé son cours : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
+    ...(d.profsWaiting ? [{ space: "Adultes" as const, text: `👩‍🏫 ${d.profsWaiting} professeur${d.profsWaiting > 1 ? "s" : ""} à valider (documents déposés)`, to: "/coach/adultes?onglet=profs", cta: "Vérifier" }] : []),
     ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...[...d.adultVideos, ...d.youthVideos].filter((v) => v.awaitingReply).map((v) => ({ space: (v.kind === "centre" ? "Jeunes" : "Adultes") as "Jeunes" | "Adultes", text: `💬 Nouveau message de ${v.kind === "centre" ? (v.player?.firstName ?? "un joueur") : adultName(v.owner, "un adhérent")} : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Répondre" })),
@@ -257,16 +263,16 @@ export function CoachHome() {
 // ───────── ESPACE ADULTES : demandes de cours et vidéos des adhérents adultes ─────────
 export function AdultsPage() {
   const d = useCoachData();
-  const [tab, setTab] = useTab(["demandes", "videos", "historique"] as const);
+  const [tab, setTab] = useTab(["demandes", "videos", "profs", "historique"] as const);
   const done = d.lessons.filter((l) => l.status === "REFUSED" || (l.status === "ACCEPTED" && !d.upcoming.includes(l)));
   const waiting = waitingOf(d.adultVideos);
   const answered = d.adultVideos.filter((v) => v.analysis?.sentAt);
   const owner = (v: VideoRow) => [adultName(v.owner), adultFacts(v.owner)].filter(Boolean).join(" · ");
   return (
     <>
-      <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link>} />
+      <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<><Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link><Link to="/coach/adultes/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un professeur</Link></>} />
       <Page>
-        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["historique", "🗂️ Historique"]]} />
+        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["profs", "👩‍🏫 Professeurs", d.profsWaiting], ["historique", "🗂️ Historique"]]} />
         {tab === "demandes" && (
           <div className="grid gap-6">
             <ul className="m-0 grid list-none gap-3 p-0">
@@ -278,6 +284,7 @@ export function AdultsPage() {
           </div>
         )}
         {tab === "videos" && <VideoQueue videos={d.adultVideos} label={owner} mode="todo" />}
+        {tab === "profs" && <ProfsAdmin onChanged={d.reload} />}
         {tab === "historique" && (
           <div className="grid gap-4">
             <section className="grid gap-2"><h2 className="m-0 text-lg">Demandes traitées ({done.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{done.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}{!done.length && <li><Empty>Rien pour l'instant.</Empty></li>}</ul></section>

@@ -29,8 +29,8 @@ export class TrainersService {
   }
 
   async list() {
-    const rows = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null }, orderBy: { createdAt: "asc" }, include: { accesses: { select: { playerId: true } } } });
-    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, kind: u.trainerKind === "CLUB" ? "CLUB" : "COMITE", mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
+    const rows = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null }, orderBy: { createdAt: "asc" }, include: { accesses: { select: { playerId: true } }, profProfile: { select: { userId: true } } } });
+    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, kind: u.trainerKind === "CLUB" ? "CLUB" : "COMITE", teaches: !!u.profProfile, mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
   }
 
   async create(user: AuthUser, dto: TrainerDto) {
@@ -71,8 +71,10 @@ export class TrainersService {
     await this.trainer(id);
     await this.prisma.$transaction([
       this.prisma.playerAccess.deleteMany({ where: { userId: id } }),
+      this.prisma.profProfile.deleteMany({ where: { userId: id } }), // présentation, disponibilités et pièces justificatives (carte pro, diplôme, auto-entrepreneur)
+      this.prisma.lessonRequest.updateMany({ where: { profId: id }, data: { profId: null } }), // les demandes en cours reviennent au coach
       this.prisma.refreshToken.deleteMany({ where: { userId: id } }),
-      this.prisma.user.update({ where: { id }, data: { email: `supprime-${id}@invalid`, firstName: null, passwordHash: "-", totpEnabled: false, deletedAt: new Date() } }),
+      this.prisma.user.update({ where: { id }, data: { email: `supprime-${id}@invalid`, firstName: null, lastName: null, passwordHash: "-", totpEnabled: false, deletedAt: new Date() } }),
     ]);
     await this.audit.log(user.id, "remove-trainer", "User", id);
   }

@@ -1,5 +1,5 @@
 export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH";
-export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; mustChangePassword?: boolean; twoFactor?: boolean; totpKeyShared?: boolean; accesses: { playerId: string; relation: string }[]; }
+export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; clubMember?: boolean; mustChangePassword?: boolean; twoFactor?: boolean; totpKeyShared?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },
@@ -32,7 +32,7 @@ export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail 
 // « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
 export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; member?: AdultInfo & { id: string; email: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; profId?: string | null; price?: number | null; memberDeclared?: boolean; prof?: { id: string; firstName: string | null; lastName: string | null } | null; member?: AdultInfo & { id: string; email?: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -310,3 +310,32 @@ export const fmtPeriod = (a: string, b: string) => (a === b ? fmtDay(a) : `${new
 // Menus déroulants des renseignements (coach et parents)
 export const HEIGHTS = Array.from({ length: 111 }, (_, i) => String(100 + i)); // 100 à 210 cm
 export const TRAINING_VOLUMES = ["1 cours par semaine", "2 cours par semaine", "3 cours par semaine", "4 cours par semaine"];
+
+
+// ----- Professeurs de cours particuliers -----
+export const PRICE_MEMBER = 40; // adhérent du TC Houdan (euros par séance)
+export const PRICE_OTHER = 50; // autre personne
+export const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+export interface ProfSlot { id?: string; weekday: number | null; date: string | null; start: string; end: string; }
+export interface ProfCard { id: string; firstName: string | null; lastName: string | null; age: number | null; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; slots: ProfSlot[]; }
+export type ProfStatus = "visible" | "paused" | "waiting" | "missing" | "expired";
+export type DocKind = "CARTE_PRO" | "DIPLOME" | "AUTO_ENTREPRENEUR";
+export const DOC_KINDS: { kind: DocKind; label: string; icon: string; help: string }[] = [
+  { kind: "CARTE_PRO", label: "Carte professionnelle d'éducateur sportif", icon: "🪪", help: "Recto de ta carte en cours de validité. Indique sa date de fin de validité." },
+  { kind: "DIPLOME", label: "Diplôme", icon: "🎓", help: "Ton diplôme d'enseignement du tennis (DE, DEJEPS, BP…)." },
+  { kind: "AUTO_ENTREPRENEUR", label: "Déclaration d'auto-entrepreneur", icon: "📄", help: "Ton attestation d'inscription (SIRET / avis de situation)." },
+];
+export interface ProfDocMeta { kind: DocKind; fileName: string; mimeType?: string; sizeBytes: number; validUntil: string | null; uploadedAt: string; }
+export type ProfMeResp = { optedIn: false; prices: { member: number; other: number } } | (ProfMe & { optedIn: true });
+export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
+export interface ProfAdmin { id: string; email: string; firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approvedAt: string | null; documents: ProfDocMeta[]; slotCount: number; requests: number; }
+export const profName = (p: { firstName: string | null; lastName?: string | null } | null | undefined) => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "Professeur";
+const hourFr = (t: string) => { const [h, m] = t.split(":"); return m === "00" ? `${Number(h)} h` : `${Number(h)} h ${m}`; };
+export const fmtProfSlot = (s: ProfSlot) => `${s.weekday !== null ? WEEKDAYS[s.weekday] : new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ${hourFr(s.start)} – ${hourFr(s.end)}`;
+export const STATUS_TEXT: Record<ProfStatus, [string, string]> = {
+  visible: ["✅ Tu es visible des adultes.", "ok"],
+  paused: ["⏸ Tu es en pause : les adultes te voient mais ne peuvent plus te demander de cours.", "warn"],
+  waiting: ["⏳ Tes 3 documents sont là : le coach doit les vérifier. Tu n'es pas encore visible.", "warn"],
+  missing: ["📎 Il manque au moins un document. Tant que les 3 ne sont pas déposés, tu n'es pas visible des adultes.", "warn"],
+  expired: ["⚠ Ta carte professionnelle a expiré : dépose la nouvelle pour redevenir visible.", "bad"],
+};

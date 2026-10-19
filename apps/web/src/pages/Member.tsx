@@ -2,9 +2,10 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
 import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
+import { ProfChooser } from "../components/Profs";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -36,7 +37,7 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose: () => void; onSent: () => void }) {
+function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: () => void }) {
   const [err, setErr] = useState("");
   const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
   async function send(e: FormEvent<HTMLFormElement>) {
@@ -44,12 +45,15 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
     if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
     const f = new FormData(e.currentTarget); setErr("");
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
-    try { await post("/lessons", { type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+    try { await post("/lessons", { ...(prof ? { profId: prof.id } : {}), type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
+      {prof ? (
+        <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
+      ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
       <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
@@ -69,7 +73,7 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
             <Field label="Son âge" id="p-age"><input id="p-age" name="pAge" type="number" inputMode="numeric" min={4} max={99} className="input" required /></Field>
             <Field label="Son classement ou son niveau" id="p-level"><select id="p-level" name="pLevel" className="input" defaultValue="" required><option value="" disabled>Choisir…</option>{[...ADULT_LEVELS, PARTNER_LEVELS_EXTRA].map((x) => <option key={x}>{x}</option>)}</select></Field>
           </div>
-          <small className="text-muted">Ces informations servent seulement à organiser le cours : seul le coach les voit. Préviens ton partenaire.</small>
+          <small className="text-muted">Ces informations servent seulement à organiser le cours : seuls ton professeur et le coach les voient. Préviens ton partenaire.</small>
         </fieldset>
       )}
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
@@ -81,7 +85,7 @@ function NewLessonForm({ preview, onClose, onSent }: { preview: boolean; onClose
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>4</span>À quel moment de la journée ?</legend>
         <div className="flex flex-wrap gap-2">{MOMENTS.map((x, i) => <Chip key={x} type="radio" name="moment" value={x} defaultChecked={i === 0} />)}</div>
       </fieldset>
-      <Field label="Un message pour ton coach (facultatif)" id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
+      <Field label={`Un message pour ${prof?.firstName ?? "ton coach"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
       <Err msg={err} />
       <div className="flex flex-wrap gap-2"><button className="btn-clay">Envoyer ma demande</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
     </form>
@@ -103,7 +107,7 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" }) {
 
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
 function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
-  const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}`;
+  const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
   const state = { PENDING: ["⏳ En attente", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
   const sub = l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
     : l.status === "PENDING" ? `Tes disponibilités : ${l.days.length ? l.days.join(", ").toLowerCase() : "à définir"} · ${l.moment.toLowerCase()}`
@@ -115,7 +119,7 @@ function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
         <strong className="leading-tight">{title}{isNew && <span className="ml-2 rounded-full bg-clay px-2 py-0.5 align-middle text-xs font-bold text-white">nouveau</span>}</strong>
         {sub && <span className="text-sm text-muted">{sub}</span>}
         {l.status === "ACCEPTED" && l.coachReply && <span className="text-sm text-muted">💬 « {l.coachReply} »</span>}
-        {l.status === "PENDING" && l.declinedSlot && <span className="text-sm text-muted">Tu n'étais pas disponible le {fmtSlot(l.declinedSlot)} : ton coach te proposera une autre date.</span>}
+        {l.status === "PENDING" && l.declinedSlot && <span className="text-sm text-muted">Tu n'étais pas disponible le {fmtSlot(l.declinedSlot)} : une autre date te sera proposée.</span>}
       </div>
       <span className="col-span-2 text-sm font-bold sm:col-span-1" style={{ color: state[1] }}>{state[0]}</span>
     </li>
@@ -146,14 +150,14 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   return (
     <div className="grid gap-3 rounded-3xl border-2 border-[#2a6fb0] bg-[#eaf2fb] p-5 text-[#1f5a96]">
       <div className="grid gap-1 text-lg leading-snug">
-        <p className="m-0">Ton coach te propose un cours le <strong>{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>{l.place && courtNumber(l.place) ? <> sur le terrain n° <strong>{courtNumber(l.place)}</strong></> : ""}.</p>
+        <p className="m-0">{l.prof ? (l.prof.firstName ?? "Ton professeur") : "Ton coach"} te propose un cours le <strong>{l.finalSlot ? fmtSlot(l.finalSlot) : ""}</strong>{l.place && courtNumber(l.place) ? <> sur le terrain n° <strong>{courtNumber(l.place)}</strong></> : ""}.</p>
         <p className="m-0">Objectif de la séance : <strong>{workPhrase(l.objective)}</strong></p>
       </div>
       {l.coachReply && <p className="m-0 text-sm">💬 « {l.coachReply} »</p>}
       {!no ? (
         <div className="grid gap-2">
           <div className="flex flex-wrap gap-2"><button className="btn-clay" disabled={busy} onClick={() => reply("confirm")}>✅ Je confirme ce cours</button><button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setNo(true)}>Je ne suis pas disponible</button></div>
-          <small>Ton coach ne se déplacera que si tu confirmes.</small>
+          <small>{l.prof ? (l.prof.firstName ?? "Ton professeur") : "Ton coach"} ne se déplacera que si tu confirmes.</small>
         </div>
       ) : (
         <div className="grid gap-2 text-ink">
@@ -166,10 +170,13 @@ function ToConfirm({ l, onRespond }: { l: Lesson; onRespond: (l: Lesson, action:
   );
 }
 
-const COPY = { icon: "📅", title: "Mes cours particuliers", button: "+ Demander un cours", first: "Demander mon premier cours", none: "Tu n'as pas encore de cours particulier.", ok: "✅ Demande envoyée ! Ton coach va te répondre, tu la verras ici.", groups: ["✅ Mes cours confirmés", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Envie de progresser avec ton coach ?", emptyText: "Un cours particulier, c'est un vrai cours sur le court avec ton coach. Choisis le type, dis-nous sur quoi travailler et quand : il te répond ici." };
+const COPY = { icon: "📅", title: "Mes cours particuliers", button: "+ Demander un cours", first: "Demander mon premier cours", none: "Tu n'as pas encore de cours particulier.", ok: "✅ Demande envoyée ! Ton professeur (et le coach) vont te répondre, tu la verras ici.", groups: ["✅ Mes cours confirmés", "⏳ En attente de réponse", "Demandes refusées"], emptyTitle: "Envie de progresser avec ton coach ?", emptyText: "Un cours particulier, c'est un vrai cours sur le court avec un professeur du club. Choisis ton professeur selon ses disponibilités, dis-lui sur quoi travailler : il te répond ici." };
 
 function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond }: { lessons: Lesson[]; preview: boolean; seenLocal: string[]; onSent: () => void; onSeen: (l: Lesson) => void; onRespond: (l: Lesson, action: "confirm" | "decline", message?: string) => Promise<void> }) {
-  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<null | "choose" | "form">(null); // choix du professeur, puis formulaire
+  const [prof, setProf] = useState<ProfCard | null>(null);
+  const [price, setPrice] = useState<number | null>(null);
+  const open = step !== null;
   const [sent, setSent] = useState(false);
   const c = COPY;
   const isNew = (l: Lesson) => l.status !== "PENDING" && l.status !== "PROPOSED" && !l.seenByMemberAt && !seenLocal.includes(l.id);
@@ -186,7 +193,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
   const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
   useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ask = () => { setOpen(true); setSent(false); };
+  const ask = () => { setStep("choose"); setProf(null); setSent(false); };
   return (
     <section aria-labelledby="t-cours" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -194,7 +201,8 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
         {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
-      {open && <NewLessonForm preview={preview} onClose={() => setOpen(false)} onSent={() => { setSent(true); onSent(); }} />}
+      {step === "choose" && <ProfChooser preview={preview} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} onNoPref={() => { setProf(null); setPrice(null); setStep("form"); }} />}
+      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={() => { setSent(true); onSent(); }} />}
       {next && <NextCourse l={next} />}
       {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} />)}</ul>}
@@ -231,14 +239,14 @@ function ProfileCard({ preview }: { preview: boolean }) {
     if (preview) { setMsg({ ok: false, text: "Aperçu : rien n'est enregistré." }); return; }
     const f = new FormData(e.currentTarget);
     try {
-      await put("/auth/me/profile", { firstName: String(f.get("firstName") || ""), lastName: String(f.get("lastName") || ""), birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || ""), phone: String(f.get("phone") || "") });
+      await put("/auth/me/profile", { firstName: String(f.get("firstName") || ""), lastName: String(f.get("lastName") || ""), birthYear: Number(f.get("birthYear")) || undefined, level: String(f.get("level") || ""), phone: String(f.get("phone") || ""), clubMember: f.get("clubMember") === "on" });
       await reload(); setMsg({ ok: true, text: "Enregistré ✓" });
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
     <section aria-labelledby="t-prof" className="card grid gap-3">
       <h2 id="t-prof" className="m-0 text-xl">🙋 Mon profil{missing && <span className="ml-2 rounded-full bg-[#fff3cd] px-3 py-0.5 align-middle text-sm font-bold text-[#7a5a00]">à compléter</span>}</h2>
-      <p className="hint m-0">Ton coach voit ces informations sur tes demandes, pour préparer ton cours et te joindre. Tout est facultatif.</p>
+      <p className="hint m-0">Ton professeur et ton coach voient ces informations (nom, âge, niveau, téléphone) sur tes demandes, pour préparer ton cours et te joindre. Tout est facultatif.</p>
       <form onSubmit={save} className="grid gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" id="p-first"><input id="p-first" name="firstName" className="input" maxLength={60} defaultValue={preview ? "Marie" : me?.firstName ?? ""} /></Field>
@@ -247,6 +255,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
           <Field label="Classement ou niveau" id="p-level"><select id="p-level" name="level" className="input" defaultValue={preview ? "30/2" : me?.level ?? ""}><option value="">Je ne sais pas</option>{ADULT_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
           <Field label="Téléphone" id="p-phone"><input id="p-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={20} className="input" placeholder="06 12 34 56 78" defaultValue={preview ? "06 12 34 56 78" : me?.phone ?? ""} /></Field>
         </div>
+        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="checkbox" name="clubMember" className="h-5 w-5 accent-clay" defaultChecked={preview ? false : !!me?.clubMember} />Je suis adhérent du TC Houdan <small className="font-normal text-muted">(tarif des cours : 40 € au lieu de 50 €)</small></label>
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
     </section>

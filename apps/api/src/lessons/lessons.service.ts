@@ -3,6 +3,8 @@ import { LessonStatus, Prisma, Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthUser } from "../common/auth.types";
 import { AnswerLessonDto, CreateLessonDto, RespondLessonDto, SlotDto } from "./lessons.dto";
+import { ProfsService } from "../profs/profs.service";
+import { lessonPrice } from "../profs/pricing";
 
 // Une date réelle (pas le 31 février), aujourd'hui ou plus tard, dans les 18 mois
 function checkSlot(s: SlotDto) {
@@ -15,30 +17,48 @@ function checkSlot(s: SlotDto) {
 
 @Injectable()
 export class LessonsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly profs: ProfsService) {}
 
-  create(user: AuthUser, dto: CreateLessonDto) {
+  async create(user: AuthUser, dto: CreateLessonDto) {
     if (user.role !== Role.ADULT) throw new ForbiddenException("Les demandes de cours sont réservées aux adhérents adultes");
     // Cours à deux : il faut savoir QUI vient (prénom, nom, âge, classement ou niveau du partenaire)
     const duo = dto.type === "duo";
     if (duo && (!dto.partnerFirstName?.trim() || !dto.partnerLastName?.trim() || !dto.partnerAge || !dto.partnerLevel)) throw new BadRequestException("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire.");
     const partner = duo ? { partnerFirstName: dto.partnerFirstName!.trim(), partnerLastName: dto.partnerLastName!.trim(), partnerAge: dto.partnerAge!, partnerLevel: dto.partnerLevel! } : {};
-    return this.prisma.lessonRequest.create({ data: { memberId: user.id, type: dto.type, objective: dto.objective, days: dto.days ?? [], moment: dto.moment ?? "Peu importe", message: dto.message ?? "", ...partner } });
+    // Professeur choisi (facultatif) : il doit être visible et accepter des demandes ; le tarif est figé maintenant (40 € adhérent TC Houdan, 50 € sinon)
+    let prof: { profId: string; price: number; memberDeclared: boolean } | object = {};
+    if (dto.profId) {
+      await this.profs.assertBookable(dto.profId);
+      const me = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { clubMember: true } });
+      prof = { profId: dto.profId, price: lessonPrice(me.clubMember), memberDeclared: me.clubMember };
+    }
+    return this.prisma.lessonRequest.create({ data: { memberId: user.id, type: dto.type, objective: dto.objective, days: dto.days ?? [], moment: dto.moment ?? "Peu importe", message: dto.message ?? "", ...partner, ...prof } });
   }
 
-  // Un adulte voit les siennes ; le coach voit toutes les demandes (avec le prénom de la personne).
+  // Noms des professeurs pour l'affichage (prénom et nom seulement)
+  private async withProf<T extends { profId: string | null }>(rows: T[]) {
+    const ids = [...new Set(rows.map((r) => r.profId).filter((x): x is string => !!x))];
+    const users = ids.length ? await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, firstName: true, lastName: true } }) : [];
+    return rows.map((r) => ({ ...r, prof: users.find((u) => u.id === r.profId) ?? null }));
+  }
+
+  // Un adulte voit les siennes ; le coach voit toutes les demandes ; un professeur ne voit QUE celles qui lui sont adressées.
   async list(user: AuthUser) {
     if (user.role === Role.COACH) {
-      return this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } } } });
+      return this.withProf(await this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } } } }));
     }
-    return this.prisma.lessonRequest.findMany({ where: { memberId: user.id }, orderBy: { createdAt: "desc" } });
+    if (user.role === Role.TRAINER) {
+      await this.profs.assertProf(user.id); // un entraîneur qui n'a pas choisi de donner des cours n'a aucun accès aux demandes
+      return this.prisma.lessonRequest.findMany({ where: { profId: user.id }, orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true } } } });
+    }
+    return this.withProf(await this.prisma.lessonRequest.findMany({ where: { memberId: user.id }, orderBy: { createdAt: "desc" } }));
   }
 
-  // Le coach propose une date et une heure précises (l'adulte doit la confirmer), ou refuse. Il peut aussi changer la date, ou annuler, tant que le cours n'a pas eu lieu.
+  // Le coach (ou le professeur choisi, pour SES demandes) propose une date et une heure précises (l'adulte doit la confirmer), ou refuse. Il peut aussi changer la date, ou annuler, tant que le cours n'a pas eu lieu.
   async answer(user: AuthUser, id: string, dto: AnswerLessonDto) {
-    if (user.role !== Role.COACH) throw new ForbiddenException("Réservé au coach");
+    if (user.role !== Role.COACH) await this.profs.assertProf(user.id);
     const l = await this.prisma.lessonRequest.findUnique({ where: { id } });
-    if (!l || l.status === LessonStatus.REFUSED) throw new NotFoundException("Demande introuvable ou déjà traitée");
+    if (!l || l.status === LessonStatus.REFUSED || (user.role !== Role.COACH && l.profId !== user.id)) throw new NotFoundException("Demande introuvable ou déjà traitée");
     let finalSlot: Prisma.InputJsonValue | typeof Prisma.JsonNull = Prisma.JsonNull;
     if (dto.status === LessonStatus.PROPOSED) {
       if (!dto.slot) throw new BadRequestException("Indique la date et l'heure du cours.");
