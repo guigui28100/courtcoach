@@ -78,6 +78,13 @@ export class ProfsService {
     return rows.flatMap((r) => { const s = r.finalSlot as { date?: string; time?: string } | null; return s?.date && s?.time ? [{ date: s.date, time: s.time }] : []; });
   }
 
+  // Disponibilités et cours déjà placés d'un professeur (pour réserver une série)
+  async availabilityOf(profId: string) {
+    await this.assertBookable(profId);
+    const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
+    return { slots: p.slots, busy: await this.busyOf(profId) };
+  }
+
   // Planning visible par l'adulte (et le coach) : les créneaux d'une heure, libres ou déjà pris (sans dire par qui)
   async planning(profId: string): Promise<{ days: PlanDay[] }> {
     await this.assertBookable(profId);

@@ -5,7 +5,7 @@ import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
-import { DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
+import { collapseSeries, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
 import { BackLink } from "../components/ui";
 
@@ -94,23 +94,23 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
   if (!lessons) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const byDate = (a: Lesson, b: Lesson) => ((a.finalSlot?.date ?? "9") + (a.finalSlot?.time ?? "")).localeCompare((b.finalSlot?.date ?? "9") + (b.finalSlot?.time ?? ""));
   const today = new Date().toISOString().slice(0, 10);
-  const booked = lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).sort(byDate);
+  const booked = collapseSeries(lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today))).sort(byDate);
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
       <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré).</p></div>
       <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
-        <div><b className="block font-display text-3xl font-black text-clay">{booked.length}</b><small className="text-muted">cours à venir</small></div>
-        <div><b className="block font-display text-3xl font-black text-ok">{booked.filter((l) => l.price).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
-        <div><b className="block font-display text-3xl font-black">{lessons.filter((l) => l.status === "BOOKED").length}</b><small className="text-muted">à confirmer</small></div>
+        <div><b className="block font-display text-3xl font-black text-clay">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).length}</b><small className="text-muted">cours à venir</small></div>
+        <div><b className="block font-display text-3xl font-black text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
+        <div><b className="block font-display text-3xl font-black">{collapseSeries(lessons.filter((l) => l.status === "BOOKED")).length}</b><small className="text-muted">à confirmer</small></div>
       </div>
       <PriceNote />
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
-      {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", lessons.filter((l) => l.status === "BOOKED").sort(byDate))}
+      {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
       {group("Cours confirmés à venir", null, booked)}
       {group("Demandes sans créneau", "Un adulte t'écrit parce qu'il n'y avait plus de créneau libre : propose-lui une date (il confirmera).", lessons.filter((l) => l.status === "PENDING"))}
-      {group("En attente de la confirmation de l'adulte", null, lessons.filter((l) => l.status === "PROPOSED"))}
-      {group("Annulés ou refusés", null, lessons.filter((l) => l.status === "REFUSED"))}
+      {group("En attente de la confirmation de l'adulte", null, collapseSeries(lessons.filter((l) => l.status === "PROPOSED")))}
+      {group("Annulés ou refusés", null, collapseSeries(lessons.filter((l) => l.status === "REFUSED")))}
     </section>
   );
 }

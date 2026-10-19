@@ -32,7 +32,7 @@ export const workPhrase = (objective: string) => (WORK_OF[objective] ? `travail 
 // « Court 2 », « terrain n° 2 », « 2 » → « 2 » (le numéro du terrain) ; autre texte conservé tel quel
 export const courtNumber = (place: string) => place.trim().replace(/^(court|terrain)\s*(n°|numéro|num\.?)?\s*/i, "").trim();
 export const fmtSlot = (s: Slot) => `${new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} à ${fmtTime(s.time)}`;
-export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "BOOKED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; profId?: string | null; price?: number | null; memberDeclared?: boolean; prof?: { id: string; firstName: string | null; lastName: string | null } | null; member?: AdultInfo & { id: string; email?: string }; }
+export interface Lesson { id: string; type: string; objective: string; days: string[]; moment: string; message: string; status: "PENDING" | "PROPOSED" | "BOOKED" | "ACCEPTED" | "REFUSED"; finalSlot?: Slot | null; place?: string; partnerFirstName?: string; partnerLastName?: string; partnerAge?: number | null; partnerLevel?: string; confirmedAt?: string | null; adultReply?: string; declinedSlot?: Slot | null; coachReply: string; answeredAt: string | null; seenByMemberAt: string | null; createdAt: string; profId?: string | null; seriesId?: string | null; seriesCount?: number; price?: number | null; memberDeclared?: boolean; prof?: { id: string; firstName: string | null; lastName: string | null } | null; member?: AdultInfo & { id: string; email?: string }; }
 
 // Âge en années pleines d'après la date de naissance (null si inconnue)
 export function ageOf(birthDate: string | null | undefined, now = new Date()): number | null {
@@ -345,3 +345,20 @@ export const STATUS_TEXT: Record<ProfStatus, [string, string]> = {
 export const CONFIRM_HOURS = 48;
 export const confirmDeadline = (createdAt: string) => new Date(new Date(createdAt).getTime() + CONFIRM_HOURS * 3_600_000);
 export const fmtDeadline = (createdAt: string) => confirmDeadline(createdAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).replace(":", " h ").replace(/ h 00$/, " h");
+
+// Une série « toute l'année » = beaucoup de lignes : on n'en montre qu'une (le prochain cours de la série, ou le premier) avec le nombre de cours
+export function collapseSeries(list: Lesson[]): Lesson[] {
+  const seen = new Map<string, Lesson[]>();
+  for (const l of list) if (l.seriesId) seen.set(l.seriesId, [...(seen.get(l.seriesId) ?? []), l]);
+  const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
+  const today = new Date().toISOString().slice(0, 10);
+  return list.flatMap((l) => {
+    if (!l.seriesId) return [l];
+    const rows = seen.get(l.seriesId)!;
+    const upcoming = rows.filter((r) => !r.finalSlot || r.finalSlot.date >= today).sort((a, b) => stamp(a).localeCompare(stamp(b)));
+    const head = upcoming[0] ?? [...rows].sort((a, b) => stamp(b).localeCompare(stamp(a)))[0];
+    return l === head ? [{ ...l, seriesCount: Math.max(upcoming.length, 1) }] : [];
+  });
+}
+export const WEEKDAY_NAMES = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+export const everyDay = (slot: Slot) => `chaque ${WEEKDAY_NAMES[new Date(`${slot.date}T12:00:00`).getDay()]} à ${slot.time.replace(":", " h ").replace(/ h 00$/, " h")}`;

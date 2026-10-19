@@ -2,9 +2,10 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow, fmtDeadline } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay } from "../types";
 import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
+import { seriesDates } from "../series";
 import { ClayHero, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -37,7 +38,7 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean) => void }) {
+function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
   const [err, setErr] = useState("");
   const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
@@ -45,6 +46,7 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
   useEffect(loadPlan, [loadPlan]);
   const hasPlan = !!plan && plan.some((d) => d.slots.some((s) => s.free));
   const chosen = slot ? plan?.find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time) : null;
+  const [weekly, setWeekly] = useState(false); // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin
   const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,7 +54,7 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
     if (hasPlan && !slot) { setErr("Choisis un créneau dans le planning."); return; }
     const f = new FormData(e.currentTarget); setErr("");
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
-    try { await post("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot } : {}), type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan)); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
+    try { const res = await post<{ seriesCount?: number; skipped?: { date: string; why: string }[] }>("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot, ...(weekly ? { weekly: true } : {}) } : {}), type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan), res ?? undefined); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
@@ -89,7 +91,13 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
       </fieldset>
       {hasPlan ? (
         <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>Choisis ton créneau <small className="font-body font-normal text-muted">(1 heure)</small></legend>
-          <PlanningPicker days={plan!} value={slot} onChange={setSlot} />
+          <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />
+          {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
+            <label className={"grid cursor-pointer gap-2 rounded-2xl border-2 p-4 " + (weekly ? "border-clay bg-[#fdf1ea] shadow-[0_5px_0_var(--color-clay)]" : "border-line bg-white")}>
+              <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je prends ce créneau toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
+              {weekly && <span className="grid gap-1 text-sm"><span>👉 Jusqu'à <strong>{kept} cours</strong>{vac > 0 ? ` (${vac} semaine${vac > 1 ? "s" : ""} de vacances ou de jour férié sautée${vac > 1 ? "s" : ""})` : ""}{price ? ` · ${price} € le cours, réglé directement au professeur` : ""}.</span><span className="text-muted">Les dates où {prof?.firstName ?? "le professeur"} n'est pas disponible ou déjà pris sont sautées. Il confirme <strong>une seule fois</strong> pour toute la série. Tu pourras annuler un cours, ou toute la série, quand tu veux.</span></span>}
+            </label>
+          ); })()}
         </fieldset>
       ) : (
         <>
@@ -105,7 +113,7 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
       <Field label={`Un message pour ${prof?.firstName ?? "ton coach"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
       <Err msg={err} />
       {hasPlan && <p className="m-0 text-sm text-muted">Ton créneau est mis de côté : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} doit le confirmer (sous 48 h, sinon il est libéré). Tu peux annuler depuis « Mes cours ».</p>}
-      <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={hasPlan && !slot}>{hasPlan ? (chosen && slot ? `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}` : "Choisis un créneau ci-dessus") : "Envoyer ma demande"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
+      <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={hasPlan && !slot}>{hasPlan ? (chosen && slot ? (weekly ? `✅ Réserver : ${everyDay(slot)}` : `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}`) : "Choisis un créneau ci-dessus") : "Envoyer ma demande"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
     </form>
   );
 }
@@ -124,10 +132,12 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" | "amber
 }
 
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
-function LessonLine({ l, isNew, onCancel }: { l: Lesson; isNew: boolean; onCancel?: (l: Lesson) => void }) {
-  const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
+function LessonLine({ l, isNew, onCancel }: { l: Lesson; isNew: boolean; onCancel?: (l: Lesson, series?: boolean) => void }) {
+  const serie = (l.seriesCount ?? 0) > 1 && !!l.finalSlot; // série « toute l'année » : une seule ligne
+  const title = `${serie ? "🔁 " : ""}${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
   const state = { PENDING: ["⏳ En attente", "#7a5a00"], BOOKED: ["⏳ Le professeur doit confirmer", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
-  const sub = l.status === "BOOKED" && l.finalSlot ? `${fmtSlot(l.finalSlot)} · réponse attendue avant ${fmtDeadline(l.createdAt)}`
+  const sub = serie ? `${everyDay(l.finalSlot!)} · ${l.seriesCount} cours${l.status === "REFUSED" ? " annulés" : " à venir"}${l.status === "BOOKED" ? ` · réponse attendue avant ${fmtDeadline(l.createdAt)}` : l.status === "ACCEPTED" ? ` · prochain : ${fmtSlot(l.finalSlot!)}` : ""}`
+    : l.status === "BOOKED" && l.finalSlot ? `${fmtSlot(l.finalSlot)} · réponse attendue avant ${fmtDeadline(l.createdAt)}`
     : l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
     : l.status === "PENDING" ? `Tes disponibilités : ${l.days.length ? l.days.join(", ").toLowerCase() : "à définir"} · ${l.moment.toLowerCase()}`
     : l.coachReply ? `« ${l.coachReply} »` : "";
@@ -140,22 +150,23 @@ function LessonLine({ l, isNew, onCancel }: { l: Lesson; isNew: boolean; onCance
         {l.status === "ACCEPTED" && l.coachReply && <span className="text-sm text-muted">💬 « {l.coachReply} »</span>}
         {l.status === "PENDING" && l.declinedSlot && <span className="text-sm text-muted">Tu n'étais pas disponible le {fmtSlot(l.declinedSlot)} : une autre date te sera proposée.</span>}
       </div>
-      <span className="col-span-2 grid justify-items-start gap-1 text-sm font-bold sm:col-span-1 sm:justify-items-end" style={{ color: state[1] }}>{state[0]}{onCancel && (l.status === "ACCEPTED" || l.status === "PENDING" || l.status === "BOOKED") && <button className="text-xs font-bold text-[#9a2a1f] underline" onClick={() => onCancel(l)}>{l.status !== "ACCEPTED" ? "Retirer ma demande" : "Annuler ce cours"}</button>}</span>
+      <span className="col-span-2 grid justify-items-start gap-1 text-sm font-bold sm:col-span-1 sm:justify-items-end" style={{ color: state[1] }}>{state[0]}{onCancel && (l.status === "ACCEPTED" || l.status === "PENDING" || l.status === "BOOKED") && <button className="text-xs font-bold text-[#9a2a1f] underline" onClick={() => onCancel(l, serie && l.status === "BOOKED")}>{l.status !== "ACCEPTED" ? (serie ? "Retirer la série" : "Retirer ma demande") : serie ? "Annuler le prochain cours" : "Annuler ce cours"}</button>}{onCancel && serie && l.status === "ACCEPTED" && <button className="text-xs font-bold text-[#9a2a1f] underline" onClick={() => onCancel(l, true)}>Arrêter la série</button>}</span>
     </li>
   );
 }
 
 // Grand encadré : le prochain cours confirmé
-function NextCourse({ l, onCancel }: { l: Lesson; onCancel?: (l: Lesson) => void }) {
+function NextCourse({ l, onCancel }: { l: Lesson; onCancel?: (l: Lesson, series?: boolean) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-3xl bg-[#1d6b43] p-5 text-white shadow-sm">
       <DateBadge slot={l.finalSlot!} tone="green" />
       <div className="grid min-w-0 gap-0.5">
         <small className="font-bold uppercase tracking-wide text-white/80">Ton prochain cours</small>
         <strong className="font-display text-2xl leading-tight">{fmtSlot(l.finalSlot!)}</strong>
+        {(l.seriesCount ?? 0) > 1 && <span className="font-bold text-ball">🔁 Série : {everyDay(l.finalSlot!)} · {l.seriesCount} cours à venir</span>}
         <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}{l.place ? ` · ${l.place}` : ""}</span>
       </div>
-      {onCancel && <button className="ml-auto rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l)}>Annuler ce cours</button>}
+      {onCancel && <div className="ml-auto grid gap-2"><button className="rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l)}>Annuler ce cours</button>{(l.seriesCount ?? 0) > 1 && <button className="rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l, true)}>Arrêter la série</button>}</div>}
     </div>
   );
 }
@@ -198,13 +209,14 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const [price, setPrice] = useState<number | null>(null);
   const open = step !== null;
   const [sent, setSent] = useState<false | "request" | "booked">(false);
+  const [serieInfo, setSerieInfo] = useState<{ count: number; skipped: { date: string; why: string }[] } | null>(null);
   const [cancelErr, setCancelErr] = useState("");
   const c = COPY;
-  async function cancel(l: Lesson) {
+  async function cancel(l: Lesson, series = false) {
     setCancelErr("");
     if (preview) { setCancelErr("Aperçu : rien n'est annulé. Un adulte verrait ici le cours disparaître et le créneau redevenir libre."); return; }
-    if (!confirm("Annuler ce cours ? Le créneau redevient libre et le professeur est prévenu.")) return;
-    try { await post(`/lessons/${l.id}/cancel`); onSent(); } catch (x) { setCancelErr((x as Error).message); }
+    if (!confirm(series ? "Arrêter toute la série ? Tous les cours à venir sont annulés, les créneaux redeviennent libres et le professeur est prévenu." : "Annuler ce cours ? Le créneau redevient libre et le professeur est prévenu.")) return;
+    try { await post(`/lessons/${l.id}/cancel`, series ? { series: true } : {}); onSent(); } catch (x) { setCancelErr((x as Error).message); }
   }
   const isNew = (l: Lesson) => l.status !== "PENDING" && l.status !== "PROPOSED" && l.status !== "BOOKED" && !l.seenByMemberAt && !seenLocal.includes(l.id);
   const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
@@ -213,28 +225,29 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort(soonest);
   const confirmed = lessons.filter((l) => l.status === "ACCEPTED").sort(soonest);
   const upcoming = confirmed.filter((l) => !l.finalSlot || l.finalSlot.date >= todayIso()); // les cours passés ne sont plus affichés
-  const next = upcoming.find((l) => l.finalSlot); const others = upcoming.filter((l) => l !== next);
+  const next0 = upcoming.find((l) => l.finalSlot); const next = next0 && next0.seriesId ? { ...next0, seriesCount: upcoming.filter((r) => r.seriesId === next0.seriesId).length } : next0;
+  const others = collapseSeries(upcoming.filter((l) => l !== next0 && !(next0?.seriesId && l.seriesId === next0.seriesId)));
   const awaiting = lessons.filter((l) => l.status === "BOOKED").sort(soonest); // réservés, le professeur doit confirmer
-  const waiting = [...awaiting, ...lessons.filter((l) => l.status === "PENDING").sort(latest)];
+  const waiting = collapseSeries([...awaiting, ...lessons.filter((l) => l.status === "PENDING").sort(latest)]);
   const refused = lessons.filter((l) => l.status === "REFUSED").sort(latest);
   const past = confirmed.filter((l) => l.finalSlot && l.finalSlot.date < todayIso()).sort((a, b) => stamp(b).localeCompare(stamp(a)));
-  const tabs = [{ k: "venir", title: "À venir", list: others }, { k: "attente", title: "⏳ En attente", list: waiting }, { k: "passes", title: "Passés et annulés", list: [...refused, ...past] }];
+  const tabs = [{ k: "venir", title: "À venir", list: others }, { k: "attente", title: "⏳ En attente", list: waiting }, { k: "passes", title: "Passés et annulés", list: collapseSeries([...refused, ...past]) }];
   const [tab, setTab] = useState<string | null>(null);
   const shownTab = tabs.find((t) => t.k === tab) ?? (others.length || !waiting.length ? tabs[0] : tabs[1]);
   // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
   const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
   useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ask = () => { setStep("choose"); setProf(null); setSent(false); };
+  const ask = () => { setStep("choose"); setProf(null); setSent(false); setSerieInfo(null); };
   return (
     <section aria-labelledby="t-cours" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
         {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
       </div>
-      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
+      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
       <Err msg={cancelErr} />
       {step === "choose" && <ProfChooser preview={preview} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} onNoPref={() => { setProf(null); setPrice(null); setStep("form"); }} />}
-      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={(booked) => { setSent(booked ? "booked" : "request"); onSent(); }} />}
+      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={(booked, info) => { setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
       {next && <NextCourse l={next} onCancel={cancel} />}
       {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
       {lessons.length > 0 && (

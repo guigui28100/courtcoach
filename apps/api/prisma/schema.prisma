@@ -502,6 +502,8 @@ model LessonRequest {
 
   @@index([memberId])
   @@index([profId])
+  seriesId      String?      // cours pris « à l'année » : tous les cours de la série partagent cet identifiant
+  @@index([seriesId])
   @@unique([profId, slotKey])
 }
 

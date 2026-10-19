@@ -1,7 +1,7 @@
 import { LessonStatus } from "@prisma/client";
 import { Transform } from "class-transformer";
 import { Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 export const PARTNER_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40", "30/5", "30/4", "30/3", "30/2", "30/1", "30", "15/5", "15/4", "15/3", "15/2", "15/1", "15", "5/6", "4/6", "3/6", "2/6", "1/6", "0", "-2/6", "-4/6", "-15", "-30", "Je ne sais pas"];
@@ -16,6 +16,7 @@ export class SlotDto {
 export class CreateLessonDto {
   @IsOptional() @IsString() @MaxLength(40) profId?: string; // professeur choisi (vide = demande adressée au coach)
   @IsOptional() @ValidateNested() @Type(() => SlotDto) slot?: SlotDto; // créneau réservé dans le planning du professeur (le cours est alors confirmé tout de suite)
+  @IsOptional() @IsBoolean() weekly?: boolean; // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin (vacances et jours fériés sautés)
   @IsIn(["individuel", "duo"]) type: string;
   @Transform(trim) @IsString() @MaxLength(60) objective: string;
   @IsOptional() @IsArray() @ArrayMaxSize(7) @IsIn(DAYS, { each: true }) days?: string[];
@@ -39,4 +40,14 @@ export class AnswerLessonDto {
 export class RespondLessonDto {
   @IsIn(["confirm", "decline"]) action: "confirm" | "decline";
   @IsOptional() @Transform(trim) @IsString() @MaxLength(200) message?: string;
+}
+
+// Annulation par l'adulte : ce cours seulement, ou toute la série à venir
+export class CancelLessonDto {
+  @IsOptional() @IsBoolean() series?: boolean;
+}
+
+// Arrêt d'une série par le professeur ou le coach (un petit mot facultatif pour l'adulte)
+export class StopSeriesDto {
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(200) reply?: string;
 }

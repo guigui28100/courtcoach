@@ -199,6 +199,24 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     const freed = (await plan()).find((x) => x.date === slotOld.date)!.slots.find((x) => x.time === slotOld.time)!;
     expect(freed.free).toBe(true);
     expect(await prisma.lessonRequest.findUnique({ where: { id: old.id } })).toMatchObject({ status: "REFUSED", slotKey: null });
+    // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin, une seule confirmation, le professeur peut tout arrêter
+    const far = days.filter((x) => x.slots.some((y) => y.time === "17:00" && y.free))[10]; expect(far).toBeTruthy();
+    const w = (await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId, weekly: true, slot: { date: far.date, time: "17:00" } }).expect(201)).body;
+    expect(w.status).toBe("BOOKED"); expect(w.seriesCount).toBeGreaterThan(8); expect(Array.isArray(w.skipped)).toBe(true);
+    const rowsOf = () => prisma.lessonRequest.findMany({ where: { seriesId: w.seriesId }, orderBy: { slotKey: "asc" } });
+    const serie = await rowsOf(); expect(serie.length).toBe(w.seriesCount); expect(new Set(serie.map((r) => r.profId)).size).toBe(1); expect(serie.every((r) => r.status === "BOOKED" && !!r.slotKey)).toBe(true);
+    await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", weekly: true, slot: { date: far.date, time: "17:00" } }).expect(400); // sans professeur
+    await A.adulte2.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId, weekly: true, slot: { date: far.date, time: "17:00" } }).expect(409); // premier créneau déjà pris
+    await A.adulte2.post(`/api/lessons/${w.id}/stop-series`).set(ORIGIN).expect(403); // pas à l'adulte
+    await A.prof2.post(`/api/lessons/${w.id}/stop-series`).set(ORIGIN).expect(404); // pas à un autre professeur
+    await A.prof.post(`/api/lessons/${w.id}/confirm`).set(ORIGIN).expect(200); // une seule confirmation
+    expect((await rowsOf()).every((r) => r.status === "ACCEPTED")).toBe(true);
+    await A.adulte.post(`/api/lessons/${serie[1].id}/cancel`).set(ORIGIN).send({}).expect(200); // un seul cours annulé
+    let rowsNow = await rowsOf(); expect(rowsNow.filter((r) => r.status === "REFUSED").length).toBe(1);
+    const stop = (await A.prof.post(`/api/lessons/${serie[0].id}/stop-series`).set(ORIGIN).send({ reply: "Imprévu, désolé" }).expect(200)).body;
+    expect(stop.stopped).toBe(serie.length - 1); rowsNow = await rowsOf();
+    expect(rowsNow.every((r) => r.status === "REFUSED" && r.slotKey === null)).toBe(true); // créneaux libérés
+    expect((await plan()).find((x) => x.date === far.date)!.slots.find((x) => x.time === "17:00")!.free).toBe(true);
     // le professeur actualise ses disponibilités : les cours déjà confirmés qui n'y tombent plus sont signalés (rien n'est annulé)
     const other = ((new Date(`${day}T12:00:00Z`).getUTCDay() + 6) % 7 + 3) % 7;
     const upd = (await A.prof.put("/api/profs/me/slots").set(ORIGIN).send({ slots: [{ weekday: other, start: "08:00", end: "10:00" }] }).expect(200)).body;
@@ -213,6 +231,17 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ paused: true }).expect(200);
     await A.adulte.get(`/api/profs/${profId}/planning`).expect(400);
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ paused: false }).expect(200);
+  });
+
+  it("séries : les vacances scolaires et les jours fériés sont sautés, jusqu'au 30 juin", async () => {
+    const { seriesDates, seasonEnd } = await import("../src/profs/series");
+    expect(seasonEnd("2026-10-21")).toBe("2027-06-30"); expect(seasonEnd("2027-03-01")).toBe("2027-06-30"); expect(seasonEnd("2027-09-15")).toBe("2028-06-30");
+    const d = seriesDates("2026-10-21"); expect(d[d.length - 1].date <= "2027-06-30").toBe(true);
+    expect(d.find((x) => x.date === "2026-10-28")?.skip).toMatch(/vacances scolaires/); // Toussaint
+    expect(d.find((x) => x.date === "2026-12-23")?.skip).toMatch(/vacances scolaires/); // Noël
+    expect(d.find((x) => x.date === "2026-11-11")?.skip).toMatch(/jour férié/); // 11 novembre (mercredi)
+    expect(seriesDates("2027-05-05").find((x) => x.date === "2027-05-05")?.skip).toBeUndefined();
+    expect(seriesDates("2027-05-06")[0].skip).toMatch(/Ascension/);
   });
 
   it("changer un document retire la visibilité jusqu'à nouvelle validation ; pause ; carte expirée", async () => {

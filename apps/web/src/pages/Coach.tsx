@@ -8,7 +8,7 @@ import { ProfsAdmin } from "../components/Profs";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { MarkBadge, useVideos } from "../components/Videos";
-import { adultFacts, adultName, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, collapseSeries, everyDay, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
@@ -26,6 +26,11 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
     try { await post(`/lessons/${l.id}/answer`, ask === "PROPOSED" ? { status: "PROPOSED", slot: { date, time }, place: place || undefined, reply: reply || undefined } : { status: "REFUSED", reply: reply || undefined }); setAsk(null); onDone(); } catch (e) { setErr((e as Error).message); }
   }
   async function confirmBooking() { setErr(""); try { await post(`/lessons/${l.id}/confirm`); onDone(); } catch (e) { setErr((e as Error).message); } }
+  const serie = (l.seriesCount ?? 0) > 1 && !!l.finalSlot; // série « toute l'année »
+  async function stopSeries() {
+    if (!confirm("Arrêter toute la série ? Tous les cours à venir sont annulés, les créneaux sont libérés et l'adulte est prévenu.")) return;
+    setErr(""); try { await post(`/lessons/${l.id}/stop-series`, {}); onDone(); } catch (e) { setErr((e as Error).message); }
+  }
   const field = "input !min-h-11";
   const badge = l.status === "ACCEPTED" ? ["Confirmé par l'adulte", "!border-ok !text-ok"] : l.status === "PROPOSED" ? ["Pas encore confirmé", "!border-[#c08a00] !text-[#7a5a00]"] : l.status === "BOOKED" ? ["À confirmer par le professeur", "!border-[#c08a00] !text-[#7a5a00]"] : l.status === "REFUSED" ? ["Refusé / annulé", "!border-bad !text-bad"] : null;
   return (
@@ -33,6 +38,7 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
+          {serie && <p className="m-0 text-sm font-bold text-clay">🔁 Série « toute l'année » : {everyDay(l.finalSlot!)} · {l.seriesCount} cours {l.status === "BOOKED" ? "à confirmer" : l.status === "REFUSED" ? "annulés" : "à venir"}</p>}
           <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
           {!asProf && l.prof && <p className="m-0 text-sm font-bold text-ink">👩‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
           {!!l.price && <p className="m-0 text-sm font-bold text-ink">💶 {l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
@@ -45,16 +51,17 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
 
       {l.status === "PENDING" && l.declinedSlot && <p className="m-0 rounded-xl bg-[#fdf0ee] p-3 font-bold text-[#9a2a1f]">⚠ Pas disponible le {fmtSlot(l.declinedSlot)}{l.adultReply ? ` : « ${l.adultReply} »` : ""}. Propose-lui une autre date.</p>}
       {l.status === "PROPOSED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">⏳ Tu as proposé : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}. <u>Ne te déplace pas avant sa confirmation.</u></p>}
-      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
+      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
       {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-bold text-[#1d6b43]">{freshConfirm ? "🔔 Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
       {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">💬 « {l.coachReply} »</p>}
 
       {l.status !== "REFUSED" && (!ask ? (
         <div className="flex flex-wrap gap-2">
-          {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok" onClick={confirmBooking}>✅ Je confirme ce cours</button>}
+          {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
           {l.status === "PENDING" && <button className="btn-clay btn-sm" onClick={() => setAsk("PROPOSED")}>📅 Proposer une date</button>}
           {l.status !== "PENDING" && l.status !== "BOOKED" && <button className="btn-outline btn-sm" onClick={() => setAsk("PROPOSED")}>✏️ Changer la date</button>}
-          <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : "Annuler le cours"}</button>
+          <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
+          {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>⛔ Arrêter la série</button>}
         </div>
       ) : (
         <div className="grid gap-3 rounded-2xl border-2 border-line bg-chalk p-3">
@@ -189,8 +196,8 @@ function useCoachData(version = 0) {
   useEffect(load, [load, version]);
   const pending = lessons.filter((l) => l.status === "PENDING");
   const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
-  const booked = lessons.filter((l) => l.status === "BOOKED" && l.finalSlot).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time)); // réservés par l'adulte, le professeur doit confirmer
-  const upcoming = lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso()).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
+  const booked = collapseSeries(lessons.filter((l) => l.status === "BOOKED" && l.finalSlot)).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time)); // réservés par l'adulte, le professeur doit confirmer
+  const upcoming = collapseSeries(lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso())).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
   const youthVideos = mine((videos ?? []).filter((v) => v.kind === "centre"), (v) => (v as { playerId?: string }).playerId);
   return { lessons, pending, toConfirm, booked, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, profsWaiting, reload: load };
