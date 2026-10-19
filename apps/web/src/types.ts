@@ -1,5 +1,5 @@
 export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH";
-export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; clubMember?: boolean; trainerKind?: string | null; mustChangePassword?: boolean; twoFactor?: boolean; totpKeyShared?: boolean; accesses: { playerId: string; relation: string }[]; }
+export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; clubMember?: boolean; mustChangePassword?: boolean; twoFactor?: boolean; totpKeyShared?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },
@@ -326,6 +326,7 @@ export const DOC_KINDS: { kind: DocKind; label: string; icon: string; help: stri
   { kind: "AUTO_ENTREPRENEUR", label: "Déclaration d'auto-entrepreneur", icon: "📄", help: "Ton attestation d'inscription (SIRET / avis de situation)." },
 ];
 export interface ProfDocMeta { kind: DocKind; fileName: string; mimeType?: string; sizeBytes: number; validUntil: string | null; uploadedAt: string; }
+export type ProfMeResp = { optedIn: false; prices: { member: number; other: number } } | (ProfMe & { optedIn: true });
 export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
 export interface ProfAdmin { id: string; email: string; firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approvedAt: string | null; documents: ProfDocMeta[]; slotCount: number; requests: number; }
 export const profName = (p: { firstName: string | null; lastName?: string | null } | null | undefined) => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "Professeur";

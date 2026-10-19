@@ -13,8 +13,10 @@ export class ProfsController {
   // Liste des professeurs visibles : adultes (pour choisir) et coach
   @Roles(Role.ADULT, Role.COACH) @Get() list(@CurrentUser() u: AuthUser) { return this.svc.listVisible(u); }
 
-  // Espace du professeur (compte TRAINER de type PROF : vérifié dans le service)
+  // Espace du professeur (entraîneur qui a cliqué « je souhaite donner des cours particuliers » : vérifié dans le service)
   @Roles(Role.TRAINER) @Get("me") me(@CurrentUser() u: AuthUser) { return this.svc.me(u); }
+  @Roles(Role.TRAINER) @Post("me/optin") @HttpCode(200) optIn(@CurrentUser() u: AuthUser) { return this.svc.optIn(u); }
+  @Roles(Role.TRAINER) @Delete("me") optOut(@CurrentUser() u: AuthUser) { return this.svc.optOut(u); }
   @Roles(Role.TRAINER) @Put("me") update(@CurrentUser() u: AuthUser, @Body() dto: ProfProfileDto) { return this.svc.updateMe(u, dto); }
   @Roles(Role.TRAINER) @Put("me/slots") slots(@CurrentUser() u: AuthUser, @Body() dto: SlotsDto) { return this.svc.setSlots(u, dto.slots); }
   @Roles(Role.TRAINER) @Put("me/documents/:kind")

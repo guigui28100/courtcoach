@@ -110,7 +110,7 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
     <section className="grid gap-4" aria-labelledby="pa-h">
       <div className="grid gap-1">
         <h2 id="pa-h" className="m-0 text-xl">👩‍🏫 Professeurs de cours particuliers</h2>
-        <p className="hint m-0">Tu crées les comptes dans <strong>Jeunes · Centre → 👥 Entraîneurs</strong> (type « Professeur de cours particuliers »). Un professeur n'est visible des adultes que si les <strong>3 documents</strong> sont déposés, que la <strong>carte professionnelle est valable</strong> et que <strong>tu l'as validé</strong> ici. Si un document est remplacé, tu dois revalider. Le site ne peut pas vérifier la carte auprès de l'administration : c'est à toi de contrôler les pièces.</p>
+        <p className="hint m-0">Tu crées les comptes dans <strong>Jeunes · Centre → 👥 Entraîneurs</strong> ; c'est l'entraîneur qui clique « Je souhaite donner des cours particuliers » dans son espace. Un professeur n'est visible des adultes que si les <strong>3 documents</strong> sont déposés, que la <strong>carte professionnelle est valable</strong> et que <strong>tu l'as validé</strong> ici. Si un document est remplacé, tu dois revalider. Le site ne peut pas vérifier la carte auprès de l'administration : c'est à toi de contrôler les pièces.</p>
       </div>
       <Err msg={err} />
       {list === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <Empty>Aucun professeur pour l'instant.</Empty> : (

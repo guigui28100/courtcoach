@@ -29,7 +29,7 @@ export default function Home() {
             <p className="mb-6 max-w-2xl text-lg text-white/90">Envoie une vidéo, reçois des conseils personnalisés et demande un cours. Pour les jeunes compétiteurs : objectifs de l'année, évaluations et bulletins trimestriels.</p>
             <div className="flex flex-wrap gap-3">
               {me ? (
-                <Link to={homeFor(me.role, me.trainerKind)} className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">Ouvrir mon espace</Link>
+                <Link to={homeFor(me.role)} className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">Ouvrir mon espace</Link>
               ) : (
                 <>
                   <Link to="/connexion?mode=inscription" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">Créer mon compte</Link>

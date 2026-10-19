@@ -13,7 +13,7 @@ const PASSWORD = "un-mot-de-passe-solide-1";
 const PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n");
 const future = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
-describe("Professeurs de cours particuliers : documents, visibilité, tarifs, cloisonnement", () => {
+describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, visibilité, tarifs, cloisonnement", () => {
   let app: INestApplication; let prisma: PrismaService; const A: Record<string, ReturnType<typeof request.agent>> = {};
   let profId: string, prof2Id: string, p1: string, p2: string, lessonId: string, adultId: string;
   const agent = () => request.agent(app.getHttpServer());
@@ -34,16 +34,29 @@ describe("Professeurs de cours particuliers : documents, visibilité, tarifs, cl
   });
   afterAll(async () => { await clean(); await app.close(); });
 
-  it("le coach crée un professeur (comme un entraîneur) ; un entraîneur de comité n'a aucun accès aux cours particuliers", async () => {
-    const r = await A.coach.post("/api/trainers").set(ORIGIN).send({ firstName: "Claire", email: "claire@exemple.fr", kind: "PROF", playerIds: [p1] }).expect(201);
+  it("le coach crée un entraîneur ordinaire ; sans avoir cliqué « je souhaite donner des cours », il n'a aucun accès aux cours particuliers", async () => {
+    await A.coach.post("/api/trainers").set(ORIGIN).send({ firstName: "X", email: "x@exemple.fr", kind: "PROF", playerIds: [] }).expect(400); // plus de type « professeur » à la création
+    const r = await A.coach.post("/api/trainers").set(ORIGIN).send({ firstName: "Claire", email: "claire@exemple.fr", playerIds: [p1] }).expect(201);
     profId = r.body.id;
-    expect((await A.coach.get("/api/trainers").expect(200)).body.find((t: any) => t.id === profId).kind).toBe("PROF");
+    expect((await A.coach.get("/api/trainers").expect(200)).body.find((t: any) => t.id === profId)).toMatchObject({ kind: "COMITE", teaches: false });
     await prisma.user.update({ where: { id: profId }, data: { passwordHash: await hash(PASSWORD), mustChangePassword: false } });
     A.prof = agent(); await A.prof.post("/api/auth/login").set(ORIGIN).send({ email: "claire@exemple.fr", password: PASSWORD }).expect(200);
-    prof2Id = await login("prof2", Role.TRAINER, { trainerKind: "PROF" });
-    for (const url of ["/api/profs/me", "/api/lessons"]) await A.comite.get(url).expect(403);
-    await A.comite.put("/api/profs/me").set(ORIGIN).send({ bio: "x" }).expect(403);
+    prof2Id = await login("prof2", Role.TRAINER);
+    for (const who of ["prof", "prof2", "comite"]) {
+      expect((await A[who].get("/api/profs/me").expect(200)).body).toMatchObject({ optedIn: false });
+      await A[who].get("/api/lessons").expect(403);
+      await A[who].put("/api/profs/me").set(ORIGIN).send({ bio: "x" }).expect(403);
+      await A[who].put("/api/profs/me/slots").set(ORIGIN).send({ slots: [] }).expect(403);
+      await upload(who, "DIPLOME").expect(403);
+    }
     await A.comite.get(`/api/profs/${profId}/documents/DIPLOME`).expect(404);
+    await A.adulte.post("/api/profs/me/optin").set(ORIGIN).expect(403); // seulement un entraîneur
+    await A.parent.post("/api/profs/me/optin").set(ORIGIN).expect(403);
+    // l'entraîneur clique « je souhaite donner des cours particuliers » (et aucun adulte ne le voit encore)
+    for (const who of ["prof", "prof2"]) expect((await A[who].post("/api/profs/me/optin").set(ORIGIN).expect(200)).body).toMatchObject({ optedIn: true, status: "missing" });
+    expect((await A.coach.get("/api/trainers").expect(200)).body.find((t: any) => t.id === profId).teaches).toBe(true);
+    expect((await A.prof2.get("/api/lessons").expect(200)).body).toEqual([]);
+    await A.comite.get("/api/lessons").expect(403); // l'autre entraîneur n'a toujours rien
   });
 
   it("le professeur ne voit que les jeunes que le coach lui confie", async () => {
@@ -151,7 +164,10 @@ describe("Professeurs de cours particuliers : documents, visibilité, tarifs, cl
     await A.coach.post(`/api/profs/${profId}/approval`).set(ORIGIN).send({ approved: true }).expect(400);
   });
 
-  it("supprimer le professeur efface ses pièces et renvoie ses demandes au coach", async () => {
+  it("arrêter les cours particuliers efface la fiche et les pièces, et renvoie les demandes au coach ; supprimer le compte aussi", async () => {
+    await A.prof2.delete("/api/profs/me").set(ORIGIN).expect(200);
+    expect((await A.prof2.get("/api/profs/me").expect(200)).body.optedIn).toBe(false);
+    await A.prof2.get("/api/lessons").expect(403);
     await A.coach.delete(`/api/trainers/${profId}`).set(ORIGIN).expect(204);
     expect(await prisma.profDocument.count({ where: { userId: profId } })).toBe(0);
     expect(await prisma.profProfile.count({ where: { userId: profId } })).toBe(0);

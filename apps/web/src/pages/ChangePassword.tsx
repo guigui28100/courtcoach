@@ -22,7 +22,7 @@ export default function ChangePassword() {
     try {
       await post("/auth/change-password", { currentPassword: forced ? undefined : String(f.get("current")), newPassword: String(f.get("next")), acceptPolicy: forced ? f.get("policy") === "on" : undefined });
       await reload();
-      nav(homeFor(me!.role, me!.trainerKind), { replace: true });
+      nav(homeFor(me!.role), { replace: true });
     } catch (err) { setError((err as Error).message); }
   }
 

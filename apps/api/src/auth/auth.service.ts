@@ -196,7 +196,7 @@ export class AuthService {
 
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { accesses: { select: { playerId: true, relation: true } } } });
-    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, phone: user.phone, clubMember: user.clubMember, trainerKind: user.trainerKind, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, ...(user.totpEnabled && !totpKeyIsDedicated() ? { totpKeyShared: true } : {}), accesses: user.accesses };
+    return { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, birthYear: user.birthYear, level: user.level, phone: user.phone, clubMember: user.clubMember, mustChangePassword: user.mustChangePassword, twoFactor: user.totpEnabled, ...(user.totpEnabled && !totpKeyIsDedicated() ? { totpKeyShared: true } : {}), accesses: user.accesses };
   }
 
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.

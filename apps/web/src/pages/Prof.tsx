@@ -1,10 +1,10 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
-import { api, del, get, put } from "../api";
+import { useSearchParams } from "react-router-dom";
+import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
-import { DOC_KINDS, fmtDate, fmtProfSlot, Lesson, ProfCard, ProfMe, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
+import { DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
 
 type Tab = "demandes" | "dispos" | "presentation" | "documents";
@@ -12,35 +12,57 @@ const TABS: Tab[] = ["demandes", "dispos", "presentation", "documents"];
 const HOURS = Array.from({ length: 29 }, (_, i) => { const m = 7 * 60 + i * 30; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`; }); // 07:00 → 21:00
 const hourLabel = (t: string) => t.replace(":00", " h").replace(":30", " h 30");
 
-// Espace du professeur de cours particuliers : demandes reçues, disponibilités, présentation, documents
+// Cours particuliers pour un entraîneur : il clique « je souhaite donner des cours particuliers », puis remplit sa présentation, ses disponibilités et ses documents
 export function ProfSpace() {
   const { me } = useAuth();
   const [params, setParams] = useSearchParams();
   const tab: Tab = TABS.find((k) => k === params.get("onglet")) ?? "demandes";
-  const [p, setP] = useState<ProfMe | null>(null);
+  const [resp, setResp] = useState<ProfMeResp | null>(null);
   const [lessons, setLessons] = useState<Lesson[] | null>(null);
   const [err, setErr] = useState("");
-  const loadMe = useCallback(() => { get<ProfMe>("/profs/me").then(setP).catch((e) => setErr((e as Error).message)); }, []);
   const loadLessons = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons).catch(() => setLessons([])); }, []);
-  useEffect(() => { loadMe(); loadLessons(); }, [loadMe, loadLessons]);
-  if (me && me.trainerKind !== "PROF") return <Navigate to="/coach/centre" replace />;
+  const load = useCallback(() => { get<ProfMeResp>("/profs/me").then((r) => { setResp(r); if (r.optedIn) loadLessons(); }).catch((e) => setErr((e as Error).message)); }, [loadLessons]);
+  useEffect(load, [load]);
+  const p = resp && resp.optedIn ? resp : null;
+  const setP = (x: ProfMe) => setResp({ ...x, optedIn: true });
+  async function optIn() { setErr(""); try { setResp(await post<ProfMeResp>("/profs/me/optin")); loadLessons(); setParams({ onglet: "presentation" }); } catch (x) { setErr((x as Error).message); } }
+  async function optOut() {
+    if (!confirm("Arrêter les cours particuliers ? Ta présentation, tes disponibilités et tes documents seront effacés, et tes demandes en cours reviendront au coach.")) return;
+    try { setResp(await del<ProfMeResp>("/profs/me")); setLessons(null); } catch (x) { setErr((x as Error).message); }
+  }
   const todo = (lessons ?? []).filter((l) => l.status === "PENDING").length;
   const missing = p ? p.status === "missing" || p.status === "expired" : false;
   const go = (k: string) => { setParams(k === "demandes" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const st = p ? STATUS_TEXT[p.status] : null;
   return (
     <>
-      <PageHead eyebrow="Mon espace professeur" title={me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Tes demandes de cours, tes disponibilités et ta présentation, au même endroit.</PageHead>
+      <PageHead eyebrow="Cours particuliers" title={me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes demandes, tes disponibilités et ta présentation, au même endroit.</PageHead>
       <Page>
-        {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
         <Err msg={err} />
-        <SideLayout nav={<TabsBar label="Mon espace professeur" active={tab} onChange={go} tabs={[["demandes", "📨 Mes demandes", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
-          {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} />}
-          {tab === "dispos" && p && <Availability p={p} onSaved={setP} />}
-          {tab === "presentation" && p && <Presentation p={p} onSaved={setP} />}
-          {tab === "documents" && p && <Documents p={p} id={me?.id ?? ""} onChanged={setP} />}
-          {!p && !err && <div className="skeleton h-40" role="status" aria-label="Chargement en cours" />}
-        </SideLayout>
+        {resp && !resp.optedIn && (
+          <section className="card grid gap-4 border-2 !border-clay" aria-labelledby="po-h">
+            <h2 id="po-h" className="m-0 text-xl">🎾 Tu souhaites donner des cours particuliers ?</h2>
+            <p className="m-0">Les adultes du club peuvent choisir un professeur et lui demander un cours. Si tu es d'accord, voici comment ça marche :</p>
+            <ol className="m-0 grid gap-1 pl-5">
+              <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
+              <li>Tu déposes tes <strong>3 documents</strong> : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (seul le coach les voit).</li>
+              <li>Le coach vérifie et te rend <strong>visible</strong> des adultes.</li>
+              <li>Les adultes te demandent un cours, tu proposes une date, ils confirment. Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
+            </ol>
+            <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
+            <div><button className="btn-clay" onClick={optIn}>✋ Je souhaite donner des cours particuliers</button></div>
+          </section>
+        )}
+        {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
+        {p && (
+          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📨 Mes demandes", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
+            {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} />}
+            {tab === "dispos" && <Availability p={p} onSaved={setP} />}
+            {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Ta fiche, tes disponibilités et tes documents sont effacés. Tes demandes en cours reviennent au coach. Tu pourras recommencer plus tard.</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
+            {tab === "documents" && <Documents p={p} id={me?.id ?? ""} onChanged={setP} />}
+          </SideLayout>
+        )}
+        {!resp && !err && <div className="skeleton h-40" role="status" aria-label="Chargement en cours" />}
       </Page>
     </>
   );

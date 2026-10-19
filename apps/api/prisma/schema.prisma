@@ -72,7 +72,7 @@ model User {
   totpEnabled   Boolean   @default(false)
   totpLastStep  Int?      // dernier code utilisé (un code ne sert qu'une fois)
   recoveryCodes String[]  // codes de secours (empreintes)
-  trainerKind   String?   // entraîneur : "COMITE" (par défaut), "CLUB" ou "PROF" (professeur de cours particuliers) ; mêmes droits sur les jeunes (seulement ceux confiés par le coach)
+  trainerKind   String?   // entraîneur : "COMITE" (par défaut) ou "CLUB" ; mêmes droits (seulement les jeunes confiés par le coach). Un entraîneur peut en plus donner des cours particuliers (ProfProfile)
   clubMember    Boolean   @default(false) // adulte : se déclare adhérent du TC Houdan (tarif des cours particuliers)
   profProfile   ProfProfile?
   signature     String?   // signature du coach (image PNG dessinée), affichée en bas des bulletins
@@ -502,7 +502,7 @@ model LessonRequest {
   @@index([profId])
 }
 
-// Présentation d'un professeur de cours particuliers (compte TRAINER de type PROF, créé par le coach)
+// Présentation d'un professeur de cours particuliers : un entraîneur (compte TRAINER créé par le coach) qui a cliqué « je souhaite donner des cours particuliers »
 model ProfProfile {
   userId     String   @id
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)

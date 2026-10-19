@@ -15,7 +15,7 @@ export default function Connexion() {
   const [busy, setBusy] = useState(false);
   const [needCode, setNeedCode] = useState(false); // le coach a la double authentification
   const from = (useLocation().state as { from?: string } | null)?.from;
-  if (me) return <Navigate to={from && from !== "/connexion" ? from : homeFor(me.role, me.trainerKind)} replace />;
+  if (me) return <Navigate to={from && from !== "/connexion" ? from : homeFor(me.role)} replace />;
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

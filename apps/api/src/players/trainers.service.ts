@@ -29,8 +29,8 @@ export class TrainersService {
   }
 
   async list() {
-    const rows = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null }, orderBy: { createdAt: "asc" }, include: { accesses: { select: { playerId: true } } } });
-    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, kind: u.trainerKind === "CLUB" ? "CLUB" : u.trainerKind === "PROF" ? "PROF" : "COMITE", mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
+    const rows = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null }, orderBy: { createdAt: "asc" }, include: { accesses: { select: { playerId: true } }, profProfile: { select: { userId: true } } } });
+    return rows.map((u) => ({ id: u.id, email: u.email, firstName: u.firstName, kind: u.trainerKind === "CLUB" ? "CLUB" : "COMITE", teaches: !!u.profProfile, mustChangePassword: u.mustChangePassword, lastLoginAt: u.lastLoginAt, twoFactor: u.totpEnabled, playerIds: u.accesses.map((a: { playerId: string }) => a.playerId) }));
   }
 
   async create(user: AuthUser, dto: TrainerDto) {
@@ -38,7 +38,7 @@ export class TrainersService {
     if (await this.prisma.user.findUnique({ where: { email } })) throw new ConflictException("Cet e-mail est déjà utilisé par un autre compte.");
     const ids = await this.checkPlayers(dto.playerIds ?? []);
     const temporaryPassword = this.generatePassword();
-    const u = await this.prisma.user.create({ data: { email, role: Role.TRAINER, firstName: dto.firstName.trim(), trainerKind: dto.kind === "CLUB" ? "CLUB" : dto.kind === "PROF" ? "PROF" : "COMITE", passwordHash: await hash(temporaryPassword), mustChangePassword: true } });
+    const u = await this.prisma.user.create({ data: { email, role: Role.TRAINER, firstName: dto.firstName.trim(), trainerKind: dto.kind === "CLUB" ? "CLUB" : "COMITE", passwordHash: await hash(temporaryPassword), mustChangePassword: true } });
     if (ids.length) await this.prisma.playerAccess.createMany({ data: ids.map((playerId) => ({ userId: u.id, playerId, relation: "entraineur" })) });
     await this.audit.log(user.id, "create-trainer", "User", u.id);
     return { id: u.id, email, temporaryPassword }; // montré une seule fois

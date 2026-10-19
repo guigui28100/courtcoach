@@ -13,16 +13,16 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export type ProfStatus = "visible" | "paused" | "waiting" | "missing" | "expired";
 
-// Professeurs de cours particuliers : comptes TRAINER de type PROF, créés par le coach.
+// Professeurs de cours particuliers : un entraîneur (compte TRAINER créé par le coach) qui, dans son espace, clique « je souhaite donner des cours particuliers ».
 // Un professeur n'est montré aux adultes que si les 3 documents sont déposés, la carte professionnelle est encore valable ET le coach a validé.
 @Injectable()
 export class ProfsService {
   constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
 
-  // Le compte doit être un professeur (et pas un entraîneur de comité ou de club)
+  // Le compte doit être un entraîneur qui a choisi de donner des cours particuliers
   async assertProf(userId: string) {
-    const u = await this.prisma.user.findFirst({ where: { id: userId, role: Role.TRAINER, trainerKind: "PROF", deletedAt: null } });
-    if (!u) throw new ForbiddenException("Réservé aux professeurs de cours particuliers.");
+    const u = await this.prisma.user.findFirst({ where: { id: userId, role: Role.TRAINER, deletedAt: null, profProfile: { isNot: null } } });
+    if (!u) throw new ForbiddenException("Réservé aux entraîneurs qui donnent des cours particuliers.");
     return u;
   }
   private async profile(userId: string) {
@@ -48,7 +48,7 @@ export class ProfsService {
   // ----- Ce que voit un adulte (ou le coach) : les professeurs visibles -----
   async listVisible(user: AuthUser) {
     const rows = await this.prisma.user.findMany({
-      where: { role: Role.TRAINER, trainerKind: "PROF", deletedAt: null, profProfile: { is: { approvedAt: { not: null } } } },
+      where: { role: Role.TRAINER, deletedAt: null, profProfile: { is: { approvedAt: { not: null } } } },
       include: { profProfile: { include: { slots: true, documents: { select: { kind: true, validUntil: true } } } } }, orderBy: { createdAt: "asc" },
     });
     const me = user.role === Role.ADULT ? await this.prisma.user.findUnique({ where: { id: user.id }, select: { clubMember: true } }) : null;
@@ -65,18 +65,41 @@ export class ProfsService {
 
   // Une demande de cours ne peut viser qu'un professeur visible et qui accepte des demandes
   async assertBookable(profId: string) {
-    const u = await this.prisma.user.findFirst({ where: { id: profId, role: Role.TRAINER, trainerKind: "PROF", deletedAt: null }, include: { profProfile: { include: { documents: { select: { kind: true, validUntil: true } } } } } });
+    const u = await this.prisma.user.findFirst({ where: { id: profId, role: Role.TRAINER, deletedAt: null }, include: { profProfile: { include: { documents: { select: { kind: true, validUntil: true } } } } } });
     if (!u?.profProfile || this.status(u.profProfile) !== "visible") throw new BadRequestException("Ce professeur n'est pas disponible pour le moment.");
   }
 
   // ----- Espace du professeur -----
+  // Un entraîneur qui n'a pas (encore) choisi de donner des cours reçoit seulement { optedIn: false }
   async me(user: AuthUser) {
-    const u = await this.assertProf(user.id);
+    if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé aux entraîneurs.");
+    const u = await this.prisma.user.findFirst({ where: { id: user.id, deletedAt: null, profProfile: { isNot: null } } });
+    if (!u) return { optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } };
     const p = await this.profile(user.id);
     return {
+      optedIn: true,
       firstName: u.firstName, lastName: u.lastName, birthYear: p.birthYear, showAge: p.showAge, ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: p.paused,
       status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER },
     };
+  }
+
+  // « Je souhaite donner des cours particuliers » : crée la fiche (invisible des adultes tant que les documents ne sont pas validés)
+  async optIn(user: AuthUser) {
+    if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé aux entraîneurs.");
+    await this.profile(user.id);
+    await this.audit.log(user.id, "prof-optin", "User", user.id);
+    return this.me(user);
+  }
+
+  // Arrêter : la fiche, les disponibilités et les pièces sont effacées ; les demandes en cours reviennent au coach
+  async optOut(user: AuthUser) {
+    await this.assertProf(user.id);
+    await this.prisma.$transaction([
+      this.prisma.profProfile.deleteMany({ where: { userId: user.id } }),
+      this.prisma.lessonRequest.updateMany({ where: { profId: user.id }, data: { profId: null } }),
+    ]);
+    await this.audit.log(user.id, "prof-optout", "User", user.id);
+    return this.me(user);
   }
 
   async updateMe(user: AuthUser, dto: ProfProfileDto) {
@@ -155,7 +178,7 @@ export class ProfsService {
 
   // ----- Espace du coach -----
   async adminList() {
-    const users = await this.prisma.user.findMany({ where: { role: Role.TRAINER, trainerKind: "PROF", deletedAt: null }, orderBy: { createdAt: "asc" }, include: { profProfile: { include: { slots: true, documents: { select: { kind: true, fileName: true, validUntil: true, uploadedAt: true, sizeBytes: true } } } } } });
+    const users = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null, profProfile: { isNot: null } }, orderBy: { createdAt: "asc" }, include: { profProfile: { include: { slots: true, documents: { select: { kind: true, fileName: true, validUntil: true, uploadedAt: true, sizeBytes: true } } } } } });
     const counts = await this.prisma.lessonRequest.groupBy({ by: ["profId"], where: { profId: { in: users.map((u) => u.id) } }, _count: { _all: true } });
     return users.map((u) => {
       const p = u.profProfile ?? { approvedAt: null, paused: false, documents: [], slots: [], birthYear: null, showAge: false, ranking: null, bestRanking: null, bio: "" };

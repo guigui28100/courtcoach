@@ -159,7 +159,7 @@ export class SelfEvaluationDto {
 export class TrainerDto {
   @Transform(trim) @IsString() @MaxLength(60) firstName: string;
   @Transform(lower) @IsEmail() @MaxLength(200) email: string;
-  @IsOptional() @IsIn(["COMITE", "CLUB", "PROF"]) kind?: string;
+  @IsOptional() @IsIn(["COMITE", "CLUB"]) kind?: string;
   @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) playerIds: string[];
 }
 export class TrainerPlayersDto {

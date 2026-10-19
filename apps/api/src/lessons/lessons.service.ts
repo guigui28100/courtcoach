@@ -48,7 +48,7 @@ export class LessonsService {
       return this.withProf(await this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } } } }));
     }
     if (user.role === Role.TRAINER) {
-      await this.profs.assertProf(user.id); // un entraîneur de comité ou de club n'a aucun accès aux demandes
+      await this.profs.assertProf(user.id); // un entraîneur qui n'a pas choisi de donner des cours n'a aucun accès aux demandes
       return this.prisma.lessonRequest.findMany({ where: { profId: user.id }, orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true } } } });
     }
     return this.withProf(await this.prisma.lessonRequest.findMany({ where: { memberId: user.id }, orderBy: { createdAt: "desc" } }));
