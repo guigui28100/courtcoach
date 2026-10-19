@@ -17,27 +17,42 @@ export const EXAMPLE_PROFS: ProfCard[] = [
 // Pastille d'information (âge, classement…)
 const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-bold uppercase tracking-wider text-clay">{k}</b>{v}</div>;
 
-// Carte d'un professeur : présentation rapide, disponibilités, bouton pour demander un cours
-export function ProfCardView({ p, onPick, preview }: { p: ProfCard; onPick?: (p: ProfCard) => void; preview?: boolean }) {
-  const name = profName(p);
+// Bandeau « terre battue » avec la balle et les étapes de la réservation
+export function ClayHero({ title, text, step }: { title: string; text: string; step: 1 | 2 | 3 }) {
   return (
-    <article className="card grid gap-3" aria-label={`Professeur : ${name}`}>
-      <div className="flex items-center gap-3">
-        <Avatar name={name} size={56} />
-        <div><h3 className="m-0 text-xl">{name}</h3><span className="text-sm text-muted">Professeur de tennis</span></div>
+    <header className="relative overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-clay to-clay-dark p-5 text-white sm:p-6">
+      <span aria-hidden="true" className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-ball opacity-90" />
+      <span aria-hidden="true" className="absolute right-4 top-2 h-28 w-28 rounded-full border-[3px] border-white/70 border-x-transparent" />
+      <h3 className="relative m-0 text-2xl font-black text-white sm:text-3xl">{title}</h3>
+      <p className="relative m-0 mt-1 max-w-[80%] text-white/95">{text}</p>
+      <ol className="relative m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Étapes de la réservation">
+        {["Professeur", "Objectif", "Créneau"].map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
+      </ol>
+    </header>
+  );
+}
+
+const dayOfIso = (iso: string) => (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
+const SHORT_L = ["L", "M", "M", "J", "V", "S", "D"];
+
+// Carte d'un professeur : présentation rapide, jours de disponibilité, tarif, bouton pour choisir
+export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfCard; onPick?: (p: ProfCard) => void; preview?: boolean; price?: number; selected?: boolean }) {
+  const name = profName(p);
+  const days = new Set(p.slots.map((s) => s.weekday ?? (s.date ? dayOfIso(s.date) : -1)));
+  return (
+    <article className={"relative grid content-start gap-3 rounded-[1.2rem] border-2 bg-white p-4 " + (selected ? "border-clay shadow-[0_6px_0_var(--color-clay)]" : "border-line")} aria-label={`Professeur : ${name}`}>
+      {price ? <div className="absolute right-4 top-3 text-right leading-tight"><b className="font-display text-2xl font-black text-clay">{price} €</b><small className="block text-xs text-muted">{price === PRICE_MEMBER ? `${PRICE_OTHER} € non adhérent` : `${PRICE_MEMBER} € adhérent`}</small></div> : null}
+      <div className="flex items-center gap-3 pr-24">
+        <span className="rounded-full ring-[3px] ring-ball"><Avatar name={name} size={60} /></span>
+        <div><h3 className="m-0 text-xl">{name}</h3><small className="text-muted">{[p.age !== null ? `${p.age} ans` : null, p.ranking ? `classement ${p.ranking}` : null, p.bestRanking ? `meilleur ${p.bestRanking}` : null].filter(Boolean).join(" · ") || "Professeur de tennis"}</small></div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {p.age !== null && <Fact k="Âge" v={`${p.age} ans`} />}
-        {p.ranking && <Fact k="Classement" v={p.ranking} />}
-        {p.bestRanking && <Fact k="Meilleur classement" v={p.bestRanking} />}
-      </div>
-      {p.bio && <p className="m-0">« {p.bio} »</p>}
-      <div className="grid gap-2">
-        <strong>📅 Disponibilités</strong>
-        {p.slots.length ? <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2 p-0">{p.slots.map((s, i) => <li key={i} className="rounded-xl border-2 border-ok bg-[#f1faf5] px-3 py-1.5 text-sm font-bold text-[#1d6b43]">{fmtProfSlot(s)}</li>)}</ul> : <p className="m-0 text-sm text-muted">Aucune disponibilité indiquée pour le moment.</p>}
+      <div className="flex flex-wrap gap-2">{p.paused ? <span className="rounded-full bg-[#fff3cd] px-3 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ En pause</span> : p.slots.length ? <span className="rounded-full bg-[#dff3e8] px-3 py-0.5 text-xs font-bold text-[#1c6b42]">● Disponible</span> : <span className="rounded-full bg-sand px-3 py-0.5 text-xs font-bold">Pas de disponibilité</span>}</div>
+      {p.bio && <p className="m-0 text-sm">« {p.bio} »</p>}
+      <div className="flex gap-1.5" role="img" aria-label={"Jours où il est disponible : " + ([...days].filter((d) => d >= 0).sort().map((d) => WEEKDAYS[d]).join(", ") || "aucun")}>
+        {SHORT_L.map((l, i) => <span key={i} aria-hidden="true" className={"flex-1 rounded-lg py-1 text-center text-xs font-bold " + (days.has(i) ? "bg-ink text-white" : "bg-[#eee] text-[#8b8b8b]")}>{l}</span>)}
       </div>
       {p.paused && <p className="m-0 rounded-xl bg-[#fff3cd] p-2.5 text-sm font-bold text-[#7a5a00]">⏸ {p.firstName ?? "Ce professeur"} ne prend plus de demandes pour le moment.</p>}
-      {onPick && <div><button className="btn-clay" disabled={p.paused} onClick={() => onPick(p)}>✉️ Demander un cours à {p.firstName ?? "ce professeur"}</button>{preview && <small className="hint ml-2">(aperçu)</small>}</div>}
+      {onPick && <div><button className={selected ? "btn-clay" : "btn-outline"} disabled={p.paused} onClick={() => onPick(p)}>{selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"}`}</button>{preview && <small className="hint ml-2">(aperçu)</small>}</div>}
     </article>
   );
 }
@@ -69,11 +84,9 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
   const dayOf = (iso: string) => (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
   const shown = (profs ?? []).filter((p) => day === null || p.slots.some((s) => (s.weekday ?? (s.date ? dayOf(s.date) : -1)) === day));
   return (
-    <section className="grid gap-4 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm" aria-label="Choisir mon professeur">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-0.5"><h3 className="m-0 text-xl">👩‍🏫 Choisir mon professeur</h3><p className="m-0 text-muted">Voici les professeurs du club et leurs disponibilités. Choisis le tien : ta demande lui est envoyée (le coach la voit aussi).</p></div>
-        <button className="btn-outline btn-sm" onClick={onClose}>Annuler</button>
-      </div>
+    <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
+      <ClayHero title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. C'est confirmé tout de suite." step={1} />
+      <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
       </label>
@@ -83,7 +96,7 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
         {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
       </div>
       {profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
-        <div className="grid gap-4">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
+        <div className="grid gap-4 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
       <p className="m-0 text-sm text-muted">Tu préfères que le coach choisisse pour toi ? <button className="font-bold text-clay underline" onClick={onNoPref}>Demander au coach directement</button></p>
     </section>
@@ -233,7 +246,9 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
         <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#e6dccf] align-[-1px]" />Déjà réservé</span>
         <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#f6f1ea] align-[-1px]" />Pas disponible</span>
       </div>
-      <p role="status" className={"m-0 rounded-2xl border-2 px-3 py-2 text-sm font-bold " + (chosen && value ? "border-[#1d6b43] bg-[#eef8f1] text-[#1d6b43]" : "border-dashed border-line text-muted")}>{chosen && value ? `✔ ${fmtPlanSlot(value.date, chosen.time, chosen.end)}` : "Touche une case verte pour choisir ton créneau."}</p>
+      <div role="status" className={"flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 " + (chosen && value ? "bg-ink text-white" : "border-2 border-dashed border-line text-muted")}>
+        {chosen && value ? <><span className="grid"><small className="text-white/70">Ton créneau</small><b className="font-display text-lg font-black first-letter:uppercase">{fmtPlanSlot(value.date, chosen.time, chosen.end)}</b></span><span className="ml-auto rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">✔ Prêt à réserver</span></> : <span className="text-sm font-bold">Touche une case verte pour choisir ton créneau.</span>}
+      </div>
     </div>
   );
 }

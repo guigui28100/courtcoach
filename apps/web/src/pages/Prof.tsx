@@ -98,6 +98,11 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
       <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes réservent <strong>eux-mêmes</strong> un créneau libre dans ton planning : leur cours est confirmé tout de suite et apparaît ici. Tu n'as rien à valider. Tu peux changer la date ou annuler un cours si besoin.</p></div>
+      <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
+        <div><b className="block font-display text-3xl font-black text-clay">{booked.length}</b><small className="text-muted">cours à venir</small></div>
+        <div><b className="block font-display text-3xl font-black text-ok">{booked.filter((l) => l.price).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
+        <div><b className="block font-display text-3xl font-black">{lessons.filter((l) => l.status === "PENDING").length}</b><small className="text-muted">demandes sans créneau</small></div>
+      </div>
       <PriceNote />
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
       {group("Cours réservés à venir", null, booked)}
