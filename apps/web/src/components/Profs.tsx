@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PRICE_MEMBER, PRICE_OTHER, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
+import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
 import { Avatar, Empty, Err } from "./ui";
 
 export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / intermédiaire", "NC"].includes(x));
@@ -142,5 +142,79 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
         </ul>
       )}
     </section>
+  );
+}
+
+
+// ───────── Planning : les créneaux d'une heure d'un professeur, à toucher pour réserver ─────────
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const DAY_SHORT = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+const hour = (t: string) => (t.slice(3, 5) === "00" ? `${Number(t.slice(0, 2))} h` : `${Number(t.slice(0, 2))} h ${t.slice(3, 5)}`);
+export const fmtPlanSlot = (date: string, time: string, end: string) => `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ${hour(time)} – ${hour(end)}`;
+
+// Aperçu du coach : planning calculé ici à partir des disponibilités d'exemple (quelques créneaux sont « déjà pris »)
+export function previewPlanning(slots: ProfCard["slots"]): PlanDay[] {
+  const days: PlanDay[] = []; const base = new Date(); base.setHours(12, 0, 0, 0);
+  for (let i = 1; i <= 28; i++) {
+    const d = new Date(base.getTime() + i * 86_400_000); const iso = d.toISOString().slice(0, 10); const wd = (d.getDay() + 6) % 7;
+    const starts = new Set<number>();
+    for (const s of slots) if (s.weekday === wd || s.date === iso) for (let m = Number(s.start.slice(0, 2)); m + 1 <= Number(s.end.slice(0, 2)); m++) starts.add(m);
+    const list = [...starts].sort((a, b) => a - b).map((h, k) => ({ time: `${String(h).padStart(2, "0")}:00`, end: `${String(h + 1).padStart(2, "0")}:00`, free: !((i + k) % 3 === 0) }));
+    if (list.length) days.push({ date: iso, slots: list });
+  }
+  return days;
+}
+
+export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; value: { date: string; time: string } | null; onChange: (v: { date: string; time: string } | null) => void }) {
+  const first = days.find((d) => d.slots.some((s) => s.free))?.date ?? days[0]?.date ?? null;
+  const [open, setOpen] = useState<string | null>(value?.date ?? first);
+  const day = days.find((d) => d.date === open) ?? null;
+  const groups: [string, string, PlanDay["slots"]][] = day ? [["🌅", "Matin", day.slots.filter((s) => Number(s.time.slice(0, 2)) < 12)], ["☀️", "Après-midi", day.slots.filter((s) => { const h = Number(s.time.slice(0, 2)); return h >= 12 && h < 18; })], ["🌙", "Soirée", day.slots.filter((s) => Number(s.time.slice(0, 2)) >= 18)]] : [];
+  return (
+    <div className="grid gap-4 rounded-3xl bg-gradient-to-b from-[#fdf6ee] to-[#f6ebdd] p-4 ring-1 ring-line">
+      <div className="flex gap-2.5 overflow-x-auto pb-2" role="tablist" aria-label="Jours disponibles">
+        {days.map((d) => {
+          const dt = new Date(`${d.date}T12:00:00`); const free = d.slots.filter((s) => s.free).length; const on = d.date === open;
+          return (
+            <button type="button" key={d.date} role="tab" aria-selected={on} onClick={() => setOpen(d.date)} className={"grid min-w-[5.2rem] shrink-0 justify-items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 text-center transition " + (on ? "border-ink bg-ink text-white shadow-lg" : free ? "border-white bg-white shadow-sm hover:-translate-y-0.5 hover:border-clay/50" : "border-transparent bg-white/50 opacity-60")}>
+              <small className={"text-[0.7rem] font-bold uppercase tracking-widest " + (on ? "text-[#dcf247]" : "text-muted")}>{DAY_SHORT[dt.getDay()]}</small>
+              <strong className="font-display text-3xl leading-none">{dt.getDate()}</strong>
+              <small className={on ? "text-white/80" : "text-muted"}>{MONTHS[dt.getMonth()]}</small>
+              <span className={"mt-1 rounded-full px-2 py-0.5 text-[0.7rem] font-bold " + (free === 0 ? "bg-black/10 text-muted" : on ? "bg-[#dcf247] text-ink" : "bg-[#e6f6ec] text-[#1d6b43]")}>{free === 0 ? "complet" : `${free} libre${free > 1 ? "s" : ""}`}</span>
+            </button>
+          );
+        })}
+      </div>
+      {day && (
+        <div className="grid gap-4" role="tabpanel">
+          <h4 className="m-0 font-display text-lg first-letter:uppercase">{new Date(`${day.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</h4>
+          {groups.filter(([, , l]) => l.length > 0).map(([icon, label, list]) => (
+            <div key={label} className="grid gap-2">
+              <small className="font-bold uppercase tracking-widest text-muted">{icon} {label}</small>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
+                {list.map((s) => {
+                  const sel = value?.date === day.date && value.time === s.time;
+                  return s.free ? (
+                    <button type="button" key={s.time} aria-pressed={sel} onClick={() => onChange(sel ? null : { date: day.date, time: s.time })} className={"grid min-h-16 content-center justify-items-center rounded-2xl border-2 px-2 py-2 transition " + (sel ? "scale-[1.03] border-[#1d6b43] bg-[#1d6b43] text-white shadow-lg" : "border-[#bfe3cd] bg-white text-[#1d6b43] shadow-sm hover:-translate-y-0.5 hover:border-[#1d6b43] hover:shadow-md")}>
+                      <strong className="font-display text-xl leading-tight">{hour(s.time)}</strong>
+                      <small className={sel ? "text-white/90" : "text-muted"}>{sel ? "✔ Ton choix" : `jusqu'à ${hour(s.end)}`}</small>
+                    </button>
+                  ) : (
+                    <div key={s.time} aria-label={`${hour(s.time)} : déjà réservé`} className="grid min-h-16 content-center justify-items-center rounded-2xl border-2 border-dashed border-line bg-[repeating-linear-gradient(135deg,#f3ece3,#f3ece3_6px,#ece3d8_6px,#ece3d8_12px)] px-2 py-2 text-[#9a8f84]">
+                      <strong className="font-display text-xl leading-tight line-through">{hour(s.time)}</strong><small>Déjà réservé</small>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded border-2 border-[#bfe3cd] bg-white align-[-1px]" />Libre</span>
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#1d6b43] align-[-1px]" />Ton choix</span>
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded border border-dashed border-line bg-[#ece3d8] align-[-1px]" />Déjà réservé par un autre adulte</span>
+      </div>
+    </div>
   );
 }

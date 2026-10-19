@@ -14,5 +14,6 @@ export class LessonsController {
   @Roles(Role.ADULT) @Post() create(@CurrentUser() u: AuthUser, @Body() dto: CreateLessonDto) { return this.svc.create(u, dto); }
   @Post(":id/answer") @HttpCode(200) answer(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: AnswerLessonDto) { return this.svc.answer(u, id, dto); }
   @Roles(Role.ADULT) @Post(":id/respond") @HttpCode(200) respond(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: RespondLessonDto) { return this.svc.respond(u, id, dto); }
+  @Roles(Role.ADULT) @Post(":id/cancel") @HttpCode(200) cancel(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.cancel(u, id); }
   @Roles(Role.ADULT) @Post(":id/seen") @HttpCode(204) seen(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.markSeen(u, id); }
 }

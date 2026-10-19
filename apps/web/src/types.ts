@@ -329,6 +329,7 @@ export interface ProfDocMeta { kind: DocKind; fileName: string; mimeType?: strin
 export type ProfMeResp = { optedIn: false; prices: { member: number; other: number } } | (ProfMe & { optedIn: true });
 export interface ProfMe { firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approved: boolean; slots: ProfSlot[]; documents: ProfDocMeta[]; prices: { member: number; other: number }; }
 export interface ProfAdmin { id: string; email: string; firstName: string | null; lastName: string | null; birthYear: number | null; showAge: boolean; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; status: ProfStatus; approvedAt: string | null; documents: ProfDocMeta[]; slotCount: number; requests: number; }
+export interface PlanDay { date: string; slots: { time: string; end: string; free: boolean }[]; }
 export const profName = (p: { firstName: string | null; lastName?: string | null } | null | undefined) => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "Professeur";
 const hourFr = (t: string) => { const [h, m] = t.split(":"); return m === "00" ? `${Number(h)} h` : `${Number(h)} h ${m}`; };
 export const fmtProfSlot = (s: ProfSlot) => `${s.weekday !== null ? WEEKDAYS[s.weekday] : new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ${hourFr(s.start)} – ${hourFr(s.end)}`;

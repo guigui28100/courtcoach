@@ -2,10 +2,10 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
 import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { ProfChooser } from "../components/Profs";
+import { fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -37,15 +37,22 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: () => void }) {
+function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean) => void }) {
   const [err, setErr] = useState("");
+  const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
+  const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
+  const loadPlan = useCallback(() => { if (!prof) return; if (preview) { setPlan(previewPlanning(prof.slots)); return; } get<{ days: PlanDay[] }>(`/profs/${prof.id}/planning`).then((r) => setPlan(r.days)).catch(() => setPlan([])); }, [prof, preview]);
+  useEffect(loadPlan, [loadPlan]);
+  const hasPlan = !!plan && plan.some((d) => d.slots.some((s) => s.free));
+  const chosen = slot ? plan?.find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time) : null;
   const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (preview) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
+    if (preview) { setErr(slot ? "Aperçu : rien n'est réservé. Un adulte verrait ici « Réservé ! » et le créneau deviendrait indisponible pour les autres." : "Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
+    if (hasPlan && !slot) { setErr("Choisis un créneau dans le planning."); return; }
     const f = new FormData(e.currentTarget); setErr("");
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
-    try { await post("/lessons", { ...(prof ? { profId: prof.id } : {}), type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(); } catch (x) { setErr((x as Error).message); }
+    try { await post("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot } : {}), type: f.get("type"), objective: String(f.get("objective")), days: f.getAll("days"), moment: f.get("moment"), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan)); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
@@ -79,15 +86,25 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
+      {hasPlan ? (
+        <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>Choisis ton créneau <small className="font-body font-normal text-muted">(1 heure)</small></legend>
+          <PlanningPicker days={plan!} value={slot} onChange={setSlot} />
+        </fieldset>
+      ) : (
+        <>
+          {prof && plan !== null && <p className="m-0 rounded-2xl bg-[#fff3cd] p-3 text-sm font-bold text-[#7a5a00]">📅 {profName(prof)} n'a plus de créneau libre pour le moment. Envoie-lui une demande : il te proposera une date.</p>}
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>3</span>Quels jours t'arrangent ? <small className="font-body font-normal text-muted">(facultatif)</small></legend>
         <div className="flex flex-wrap gap-2">{DAYS.map((d) => <Chip key={d} type="checkbox" name="days" value={d} />)}</div>
       </fieldset>
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>4</span>À quel moment de la journée ?</legend>
         <div className="flex flex-wrap gap-2">{MOMENTS.map((x, i) => <Chip key={x} type="radio" name="moment" value={x} defaultChecked={i === 0} />)}</div>
       </fieldset>
+        </>
+      )}
       <Field label={`Un message pour ${prof?.firstName ?? "ton coach"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
       <Err msg={err} />
-      <div className="flex flex-wrap gap-2"><button className="btn-clay">Envoyer ma demande</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
+      {hasPlan && <p className="m-0 text-sm text-muted">Le créneau est à toi tout de suite : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} est prévenu(e) et tu peux annuler depuis « Mes cours ».</p>}
+      <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={hasPlan && !slot}>{hasPlan ? (chosen && slot ? `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}` : "Choisis un créneau ci-dessus") : "Envoyer ma demande"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
     </form>
   );
 }
@@ -106,7 +123,7 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" }) {
 }
 
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
-function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
+function LessonLine({ l, isNew, onCancel }: { l: Lesson; isNew: boolean; onCancel?: (l: Lesson) => void }) {
   const title = `${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
   const state = { PENDING: ["⏳ En attente", "#7a5a00"], PROPOSED: ["💬 À confirmer", "#1f5a96"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
   const sub = l.status === "ACCEPTED" && l.finalSlot ? `${fmtSlot(l.finalSlot)}${l.place ? ` · ${l.place}` : ""}`
@@ -121,21 +138,22 @@ function LessonLine({ l, isNew }: { l: Lesson; isNew: boolean }) {
         {l.status === "ACCEPTED" && l.coachReply && <span className="text-sm text-muted">💬 « {l.coachReply} »</span>}
         {l.status === "PENDING" && l.declinedSlot && <span className="text-sm text-muted">Tu n'étais pas disponible le {fmtSlot(l.declinedSlot)} : une autre date te sera proposée.</span>}
       </div>
-      <span className="col-span-2 text-sm font-bold sm:col-span-1" style={{ color: state[1] }}>{state[0]}</span>
+      <span className="col-span-2 grid justify-items-start gap-1 text-sm font-bold sm:col-span-1 sm:justify-items-end" style={{ color: state[1] }}>{state[0]}{onCancel && (l.status === "ACCEPTED" || l.status === "PENDING") && <button className="text-xs font-bold text-[#9a2a1f] underline" onClick={() => onCancel(l)}>{l.status === "PENDING" ? "Retirer ma demande" : "Annuler ce cours"}</button>}</span>
     </li>
   );
 }
 
 // Grand encadré : le prochain cours confirmé
-function NextCourse({ l }: { l: Lesson }) {
+function NextCourse({ l, onCancel }: { l: Lesson; onCancel?: (l: Lesson) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-3xl bg-[#1d6b43] p-5 text-white shadow-sm">
       <DateBadge slot={l.finalSlot!} tone="green" />
       <div className="grid min-w-0 gap-0.5">
         <small className="font-bold uppercase tracking-wide text-white/80">Ton prochain cours</small>
         <strong className="font-display text-2xl leading-tight">{fmtSlot(l.finalSlot!)}</strong>
-        <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.place ? ` · ${l.place}` : ""}</span>
+        <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}{l.place ? ` · ${l.place}` : ""}</span>
       </div>
+      {onCancel && <button className="ml-auto rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l)}>Annuler ce cours</button>}
     </div>
   );
 }
@@ -177,8 +195,15 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
   const [prof, setProf] = useState<ProfCard | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const open = step !== null;
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState<false | "request" | "booked">(false);
+  const [cancelErr, setCancelErr] = useState("");
   const c = COPY;
+  async function cancel(l: Lesson) {
+    setCancelErr("");
+    if (preview) { setCancelErr("Aperçu : rien n'est annulé. Un adulte verrait ici le cours disparaître et le créneau redevenir libre."); return; }
+    if (!confirm("Annuler ce cours ? Le créneau redevient libre et le professeur est prévenu.")) return;
+    try { await post(`/lessons/${l.id}/cancel`); onSent(); } catch (x) { setCancelErr((x as Error).message); }
+  }
   const isNew = (l: Lesson) => l.status !== "PENDING" && l.status !== "PROPOSED" && !l.seenByMemberAt && !seenLocal.includes(l.id);
   const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
   const soonest = (a: Lesson, b: Lesson) => stamp(a).localeCompare(stamp(b)); // le prochain cours d'abord
@@ -200,16 +225,17 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen, onRespond
         <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
         {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
       </div>
-      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{c.ok}</p>}
+      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" ? "✅ Réservé ! Ton cours est confirmé : tu le vois juste en dessous. Le créneau est à toi." : c.ok}</p>}
+      <Err msg={cancelErr} />
       {step === "choose" && <ProfChooser preview={preview} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} onNoPref={() => { setProf(null); setPrice(null); setStep("form"); }} />}
-      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={() => { setSent(true); onSent(); }} />}
-      {next && <NextCourse l={next} />}
+      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={(booked) => { setSent(booked ? "booked" : "request"); onSent(); }} />}
+      {next && <NextCourse l={next} onCancel={cancel} />}
       {toConfirm.map((l) => <ToConfirm key={l.id} l={l} onRespond={onRespond} />)}
-      {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} />)}</ul>}
+      {others.length > 0 && <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line" aria-label="Mes autres cours confirmés">{others.map((l) => <LessonLine key={l.id} l={l} isNew={false} onCancel={cancel} />)}</ul>}
       {waiting.length > 0 && (
         <div className="grid gap-2">
           <h3 className="m-0 font-display text-lg">⏳ Mes demandes en attente</h3>
-          <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line">{waiting.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} />)}</ul>
+          <ul className="m-0 list-none divide-y divide-line overflow-hidden rounded-2xl bg-white p-0 ring-1 ring-line">{waiting.map((l) => <LessonLine key={l.id} l={l} isNew={isNew(l)} onCancel={cancel} />)}</ul>
         </div>
       )}
       {folds.map((g) => (

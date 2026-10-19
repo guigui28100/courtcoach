@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
@@ -6,6 +6,7 @@ import { AuthUser } from "../common/auth.types";
 import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
 import { PRICE_MEMBER, PRICE_OTHER } from "./pricing";
+import { buildPlanning, nowParis, overlaps, PlanDay } from "./planning";
 
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
 const cleanName = (n: string) => n.replace(/[\\/\0-\x1f"]/g, "_").trim().slice(0, 120) || "document";
@@ -67,6 +68,33 @@ export class ProfsService {
   async assertBookable(profId: string) {
     const u = await this.prisma.user.findFirst({ where: { id: profId, role: Role.TRAINER, deletedAt: null }, include: { profProfile: { include: { documents: { select: { kind: true, validUntil: true } } } } } });
     if (!u?.profProfile || this.status(u.profProfile) !== "visible") throw new BadRequestException("Ce professeur n'est pas disponible pour le moment.");
+  }
+
+  // Cours déjà placés chez ce professeur (proposés ou confirmés) : ils occupent son planning
+  private async busyOf(profId: string, exceptLessonId?: string) {
+    const rows = await this.prisma.lessonRequest.findMany({ where: { profId, status: { in: ["PROPOSED", "ACCEPTED"] }, ...(exceptLessonId ? { id: { not: exceptLessonId } } : {}) }, select: { finalSlot: true } });
+    return rows.flatMap((r) => { const s = r.finalSlot as { date?: string; time?: string } | null; return s?.date && s?.time ? [{ date: s.date, time: s.time }] : []; });
+  }
+
+  // Planning visible par l'adulte (et le coach) : les créneaux d'une heure, libres ou déjà pris (sans dire par qui)
+  async planning(profId: string): Promise<{ days: PlanDay[] }> {
+    await this.assertBookable(profId);
+    const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
+    return { days: buildPlanning(p.slots, await this.busyOf(profId)) };
+  }
+
+  // Vérifie qu'un créneau est proposé par le professeur ET libre : 400 s'il n'est pas dans son planning, 409 s'il est déjà pris
+  async assertSlotFree(profId: string, slot: { date: string; time: string }, exceptLessonId?: string) {
+    await this.assertBookable(profId);
+    const p = await this.prisma.profProfile.findUniqueOrThrow({ where: { userId: profId }, include: { slots: true } });
+    const hit = buildPlanning(p.slots, await this.busyOf(profId, exceptLessonId)).find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time);
+    if (!hit) throw new BadRequestException("Ce créneau n'est pas proposé par le professeur.");
+    if (!hit.free) throw new ConflictException("Ce créneau est déjà pris. Choisis-en un autre.");
+  }
+
+  // Le professeur (ou le coach) propose une date : elle ne doit pas chevaucher un autre cours de ce professeur
+  async assertNoClash(profId: string, slot: { date: string; time: string }, exceptLessonId: string) {
+    if ((await this.busyOf(profId, exceptLessonId)).some((b) => b.date === slot.date && overlaps(b.time, slot.time))) throw new ConflictException("Ce professeur a déjà un cours à ce moment-là.");
   }
 
   // ----- Espace du professeur -----
