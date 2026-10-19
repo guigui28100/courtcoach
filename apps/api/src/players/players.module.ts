@@ -5,5 +5,5 @@ import { TournamentReportsService } from "./reports.service";
 import { TrainersController } from "./trainers.controller";
 import { TrainersService } from "./trainers.service";
 
-@Module({ controllers: [PlayersController, TrainersController], providers: [PlayersService, TrainersService, TournamentReportsService] })
+@Module({ controllers: [PlayersController, TrainersController], providers: [PlayersService, TrainersService, TournamentReportsService], exports: [PlayersService, TournamentReportsService] })
 export class PlayersModule {}

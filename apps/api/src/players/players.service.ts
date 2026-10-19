@@ -1,3 +1,4 @@
+import { forgetUser } from "../common/user-cache";
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConsentKind, GoalStatus, Player, Role } from "@prisma/client";
 import { randomBytes, randomInt } from "crypto";
@@ -236,6 +237,7 @@ export class PlayersService {
         this.prisma.refreshToken.deleteMany({ where: { userId } }),
         this.prisma.user.update({ where: { id: userId }, data: { email: `supprime-${userId}@invalid`, firstName: null, passwordHash: "-", deletedAt: new Date() } }),
       ]);
+      forgetUser(userId);
     }
     await this.audit.log(user.id, "revoke-access", "Player", playerId);
   }
@@ -250,6 +252,7 @@ export class PlayersService {
       this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hash(temporaryPassword), mustChangePassword: true, failedLogins: 0, lockedUntil: null } }),
       this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }), // toutes ses sessions sont fermées
     ]);
+    forgetUser(userId);
     await this.audit.log(user.id, "reset-password", "Player", playerId);
     return { email: access.user.email, temporaryPassword };
   }
@@ -345,6 +348,13 @@ export class PlayersService {
   async selfEvaluations(user: AuthUser, playerId: string) {
     await this.assertCanRead(user, playerId);
     return this.prisma.selfEvaluation.findMany({ where: { playerId, ...(isStaff(user) ? { sentAt: { not: null } } : {}) }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+  }
+  // Bulletins d'auto-évaluation ENVOYÉS et pas encore lus, pour tous les jeunes que la personne voit : UNE seule demande (avant : une par jeune)
+  async unreadSelfEvaluations(user: AuthUser, players: { id: string }[]) {
+    if (!isStaff(user) || !players.length) return [];
+    const rows = await this.prisma.selfEvaluation.findMany({ where: { playerId: { in: players.map((p) => p.id) }, sentAt: { not: null }, readAt: null }, orderBy: [{ season: "desc" }, { trimester: "desc" }] });
+    const byId = new Map(players.map((p) => [p.id, p]));
+    return rows.map((ev) => ({ player: byId.get(ev.playerId)!, ev }));
   }
   private assertWriter(user: AuthUser) { if (user.role !== Role.YOUTH && user.role !== Role.GUARDIAN) throw new ForbiddenException("Réservé au jeune et à sa famille"); }
   // L'auto-évaluation s'ouvre à la fin de chaque trimestre : 1er décembre (T1), 1er mars (T2), 1er juin (T3). Les périodes passées restent ouvertes.

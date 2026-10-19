@@ -165,56 +165,75 @@ export function previewPlanning(slots: ProfCard["slots"]): PlanDay[] {
   return days;
 }
 
+const isoOf = (d: Date) => d.toISOString().slice(0, 10);
+const shiftDay = (iso: string, n: number) => isoOf(new Date(new Date(`${iso}T12:00:00Z`).getTime() + n * 86_400_000));
+const mondayOf = (iso: string) => shiftDay(iso, -((new Date(`${iso}T12:00:00Z`).getUTCDay() + 6) % 7));
+const DAY_NAMES = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+// Planning en TABLEAU : les jours en colonnes (une semaine à la fois), les heures en lignes ; on touche une case verte pour choisir son créneau
 export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; value: { date: string; time: string } | null; onChange: (v: { date: string; time: string } | null) => void }) {
-  const first = days.find((d) => d.slots.some((s) => s.free))?.date ?? days[0]?.date ?? null;
-  const [open, setOpen] = useState<string | null>(value?.date ?? first);
-  const day = days.find((d) => d.date === open) ?? null;
-  const groups: [string, string, PlanDay["slots"]][] = day ? [["🌅", "Matin", day.slots.filter((s) => Number(s.time.slice(0, 2)) < 12)], ["☀️", "Après-midi", day.slots.filter((s) => { const h = Number(s.time.slice(0, 2)); return h >= 12 && h < 18; })], ["🌙", "Soirée", day.slots.filter((s) => Number(s.time.slice(0, 2)) >= 18)]] : [];
+  const mondays = [...new Set(days.map((d) => mondayOf(d.date)))].sort();
+  const firstFree = days.find((d) => d.slots.some((s) => s.free))?.date;
+  const startAt = value?.date ?? firstFree ?? days[0]?.date;
+  const [wi, setWi] = useState(Math.max(0, startAt ? mondays.indexOf(mondayOf(startAt)) : 0));
+  if (!mondays.length) return null;
+  const monday = mondays[Math.min(wi, mondays.length - 1)];
+  const dates = Array.from({ length: 7 }, (_, k) => shiftDay(monday, k));
+  const byDate = new Map(days.map((d) => [d.date, d]));
+  const times = [...new Set(dates.flatMap((d) => (byDate.get(d)?.slots ?? []).map((s) => s.time)))].sort(); // seulement les heures où quelqu'un est disponible cette semaine
+  const today = new Date().toLocaleDateString("sv-SE");
+  const label = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  const chosen = value ? byDate.get(value.date)?.slots.find((s) => s.time === value.time) : null;
   return (
-    <div className="grid gap-4 rounded-3xl bg-gradient-to-b from-[#fdf6ee] to-[#f6ebdd] p-4 ring-1 ring-line">
-      <div className="flex gap-2.5 overflow-x-auto pb-2" role="tablist" aria-label="Jours disponibles">
-        {days.map((d) => {
-          const dt = new Date(`${d.date}T12:00:00`); const free = d.slots.filter((s) => s.free).length; const on = d.date === open;
-          return (
-            <button type="button" key={d.date} role="tab" aria-selected={on} onClick={() => setOpen(d.date)} className={"grid min-w-[5.2rem] shrink-0 justify-items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 text-center transition " + (on ? "border-ink bg-ink text-white shadow-lg" : free ? "border-white bg-white shadow-sm hover:-translate-y-0.5 hover:border-clay/50" : "border-transparent bg-white/50 opacity-60")}>
-              <small className={"text-[0.7rem] font-bold uppercase tracking-widest " + (on ? "text-[#dcf247]" : "text-muted")}>{DAY_SHORT[dt.getDay()]}</small>
-              <strong className="font-display text-3xl leading-none">{dt.getDate()}</strong>
-              <small className={on ? "text-white/80" : "text-muted"}>{MONTHS[dt.getMonth()]}</small>
-              <span className={"mt-1 rounded-full px-2 py-0.5 text-[0.7rem] font-bold " + (free === 0 ? "bg-black/10 text-muted" : on ? "bg-[#dcf247] text-ink" : "bg-[#e6f6ec] text-[#1d6b43]")}>{free === 0 ? "complet" : `${free} libre${free > 1 ? "s" : ""}`}</span>
-            </button>
-          );
-        })}
+    <div className="grid gap-3 rounded-3xl bg-gradient-to-b from-[#fdf6ee] to-[#f6ebdd] p-3 ring-1 ring-line sm:p-4">
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" aria-label="Semaine précédente" disabled={wi <= 0} onClick={() => setWi(wi - 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-bold disabled:opacity-30">‹</button>
+        <strong className="text-center font-display text-base sm:text-lg">Semaine du {label(dates[0])} au {label(dates[6])}</strong>
+        <button type="button" aria-label="Semaine suivante" disabled={wi >= mondays.length - 1} onClick={() => setWi(wi + 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-bold disabled:opacity-30">›</button>
       </div>
-      {day && (
-        <div className="grid gap-4" role="tabpanel">
-          <h4 className="m-0 font-display text-lg first-letter:uppercase">{new Date(`${day.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</h4>
-          {groups.filter(([, , l]) => l.length > 0).map(([icon, label, list]) => (
-            <div key={label} className="grid gap-2">
-              <small className="font-bold uppercase tracking-widest text-muted">{icon} {label}</small>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4">
-                {list.map((s) => {
-                  const sel = value?.date === day.date && value.time === s.time;
-                  return s.free ? (
-                    <button type="button" key={s.time} aria-pressed={sel} onClick={() => onChange(sel ? null : { date: day.date, time: s.time })} className={"grid min-h-16 content-center justify-items-center rounded-2xl border-2 px-2 py-2 transition " + (sel ? "scale-[1.03] border-[#1d6b43] bg-[#1d6b43] text-white shadow-lg" : "border-[#bfe3cd] bg-white text-[#1d6b43] shadow-sm hover:-translate-y-0.5 hover:border-[#1d6b43] hover:shadow-md")}>
-                      <strong className="font-display text-xl leading-tight">{hour(s.time)}</strong>
-                      <small className={sel ? "text-white/90" : "text-muted"}>{sel ? "✔ Ton choix" : `jusqu'à ${hour(s.end)}`}</small>
-                    </button>
-                  ) : (
-                    <div key={s.time} aria-label={`${hour(s.time)} : déjà réservé`} className="grid min-h-16 content-center justify-items-center rounded-2xl border-2 border-dashed border-line bg-[repeating-linear-gradient(135deg,#f3ece3,#f3ece3_6px,#ece3d8_6px,#ece3d8_12px)] px-2 py-2 text-[#9a8f84]">
-                      <strong className="font-display text-xl leading-tight line-through">{hour(s.time)}</strong><small>Déjà réservé</small>
-                    </div>
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed border-separate border-spacing-[3px] sm:border-spacing-1">
+          <caption className="sr-only">Planning de la semaine : jours en colonnes, heures en lignes</caption>
+          <thead>
+            <tr>
+              <td className="w-8 sm:w-12" />
+              {dates.map((d, k) => { const free = byDate.get(d)?.slots.filter((s) => s.free).length ?? 0; const now = d === today; return (
+                <th key={d} scope="col" className={"rounded-xl px-0 py-1 text-center " + (now ? "bg-ink text-white" : "bg-[#f3e7d9]")}>
+                  <small className={"block text-[0.65rem] font-bold uppercase tracking-wider sm:text-xs " + (now ? "text-[#dcf247]" : "text-muted")}>{DAY_NAMES[k]}</small>
+                  <b className="font-display text-base leading-tight sm:text-xl">{Number(d.slice(8, 10))}</b>
+                  <small className={"block text-[0.6rem] font-bold " + (now ? "text-white/80" : free ? "text-[#1d6b43]" : "text-muted/70")}>{free ? `${free} libre${free > 1 ? "s" : ""}` : "—"}</small>
+                </th>
+              ); })}
+            </tr>
+          </thead>
+          <tbody>
+            {times.map((t) => (
+              <tr key={t}>
+                <th scope="row" className="pr-1 text-right text-[0.7rem] font-bold text-muted sm:text-xs">{hour(t)}</th>
+                {dates.map((d) => {
+                  const slot = byDate.get(d)?.slots.find((x) => x.time === t);
+                  const sel = value?.date === d && value.time === t;
+                  const when = `${new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}, ${hour(t)}`;
+                  if (!slot) return <td key={d} className="h-9 rounded-lg bg-[#f6f1ea] sm:h-10" aria-label={`${when} : pas disponible`} />;
+                  if (!slot.free) return <td key={d} aria-label={`${when} : déjà réservé`} className="h-9 rounded-lg bg-[repeating-linear-gradient(135deg,#f3ece3,#f3ece3_5px,#e6dccf_5px,#e6dccf_10px)] text-center text-[0.55rem] text-[#9a8f84] sm:h-10 sm:text-[0.65rem]">réservé</td>;
+                  return (
+                    <td key={d} className="p-0">
+                      <button type="button" aria-pressed={sel} aria-label={`${when} : libre`} onClick={() => onChange(sel ? null : { date: d, time: t })} className={"h-9 w-full rounded-lg border-2 text-base font-bold transition sm:h-10 " + (sel ? "border-[#1d6b43] bg-[#1d6b43] text-white shadow-md" : "border-[#bfe3cd] bg-[#e8f6ee] hover:border-[#1d6b43] hover:bg-white")}>{sel ? "✔" : ""}</button>
+                    </td>
                   );
                 })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
-        <span><i className="mr-1.5 inline-block h-3 w-3 rounded border-2 border-[#bfe3cd] bg-white align-[-1px]" />Libre</span>
-        <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#1d6b43] align-[-1px]" />Ton choix</span>
-        <span><i className="mr-1.5 inline-block h-3 w-3 rounded border border-dashed border-line bg-[#ece3d8] align-[-1px]" />Déjà réservé par un autre adulte</span>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded border-2 border-[#bfe3cd] bg-[#e8f6ee] align-[-1px]" />Libre</span>
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#1d6b43] align-[-1px]" />Ton choix</span>
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#e6dccf] align-[-1px]" />Déjà réservé</span>
+        <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#f6f1ea] align-[-1px]" />Pas disponible</span>
+      </div>
+      <p role="status" className={"m-0 rounded-2xl border-2 px-3 py-2 text-sm font-bold " + (chosen && value ? "border-[#1d6b43] bg-[#eef8f1] text-[#1d6b43]" : "border-dashed border-line text-muted")}>{chosen && value ? `✔ ${fmtPlanSlot(value.date, chosen.time, chosen.end)}` : "Touche une case verte pour choisir ton créneau."}</p>
     </div>
   );
 }

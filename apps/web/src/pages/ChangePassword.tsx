@@ -4,7 +4,7 @@ import { post } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { AuthShell, PasswordInput } from "../components/AuthShell";
-import { Err, Field } from "../components/ui";
+import { BackLink, Err, Field } from "../components/ui";
 
 // Première connexion avec un mot de passe provisoire : on choisit son propre mot de passe.
 export default function ChangePassword() {
@@ -28,6 +28,7 @@ export default function ChangePassword() {
 
   return (
     <AuthShell eyebrow={forced ? "Première connexion" : "Mon compte"} title={forced ? "Choisis ton mot de passe" : "Changer mon mot de passe"} subtitle={forced ? "Le mot de passe que le club t'a donné est provisoire. Choisis-en un que toi seul connais : personne, pas même le coach, ne pourra le lire." : "Choisis un nouveau mot de passe."}>
+        {!forced && <BackLink fallback={me ? homeFor(me.role) : "/"} className="font-bold text-ink underline">← Retour</BackLink>}
         <form onSubmit={submit} className="card grid gap-4 !p-6 shadow-[0_10px_30px_rgba(16,32,58,0.08)]" noValidate>
           {!forced && <Field label="Mot de passe actuel" id="current"><PasswordInput id="current" name="current" autoComplete="current-password" /></Field>}
           <Field label="Nouveau mot de passe" id="next" hint="10 caractères minimum. Une phrase facile à retenir est idéale."><PasswordInput id="next" name="next" minLength={10} autoComplete="new-password" /></Field>

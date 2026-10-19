@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
 import { StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
 import { offDayReason } from "../schoolDays";
-import { Avatar, Empty, Err, Page, PageHead } from "../components/ui";
+import { Avatar, BackLink, Empty, Err, Page, PageHead } from "../components/ui";
 import { CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
 
 type Row = { lines: StarLine[]; had: boolean; dirty?: boolean };
@@ -70,7 +70,7 @@ export default function FinDeCours() {
       <Page>
         <div className="flex flex-wrap items-center gap-3">
           <div className="field"><label htmlFor="fc-day">Date du cours</label><input id="fc-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
-          <Link to="/coach/centre" className="font-bold text-ink underline">← Tous mes joueurs</Link>
+          <BackLink fallback="/coach/centre" className="font-bold text-ink underline">← Retour</BackLink>
         </div>
         {players === null && <div className="skeleton h-32" role="status" aria-label="Chargement en cours" />}
         {players && !players.length && <Empty>Aucun joueur pour l'instant.</Empty>}

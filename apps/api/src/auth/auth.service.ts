@@ -1,3 +1,4 @@
+import { forgetUser } from "../common/user-cache";
 import { BadRequestException, ConflictException, ForbiddenException, HttpException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConsentKind, Role } from "@prisma/client";
@@ -104,7 +105,7 @@ export class AuthService {
     const step = verifyCode(unseal(user.totpSecret), code);
     if (!step) throw new BadRequestException("Code incorrect. Vérifie l'heure de ton téléphone et réessaie.");
     const codes = newRecoveryCodes();
-    await this.prisma.user.update({ where: { id: userId }, data: { totpEnabled: true, totpLastStep: step, recoveryCodes: codes.map((c) => sha256(c)) } });
+    await this.prisma.user.update({ where: { id: userId }, data: { totpEnabled: true, totpLastStep: step, recoveryCodes: codes.map((c) => sha256(c)) } }); forgetUser(userId);
     await this.audit.log(userId, "2fa-enabled", "User", userId);
     return { recoveryCodes: codes };
   }
@@ -114,7 +115,7 @@ export class AuthService {
     const okPwd = await verify(user.passwordHash, password).catch(() => false);
     const step = verifyCode(unseal(user.totpSecret), code);
     if (!okPwd || !step || (user.totpLastStep != null && step <= user.totpLastStep)) throw new UnauthorizedException("Mot de passe ou code incorrect.");
-    await this.prisma.user.update({ where: { id: userId }, data: { totpEnabled: false, totpSecret: null, totpLastStep: null, recoveryCodes: [] } });
+    await this.prisma.user.update({ where: { id: userId }, data: { totpEnabled: false, totpSecret: null, totpLastStep: null, recoveryCodes: [] } }); forgetUser(userId);
     await this.audit.log(userId, "2fa-disabled", "User", userId);
   }
 
@@ -181,6 +182,7 @@ export class AuthService {
       this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }), // toutes les autres sessions sont fermées
       ...(user.mustChangePassword ? [this.prisma.consent.create({ data: { kind: ConsentKind.PRIVACY_POLICY, userId, givenBy: user.firstName || user.email, policyVersion: POLICY_VERSION } })] : []),
     ]);
+    forgetUser(userId);
     await this.audit.log(userId, "change-password", "User", userId);
     return { user, tokens: await this.issueTokens(userId, user.role) };
   }
@@ -210,6 +212,7 @@ export class AuthService {
       this.prisma.playerAccess.deleteMany({ where: { userId } }),
       this.prisma.user.update({ where: { id: userId }, data: { email: `supprime-${userId}@invalid`, firstName: null, lastName: null, birthYear: null, level: null, phone: null, clubMember: false, passwordHash: "-", deletedAt: new Date() } }),
     ]);
+    forgetUser(userId);
     await this.audit.log(userId, "erase-account", "User", userId);
   }
 
