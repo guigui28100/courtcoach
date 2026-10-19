@@ -64,7 +64,7 @@ export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
 }
 
 // Choix du professeur (adulte) : liste, filtre par jour, tarif
-export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onNoPref: () => void; onClose: () => void }) {
+export function ProfChooser({ preview, onPick, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onClose: () => void }) {
   const { me, reload } = useAuth();
   const [profs, setProfs] = useState<ProfCard[] | null>(preview ? EXAMPLE_PROFS : null);
   const [yourPrice, setYourPrice] = useState<number>(PRICE_OTHER);
@@ -97,7 +97,6 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
       {profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
         <div className="grid gap-4 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
-      <p className="m-0 text-sm text-muted">Tu préfères que le coach choisisse pour toi ? <button className="font-bold text-clay underline" onClick={onNoPref}>Demander au coach directement</button></p>
     </section>
   );
 }
