@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, courtNumber, workPhrase, Slot, todayIso, Lesson, VideoRow } from "../types";
 import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
-import { fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
+import { ClayHero, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
@@ -58,6 +58,7 @@ function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boo
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
+      {hasPlan && <ClayHero title="Choisis ton créneau" text={`${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
       {prof ? (
         <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
       ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
