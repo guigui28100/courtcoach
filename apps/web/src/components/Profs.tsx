@@ -53,14 +53,16 @@ export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
 export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onNoPref: () => void; onClose: () => void }) {
   const { me, reload } = useAuth();
   const [profs, setProfs] = useState<ProfCard[] | null>(preview ? EXAMPLE_PROFS : null);
-  const [yourPrice, setYourPrice] = useState<number>(preview ? PRICE_OTHER : PRICE_OTHER);
+  const [yourPrice, setYourPrice] = useState<number>(PRICE_OTHER);
+  const [pvMember, setPvMember] = useState(false); // aperçu : on peut cocher / décocher pour voir le tarif changer (rien n'est enregistré)
   const [day, setDay] = useState<number | null>(null);
   const [err, setErr] = useState("");
   const load = useCallback(() => { if (preview) return; get<{ profs: ProfCard[]; yourPrice: number | null }>("/profs").then((r) => { setProfs(r.profs); if (r.yourPrice) setYourPrice(r.yourPrice); }).catch((e) => { setProfs([]); setErr((e as Error).message); }); }, [preview]);
   useEffect(load, [load]);
-  const member = preview ? false : !!me?.clubMember;
+  const member = preview ? pvMember : !!me?.clubMember;
   async function toggleMember(v: boolean) {
-    if (preview || !me) return;
+    if (preview) { setPvMember(v); return; }
+    if (!me) return;
     setErr("");
     try { await put("/auth/me/profile", { firstName: me.firstName ?? "", lastName: me.lastName ?? "", birthYear: me.birthYear ?? undefined, level: me.level ?? "", phone: me.phone ?? "", clubMember: v }); await reload(); load(); } catch (x) { setErr((x as Error).message); }
   }
@@ -73,15 +75,15 @@ export function ProfChooser({ preview, onPick, onNoPref, onClose }: { preview: b
         <button className="btn-outline btn-sm" onClick={onClose}>Annuler</button>
       </div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
-        <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} disabled={preview} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
+        <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
       </label>
-      <PriceNote yourPrice={yourPrice} />
+      <PriceNote yourPrice={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} />
       <Err msg={err} />
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par jour">
         {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
       </div>
       {profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
-        <div className="grid gap-4">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} onPick={(x) => onPick(x, yourPrice)} />)}</div>
+        <div className="grid gap-4">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
       <p className="m-0 text-sm text-muted">Tu préfères que le coach choisisse pour toi ? <button className="font-bold text-clay underline" onClick={onNoPref}>Demander au coach directement</button></p>
     </section>

@@ -1,33 +1,46 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { setPreviewOnly } from "../api";
 import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
+import { BackLink } from "../components/ui";
 
 type Tab = "demandes" | "dispos" | "presentation" | "documents";
 const TABS: Tab[] = ["demandes", "dispos", "presentation", "documents"];
 const HOURS = Array.from({ length: 29 }, (_, i) => { const m = 7 * 60 + i * 30; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`; }); // 07:00 → 21:00
 const hourLabel = (t: string) => t.replace(":00", " h").replace(":30", " h 30");
 
+// Exemples INVENTÉS pour « Voir comme un professeur » (le coach ne voit aucune vraie fiche ; rien n'est enregistré)
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+const EXAMPLE_ME: ProfMe = { firstName: "Claire", lastName: "Exemple", birthYear: 1992, showAge: true, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route.", paused: false, status: "waiting", approved: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }, { weekday: null, date: inDays(9), start: "14:00", end: "16:00" }], documents: [{ kind: "DIPLOME", fileName: "diplome.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "AUTO_ENTREPRENEUR", fileName: "attestation.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "CARTE_PRO", fileName: "carte.pdf", sizeBytes: 1000, validUntil: inDays(300) + "T00:00:00.000Z", uploadedAt: new Date().toISOString() }], prices: { member: PRICE_MEMBER, other: PRICE_OTHER } };
+const EXAMPLE_LESSONS: Lesson[] = [
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Samedi"], moment: "Soirée", message: "Je voudrais fiabiliser mon service avant le tournoi.", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m1", firstName: "Marie", lastName: "Exemple", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" } },
+  { id: "ex2", type: "duo", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "PROPOSED", finalSlot: { date: inDays(6), time: "10:30" }, place: "Court 1", partnerFirstName: "Paul", partnerLastName: "Exemple", partnerAge: 40, partnerLevel: "30", coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: null, createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Luc", lastName: "Exemple", birthYear: 1979, level: "15/4", phone: "06 98 76 54 32" } },
+  { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "", status: "ACCEPTED", finalSlot: { date: inDays(3), time: "18:00" }, place: "Court 2", confirmedAt: new Date().toISOString(), coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m3", firstName: "Anne", lastName: "Exemple", birthYear: 1990, level: "30", phone: "06 11 22 33 44" } },
+];
+
 // Cours particuliers pour un entraîneur : il clique « je souhaite donner des cours particuliers », puis remplit sa présentation, ses disponibilités et ses documents
-export function ProfSpace() {
+export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const { me } = useAuth();
   const [params, setParams] = useSearchParams();
   const tab: Tab = TABS.find((k) => k === params.get("onglet")) ?? "demandes";
-  const [resp, setResp] = useState<ProfMeResp | null>(null);
-  const [lessons, setLessons] = useState<Lesson[] | null>(null);
+  const [resp, setResp] = useState<ProfMeResp | null>(preview ? { ...EXAMPLE_ME, optedIn: true } : null);
+  const [lessons, setLessons] = useState<Lesson[] | null>(preview ? EXAMPLE_LESSONS : null);
+  useEffect(() => { if (!preview) return; setPreviewOnly(true); return () => setPreviewOnly(false); }, [preview]); // aperçu : aucune écriture
   const [err, setErr] = useState("");
-  const loadLessons = useCallback(() => { get<Lesson[]>("/lessons").then(setLessons).catch(() => setLessons([])); }, []);
-  const load = useCallback(() => { get<ProfMeResp>("/profs/me").then((r) => { setResp(r); if (r.optedIn) loadLessons(); }).catch((e) => setErr((e as Error).message)); }, [loadLessons]);
+  const loadLessons = useCallback(() => { if (preview) return; get<Lesson[]>("/lessons").then(setLessons).catch(() => setLessons([])); }, []);
+  const load = useCallback(() => { if (preview) return; get<ProfMeResp>("/profs/me").then((r) => { setResp(r); if (r.optedIn) loadLessons(); }).catch((e) => setErr((e as Error).message)); }, [loadLessons, preview]);
   useEffect(load, [load]);
   const p = resp && resp.optedIn ? resp : null;
   const setP = (x: ProfMe) => setResp({ ...x, optedIn: true });
-  async function optIn() { setErr(""); try { setResp(await post<ProfMeResp>("/profs/me/optin")); loadLessons(); setParams({ onglet: "presentation" }); } catch (x) { setErr((x as Error).message); } }
+  async function optIn() { if (preview) { setResp({ ...EXAMPLE_ME, optedIn: true }); setLessons(EXAMPLE_LESSONS); setParams({ onglet: "presentation" }); return; } setErr(""); try { setResp(await post<ProfMeResp>("/profs/me/optin")); loadLessons(); setParams({ onglet: "presentation" }); } catch (x) { setErr((x as Error).message); } }
   async function optOut() {
     if (!confirm("Arrêter les cours particuliers ? Ta présentation, tes disponibilités et tes documents seront effacés, et tes demandes en cours reviendront au coach.")) return;
+    if (preview) { setResp({ optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } }); setLessons(null); return; }
     try { setResp(await del<ProfMeResp>("/profs/me")); setLessons(null); } catch (x) { setErr((x as Error).message); }
   }
   const todo = (lessons ?? []).filter((l) => l.status === "PENDING").length;
@@ -36,7 +49,15 @@ export function ProfSpace() {
   const st = p ? STATUS_TEXT[p.status] : null;
   return (
     <>
-      <PageHead eyebrow="Cours particuliers" title={me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes demandes, tes disponibilités et ta présentation, au même endroit.</PageHead>
+      {preview && (
+        <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <p className="m-0"><strong>👀 Aperçu : voici ce que voit un entraîneur qui donne des cours particuliers.</strong> Fiche, demandes et documents sont des exemples inventés, rien n'est enregistré. Essaie le bouton « Je souhaite donner des cours » puis « Arrêter ».</p>
+            <BackLink fallback="/coach/adultes" className="btn-ink btn-sm no-underline">← Retour</BackLink>
+          </div>
+        </div>
+      )}
+      <PageHead eyebrow="Cours particuliers" title={preview ? "Bonjour Claire !" : me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes demandes, tes disponibilités et ta présentation, au même endroit.</PageHead>
       <Page>
         <Err msg={err} />
         {resp && !resp.optedIn && (

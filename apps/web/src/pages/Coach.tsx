@@ -270,7 +270,7 @@ export function AdultsPage() {
   const owner = (v: VideoRow) => [adultName(v.owner), adultFacts(v.owner)].filter(Boolean).join(" · ");
   return (
     <>
-      <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link>} />
+      <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<><Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link><Link to="/coach/adultes/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un professeur</Link></>} />
       <Page>
         <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["profs", "👩‍🏫 Professeurs", d.profsWaiting], ["historique", "🗂️ Historique"]]} />
         {tab === "demandes" && (
