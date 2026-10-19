@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Installation from "./pages/Installation";
 import Invitation from "./pages/Invitation";
 import { AdultPreview, AdultSpace } from "./pages/Member";
+import { ProfSpace } from "./pages/Prof";
 import Securite from "./pages/Securite";
 import VideoReview from "./pages/VideoReview";
 import YouthSpace from "./pages/Youth";
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/coach/videos/:id" element={<Guard roles={["COACH", "TRAINER"]}><VideoReview /></Guard>} />
         <Route path="/coach/centre/:id/bilan-tournoi/:rid" element={<Guard roles={["COACH"]}><TournamentReportPrint /></Guard>} />
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
+        <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />

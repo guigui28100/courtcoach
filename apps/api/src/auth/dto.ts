@@ -22,6 +22,7 @@ export class AdultProfileDto {
   @IsOptional() @IsInt() @Min(1920) @Max(2030) birthYear?: number;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(40) level?: string;
   @IsOptional() @Transform(trim) @IsString() @Matches(/^[0-9 +().-]{6,20}$/, { message: "Numéro de téléphone invalide." }) phone?: string;
+  @IsOptional() @IsBoolean() clubMember?: boolean; // se déclare adhérent du TC Houdan (tarif des cours particuliers)
 }
 
 export class LoginDto {

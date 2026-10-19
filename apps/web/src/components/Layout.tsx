@@ -64,7 +64,7 @@ function NetLoader() {
 export function Layout({ children }: { children: ReactNode }) {
   const { me, logout, viewAs, stopViewAs } = useAuth();
   const nav = useNavigate();
-  const items = me ? NAV[me.role] : [];
+  const items = me ? (me.role === "TRAINER" && me.trainerKind === "PROF" ? [{ to: "/prof", label: "Mon espace professeur", short: "Professeur", icon: "star" }, ...NAV.TRAINER] : NAV[me.role]) : [];
   const { pathname } = useLocation();
   const galaxy = ((me?.role === "YOUTH" || me?.role === "GUARDIAN") && pathname === "/suivi") || ((me?.role === "COACH" || me?.role === "TRAINER") && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)) || pathname.includes("/bulletin/"); // univers « galaxie » de l'espace jeune
   const link = ({ isActive }: { isActive: boolean }) =>

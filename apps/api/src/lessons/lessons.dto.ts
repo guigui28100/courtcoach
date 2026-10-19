@@ -8,6 +8,7 @@ export const PARTNER_LEVELS = ["Débutant", "Loisir / intermédiaire", "NC", "40
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 export class CreateLessonDto {
+  @IsOptional() @IsString() @MaxLength(40) profId?: string; // professeur choisi (vide = demande adressée au coach)
   @IsIn(["individuel", "duo"]) type: string;
   @Transform(trim) @IsString() @MaxLength(60) objective: string;
   @IsOptional() @IsArray() @ArrayMaxSize(7) @IsIn(DAYS, { each: true }) days?: string[];

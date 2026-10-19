@@ -72,7 +72,9 @@ model User {
   totpEnabled   Boolean   @default(false)
   totpLastStep  Int?      // dernier code utilisé (un code ne sert qu'une fois)
   recoveryCodes String[]  // codes de secours (empreintes)
-  trainerKind   String?   // entraîneur : "COMITE" (par défaut) ou "CLUB" ; mêmes droits (seulement les jeunes confiés par le coach)
+  trainerKind   String?   // entraîneur : "COMITE" (par défaut), "CLUB" ou "PROF" (professeur de cours particuliers) ; mêmes droits sur les jeunes (seulement ceux confiés par le coach)
+  clubMember    Boolean   @default(false) // adulte : se déclare adhérent du TC Houdan (tarif des cours particuliers)
+  profProfile   ProfProfile?
   signature     String?   // signature du coach (image PNG dessinée), affichée en bas des bulletins
 
   refreshTokens RefreshToken[]
@@ -491,9 +493,58 @@ model LessonRequest {
   partnerLastName  String    @default("")
   partnerAge       Int?
   partnerLevel     String    @default("") // classement ou niveau du partenaire
+  profId        String?      // professeur choisi par l'adulte (compte TRAINER de type PROF) ; vide = demande adressée au coach
+  price         Int?         // tarif de la séance en euros (40 adhérent TC Houdan, 50 sinon), figé à la demande
+  memberDeclared Boolean     @default(false) // l'adulte s'était déclaré adhérent du TC Houdan à ce moment
   createdAt     DateTime     @default(now())
 
   @@index([memberId])
+  @@index([profId])
+}
+
+// Présentation d'un professeur de cours particuliers (compte TRAINER de type PROF, créé par le coach)
+model ProfProfile {
+  userId     String   @id
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthYear  Int?
+  showAge    Boolean  @default(false) // l'âge n'est montré aux adultes que si le professeur le décide
+  ranking    String?
+  bestRanking String?
+  bio        String   @default("")
+  paused     Boolean  @default(false) // « je ne prends plus de demandes pour le moment »
+  approvedAt DateTime? // le coach a vérifié les trois documents : seulement alors le professeur est visible des adultes
+  updatedAt  DateTime @updatedAt
+  slots      ProfSlot[]
+  documents  ProfDocument[]
+}
+
+// Disponibilité : un jour de la semaine (0 = lundi … 6 = dimanche) OU une date précise
+model ProfSlot {
+  id      String      @id @default(cuid())
+  userId  String
+  profile ProfProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  weekday Int?
+  date    String?     // AAAA-MM-JJ
+  start   String      // HH:MM
+  end     String
+
+  @@index([userId])
+}
+
+// Pièces justificatives : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (vues du coach seulement)
+model ProfDocument {
+  id         String      @id @default(cuid())
+  userId     String
+  profile    ProfProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  kind       String      // CARTE_PRO | DIPLOME | AUTO_ENTREPRENEUR
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  data       Bytes
+  validUntil DateTime?   // carte professionnelle : date de fin de validité
+  uploadedAt DateTime    @default(now())
+
+  @@unique([userId, kind])
 }
 
 // Journal des actions sensibles (qui a fait quoi) : demandé par la protection des données
