@@ -110,6 +110,8 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(l.profs).toHaveLength(1); expect(l.profs[0]).toMatchObject({ id: profId, firstName: "Claire", lastName: "Dupuis", ranking: "15/1", bestRanking: "4/6", age: null, paused: false });
     expect(JSON.stringify(l)).not.toMatch(/exemple\.fr|documents|birthYear|1992/);
     expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50 });
+    // la carte montre les 3 prochains créneaux libres et le nombre de créneaux libres cette semaine (sans dire par qui les autres sont pris)
+    expect(Array.isArray(l.profs[0].nextFree)).toBe(true); expect(l.profs[0].nextFree.length).toBeLessThanOrEqual(3); expect(typeof l.profs[0].freeThisWeek).toBe("number");
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ showAge: true }).expect(200);
     expect((await adultList()).profs[0].age).toBe(new Date().getFullYear() - 1992);
     await A.parent.get("/api/profs").expect(403); // les familles n'y ont pas accès

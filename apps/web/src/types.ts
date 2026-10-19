@@ -317,7 +317,7 @@ export const PRICE_MEMBER = 40; // adhérent du TC Houdan (euros par séance)
 export const PRICE_OTHER = 50; // autre personne
 export const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 export interface ProfSlot { id?: string; weekday: number | null; date: string | null; start: string; end: string; }
-export interface ProfCard { id: string; firstName: string | null; lastName: string | null; age: number | null; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; slots: ProfSlot[]; }
+export interface ProfCard { id: string; firstName: string | null; lastName: string | null; age: number | null; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; slots: ProfSlot[]; nextFree?: { date: string; time: string }[]; freeThisWeek?: number; }
 export type ProfStatus = "visible" | "paused" | "waiting" | "missing" | "expired";
 export type DocKind = "CARTE_PRO" | "DIPLOME" | "AUTO_ENTREPRENEUR";
 export const DOC_KINDS: { kind: DocKind; label: string; icon: string; help: string }[] = [

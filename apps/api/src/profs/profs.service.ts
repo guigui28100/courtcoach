@@ -7,7 +7,7 @@ import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
 import { PRICE_MEMBER, PRICE_OTHER } from "./pricing";
 import { expireStaleBookings, releaseProfLessons } from "./bookings";
-import { buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
+import { addDays as addDaysIso, buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
 
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
 const cleanName = (n: string) => n.replace(/[\\/\0-\x1f"]/g, "_").trim().slice(0, 120) || "document";
@@ -54,14 +54,21 @@ export class ProfsService {
       include: { profProfile: { include: { slots: true, documents: { select: { kind: true, validUntil: true } } } } }, orderBy: { createdAt: "asc" },
     });
     const me = user.role === Role.ADULT ? await this.prisma.user.findUnique({ where: { id: user.id }, select: { clubMember: true } }) : null;
-    const out = rows.flatMap((u) => {
+    const out = [];
+    for (const u of rows) {
       const p = u.profProfile!; const st = this.status(p);
-      if (st !== "visible" && st !== "paused") return [];
-      return [{
+      if (st !== "visible" && st !== "paused") continue;
+      // Prochains créneaux libres (pour la carte du professeur) : calculés comme dans son planning
+      let nextFree: { date: string; time: string }[] = []; let freeThisWeek = 0;
+      if (st === "visible") {
+        const week = nowParis().date; const free = buildPlanning(p.slots, await this.busyOf(u.id), undefined, p.skipHolidays).flatMap((d) => d.slots.filter((x) => x.free).map((x) => ({ date: d.date, time: x.time })));
+        nextFree = free.slice(0, 3); freeThisWeek = free.filter((x) => x.date <= addDaysIso(week, 7)).length;
+      }
+      out.push({
         id: u.id, firstName: u.firstName, lastName: u.lastName, age: p.showAge && p.birthYear ? new Date().getFullYear() - p.birthYear : null,
-        ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: st === "paused", slots: this.slotsOut(p.slots),
-      }];
-    });
+        ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: st === "paused", slots: this.slotsOut(p.slots), nextFree, freeThisWeek,
+      });
+    }
     return { profs: out, prices: { member: PRICE_MEMBER, other: PRICE_OTHER }, yourPrice: me ? (me.clubMember ? PRICE_MEMBER : PRICE_OTHER) : null };
   }
 

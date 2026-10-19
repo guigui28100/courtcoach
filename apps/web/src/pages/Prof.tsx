@@ -201,7 +201,7 @@ function Presentation({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
       <h3 className="m-0 text-lg">👀 Voici comment les adultes te voient</h3>
-      <ProfCardView p={preview} />
+      <div className="prof-grid grid max-w-sm"><ProfCardView p={preview} /></div>
     </section>
   );
 }
