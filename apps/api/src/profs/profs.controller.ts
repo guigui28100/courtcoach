@@ -13,6 +13,9 @@ export class ProfsController {
   // Liste des professeurs visibles : adultes (pour choisir) et coach
   @Roles(Role.ADULT, Role.COACH) @Get() list(@CurrentUser() u: AuthUser) { return this.svc.listVisible(u); }
 
+  // Planning d'un professeur : créneaux d'une heure, libres ou pris
+  @Roles(Role.ADULT, Role.COACH) @Get(":id/planning") planning(@Param("id") id: string) { return this.svc.planning(id); }
+
   // Espace du professeur (entraîneur qui a cliqué « je souhaite donner des cours particuliers » : vérifié dans le service)
   @Roles(Role.TRAINER) @Get("me") me(@CurrentUser() u: AuthUser) { return this.svc.me(u); }
   @Roles(Role.TRAINER) @Post("me/optin") @HttpCode(200) optIn(@CurrentUser() u: AuthUser) { return this.svc.optIn(u); }

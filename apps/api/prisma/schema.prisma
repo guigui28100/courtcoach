@@ -496,10 +496,12 @@ model LessonRequest {
   profId        String?      // professeur choisi par l'adulte (compte TRAINER de type PROF) ; vide = demande adressée au coach
   price         Int?         // tarif de la séance en euros (40 adhérent TC Houdan, 50 sinon), figé à la demande
   memberDeclared Boolean     @default(false) // l'adulte s'était déclaré adhérent du TC Houdan à ce moment
+  slotKey       String?      // créneau réservé chez le professeur (« 2026-10-22T18:00 ») : unique par professeur, jamais deux cours au même moment ; vide quand le cours est annulé
   createdAt     DateTime     @default(now())
 
   @@index([memberId])
   @@index([profId])
+  @@unique([profId, slotKey])
 }
 
 // Présentation d'un professeur de cours particuliers : un entraîneur (compte TRAINER créé par le coach) qui a cliqué « je souhaite donner des cours particuliers »
