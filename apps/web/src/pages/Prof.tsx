@@ -18,9 +18,9 @@ const hourLabel = (t: string) => t.replace(":00", " h").replace(":30", " h 30");
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const EXAMPLE_ME: ProfMe = { firstName: "Claire", lastName: "Exemple", birthYear: 1992, showAge: true, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route.", paused: false, status: "waiting", approved: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }, { weekday: null, date: inDays(9), start: "14:00", end: "16:00" }], documents: [{ kind: "DIPLOME", fileName: "diplome.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "AUTO_ENTREPRENEUR", fileName: "attestation.pdf", sizeBytes: 1000, validUntil: null, uploadedAt: new Date().toISOString() }, { kind: "CARTE_PRO", fileName: "carte.pdf", sizeBytes: 1000, validUntil: inDays(300) + "T00:00:00.000Z", uploadedAt: new Date().toISOString() }], prices: { member: PRICE_MEMBER, other: PRICE_OTHER } };
 const EXAMPLE_LESSONS: Lesson[] = [
-  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Samedi"], moment: "Soirée", message: "Je voudrais fiabiliser mon service avant le tournoi.", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m1", firstName: "Marie", lastName: "Exemple", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" } },
-  { id: "ex2", type: "duo", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "PROPOSED", finalSlot: { date: inDays(6), time: "10:30" }, place: "Court 1", partnerFirstName: "Paul", partnerLastName: "Exemple", partnerAge: 40, partnerLevel: "30", coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: null, createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Luc", lastName: "Exemple", birthYear: 1979, level: "15/4", phone: "06 98 76 54 32" } },
-  { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "", status: "ACCEPTED", finalSlot: { date: inDays(3), time: "18:00" }, place: "Court 2", confirmedAt: new Date().toISOString(), coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m3", firstName: "Anne", lastName: "Exemple", birthYear: 1990, level: "30", phone: "06 11 22 33 44" } },
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi"], moment: "Soirée", message: "Je voudrais fiabiliser mon service avant le tournoi.", status: "ACCEPTED", finalSlot: { date: inDays(2), time: "18:00" }, confirmedAt: new Date().toISOString(), coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m1", firstName: "Marie", lastName: "Exemple", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" } },
+  { id: "ex2", type: "duo", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "ACCEPTED", finalSlot: { date: inDays(6), time: "10:00" }, confirmedAt: new Date().toISOString(), partnerFirstName: "Paul", partnerLastName: "Exemple", partnerAge: 40, partnerLevel: "30", coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Luc", lastName: "Exemple", birthYear: 1979, level: "15/4", phone: "06 98 76 54 32" } },
+  { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "Plus aucun créneau libre : peux-tu me proposer une date ?", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m3", firstName: "Anne", lastName: "Exemple", birthYear: 1990, level: "30", phone: "06 11 22 33 44" } },
 ];
 
 // Cours particuliers pour un entraîneur : il clique « je souhaite donner des cours particuliers », puis remplit sa présentation, ses disponibilités et ses documents
@@ -57,7 +57,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
           </div>
         </div>
       )}
-      <PageHead eyebrow="Cours particuliers" title={preview ? "Bonjour Claire !" : me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes demandes, tes disponibilités et ta présentation, au même endroit.</PageHead>
+      <PageHead eyebrow="Cours particuliers" title={preview ? "Bonjour Claire !" : me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes cours réservés, tes disponibilités et ta présentation, au même endroit.</PageHead>
       <Page>
         <Err msg={err} />
         {resp && !resp.optedIn && (
@@ -68,7 +68,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
               <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
               <li>Tu déposes tes <strong>3 documents</strong> : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (seul le coach les voit).</li>
               <li>Le coach vérifie et te rend <strong>visible</strong> des adultes.</li>
-              <li>Les adultes te demandent un cours, tu proposes une date, ils confirment. Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
+              <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le cours est confirmé tout de suite, sans rien à valider. Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
             </ol>
             <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
             <div><button className="btn-clay" onClick={optIn}>✋ Je souhaite donner des cours particuliers</button></div>
@@ -76,7 +76,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
         )}
         {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
         {p && (
-          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📨 Mes demandes", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
+          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Mes cours", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
             {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} />}
             {tab === "dispos" && <Availability p={p} onSaved={setP} />}
             {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Ta fiche, tes disponibilités et tes documents sont effacés. Tes demandes en cours reviennent au coach. Tu pourras recommencer plus tard.</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
@@ -91,16 +91,19 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
 
 function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () => void }) {
   if (!lessons) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
-  const group = (title: string, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3><ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
+  const byDate = (a: Lesson, b: Lesson) => ((a.finalSlot?.date ?? "9") + (a.finalSlot?.time ?? "")).localeCompare((b.finalSlot?.date ?? "9") + (b.finalSlot?.time ?? ""));
+  const today = new Date().toISOString().slice(0, 10);
+  const booked = lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).sort(byDate);
+  const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
-      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📨 Mes demandes de cours</h2><p className="m-0 text-muted">Les adultes qui t'ont choisi. Propose une date : le cours n'est valable que quand l'adulte la confirme. Le coach voit aussi ces demandes.</p></div>
+      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes réservent <strong>eux-mêmes</strong> un créneau libre dans ton planning : leur cours est confirmé tout de suite et apparaît ici. Tu n'as rien à valider. Tu peux changer la date ou annuler un cours si besoin.</p></div>
       <PriceNote />
-      {lessons.length === 0 && <Empty>Aucune demande pour l'instant 🎾</Empty>}
-      {group("À traiter", lessons.filter((l) => l.status === "PENDING"))}
-      {group("En attente de la confirmation de l'adulte", lessons.filter((l) => l.status === "PROPOSED"))}
-      {group("Cours confirmés", lessons.filter((l) => l.status === "ACCEPTED"))}
-      {group("Refusés ou annulés", lessons.filter((l) => l.status === "REFUSED"))}
+      {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
+      {group("Cours réservés à venir", null, booked)}
+      {group("Demandes sans créneau", "Un adulte t'écrit parce qu'il n'y avait plus de créneau libre : propose-lui une date (il confirmera).", lessons.filter((l) => l.status === "PENDING"))}
+      {group("En attente de la confirmation de l'adulte", null, lessons.filter((l) => l.status === "PROPOSED"))}
+      {group("Annulés ou refusés", null, lessons.filter((l) => l.status === "REFUSED"))}
     </section>
   );
 }
