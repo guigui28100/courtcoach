@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { adultName, fmtTime, Lesson, ProfSlot, WEEKDAYS } from "../types";
+import { post } from "../api";
+import { adultName, collapseSeries, everyDay, fmtDeadline, fmtSlot, fmtTime, Lesson, ProfSlot, WEEKDAYS } from "../types";
 import { offDay } from "../series";
 import { LessonRow } from "../pages/Coach";
 
@@ -41,6 +42,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   }, [reload]);
   useEffect(() => { if (follow) setAnchor(today); }, [today, follow]);
   const [open, setOpen] = useState<Lesson | null>(null);
+  const [err, setErr] = useState("");
   const start = anchor; // 7 jours (3 sur téléphone) à partir d'aujourd'hui : l'agenda avance d'un jour chaque jour
   const days = Array.from({ length: count }, (_, i) => addDays(start, i));
 
@@ -63,6 +65,14 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
     return list.length ? list : [17, 18, 19];
   }, [days.join(), slots, shown, skipHolidays]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const byStamp = (a: Lesson, b: Lesson) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time);
+  const upcoming = (l: Lesson) => l.finalSlot!.date >= today;
+  // demandes à confirmer, QUELLE QUE SOIT LEUR DATE (le professeur a 48 h pour répondre, même pour un cours dans 3 semaines)
+  const pending = collapseSeries(shown.filter((l) => l.status === "BOOKED" && upcoming(l))).sort(byStamp);
+  // prochains cours confirmés au-delà de la période affichée
+  const later = collapseSeries(shown.filter((l) => l.status === "ACCEPTED" && l.finalSlot!.date > days[count - 1])).sort(byStamp).slice(0, 5);
+  const jump = (l: Lesson) => { setFollow(false); setAnchor(l.finalSlot!.date); setOpen({ ...l, seriesCount: upcomingOf(l) || l.seriesCount }); };
+  async function confirmNow(l: Lesson) { setErr(""); try { await post(`/lessons/${l.id}/confirm`); reload(); } catch (e) { setErr((e as Error).message); } }
   const inPeriod = shown.filter((l) => days.includes(l.finalSlot!.date));
   const toConfirm = inPeriod.filter((l) => l.status === "BOOKED").length;
   const offLabel = days.map((d) => offDay(d)).find(Boolean);
@@ -85,6 +95,26 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
       </div>
 
       <div className="p-2 sm:p-4">
+        {err && <p role="alert" className="m-0 mb-2 rounded-xl border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-bold text-bad">{err}</p>}
+        {pending.length > 0 && (
+          <div className="mb-3 grid gap-2 rounded-2xl border-2 border-[#c9ac00] bg-[#fff8d6] p-3" aria-label="Demandes à confirmer">
+            <h4 className="m-0 text-base font-bold text-[#5c4300]">🔔 {pending.length} demande{pending.length > 1 ? "s" : ""} à confirmer</h4>
+            <ul className="m-0 grid list-none gap-2 p-0">
+              {pending.map((l) => (
+                <li key={l.id} className="grid gap-1 rounded-xl bg-white p-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+                  <span className="min-w-0">
+                    <b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}{l.type === "duo" ? " · 👥" : ""}
+                    <small className="block text-muted">À confirmer avant {fmtDeadline(l.createdAt)}</small>
+                  </span>
+                  <span className="flex flex-wrap gap-2">
+                    <button className="btn-clay btn-sm !bg-ok" onClick={() => confirmNow(l)}>✅ Je confirme</button>
+                    <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => jump(l)}>Voir dans l'agenda</button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {inPeriod.length === 0 && !hours.some((h) => days.some((d) => free(d, h))) && <p className="m-0 mb-2 rounded-xl bg-sand p-3 text-sm">Aucun cours ni créneau libre sur cette période.</p>}
         <div className="agenda-grid" style={{ gridTemplateColumns: `3rem repeat(${count}, minmax(0, 1fr))` }} role="grid" aria-label="Agenda de la période">
           <div />
@@ -128,6 +158,18 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
           <li><i className="agenda-dot border border-line bg-[#f1ece1]" />Pas disponible</li>
           <li>🔁 série · 👥 à deux</li>
         </ul>
+        {later.length > 0 && (
+          <div className="mt-3 grid gap-1">
+            <h4 className="m-0 text-base font-bold">📆 Prochains cours (plus tard)</h4>
+            <ul className="m-0 grid list-none gap-1 p-0">
+              {later.map((l) => (
+                <li key={l.id}><button className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-line bg-white px-3 py-2 text-left text-sm hover:border-ink" onClick={() => jump(l)}>
+                  <span><b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}</span><span className="font-bold text-clay">Voir →</span>
+                </button></li>
+              ))}
+            </ul>
+          </div>
+        )}
         {skipHolidays && offLabel && <p className="m-0 mt-2 rounded-xl bg-[#fff3cd] p-2 text-sm text-[#5c4300]">🏖️ {offLabel} : tes créneaux « chaque semaine » ne sont pas proposés aux adultes ces jours-là (case « pas de cours pendant les vacances » dans Mes disponibilités).</p>}
         <p className="m-0 mt-2 text-sm text-muted">👉 Touche un cours pour voir l'adulte, son téléphone, le tarif et pour le confirmer ou le libérer.</p>
       </div>
