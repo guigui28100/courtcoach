@@ -85,23 +85,21 @@ describe("CourtCoach API", () => {
     await agent().post("/api/auth/signup").set(ORIGIN).send({ email: "pirate@exemple.fr", password: PASSWORD, acceptPolicy: true, role: "COACH" }).expect(400);
   });
 
-  it("demande de cours : l'adulte demande, le coach répond, l'adulte est prévenu", async () => {
-    const created = await adult.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: ["Samedi"], moment: "Matin" }).expect(201);
-    await adult.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED" }).expect(403);
-    // le coach doit fixer une date et une heure valides pour accepter
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED" }).expect(400);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: "2020-01-01", time: "10:00" } }).expect(400);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: "2026-02-31", time: "10:00" } }).expect(400);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "25:00" } }).expect(400);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "REFUSED", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "10:00" } }).expect(400);
-    const list = await coach.get("/api/lessons").expect(200);
-    expect(list.body).toHaveLength(1);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "PROPOSED", reply: "À samedi", place: "Court 2", slot: { date: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), time: "10:00" } }).expect(200);
+  it("cours particuliers : plus de demande libre (créneau et professeur obligatoires) ; le coach refuse une ancienne demande, l'adulte est prévenu", async () => {
+    await adult.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: ["Samedi"], moment: "Matin" }).expect(400);
+    // une demande faite AVANT le planning (créée directement dans la base)
+    const me = await prisma.user.findUniqueOrThrow({ where: { email: "adulte@exemple.fr" } });
+    const old = await prisma.lessonRequest.create({ data: { memberId: me.id, type: "individuel", objective: "Service", days: ["Samedi"], moment: "Matin" } });
+    await adult.post(`/api/lessons/${old.id}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(403); // pas à l'adulte
+    // plus de « proposer une date » : seul le refus existe
+    await coach.post(`/api/lessons/${old.id}/answer`).set(ORIGIN).send({ status: "PROPOSED" }).expect(400);
+    await coach.post(`/api/lessons/${old.id}/answer`).set(ORIGIN).send({ status: "REFUSED", slot: { date: "2030-01-01", time: "10:00" } }).expect(400);
+    expect((await coach.get("/api/lessons").expect(200)).body).toHaveLength(1);
+    await coach.post(`/api/lessons/${old.id}/answer`).set(ORIGIN).send({ status: "REFUSED", reply: "Cours annulé" }).expect(200);
     const mine = await adult.get("/api/lessons").expect(200);
-    expect(mine.body[0]).toMatchObject({ status: "PROPOSED", coachReply: "À samedi", place: "Court 2", finalSlot: { time: "10:00" }, seenByMemberAt: null });
-    await adult.post(`/api/lessons/${created.body.id}/seen`).set(ORIGIN).expect(204);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "REFUSED", reply: "Cours annulé" }).expect(200);
-    await coach.post(`/api/lessons/${created.body.id}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(404); // déjà refusée
+    expect(mine.body[0]).toMatchObject({ status: "REFUSED", coachReply: "Cours annulé", seenByMemberAt: null });
+    await adult.post(`/api/lessons/${old.id}/seen`).set(ORIGIN).expect(204);
+    await coach.post(`/api/lessons/${old.id}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(404); // déjà refusée
   });
 
   it("le coach crée la fiche d'un jeune, ses objectifs, évaluations et matchs", async () => {

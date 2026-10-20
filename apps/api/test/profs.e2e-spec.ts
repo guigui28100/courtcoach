@@ -109,7 +109,7 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     let l = await adultList();
     expect(l.profs).toHaveLength(1); expect(l.profs[0]).toMatchObject({ id: profId, firstName: "Claire", lastName: "Dupuis", ranking: "15/1", bestRanking: "4/6", age: null, paused: false });
     expect(JSON.stringify(l)).not.toMatch(/exemple\.fr|documents|birthYear|1992/);
-    expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50 });
+    expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50, sundayExtra: 10 });
     // la carte montre les 3 prochains créneaux libres et le nombre de créneaux libres cette semaine (sans dire par qui les autres sont pris)
     expect(Array.isArray(l.profs[0].nextFree)).toBe(true); expect(l.profs[0].nextFree.length).toBeLessThanOrEqual(3); expect(typeof l.profs[0].freeThisWeek).toBe("number");
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ showAge: true }).expect(200);
@@ -118,37 +118,48 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.comite.get("/api/profs").expect(403);
   });
 
-  it("demande de cours à un professeur : tarif 50 € ou 40 € si l'adulte est adhérent, figé à la demande ; professeur inconnu ou non visible refusé", async () => {
-    await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId: prof2Id }).expect(400); // pas visible
-    await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId: "inconnu" }).expect(400);
-    const a = (await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId }).expect(201)).body;
-    expect(a).toMatchObject({ profId, price: 50, memberDeclared: false }); lessonId = a.id;
+  it("réservation chez un professeur : créneau obligatoire, tarif 50 € ou 40 € si l'adulte est adhérent, figé ; professeur inconnu ou non visible refusé ; plus de demande libre", async () => {
+    const free = async () => ((await A.adulte.get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string; slots: { time: string; free: boolean }[] }[]).flatMap((d) => d.slots.filter((x) => x.free).map((x) => ({ date: d.date, time: x.time })));
+    const f = await free(); expect(f.length).toBeGreaterThan(3);
+    const slot = f[0], slot2 = f.find((x) => x.date !== slot.date)!;
+    const body = (extra: object) => ({ type: "individuel", objective: "Service", ...extra });
+    await A.adulte.post("/api/lessons").set(ORIGIN).send(body({ profId: prof2Id, slot })).expect(400); // pas visible
+    await A.adulte.post("/api/lessons").set(ORIGIN).send(body({ profId: "inconnu", slot })).expect(400);
+    await A.adulte.post("/api/lessons").set(ORIGIN).send(body({ profId })).expect(400); // sans créneau
+    await A.adulte.post("/api/lessons").set(ORIGIN).send(body({ slot })).expect(400); // sans professeur : plus de demande libre
+    await A.adulte.post("/api/lessons").set(ORIGIN).send(body({})).expect(400);
+    const a = (await A.adulte.post("/api/lessons").set(ORIGIN).send(body({ profId, slot })).expect(201)).body;
+    expect(a).toMatchObject({ profId, price: 50, memberDeclared: false, status: "BOOKED" }); lessonId = a.id;
     await A.adulte.put("/api/auth/me/profile").set(ORIGIN).send({ clubMember: true }).expect(200);
     expect((await adultList()).yourPrice).toBe(40);
-    const b = (await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "duo", objective: "Revers", profId, partnerFirstName: "Paul", partnerLastName: "Durand", partnerAge: 40, partnerLevel: "30" }).expect(201)).body;
-    expect(b).toMatchObject({ price: 40, memberDeclared: true });
+    // cours à deux : le partenaire (prénom, nom, âge, classement) est obligatoire
+    const duo = (extra: object) => A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "duo", objective: "Revers", profId, slot: slot2, ...extra });
+    await duo({}).expect(400);
+    await duo({ partnerFirstName: "Paul", partnerLastName: "Durand", partnerAge: 40 }).expect(400); // classement manquant
+    await duo({ partnerFirstName: "Paul", partnerLastName: "Durand", partnerAge: 3, partnerLevel: "30" }).expect(400); // âge impossible
+    await duo({ partnerFirstName: "Paul", partnerLastName: "Durand", partnerAge: 40, partnerLevel: "champion du monde" }).expect(400); // classement hors liste
+    const b = (await duo({ partnerFirstName: "Paul", partnerLastName: "Durand", partnerAge: 40, partnerLevel: "30" }).expect(201)).body;
+    expect(b).toMatchObject({ price: 40, memberDeclared: true, type: "duo", partnerFirstName: "Paul", partnerAge: 40 });
     expect((await prisma.lessonRequest.findUnique({ where: { id: lessonId } }))!.price).toBe(50); // l'ancien tarif ne change pas
-    const sans = (await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Autre" }).expect(201)).body;
-    expect(sans.profId).toBeNull(); expect(sans.price).toBeNull(); // sans professeur : demande au coach
   });
 
-  it("le professeur ne voit et ne traite QUE ses demandes ; le coach voit tout ; l'adulte confirme", async () => {
+  it("le professeur ne voit et ne traite QUE ses cours ; le coach voit tout ; plus de « proposer une date » ni de réponse de l'adulte", async () => {
     const mine = (await A.prof.get("/api/lessons").expect(200)).body;
     expect(mine).toHaveLength(2); expect(mine.every((x: any) => x.profId === profId)).toBe(true);
     expect(mine[0].member.email).toBeUndefined(); // pas d'adresse e-mail
     expect(JSON.stringify(mine)).not.toContain("adulte2");
     expect((await A.prof2.get("/api/lessons").expect(200)).body).toEqual([]);
     await A.prof2.post(`/api/lessons/${lessonId}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(404);
-    const sansProf = (await prisma.lessonRequest.findFirst({ where: { profId: null } }))!;
-    await A.prof.post(`/api/lessons/${sansProf.id}/answer`).set(ORIGIN).send({ status: "REFUSED" }).expect(404); // pas SA demande
-    await A.prof.post(`/api/lessons/${lessonId}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: future(5), time: "18:00" }, place: "Court 2" }).expect(200);
-    expect((await A.adulte.get("/api/lessons").expect(200)).body.find((x: any) => x.id === lessonId)).toMatchObject({ status: "PROPOSED", prof: { firstName: "Claire" } });
-    await A.adulte2.get("/api/lessons").expect(200);
+    // la date n'est plus proposée par le professeur : l'adulte choisit lui-même son créneau
+    await A.prof.post(`/api/lessons/${lessonId}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: future(5), time: "18:00" } }).expect(400);
+    await A.adulte.post(`/api/lessons/${lessonId}/respond`).set(ORIGIN).send({ action: "confirm" }).expect(404); // la route n'existe plus
+    await A.adulte.post(`/api/lessons/${lessonId}/confirm`).set(ORIGIN).expect(403); // seul le professeur (ou le coach) confirme
+    const ok = (await A.prof.post(`/api/lessons/${lessonId}/confirm`).set(ORIGIN).expect(200)).body;
+    expect(ok.status).toBe("ACCEPTED");
+    expect((await A.adulte.get("/api/lessons").expect(200)).body.find((x: any) => x.id === lessonId)).toMatchObject({ status: "ACCEPTED", prof: { firstName: "Claire" } });
     expect((await A.adulte2.get("/api/lessons").expect(200)).body).toEqual([]); // un autre adulte ne voit rien
-    await A.adulte.post(`/api/lessons/${lessonId}/respond`).set(ORIGIN).send({ action: "confirm" }).expect(200);
-    await A.prof.post(`/api/lessons/${lessonId}/respond`).set(ORIGIN).send({ action: "confirm" }).expect(403); // seul l'adulte confirme
     await A.prof.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "x" }).expect(403);
-    expect((await A.coach.get("/api/lessons").expect(200)).body).toHaveLength(3);
+    expect((await A.coach.get("/api/lessons").expect(200)).body).toHaveLength(2);
   });
 
   it("planning : créneaux d'une heure sur les disponibilités, réservation immédiate, jamais deux cours au même moment, annulation qui libère", async () => {
@@ -171,8 +182,6 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", slot: { date: day, time: s2.time } }).expect(400); // sans professeur
     await book("adulte", s2.time, { profId: prof2Id }).expect(400); // professeur non visible
     expect((await A.adulte.get("/api/lessons").expect(200)).body.every((l: any) => l.id !== b.id)).toBe(true); // la réservation d'un autre n'apparaît pas
-    // le professeur ne peut pas proposer une date qui chevauche un cours déjà placé
-    await A.prof.post(`/api/lessons/${lessonId}/answer`).set(ORIGIN).send({ status: "PROPOSED", slot: { date: day, time: s1.time } }).expect(409);
     // deux clics en même temps : un seul gagne
     const race = await Promise.all([book("adulte", s2.time), book("adulte2", s2.time)]);
     expect(race.map((r) => r.status).sort()).toEqual([201, 409]);
@@ -290,5 +299,16 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(await prisma.profProfile.count({ where: { userId: profId } })).toBe(0);
     expect(await prisma.lessonRequest.count({ where: { profId } })).toBe(0);
     expect(adultId).toBeTruthy();
+  });
+});
+
+describe("tarif du dimanche", () => {
+  it("+10 € le dimanche, adhérent ou non ; les autres jours ne changent pas", async () => {
+    const { lessonPrice } = await import("../src/profs/pricing");
+    expect(lessonPrice(true, "2026-10-25")).toBe(50); // dimanche
+    expect(lessonPrice(false, "2026-10-25")).toBe(60);
+    expect(lessonPrice(true, "2026-10-24")).toBe(40); // samedi
+    expect(lessonPrice(false, "2026-10-26")).toBe(50); // lundi
+    expect(lessonPrice(false)).toBe(50);
   });
 });

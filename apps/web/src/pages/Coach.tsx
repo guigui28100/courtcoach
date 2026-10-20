@@ -15,15 +15,13 @@ const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Co
 const FRESH_MS = 3 * 86_400_000; // une confirmation reste signalée « nouvelle » 3 jours
 
 export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: () => void; asProf?: boolean }) {
-  const [ask, setAsk] = useState<"PROPOSED" | "REFUSED" | null>(null);
-  const [date, setDate] = useState(l.finalSlot?.date ?? ""), [time, setTime] = useState(l.finalSlot?.time ?? "18:00");
-  const [place, setPlace] = useState(l.place ?? ""), [reply, setReply] = useState("");
+  const [ask, setAsk] = useState<"REFUSED" | null>(null); // plus de « proposer une date » : l'adulte choisit lui-même son créneau dans le planning
+  const [reply, setReply] = useState("");
   const [err, setErr] = useState("");
   const freshConfirm = l.status === "ACCEPTED" && !!l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS;
   async function send() {
     setErr("");
-    if (ask === "PROPOSED" && (!date || !time)) { setErr("Indique la date et l'heure du cours."); return; }
-    try { await post(`/lessons/${l.id}/answer`, ask === "PROPOSED" ? { status: "PROPOSED", slot: { date, time }, place: place || undefined, reply: reply || undefined } : { status: "REFUSED", reply: reply || undefined }); setAsk(null); onDone(); } catch (e) { setErr((e as Error).message); }
+    try { await post(`/lessons/${l.id}/answer`, { status: "REFUSED", reply: reply || undefined }); setAsk(null); onDone(); } catch (e) { setErr((e as Error).message); }
   }
   async function confirmBooking() { setErr(""); try { await post(`/lessons/${l.id}/confirm`); onDone(); } catch (e) { setErr((e as Error).message); } }
   const serie = (l.seriesCount ?? 0) > 1 && !!l.finalSlot; // série « toute l'année »
@@ -32,7 +30,7 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
     setErr(""); try { await post(`/lessons/${l.id}/stop-series`, {}); onDone(); } catch (e) { setErr((e as Error).message); }
   }
   const field = "input !min-h-11";
-  const badge = l.status === "ACCEPTED" ? ["Confirmé par l'adulte", "!border-ok !text-ok"] : l.status === "PROPOSED" ? ["Pas encore confirmé", "!border-[#c08a00] !text-[#7a5a00]"] : l.status === "BOOKED" ? ["À confirmer par le professeur", "!border-[#c08a00] !text-[#7a5a00]"] : l.status === "REFUSED" ? ["Refusé / annulé", "!border-bad !text-bad"] : null;
+  const badge = l.status === "ACCEPTED" ? ["Confirmé", "!border-ok !text-ok"] : l.status === "PROPOSED" ? ["Ancienne demande", "!border-line !text-muted"] : l.status === "BOOKED" ? ["À confirmer par le professeur", "!border-[#c08a00] !text-[#7a5a00]"] : l.status === "REFUSED" ? ["Refusé / annulé", "!border-bad !text-bad"] : null;
   return (
     <li className={"card grid gap-3 " + (freshConfirm ? "!border-ok !border-2" : "")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -49,8 +47,6 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
         {badge && <span className={"badge " + badge[1]}>{badge[0]}</span>}
       </div>
 
-      {l.status === "PENDING" && l.declinedSlot && <p className="m-0 rounded-xl bg-[#fdf0ee] p-3 font-bold text-[#9a2a1f]">⚠ Pas disponible le {fmtSlot(l.declinedSlot)}{l.adultReply ? ` : « ${l.adultReply} »` : ""}. Propose-lui une autre date.</p>}
-      {l.status === "PROPOSED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">⏳ Tu as proposé : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}. <u>Ne te déplace pas avant sa confirmation.</u></p>}
       {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
       {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-bold text-[#1d6b43]">{freshConfirm ? "🔔 Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
       {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">💬 « {l.coachReply} »</p>}
@@ -58,27 +54,15 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
       {l.status !== "REFUSED" && (!ask ? (
         <div className="flex flex-wrap gap-2">
           {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
-          {l.status === "PENDING" && <button className="btn-clay btn-sm" onClick={() => setAsk("PROPOSED")}>📅 Proposer une date</button>}
-          {l.status !== "PENDING" && l.status !== "BOOKED" && <button className="btn-outline btn-sm" onClick={() => setAsk("PROPOSED")}>✏️ Changer la date</button>}
           <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
           {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>⛔ Arrêter la série</button>}
         </div>
       ) : (
         <div className="grid gap-3 rounded-2xl border-2 border-line bg-chalk p-3">
-          {ask === "PROPOSED" && (
-            <>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="grid gap-1 text-sm font-bold">Date du cours<input type="date" className={field} min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} autoFocus /></label>
-                <label className="grid gap-1 text-sm font-bold">Heure<input type="time" className={field} value={time} onChange={(e) => setTime(e.target.value)} /></label>
-                <label className="grid min-w-44 flex-1 gap-1 text-sm font-bold">Lieu (facultatif)<input className={field} maxLength={60} placeholder="Ex. : court 2" value={place} onChange={(e) => setPlace(e.target.value)} /></label>
-              </div>
-              <p className="hint m-0">L'adulte devra confirmer cette date avant que le cours soit validé : tu verras ici quand il aura répondu.</p>
-            </>
-          )}
-          <input className={field} maxLength={200} aria-label="Message pour l'adhérent (facultatif)" placeholder={ask === "PROPOSED" ? "Un petit mot pour l'adhérent (facultatif)" : l.status === "PENDING" ? "Ex. : Pas de créneau cette semaine" : "Ex. : Pluie annoncée, on annule"} value={reply} onChange={(e) => setReply(e.target.value)} />
+          <input className={field} maxLength={200} aria-label="Message pour l'adhérent (facultatif)" placeholder={l.status === "PENDING" ? "Ex. : Réserve un créneau chez un professeur" : "Ex. : Pluie annoncée, on annule"} value={reply} onChange={(e) => setReply(e.target.value)} />
           <Err msg={err} />
           <div className="flex flex-wrap gap-2">
-            <button className={ask === "PROPOSED" ? "btn-clay btn-sm" : "btn-danger btn-sm"} onClick={send}>{ask === "PROPOSED" ? "Envoyer la proposition" : l.status === "PENDING" ? "Confirmer le refus" : "Confirmer l'annulation"}</button>
+            <button className="btn-danger btn-sm" onClick={send}>{l.status === "PENDING" ? "Confirmer le refus" : "Confirmer l'annulation"}</button>
             <button className="btn-outline btn-sm" onClick={() => { setAsk(null); setErr(""); }}>Annuler</button>
           </div>
         </div>
@@ -194,13 +178,12 @@ function useCoachData(version = 0) {
     }).catch(() => undefined);
   }, [mine]);
   useEffect(load, [load, version]);
-  const pending = lessons.filter((l) => l.status === "PENDING");
-  const toConfirm = lessons.filter((l) => l.status === "PROPOSED").sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
+  const pending = lessons.filter((l) => l.status === "PENDING" || l.status === "PROPOSED"); // anciennes demandes d'avant le planning (on ne peut plus en créer) : à clôturer
   const booked = collapseSeries(lessons.filter((l) => l.status === "BOOKED" && l.finalSlot)).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time)); // réservés par l'adulte, le professeur doit confirmer
   const upcoming = collapseSeries(lessons.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= todayIso())).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
   const adultVideos = (videos ?? []).filter((v) => v.kind === "coaching");
   const youthVideos = mine((videos ?? []).filter((v) => v.kind === "centre"), (v) => (v as { playerId?: string }).playerId);
-  return { lessons, pending, toConfirm, booked, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, profsWaiting, reload: load };
+  return { lessons, pending, booked, upcoming, players, inactive, selfEvals, storage, videos, adultVideos, youthVideos, reports, profsWaiting, reload: load };
 }
 
 // ───────── ACCUEIL : ce qui demande l'attention, une seule fois, puis deux portes d'entrée ─────────
@@ -210,8 +193,8 @@ export function CoachHome() {
   const adultWait = waitingOf(d.adultVideos), youthWait = waitingOf(d.youthVideos);
   type Todo = { space: "Adultes" | "Jeunes" | "Compte"; text: string; to: string; cta: string };
   const todos: Todo[] = [
-    ...d.pending.map((l) => ({ space: "Adultes" as const, text: l.declinedSlot ? `${adultName(l.member, "Un adhérent")} n'est pas disponible le ${fmtSlot(l.declinedSlot)} : propose une autre date` : `${adultName(l.member, "Un adhérent")} demande un cours${l.prof ? ` à ${profName(l.prof)}` : ""}`, to: "/coach/adultes", cta: "Répondre" })),
-    ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} a confirmé son cours : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
+    ...d.pending.map((l) => ({ space: "Adultes" as const, text: `Ancienne demande de ${adultName(l.member, "un adhérent")} : à clôturer (les demandes libres n'existent plus)`, to: "/coach/adultes", cta: "Voir" })),
+    ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} cours confirmé : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
     ...(d.profsWaiting ? [{ space: "Adultes" as const, text: `👩‍🏫 ${d.profsWaiting} professeur${d.profsWaiting > 1 ? "s" : ""} à valider (documents déposés)`, to: "/coach/adultes?onglet=profs", cta: "Vérifier" }] : []),
     ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
@@ -234,7 +217,7 @@ export function CoachHome() {
         eyebrow={`Espace coach · ${new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}`}
         title={`${h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} coach !`}
         subtitle={todos.length === 0 ? "Rien d'urgent : tout est à jour. Belle séance !" : undefined}
-        chips={<>{kpi(todos.length, todos.length > 1 ? "choses à faire" : "chose à faire")}{kpi(d.booked.length + d.toConfirm.length, "cours en attente")}{kpi(adultWait.length + youthWait.length, "vidéos à analyser")}{kpi(d.players.length, "jeunes suivis")}</>}
+        chips={<>{kpi(todos.length, todos.length > 1 ? "choses à faire" : "chose à faire")}{kpi(d.booked.length, "cours à confirmer")}{kpi(adultWait.length + youthWait.length, "vidéos à analyser")}{kpi(d.players.length, "jeunes suivis")}</>}
       />
       <Page>
         <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -308,14 +291,13 @@ export function AdultsPage() {
     <>
       <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<><Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link><Link to="/coach/adultes/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un professeur</Link></>} />
       <Page>
-        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📨 Demandes de cours", d.pending.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["profs", "👩‍🏫 Professeurs", d.profsWaiting], ["historique", "🗂️ Historique"]]} />
+        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📅 Cours particuliers", d.pending.length + d.booked.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["profs", "👩‍🏫 Professeurs", d.profsWaiting], ["historique", "🗂️ Historique"]]} />
         {tab === "demandes" && (
           <div className="grid gap-6">
             <ul className="m-0 grid list-none gap-3 p-0">
               {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
-              {!d.pending.length && <li><Empty>Aucune demande de cours en attente 🎾</Empty></li>}
+              {!d.pending.length && <li><Empty>Aucune ancienne demande à clôturer 🎾</Empty></li>}
             </ul>
-            {d.toConfirm.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">⏳ En attente de la confirmation de l'adulte ({d.toConfirm.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.toConfirm.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
             {d.booked.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">🔔 Réservés, le professeur doit confirmer ({d.booked.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.booked.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
             {d.upcoming.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">✅ Prochains cours confirmés ({d.upcoming.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.upcoming.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
           </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
+import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
 import { Avatar, Empty, Err } from "./ui";
 
 export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / intermédiaire", "NC"].includes(x));
@@ -9,9 +9,10 @@ export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / i
 // Exemples INVENTÉS montrés dans « Voir comme un adulte » (aucun vrai professeur)
 const sampleDate = new Date(Date.now() + 9 * 86_400_000).toISOString().slice(0, 10);
 export const EXAMPLE_PROFS: ProfCard[] = [
-  { id: "ex-1", firstName: "Claire", lastName: "Exemple", age: 34, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route. Service et coup droit sont mes spécialités.", paused: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 3, date: null, start: "12:00", end: "14:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }] },
-  { id: "ex-2", firstName: "Marc", lastName: "Exemple", age: null, ranking: "30", bestRanking: "15/2", bio: "Tennis loisir, jeu en double, tactique et placement.", paused: false, slots: [{ weekday: 0, date: null, start: "17:00", end: "19:00" }, { weekday: null, date: sampleDate, start: "14:00", end: "17:00" }] },
-  { id: "ex-3", firstName: "Sophie", lastName: "Exemple", age: 41, ranking: "15/4", bestRanking: "15/1", bio: "", paused: true, slots: [] },
+  { id: "ex-1", firstName: "Guillaume", lastName: "Exemple", age: 34, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route. Service et coup droit sont mes spécialités.", paused: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 3, date: null, start: "12:00", end: "14:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }] },
+  { id: "ex-2", firstName: "Martin", lastName: "Exemple", age: null, ranking: "30", bestRanking: "15/2", bio: "Tennis loisir, jeu en double, tactique et placement.", paused: false, slots: [{ weekday: 0, date: null, start: "17:00", end: "19:00" }, { weekday: null, date: sampleDate, start: "14:00", end: "17:00" }] },
+  { id: "ex-3", firstName: "Laurent", lastName: "Exemple", age: 41, ranking: "15/4", bestRanking: "15/1", bio: "", paused: true, slots: [] },
+  { id: "ex-4", firstName: "Matthieu", lastName: "Exemple", age: 29, ranking: "15", bestRanking: "5/6", bio: "Préparation physique et mental de match, pour progresser en compétition.", paused: false, slots: [{ weekday: 1, date: null, start: "17:00", end: "20:00" }, { weekday: 3, date: null, start: "17:00", end: "20:00" }, { weekday: 5, date: null, start: "10:00", end: "13:00" }] },
 ];
 
 // Pastille d'information (âge, classement…)
@@ -85,7 +86,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
       </div>
       {/* 8 · bouton */}
       <div className={pad + " pb-4 pt-4"}>
-        {onPick ? <button className={"w-full " + (selected ? "btn-clay" : "btn-outline")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisie" : `Choisir ${p.firstName ?? "ce professeur"}`}</button> : null}
+        {onPick ? <button className={"btn w-full !h-auto min-h-12 text-base shadow-[0_4px_0_rgba(0,0,0,0.18)] " + (p.paused ? "bg-[#e5e0d8] text-[#6b6358] shadow-none" : selected ? "bg-ok text-white hover:bg-[#25794c]" : "bg-clay text-white hover:bg-clay-dark")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"} →`}</button> : null}
         {preview && onPick && <small className="hint mt-1 block text-center">(aperçu)</small>}
       </div>
     </article>
@@ -95,7 +96,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
 // Rappel des tarifs (fixés par le club) : jamais de paiement sur le site
 export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
   return (
-    <p className="m-0 rounded-2xl bg-sand p-3 text-sm">💶 <strong>Tarif d'une séance :</strong> {PRICE_MEMBER} € pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres.{yourPrice ? <> Ton tarif : <strong>{yourPrice} €</strong>.</> : null} Le règlement se fait directement avec le professeur : rien ne se paie sur le site.</p>
+    <p className="m-0 rounded-2xl bg-sand p-3 text-sm">💶 <strong>Tarif d'une séance :</strong> {PRICE_MEMBER} € pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres (+ {SUNDAY_EXTRA} € le dimanche).{yourPrice ? <> Ton tarif : <strong>{yourPrice} €</strong>.</> : null} Le règlement se fait directement avec le professeur : rien ne se paie sur le site.</p>
   );
 }
 

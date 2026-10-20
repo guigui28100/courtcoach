@@ -14,8 +14,8 @@ export class SlotDto {
 }
 
 export class CreateLessonDto {
-  @IsOptional() @IsString() @MaxLength(40) profId?: string; // professeur choisi (vide = demande adressée au coach)
-  @IsOptional() @ValidateNested() @Type(() => SlotDto) slot?: SlotDto; // créneau réservé dans le planning du professeur (le cours est alors confirmé tout de suite)
+  @IsString() @MaxLength(40) profId: string; // professeur choisi (plus de demande libre adressée au coach)
+  @ValidateNested() @Type(() => SlotDto) slot: SlotDto; // créneau choisi dans le planning du professeur (le professeur doit le confirmer)
   @IsOptional() @IsBoolean() weekly?: boolean; // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin (vacances et jours fériés sautés)
   @IsIn(["individuel", "duo"]) type: string;
   @Transform(trim) @IsString() @MaxLength(60) objective: string;
@@ -30,16 +30,8 @@ export class CreateLessonDto {
 }
 
 export class AnswerLessonDto {
-  @IsIn([LessonStatus.PROPOSED, LessonStatus.REFUSED]) status: LessonStatus; // PROPOSED : le coach propose une date, l'adulte doit la confirmer
+  @IsIn([LessonStatus.REFUSED]) status: LessonStatus; // le professeur (ou le coach) refuse ou annule : le créneau est libéré (plus de « proposer une date »)
   @IsOptional() @Transform(trim) @IsString() @MaxLength(200) reply?: string;
-  @IsOptional() @ValidateNested() @Type(() => SlotDto) slot?: SlotDto; // obligatoire pour proposer
-  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) place?: string;
-}
-
-// Réponse de l'adulte à la date proposée : il la confirme, ou dit qu'il n'est pas disponible
-export class RespondLessonDto {
-  @IsIn(["confirm", "decline"]) action: "confirm" | "decline";
-  @IsOptional() @Transform(trim) @IsString() @MaxLength(200) message?: string;
 }
 
 // Annulation par l'adulte : ce cours seulement, ou toute la série à venir
