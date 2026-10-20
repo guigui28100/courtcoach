@@ -1,7 +1,7 @@
 import { offDay } from "./holidays";
 // Planning d'un professeur : ses disponibilités découpées en créneaux d'UNE HEURE, sur les 28 prochains jours, moins ce qui est déjà pris.
 export const SLOT_MINUTES = 60;
-export const NOTICE_HOURS = 12; // on ne réserve pas un cours qui commence dans moins de 12 h
+export const NOTICE_HOURS = 24; // on ne réserve pas un cours qui commence dans moins de 24 h (le temps de laisser le professeur réagir)
 export const HORIZON_DAYS = 28;
 
 export const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));

@@ -4,6 +4,7 @@ import { setPreviewOnly } from "../api";
 import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
+import { ProfAgenda } from "../components/ProfAgenda";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { collapseSeries, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
@@ -79,7 +80,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
         {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
         {p && (
           <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Mes cours", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
-            {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} />}
+            {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} slots={p.slots} skipHolidays={p.skipHolidays !== false} preview={preview} />}
             {tab === "dispos" && <Availability p={p} onSaved={setP} />}
             {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Tes cours à venir sont annulés (les adultes sont prévenus), ta fiche, tes disponibilités et tes documents sont effacés. Tu pourras recommencer plus tard, mais il faudra tout ressaisir et le coach devra te revalider. Pour une simple coupure, utilise la « Pause » dans « Mes disponibilités ».</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
             {tab === "documents" && <Documents p={p} id={me?.id ?? ""} onChanged={setP} />}
@@ -91,7 +92,8 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   );
 }
 
-function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () => void }) {
+function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: Lesson[] | null; reload: () => void; slots: ProfSlot[]; skipHolidays: boolean; preview: boolean }) {
+  const [view, setView] = useState<"agenda" | "liste">("agenda");
   if (!lessons) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const byDate = (a: Lesson, b: Lesson) => ((a.finalSlot?.date ?? "9") + (a.finalSlot?.time ?? "")).localeCompare((b.finalSlot?.date ?? "9") + (b.finalSlot?.time ?? ""));
   const today = new Date().toISOString().slice(0, 10);
@@ -105,11 +107,18 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
         <div><b className="block font-display text-3xl font-black text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
         <div><b className="block font-display text-3xl font-black">{collapseSeries(lessons.filter((l) => l.status === "BOOKED")).length}</b><small className="text-muted">à confirmer</small></div>
       </div>
+      <div className="flex gap-2" role="group" aria-label="Affichage">
+        <button className={view === "agenda" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "agenda"} onClick={() => setView("agenda")}>🗓️ Agenda</button>
+        <button className={view === "liste" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "liste"} onClick={() => setView("liste")}>📋 Liste</button>
+      </div>
       <PriceNote />
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
+      {view === "agenda" && <ProfAgenda lessons={lessons} slots={slots} skipHolidays={skipHolidays} reload={reload} preview={preview} />}
+      {view === "liste" && <>
       {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
       {group("Cours confirmés à venir", null, booked)}
       {group("Annulés ou refusés", null, collapseSeries(lessons.filter((l) => l.status === "REFUSED")))}
+      </>}
     </section>
   );
 }
