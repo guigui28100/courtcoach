@@ -476,3 +476,28 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 @keyframes net-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 @keyframes net-rot { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .net-bar span { animation: none; width: 100%; opacity: 0.7; } .net-spin { animation: none; } }
+
+/* Agenda du professeur (ProfAgenda) */
+.agenda-hero { background: linear-gradient(135deg, #b8471f, #93371a); }
+.agenda-nav { display: grid; height: 2.5rem; min-width: 2.5rem; place-items: center; border-radius: 0.75rem; border: 2px solid rgba(255,255,255,.7); background: rgba(255,255,255,.14); color: #fff; font-weight: 800; font-size: 1.25rem; cursor: pointer; }
+.agenda-nav:hover { background: #fff; color: #93371a; }
+.agenda-grid { display: grid; gap: 4px; }
+.agenda-day { display: grid; justify-items: center; gap: 0; border-radius: 0.75rem; padding: 0.35rem 0; background: #f6efe3; color: #1b1863; line-height: 1.1; }
+.agenda-day small { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.agenda-day b { font-size: 1.25rem; font-family: var(--font-display, inherit); }
+.agenda-day.is-today { background: #1b1863; color: #fff; }
+.agenda-hour { padding-top: 0.6rem; text-align: right; padding-right: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #6b6557; }
+.agenda-lesson, .agenda-free, .agenda-off { min-height: 3.2rem; border-radius: 0.75rem; }
+.agenda-lesson { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem; text-align: left; font-size: 0.75rem; cursor: pointer; border: 2px solid transparent; box-shadow: 0 2px 0 rgba(0,0,0,.12); min-width: 0; }
+.agenda-lesson:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,.18); }
+.agenda-lesson:focus-visible { outline: 3px solid #1b1863; outline-offset: 2px; }
+.agenda-lesson.is-ok { background: #1f7a3d; color: #fff; }
+.agenda-lesson.is-wait { background: #f2d230; color: #3a3200; border-color: #c9ac00; animation: agenda-pulse 2.4s ease-in-out infinite; }
+.agenda-lesson b { font-size: 0.8rem; }
+.agenda-lesson small { font-size: 0.68rem; opacity: .95; }
+.agenda-free { display: grid; place-items: center; background: #e7f4ea; border: 1px solid #b5dcbf; color: #2d6a3e; font-size: 0.68rem; font-weight: 600; }
+.agenda-off { background: repeating-linear-gradient(135deg, #faf7f1, #faf7f1 6px, #f1ece1 6px, #f1ece1 12px); border: 1px dashed #e2d8c6; }
+.agenda-dot { display: inline-block; height: 0.8rem; width: 0.8rem; border-radius: 0.25rem; margin-right: 0.35rem; vertical-align: -1px; }
+@keyframes agenda-pulse { 0%, 100% { box-shadow: 0 2px 0 rgba(0,0,0,.12), 0 0 0 0 rgba(201,172,0,.5); } 50% { box-shadow: 0 2px 0 rgba(0,0,0,.12), 0 0 0 6px rgba(201,172,0,0); } }
+@media (prefers-reduced-motion: reduce) { .agenda-lesson.is-wait { animation: none; } }
+@media (max-width: 767px) { .agenda-lesson { font-size: 0.7rem; } }
