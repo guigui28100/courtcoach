@@ -634,3 +634,26 @@ model GoalTemplate {
   createdAt   DateTime @default(now())
   authorId    String?
 }
+
+// Planning prévisionnel du club (réservé au coach) : tournois, animations, matchs par équipes, bulles, réfection de la terre battue, stages
+model ClubEvent {
+  id        String   @id @default(cuid())
+  kind      String   // TOURNOI, ANIMATION, EQUIPES, BULLE, TERRE_BATTUE, STAGE_ENFANTS, STAGE_ADULTES
+  title     String   @default("")
+  startDate String   // AAAA-MM-JJ
+  endDate   String
+  bands     String[] // MATIN, APRES_MIDI, SOIR ; vide = toute la journée
+  courts    Int[]    // 1 et 2 : terre battue couverte ; 3 et 4 : dur couvert ; vide = aucun court (animation)
+  teams     String[] // « gar-13-14#1 » = catégorie + numéro d'équipe
+  who       String[] // profs ou responsables (prénoms)
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([startDate])
+}
+
+// Réglages du planning du club (nombre d'équipes par catégorie)
+model ClubSetting {
+  key   String @id
+  value Json
+}

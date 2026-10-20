@@ -1,0 +1,96 @@
+import { INestApplication } from "@nestjs/common";
+import { hash } from "@node-rs/argon2";
+import request from "supertest";
+import { Role } from "@prisma/client";
+import { createApp } from "../src/app.factory";
+import { PrismaService } from "../src/prisma/prisma.service";
+
+process.env.NODE_ENV = "test";
+process.env.WEB_ORIGIN = "http://localhost:5173";
+process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret-test-secret-test-secret-123456";
+const ORIGIN = { Origin: "http://localhost:5173" };
+const PASSWORD = "un-mot-de-passe-solide-1";
+
+describe("Planning du club (réservé au coach)", () => {
+  let app: INestApplication; let prisma: PrismaService; const A: Record<string, ReturnType<typeof request.agent>> = {};
+  const agent = () => request.agent(app.getHttpServer());
+  async function login(key: string, role: Role) {
+    const email = `${key}@exemple.fr`; await prisma.user.create({ data: { email, role, firstName: key, passwordHash: await hash(PASSWORD) } });
+    A[key] = agent(); await A[key].post("/api/auth/login").set(ORIGIN).send({ email, password: PASSWORD }).expect(200);
+  }
+  async function clean() { await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.clubEvent.deleteMany(); await prisma.clubSetting.deleteMany(); await prisma.lessonRequest.deleteMany(); await prisma.user.deleteMany(); }
+  const ev = (o: object = {}) => ({ kind: "TOURNOI", startDate: "2026-10-10", endDate: "2026-10-11", courts: [1, 2, 3, 4], ...o });
+
+  beforeAll(async () => {
+    app = await createApp(); await app.init(); prisma = app.get(PrismaService); await clean();
+    for (const [k, r] of [["coach", Role.COACH], ["adulte", Role.ADULT], ["entraineur", Role.TRAINER], ["parent", Role.GUARDIAN], ["jeune", Role.YOUTH]] as [string, Role][]) await login(k, r);
+  });
+  afterAll(async () => { await clean(); await app.close(); });
+
+  it("seul le coach ouvre le planning ; adultes, entraîneurs, familles et jeunes n'ont AUCUN accès", async () => {
+    for (const k of ["adulte", "entraineur", "parent", "jeune"]) {
+      await A[k].get("/api/club/plan").expect(403);
+      await A[k].post("/api/club/events").set(ORIGIN).send(ev()).expect(403);
+      await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
+      await A[k].delete("/api/club/events/x").set(ORIGIN).expect(403);
+    }
+    await request(app.getHttpServer()).get("/api/club/plan").expect(401);
+    const r = (await A.coach.get("/api/club/plan").expect(200)).body;
+    expect(r.events).toEqual([]); expect(r.teamCounts).toMatchObject({ "sen-m": 3, "vet-45-d": 2, "gar-13-14": 2 });
+  });
+
+  it("le coach place, modifie et supprime des événements ; les données sont vérifiées", async () => {
+    const t = (await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ title: "Tournoi jeunes U12", who: ["Guillaume"] })).expect(201)).body;
+    expect(t).toMatchObject({ kind: "TOURNOI", courts: [1, 2, 3, 4], bands: [], title: "Tournoi jeunes U12", who: ["Guillaume"] });
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ kind: "NOPE" })).expect(400);
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ startDate: "2026-02-30" })).expect(400);
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ endDate: "2026-10-01" })).expect(400); // fin avant début
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ courts: [5] })).expect(400);
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ courts: [] })).expect(400); // un tournoi a besoin d'un court
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ bands: ["NUIT"] })).expect(400);
+    const u = (await A.coach.put(`/api/club/events/${t.id}`).set(ORIGIN).send(ev({ title: "Tournoi U12", courts: [3, 4] })).expect(200)).body;
+    expect(u.courts).toEqual([3, 4]);
+    await A.coach.delete(`/api/club/events/${t.id}`).set(ORIGIN).expect(200);
+    await A.coach.delete(`/api/club/events/${t.id}`).set(ORIGIN).expect(404);
+    await A.coach.put(`/api/club/events/${t.id}`).set(ORIGIN).send(ev()).expect(404);
+  });
+
+  it("plusieurs événements le même jour : possible tant que le même court n'est pas pris au même moment", async () => {
+    await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ courts: [1, 2], title: "Tournoi" })).expect(201); // courts 1-2, toute la journée
+    // match par équipes sur les courts 3-4 le même jour : OK
+    const m = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-10-10", endDate: "2026-10-10", bands: ["APRES_MIDI"], courts: [3, 4], teams: ["sen-m#1"] }).expect(201)).body;
+    // même court 1 à ce moment-là : refusé (409) avec le détail
+    const c = await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-10-10", endDate: "2026-10-10", bands: ["MATIN"], courts: [1], teams: ["sen-m#2"] }).expect(409);
+    expect(c.body.clashes[0]).toMatchObject({ why: expect.stringContaining("court 1") });
+    // la même équipe ne joue pas deux fois en même temps
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-10-10", endDate: "2026-10-10", bands: ["APRES_MIDI"], courts: [4], teams: ["sen-m#1"] }).expect(409);
+    // même court mais un autre moment : OK
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-10-10", endDate: "2026-10-10", bands: ["SOIR"], courts: [3], teams: ["sen-m#2"] }).expect(201);
+    // le coach peut forcer
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-10-10", endDate: "2026-10-10", bands: ["MATIN"], courts: [1], teams: ["sen-m#3"], allowConflict: true }).expect(201);
+    expect(m.id).toBeTruthy();
+  });
+
+  it("équipes : seulement celles de « Mes équipes » ; le nombre d'équipes se règle", async () => {
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1], teams: ["vet-45-d#3"] }).expect(400); // 2 équipes seulement
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1], teams: ["zzz-12#1"] }).expect(400);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1] }).expect(400); // aucune équipe
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1], teams: ["sen-m#1"] }).expect(400);
+    expect((await A.coach.put("/api/club/teams").set(ORIGIN).send({ counts: { "vet-45-d": 3 } }).expect(200)).body["vet-45-d"]).toBe(3);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1], teams: ["vet-45-d#3"] }).expect(201);
+    await A.coach.put("/api/club/teams").set(ORIGIN).send({ counts: { "vet-45-d": 9 } }).expect(400);
+    await A.coach.put("/api/club/teams").set(ORIGIN).send({ counts: { inconnue: 2 } }).expect(400);
+  });
+
+  it("bulles : un décor qui ne gêne pas les événements ; la réfection de terre battue attend le démontage", async () => {
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "BULLE", startDate: "2026-09-01", endDate: "2027-05-09", courts: [1, 2], title: "Bulle courts 1-2" }).expect(201);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "BULLE", startDate: "2026-09-01", endDate: "2027-05-09", courts: [3, 4], title: "Bulle courts 3-4" }).expect(201);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "BULLE", startDate: "2027-01-01", endDate: "2027-01-31", courts: [1] }).expect(409); // deux bulles sur le court 1
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "STAGE_ENFANTS", startDate: "2026-10-19", endDate: "2026-10-23", courts: [3, 4] }).expect(201); // sous la bulle : OK
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-04-01", endDate: "2027-04-10", courts: [1, 2] }).expect(409); // bulle encore montée
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-05-17", endDate: "2027-06-04", courts: [1, 2] }).expect(201); // après le démontage
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-06-10", endDate: "2027-06-12", courts: [3] }).expect(400); // courts en dur : pas de réfection
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2026-11-14", endDate: "2026-11-14", title: "Fête du club" }).expect(201); // sans court
+    for (const kind of ["INSCRIPTIONS", "FETE", "DEBUT_COURS", "FIN_COURS"]) await A.coach.post("/api/club/events").set(ORIGIN).send({ kind, startDate: "2026-09-05", endDate: "2026-09-05" }).expect(201);
+  });
+});
