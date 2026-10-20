@@ -9,6 +9,7 @@ export const DOC_KINDS = ["CARTE_PRO", "DIPLOME", "AUTO_ENTREPRENEUR"] as const;
 export type DocKind = (typeof DOC_KINDS)[number];
 
 export class ProfProfileDto {
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) firstName?: string; // seulement pris en compte pour le coach
   @IsOptional() @Transform(trim) @IsString() @MaxLength(60) lastName?: string;
   @IsOptional() @IsInt() @Min(1930) @Max(2012) birthYear?: number;
   @IsOptional() @IsBoolean() showAge?: boolean;

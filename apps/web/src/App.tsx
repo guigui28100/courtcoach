@@ -59,6 +59,7 @@ export default function App() {
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
         <Route path="/coach/adultes/apercu-prof" element={<Guard roles={["COACH"]}><ProfSpace preview /></Guard>} />
         <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
+        <Route path="/coach/prof" element={<Guard roles={["COACH"]}><ProfSpace /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />

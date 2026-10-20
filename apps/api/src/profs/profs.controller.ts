@@ -17,16 +17,16 @@ export class ProfsController {
   @Roles(Role.ADULT, Role.COACH) @Get(":id/planning") planning(@Param("id") id: string) { return this.svc.planning(id); }
 
   // Espace du professeur (entraîneur qui a cliqué « je souhaite donner des cours particuliers » : vérifié dans le service)
-  @Roles(Role.TRAINER) @Get("me") me(@CurrentUser() u: AuthUser) { return this.svc.me(u); }
-  @Roles(Role.TRAINER) @Post("me/optin") @HttpCode(200) optIn(@CurrentUser() u: AuthUser) { return this.svc.optIn(u); }
-  @Roles(Role.TRAINER) @Delete("me") optOut(@CurrentUser() u: AuthUser) { return this.svc.optOut(u); }
-  @Roles(Role.TRAINER) @Put("me") update(@CurrentUser() u: AuthUser, @Body() dto: ProfProfileDto) { return this.svc.updateMe(u, dto); }
-  @Roles(Role.TRAINER) @Put("me/slots") slots(@CurrentUser() u: AuthUser, @Body() dto: SlotsDto) { return this.svc.setSlots(u, dto.slots); }
-  @Roles(Role.TRAINER) @Put("me/documents/:kind")
+  @Roles(Role.TRAINER, Role.COACH) @Get("me") me(@CurrentUser() u: AuthUser) { return this.svc.me(u); }
+  @Roles(Role.TRAINER, Role.COACH) @Post("me/optin") @HttpCode(200) optIn(@CurrentUser() u: AuthUser) { return this.svc.optIn(u); }
+  @Roles(Role.TRAINER, Role.COACH) @Delete("me") optOut(@CurrentUser() u: AuthUser) { return this.svc.optOut(u); }
+  @Roles(Role.TRAINER, Role.COACH) @Put("me") update(@CurrentUser() u: AuthUser, @Body() dto: ProfProfileDto) { return this.svc.updateMe(u, dto); }
+  @Roles(Role.TRAINER, Role.COACH) @Put("me/slots") slots(@CurrentUser() u: AuthUser, @Body() dto: SlotsDto) { return this.svc.setSlots(u, dto.slots); }
+  @Roles(Role.TRAINER, Role.COACH) @Put("me/documents/:kind")
   putDocument(@CurrentUser() u: AuthUser, @Param("kind") kind: string, @Query("fileName") fileName: string, @Query("validUntil") validUntil: string | undefined, @Req() req: Request) {
     return this.svc.putDocument(u, kindOf(kind), { fileName, validUntil }, req.body);
   }
-  @Roles(Role.TRAINER) @Delete("me/documents/:kind") removeDocument(@CurrentUser() u: AuthUser, @Param("kind") kind: string) { return this.svc.deleteDocument(u, kindOf(kind)); }
+  @Roles(Role.TRAINER, Role.COACH) @Delete("me/documents/:kind") removeDocument(@CurrentUser() u: AuthUser, @Param("kind") kind: string) { return this.svc.deleteDocument(u, kindOf(kind)); }
 
   // Coach : tous les professeurs, leurs documents, validation
   @Roles(Role.COACH) @Get("admin") adminList() { return this.svc.adminList(); }

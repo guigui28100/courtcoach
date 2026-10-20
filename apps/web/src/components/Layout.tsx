@@ -10,6 +10,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/coach", label: "Accueil", icon: "home" },
     { to: "/coach/adultes", label: "Adultes · Coaching", short: "Adultes", icon: "star" },
     { to: "/coach/centre", label: "Jeunes · Centre de compétition", short: "Jeunes", icon: "users" },
+    { to: "/coach/prof", label: "Mes cours", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   TRAINER: [
@@ -69,7 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const galaxy = ((me?.role === "YOUTH" || me?.role === "GUARDIAN") && pathname === "/suivi") || ((me?.role === "COACH" || me?.role === "TRAINER") && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)) || pathname.includes("/bulletin/"); // univers « galaxie » de l'espace jeune
   const link = ({ isActive }: { isActive: boolean }) =>
-    "inline-flex items-center gap-1.5 px-1 py-2.5 font-bold border-b-[3px] no-underline transition-colors " + (galaxy ? (isActive ? "text-white border-[#dcf247]" : "text-white/80 border-transparent hover:text-white") : (isActive ? "text-ink border-clay" : "text-muted border-transparent hover:text-ink"));
+    "inline-flex items-center gap-1.5 whitespace-nowrap px-1 py-2.5 font-bold border-b-[3px] no-underline transition-colors " + (galaxy ? (isActive ? "text-white border-[#dcf247]" : "text-white/80 border-transparent hover:text-white") : (isActive ? "text-ink border-clay" : "text-muted border-transparent hover:text-ink"));
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -77,12 +78,12 @@ export function Layout({ children }: { children: ReactNode }) {
       {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-[#fff3bf] px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace de {viewAs.name}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { stopViewAs(); nav("/coach/centre?onglet=entraineurs"); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
       <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
-          <Brand light={galaxy} />
-          <nav aria-label="Menu principal" className="hidden items-center gap-6 md:flex">
-            {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><Icon name={i.icon} />{i.label}</NavLink>)}
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5">
+          <span className="shrink-0 whitespace-nowrap"><Brand light={galaxy} /></span>
+          <nav aria-label="Menu principal" className="hidden items-center gap-4 md:flex xl:gap-5">
+            {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><span className="hidden lg:inline-flex"><Icon name={i.icon} /></span>{i.short && i.short !== i.label ? <><span className="xl:hidden">{i.short}</span><span className="hidden xl:inline">{i.label}</span></> : i.label}</NavLink>)}
             {me ? (
-              <button className={galaxy ? "btn btn-sm border-2 border-white/70 text-white hover:bg-white hover:text-ink" : "btn-outline btn-sm"} onClick={async () => { await logout(); nav("/"); }}>Se déconnecter</button>
+              <button className={galaxy ? "btn btn-sm shrink-0 whitespace-nowrap border-2 border-white/70 text-white hover:bg-white hover:text-ink" : "btn-outline btn-sm shrink-0 whitespace-nowrap"} onClick={async () => { await logout(); nav("/"); }}><span className="lg:hidden">Quitter</span><span className="hidden lg:inline">Se déconnecter</span></button>
             ) : (
               <Link to="/connexion" className="btn-ink btn-sm no-underline">Connexion</Link>
             )}
