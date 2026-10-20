@@ -501,3 +501,14 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 @keyframes agenda-pulse { 0%, 100% { box-shadow: 0 2px 0 rgba(0,0,0,.12), 0 0 0 0 rgba(201,172,0,.5); } 50% { box-shadow: 0 2px 0 rgba(0,0,0,.12), 0 0 0 6px rgba(201,172,0,0); } }
 @media (prefers-reduced-motion: reduce) { .agenda-lesson.is-wait { animation: none; } }
 @media (max-width: 767px) { .agenda-lesson { font-size: 0.7rem; } }
+
+/* Accueil du coach (CoachHome) : bandeau terre battue, balle, gros boutons */
+.home-hero { background: #b8471f; }
+.home-ball { position: absolute; right: 6%; top: 2.2rem; width: 8rem; height: 8rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f1ff7a, #c8e22d 60%, #a9c21a); box-shadow: 0 20px 30px rgba(0,0,0,.28); }
+.home-ball::before, .home-ball::after { content: ""; position: absolute; inset: 0.5rem; border-radius: 50%; border: 5px solid #fff; border-color: #fff transparent transparent transparent; transform: rotate(-30deg); }
+.home-ball::after { transform: rotate(150deg); }
+.home-big { display: inline-flex; align-items: center; gap: 0.6rem; border-radius: 1.1rem; padding: 0.85rem 1.4rem; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; box-shadow: 0 5px 0 rgba(0,0,0,.2); }
+.home-big:hover { transform: translateY(-1px); }
+.home-open { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.6rem 1.2rem; font-weight: 800; background: #dcf247; color: #10203a; box-shadow: 0 4px 0 rgba(0,0,0,.2); white-space: nowrap; }
+.home-open:hover { background: #c9e02f; }
+@media (max-width: 767px) { .home-ball { width: 4.5rem; height: 4.5rem; right: 1rem; top: 1rem; opacity: .9; } }
