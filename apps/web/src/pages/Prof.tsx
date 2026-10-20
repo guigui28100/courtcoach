@@ -33,7 +33,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const [lessons, setLessons] = useState<Lesson[] | null>(preview ? EXAMPLE_LESSONS : null);
   useEffect(() => { if (!preview) return; setPreviewOnly(true); return () => setPreviewOnly(false); }, [preview]); // aperçu : aucune écriture
   const [err, setErr] = useState("");
-  const loadLessons = useCallback(() => { if (preview) return; get<Lesson[]>("/lessons").then(setLessons).catch(() => setLessons([])); }, []);
+  const loadLessons = useCallback(() => { if (preview) return; get<Lesson[]>("/lessons").then((all) => setLessons(me?.role === "COACH" ? all.filter((l) => l.profId === me.id) : all)).catch(() => setLessons([])); }, [me?.id, me?.role]); // le coach reçoit toutes les demandes : on ne garde que celles qui lui sont adressées comme professeur
   const load = useCallback(() => { if (preview) return; get<ProfMeResp>("/profs/me").then((r) => { setResp(r); if (r.optedIn) loadLessons(); }).catch((e) => setErr((e as Error).message)); }, [loadLessons, preview]);
   useEffect(load, [load]);
   const p = resp && resp.optedIn ? resp : null;
@@ -49,7 +49,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const todo = (lessons ?? []).filter((l) => l.status === "BOOKED").length;
   const missing = p ? p.status === "missing" || p.status === "expired" : false;
   const go = (k: string) => { setParams(k === "demandes" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const st = p ? STATUS_TEXT[p.status] : null;
+  const st: [string, string] | null = p ? (me?.role === "COACH" && p.status === "waiting" ? ["⏳ Tes 3 documents sont là : valide ta fiche dans « Adultes · Coaching », onglet « 👩‍🏫 Professeurs ». Tu n'es pas encore visible.", "warn"] : STATUS_TEXT[p.status]) : null;
   return (
     <>
       {preview && (
@@ -70,7 +70,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
             <ol className="m-0 grid gap-1 pl-5">
               <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
               <li>Tu déposes tes <strong>3 documents</strong> : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (seul le coach les voit).</li>
-              <li>Le coach vérifie et te rend <strong>visible</strong> des adultes.</li>
+              <li>{me?.role === "COACH" ? <>Tu valides <strong>ta propre fiche</strong> dans « Adultes · Coaching », onglet « 👩‍🏫 Professeurs » : tu deviens alors <strong>visible</strong> des adultes.</> : <>Le coach vérifie et te rend <strong>visible</strong> des adultes.</>}</li>
               <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le créneau est mis de côté et tu le confirmes (sous 48 h). Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, +{SUNDAY_EXTRA} € le dimanche, réglés directement avec toi.</li>
             </ol>
             <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
@@ -183,20 +183,21 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
 function Presentation({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void }) {
   const { me, reload } = useAuth();
   const [form, setForm] = useState({ lastName: p.lastName ?? "", birthYear: p.birthYear ? String(p.birthYear) : "", showAge: p.showAge, ranking: p.ranking ?? "", bestRanking: p.bestRanking ?? "", bio: p.bio });
+  const [firstName, setFirstName] = useState(me?.firstName ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
   async function save(e: FormEvent) {
     e.preventDefault(); setMsg(null);
-    try { onSaved(await put<ProfMe>("/profs/me", { lastName: form.lastName, birthYear: Number(form.birthYear) || undefined, showAge: form.showAge, ranking: form.ranking, bestRanking: form.bestRanking, bio: form.bio })); await reload(); setMsg({ ok: true, text: "Enregistré ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { onSaved(await put<ProfMe>("/profs/me", { ...(me?.role === "COACH" && firstName.trim() ? { firstName: firstName.trim() } : {}), lastName: form.lastName, birthYear: Number(form.birthYear) || undefined, showAge: form.showAge, ranking: form.ranking, bestRanking: form.bestRanking, bio: form.bio })); await reload(); setMsg({ ok: true, text: "Enregistré ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   const age = form.showAge && Number(form.birthYear) ? new Date().getFullYear() - Number(form.birthYear) : null;
-  const preview: ProfCard = { id: "me", firstName: me?.firstName ?? p.firstName, lastName: form.lastName || null, age, ranking: form.ranking || null, bestRanking: form.bestRanking || null, bio: form.bio, paused: p.paused, slots: p.slots };
+  const preview: ProfCard = { id: "me", firstName: (me?.role === "COACH" ? firstName : me?.firstName) ?? p.firstName, lastName: form.lastName || null, age, ranking: form.ranking || null, bestRanking: form.bestRanking || null, bio: form.bio, paused: p.paused, slots: p.slots };
   return (
     <section className="grid gap-4" aria-labelledby="pp-h">
       <div className="grid gap-1"><h2 id="pp-h" className="m-0">🙋 Ma présentation</h2><p className="m-0 text-muted">Ce que les adultes lisent sur ta carte. Ton âge n'est montré que si tu le décides.</p></div>
       <form onSubmit={save} className="card grid gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Prénom" id="pp-first" hint="Donné par le coach à la création de ton compte."><input id="pp-first" className="input" value={me?.firstName ?? ""} disabled /></Field>
+          <Field label="Prénom" id="pp-first" hint={me?.role === "COACH" ? "Le prénom que les adultes verront." : "Donné par le coach à la création de ton compte."}><input id="pp-first" className="input" maxLength={60} value={firstName} disabled={me?.role !== "COACH"} onChange={(e) => setFirstName(e.target.value)} /></Field>
           <Field label="Nom" id="pp-last"><input id="pp-last" className="input" maxLength={60} value={form.lastName} onChange={(e) => set("lastName", e.target.value)} /></Field>
           <Field label="Année de naissance" id="pp-year"><input id="pp-year" type="number" inputMode="numeric" min={1930} max={2012} className="input" value={form.birthYear} onChange={(e) => set("birthYear", e.target.value)} /></Field>
           <label className="flex min-h-12 cursor-pointer items-center gap-3 self-end rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="checkbox" className="h-5 w-5 accent-clay" checked={form.showAge} onChange={(e) => set("showAge", e.target.checked)} />Montrer mon âge aux adultes</label>

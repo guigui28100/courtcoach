@@ -9,6 +9,8 @@ import { PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA } from "./pricing";
 import { expireStaleBookings, releaseProfLessons } from "./bookings";
 import { addDays as addDaysIso, buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
 
+// Les comptes qui peuvent donner des cours particuliers : un entraîneur, ou le coach lui-même (un seul compte)
+const PROF_ROLES: Role[] = [Role.TRAINER, Role.COACH];
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
 const cleanName = (n: string) => n.replace(/[\\/\0-\x1f"]/g, "_").trim().slice(0, 120) || "document";
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -23,7 +25,7 @@ export class ProfsService {
 
   // Le compte doit être un entraîneur qui a choisi de donner des cours particuliers
   async assertProf(userId: string) {
-    const u = await this.prisma.user.findFirst({ where: { id: userId, role: Role.TRAINER, deletedAt: null, profProfile: { isNot: null } } });
+    const u = await this.prisma.user.findFirst({ where: { id: userId, role: { in: PROF_ROLES }, deletedAt: null, profProfile: { isNot: null } } });
     if (!u) throw new ForbiddenException("Réservé aux entraîneurs qui donnent des cours particuliers.");
     return u;
   }
@@ -50,7 +52,7 @@ export class ProfsService {
   // ----- Ce que voit un adulte (ou le coach) : les professeurs visibles -----
   async listVisible(user: AuthUser) {
     const rows = await this.prisma.user.findMany({
-      where: { role: Role.TRAINER, deletedAt: null, profProfile: { is: { approvedAt: { not: null } } } },
+      where: { role: { in: PROF_ROLES }, deletedAt: null, profProfile: { is: { approvedAt: { not: null } } } },
       include: { profProfile: { include: { slots: true, documents: { select: { kind: true, validUntil: true } } } } }, orderBy: { createdAt: "asc" },
     });
     const me = user.role === Role.ADULT ? await this.prisma.user.findUnique({ where: { id: user.id }, select: { clubMember: true } }) : null;
@@ -74,7 +76,7 @@ export class ProfsService {
 
   // Une demande de cours ne peut viser qu'un professeur visible et qui accepte des demandes
   async assertBookable(profId: string) {
-    const u = await this.prisma.user.findFirst({ where: { id: profId, role: Role.TRAINER, deletedAt: null }, include: { profProfile: { include: { documents: { select: { kind: true, validUntil: true } } } } } });
+    const u = await this.prisma.user.findFirst({ where: { id: profId, role: { in: PROF_ROLES }, deletedAt: null }, include: { profProfile: { include: { documents: { select: { kind: true, validUntil: true } } } } } });
     if (!u?.profProfile || this.status(u.profProfile) !== "visible") throw new BadRequestException("Ce professeur n'est pas disponible pour le moment.");
   }
 
@@ -111,7 +113,7 @@ export class ProfsService {
   // ----- Espace du professeur -----
   // Un entraîneur qui n'a pas (encore) choisi de donner des cours reçoit seulement { optedIn: false }
   async me(user: AuthUser) {
-    if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé aux entraîneurs.");
+    if (!PROF_ROLES.includes(user.role)) throw new ForbiddenException("Réservé aux entraîneurs et au coach.");
     const u = await this.prisma.user.findFirst({ where: { id: user.id, deletedAt: null, profProfile: { isNot: null } } });
     if (!u) return { optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER, sundayExtra: SUNDAY_EXTRA } };
     const p = await this.profile(user.id);
@@ -124,7 +126,7 @@ export class ProfsService {
 
   // « Je souhaite donner des cours particuliers » : crée la fiche (invisible des adultes tant que les documents ne sont pas validés)
   async optIn(user: AuthUser) {
-    if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé aux entraîneurs.");
+    if (!PROF_ROLES.includes(user.role)) throw new ForbiddenException("Réservé aux entraîneurs et au coach.");
     await this.profile(user.id);
     await this.audit.log(user.id, "prof-optin", "User", user.id);
     return this.me(user);
@@ -142,6 +144,7 @@ export class ProfsService {
   async updateMe(user: AuthUser, dto: ProfProfileDto) {
     await this.assertProf(user.id);
     if (dto.lastName !== undefined) await this.prisma.user.update({ where: { id: user.id }, data: { lastName: dto.lastName || null } });
+    if (dto.firstName && user.role === Role.COACH) await this.prisma.user.update({ where: { id: user.id }, data: { firstName: dto.firstName } }); // le coach choisit son prénom ; pour un entraîneur, c'est le coach qui le donne
     const data = { ...(dto.birthYear !== undefined ? { birthYear: dto.birthYear } : {}), ...(dto.showAge !== undefined ? { showAge: dto.showAge } : {}), ...(dto.ranking !== undefined ? { ranking: dto.ranking || null } : {}), ...(dto.bestRanking !== undefined ? { bestRanking: dto.bestRanking || null } : {}), ...(dto.bio !== undefined ? { bio: dto.bio } : {}), ...(dto.paused !== undefined ? { paused: dto.paused } : {}), ...(dto.skipHolidays !== undefined ? { skipHolidays: dto.skipHolidays } : {}) };
     await this.prisma.profProfile.upsert({ where: { userId: user.id }, update: data, create: { userId: user.id, ...data } });
     return this.me(user);
@@ -220,7 +223,7 @@ export class ProfsService {
 
   // ----- Espace du coach -----
   async adminList() {
-    const users = await this.prisma.user.findMany({ where: { role: Role.TRAINER, deletedAt: null, profProfile: { isNot: null } }, orderBy: { createdAt: "asc" }, include: { profProfile: { include: { slots: true, documents: { select: { kind: true, fileName: true, validUntil: true, uploadedAt: true, sizeBytes: true } } } } } });
+    const users = await this.prisma.user.findMany({ where: { role: { in: PROF_ROLES }, deletedAt: null, profProfile: { isNot: null } }, orderBy: { createdAt: "asc" }, include: { profProfile: { include: { slots: true, documents: { select: { kind: true, fileName: true, validUntil: true, uploadedAt: true, sizeBytes: true } } } } } });
     const counts = await this.prisma.lessonRequest.groupBy({ by: ["profId"], where: { profId: { in: users.map((u) => u.id) } }, _count: { _all: true } });
     return users.map((u) => {
       const p = u.profProfile ?? { approvedAt: null, paused: false, documents: [], slots: [], birthYear: null, showAge: false, ranking: null, bestRanking: null, bio: "" };
