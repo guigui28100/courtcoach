@@ -10,6 +10,7 @@ import { VideosModule } from "./videos/videos.module";
 import { TournamentsModule } from "./tournaments/tournaments.module";
 import { ProfsModule } from "./profs/profs.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { ClubModule } from "./club/club.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { HealthController } from "./health.controller";
 import { SetupController } from "./setup/setup.controller";
@@ -17,7 +18,7 @@ import { SetupController } from "./setup/setup.controller";
 @Module({
   imports: [
     ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 120 }], skipIf: () => process.env.NODE_ENV === "test" && !process.env.TEST_THROTTLE }), // 120 requêtes par minute et par adresse
-    PrismaModule, CommonModule, AuthModule, PlayersModule, LessonsModule, VideosModule, TournamentsModule, ProfsModule, DashboardModule,
+    PrismaModule, CommonModule, AuthModule, PlayersModule, LessonsModule, VideosModule, TournamentsModule, ProfsModule, DashboardModule, ClubModule,
   ],
   controllers: [SetupController, HealthController],
   providers: [

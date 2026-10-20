@@ -209,7 +209,7 @@ export function CoachHome() {
   const tag = { Adultes: "border-l-[#2a6fb0]", Jeunes: "border-l-clay", Compte: "border-l-ink" };
   const icon = { Adultes: "👥", Jeunes: "🏆", Compte: "🔐" };
   const h = new Date().getHours();
-  const quick: [string, string, string][] = [["⭐", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["📄", "Bulletins", "/coach/centre?onglet=bulletins"], ["🎬", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["🔐", "Sécurité", "/coach/securite"]];
+  const quick: [string, string, string][] = [["⭐", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["📄", "Bulletins", "/coach/centre?onglet=bulletins"], ["🎬", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["📅", "Planning du club", "/coach/club"], ["🔐", "Sécurité", "/coach/securite"]];
   const first = me?.firstName?.trim() || "coach";
   const today = todayIso();
   const nextToday = d.upcoming.find((l) => l.finalSlot!.date === today);

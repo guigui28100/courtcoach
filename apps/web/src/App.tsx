@@ -17,6 +17,7 @@ const AdultsPage = named(() => import("./pages/Coach"), "AdultsPage");
 const Centre = named(() => import("./pages/Coach"), "Centre");
 const AdultSpace = named(() => import("./pages/Member"), "AdultSpace");
 const AdultPreview = named(() => import("./pages/Member"), "AdultPreview");
+const ClubPlan = named(() => import("./pages/ClubPlan"), "ClubPlan");
 const ProfSpace = named(() => import("./pages/Prof"), "ProfSpace");
 const Privacy = named(() => import("./pages/Static"), "Privacy");
 const Authorization = named(() => import("./pages/Static"), "Authorization");
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
         <Route path="/coach/adultes/apercu-prof" element={<Guard roles={["COACH"]}><ProfSpace preview /></Guard>} />
         <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
+        <Route path="/coach/club" element={<Guard roles={["COACH"]}><ClubPlan /></Guard>} />
         <Route path="/coach/prof" element={<Guard roles={["COACH"]}><ProfSpace /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
