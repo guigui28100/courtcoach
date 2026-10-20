@@ -2,7 +2,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn } from "../types";
 import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
@@ -36,10 +36,11 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, prof, price, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
+function NewLessonForm({ preview, prof, price: basePrice, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
   const [err, setErr] = useState("");
   const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
+  const price = basePrice && slot ? priceOn(basePrice, slot.date) : basePrice; // +10 € le dimanche
   const loadPlan = useCallback(() => { if (!prof) return; if (preview) { setPlan(previewPlanning(prof.slots)); return; } get<{ days: PlanDay[] }>(`/profs/${prof.id}/planning`).then((r) => setPlan(r.days)).catch(() => setPlan([])); }, [prof, preview]);
   useEffect(loadPlan, [loadPlan]);
   const hasPlan = !!plan && plan.some((d) => d.slots.some((s) => s.free));
@@ -257,7 +258,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
           <Field label="Classement ou niveau" id="p-level"><select id="p-level" name="level" className="input" defaultValue={preview ? "30/2" : me?.level ?? ""}><option value="">Je ne sais pas</option>{ADULT_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
           <Field label="Téléphone" id="p-phone"><input id="p-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={20} className="input" placeholder="06 12 34 56 78" defaultValue={preview ? "06 12 34 56 78" : me?.phone ?? ""} /></Field>
         </div>
-        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="checkbox" name="clubMember" className="h-5 w-5 accent-clay" defaultChecked={preview ? false : !!me?.clubMember} />Je suis adhérent du TC Houdan <small className="font-normal text-muted">(tarif des cours : 40 € au lieu de 50 €)</small></label>
+        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="checkbox" name="clubMember" className="h-5 w-5 accent-clay" defaultChecked={preview ? false : !!me?.clubMember} />Je suis adhérent du TC Houdan <small className="font-normal text-muted">(tarif des cours : 40 € au lieu de 50 €, +10 € le dimanche)</small></label>
         <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
     </section>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
+import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
 import { Avatar, Empty, Err } from "./ui";
 
 export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / intermédiaire", "NC"].includes(x));
@@ -96,7 +96,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
 // Rappel des tarifs (fixés par le club) : jamais de paiement sur le site
 export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
   return (
-    <p className="m-0 rounded-2xl bg-sand p-3 text-sm">💶 <strong>Tarif d'une séance :</strong> {PRICE_MEMBER} € pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres.{yourPrice ? <> Ton tarif : <strong>{yourPrice} €</strong>.</> : null} Le règlement se fait directement avec le professeur : rien ne se paie sur le site.</p>
+    <p className="m-0 rounded-2xl bg-sand p-3 text-sm">💶 <strong>Tarif d'une séance :</strong> {PRICE_MEMBER} € pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres (+ {SUNDAY_EXTRA} € le dimanche).{yourPrice ? <> Ton tarif : <strong>{yourPrice} €</strong>.</> : null} Le règlement se fait directement avec le professeur : rien ne se paie sur le site.</p>
   );
 }
 

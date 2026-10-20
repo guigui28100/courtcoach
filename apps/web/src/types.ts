@@ -315,6 +315,8 @@ export const TRAINING_VOLUMES = ["1 cours par semaine", "2 cours par semaine", "
 // ----- Professeurs de cours particuliers -----
 export const PRICE_MEMBER = 40; // adhérent du TC Houdan (euros par séance)
 export const PRICE_OTHER = 50; // autre personne
+export const SUNDAY_EXTRA = 10; // supplément du dimanche (adhérent ou non)
+export const priceOn = (base: number, date?: string) => base + (date && new Date(`${date}T12:00:00Z`).getUTCDay() === 0 ? SUNDAY_EXTRA : 0);
 export const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 export interface ProfSlot { id?: string; weekday: number | null; date: string | null; start: string; end: string; }
 export interface ProfCard { id: string; firstName: string | null; lastName: string | null; age: number | null; ranking: string | null; bestRanking: string | null; bio: string; paused: boolean; slots: ProfSlot[]; nextFree?: { date: string; time: string }[]; freeThisWeek?: number; }

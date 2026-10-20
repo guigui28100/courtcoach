@@ -5,7 +5,7 @@ import { AuditService } from "../common/audit.service";
 import { AuthUser } from "../common/auth.types";
 import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
-import { PRICE_MEMBER, PRICE_OTHER } from "./pricing";
+import { PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA } from "./pricing";
 import { expireStaleBookings, releaseProfLessons } from "./bookings";
 import { addDays as addDaysIso, buildPlanning, coversSlot, nowParis, overlaps, PlanDay } from "./planning";
 
@@ -69,7 +69,7 @@ export class ProfsService {
         ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: st === "paused", slots: this.slotsOut(p.slots), nextFree, freeThisWeek,
       });
     }
-    return { profs: out, prices: { member: PRICE_MEMBER, other: PRICE_OTHER }, yourPrice: me ? (me.clubMember ? PRICE_MEMBER : PRICE_OTHER) : null };
+    return { profs: out, prices: { member: PRICE_MEMBER, other: PRICE_OTHER, sundayExtra: SUNDAY_EXTRA }, yourPrice: me ? (me.clubMember ? PRICE_MEMBER : PRICE_OTHER) : null };
   }
 
   // Une demande de cours ne peut viser qu'un professeur visible et qui accepte des demandes
@@ -113,12 +113,12 @@ export class ProfsService {
   async me(user: AuthUser) {
     if (user.role !== Role.TRAINER) throw new ForbiddenException("Réservé aux entraîneurs.");
     const u = await this.prisma.user.findFirst({ where: { id: user.id, deletedAt: null, profProfile: { isNot: null } } });
-    if (!u) return { optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } };
+    if (!u) return { optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER, sundayExtra: SUNDAY_EXTRA } };
     const p = await this.profile(user.id);
     return {
       optedIn: true,
       firstName: u.firstName, lastName: u.lastName, birthYear: p.birthYear, showAge: p.showAge, ranking: p.ranking, bestRanking: p.bestRanking, bio: p.bio, paused: p.paused, skipHolidays: p.skipHolidays,
-      status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), updatedAt: p.updatedAt, documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER },
+      status: this.status(p), approved: !!p.approvedAt, slots: this.slotsOut(p.slots), updatedAt: p.updatedAt, documents: p.documents, prices: { member: PRICE_MEMBER, other: PRICE_OTHER, sundayExtra: SUNDAY_EXTRA },
     };
   }
 

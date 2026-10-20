@@ -5,7 +5,7 @@ import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
-import { collapseSeries, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
+import { collapseSeries, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
 import { BackLink } from "../components/ui";
 
@@ -70,7 +70,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
               <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
               <li>Tu déposes tes <strong>3 documents</strong> : carte professionnelle, diplôme, déclaration d'auto-entrepreneur (seul le coach les voit).</li>
               <li>Le coach vérifie et te rend <strong>visible</strong> des adultes.</li>
-              <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le créneau est mis de côté et tu le confirmes (sous 48 h). Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, réglés directement avec toi.</li>
+              <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le créneau est mis de côté et tu le confirmes (sous 48 h). Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, +{SUNDAY_EXTRA} € le dimanche, réglés directement avec toi.</li>
             </ol>
             <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
             <div><button className="btn-clay" onClick={optIn}>✋ Je souhaite donner des cours particuliers</button></div>

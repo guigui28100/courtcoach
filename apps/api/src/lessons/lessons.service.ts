@@ -24,7 +24,7 @@ export class LessonsService {
     if (!dto.profId || !dto.slot) throw new BadRequestException("Choisis un professeur et un créneau libre dans son planning.");
     await this.profs.assertBookable(dto.profId);
     const me = await this.prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { clubMember: true } });
-    const prof = { profId: dto.profId, price: lessonPrice(me.clubMember), memberDeclared: me.clubMember };
+    const prof = { profId: dto.profId, price: lessonPrice(me.clubMember, dto.slot.date), memberDeclared: me.clubMember };
     // Réservation d'un créneau du planning : le créneau est mis de côté et le professeur doit confirmer (48 h) ; un seul cours par professeur et par créneau (garanti par la base)
     await this.profs.assertSlotFree(dto.profId, dto.slot);
     const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { finalSlot: true } });

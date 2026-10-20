@@ -109,7 +109,7 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     let l = await adultList();
     expect(l.profs).toHaveLength(1); expect(l.profs[0]).toMatchObject({ id: profId, firstName: "Claire", lastName: "Dupuis", ranking: "15/1", bestRanking: "4/6", age: null, paused: false });
     expect(JSON.stringify(l)).not.toMatch(/exemple\.fr|documents|birthYear|1992/);
-    expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50 });
+    expect(l.yourPrice).toBe(50); expect(l.prices).toEqual({ member: 40, other: 50, sundayExtra: 10 });
     // la carte montre les 3 prochains créneaux libres et le nombre de créneaux libres cette semaine (sans dire par qui les autres sont pris)
     expect(Array.isArray(l.profs[0].nextFree)).toBe(true); expect(l.profs[0].nextFree.length).toBeLessThanOrEqual(3); expect(typeof l.profs[0].freeThisWeek).toBe("number");
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ showAge: true }).expect(200);
@@ -299,5 +299,16 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(await prisma.profProfile.count({ where: { userId: profId } })).toBe(0);
     expect(await prisma.lessonRequest.count({ where: { profId } })).toBe(0);
     expect(adultId).toBeTruthy();
+  });
+});
+
+describe("tarif du dimanche", () => {
+  it("+10 € le dimanche, adhérent ou non ; les autres jours ne changent pas", async () => {
+    const { lessonPrice } = await import("../src/profs/pricing");
+    expect(lessonPrice(true, "2026-10-25")).toBe(50); // dimanche
+    expect(lessonPrice(false, "2026-10-25")).toBe(60);
+    expect(lessonPrice(true, "2026-10-24")).toBe(40); // samedi
+    expect(lessonPrice(false, "2026-10-26")).toBe(50); // lundi
+    expect(lessonPrice(false)).toBe(50);
   });
 });
