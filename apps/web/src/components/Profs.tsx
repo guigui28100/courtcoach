@@ -9,9 +9,10 @@ export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / i
 // Exemples INVENTÉS montrés dans « Voir comme un adulte » (aucun vrai professeur)
 const sampleDate = new Date(Date.now() + 9 * 86_400_000).toISOString().slice(0, 10);
 export const EXAMPLE_PROFS: ProfCard[] = [
-  { id: "ex-1", firstName: "Claire", lastName: "Exemple", age: 34, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route. Service et coup droit sont mes spécialités.", paused: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 3, date: null, start: "12:00", end: "14:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }] },
-  { id: "ex-2", firstName: "Marc", lastName: "Exemple", age: null, ranking: "30", bestRanking: "15/2", bio: "Tennis loisir, jeu en double, tactique et placement.", paused: false, slots: [{ weekday: 0, date: null, start: "17:00", end: "19:00" }, { weekday: null, date: sampleDate, start: "14:00", end: "17:00" }] },
-  { id: "ex-3", firstName: "Sophie", lastName: "Exemple", age: 41, ranking: "15/4", bestRanking: "15/1", bio: "", paused: true, slots: [] },
+  { id: "ex-1", firstName: "Guillaume", lastName: "Exemple", age: 34, ranking: "15/1", bestRanking: "4/6", bio: "Je suis à l'aise avec les débutants et la remise en route. Service et coup droit sont mes spécialités.", paused: false, slots: [{ weekday: 1, date: null, start: "18:00", end: "20:00" }, { weekday: 3, date: null, start: "12:00", end: "14:00" }, { weekday: 5, date: null, start: "09:00", end: "12:00" }] },
+  { id: "ex-2", firstName: "Martin", lastName: "Exemple", age: null, ranking: "30", bestRanking: "15/2", bio: "Tennis loisir, jeu en double, tactique et placement.", paused: false, slots: [{ weekday: 0, date: null, start: "17:00", end: "19:00" }, { weekday: null, date: sampleDate, start: "14:00", end: "17:00" }] },
+  { id: "ex-3", firstName: "Laurent", lastName: "Exemple", age: 41, ranking: "15/4", bestRanking: "15/1", bio: "", paused: true, slots: [] },
+  { id: "ex-4", firstName: "Matthieu", lastName: "Exemple", age: 29, ranking: "15", bestRanking: "5/6", bio: "Préparation physique et mental de match, pour progresser en compétition.", paused: false, slots: [{ weekday: 1, date: null, start: "17:00", end: "20:00" }, { weekday: 3, date: null, start: "17:00", end: "20:00" }, { weekday: 5, date: null, start: "10:00", end: "13:00" }] },
 ];
 
 // Pastille d'information (âge, classement…)
