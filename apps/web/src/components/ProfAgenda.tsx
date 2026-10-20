@@ -6,9 +6,9 @@ import { LessonRow } from "../pages/Coach";
 // Agenda du professeur : la semaine en grille (jours en colonnes, heures en lignes).
 // Vert = cours confirmé, jaune = à confirmer, vert clair = libre, hachuré = pas disponible. On touche un cours : sa fiche s'ouvre.
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+const localToday = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }); // date du jour à Paris (AAAA-MM-JJ)
 const addDays = (date: string, n: number) => iso(new Date(new Date(`${date}T12:00:00Z`).getTime() + n * 86_400_000));
 const weekdayOf = (date: string) => (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7; // 0 = lundi
-const mondayOf = (date: string) => addDays(date, -weekdayOf(date));
 const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const dayNum = (date: string) => Number(date.slice(8, 10));
@@ -26,11 +26,22 @@ function useDays() {
 }
 
 export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, preview = false }: { lessons: Lesson[]; slots: ProfSlot[]; skipHolidays?: boolean; reload: () => void; preview?: boolean }) {
-  const today = iso(new Date());
+  const [today, setToday] = useState(localToday);
   const count = useDays();
   const [anchor, setAnchor] = useState(today);
+  const [follow, setFollow] = useState(true); // tant qu'on n'a pas navigué, l'agenda suit la date : il avance d'un jour à minuit
+  // minuit passé : on avance d'un jour ; retour sur la page ou toutes les 5 minutes : on recharge les cours
+  useEffect(() => {
+    const tick = () => setToday((t) => { const n = localToday(); return n === t ? t : n; });
+    const refresh = () => { tick(); reload(); };
+    const a = setInterval(tick, 30_000), b = setInterval(refresh, 300_000);
+    const vis = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { clearInterval(a); clearInterval(b); document.removeEventListener("visibilitychange", vis); };
+  }, [reload]);
+  useEffect(() => { if (follow) setAnchor(today); }, [today, follow]);
   const [open, setOpen] = useState<Lesson | null>(null);
-  const start = count === 7 ? mondayOf(anchor) : anchor;
+  const start = anchor; // 7 jours (3 sur téléphone) à partir d'aujourd'hui : l'agenda avance d'un jour chaque jour
   const days = Array.from({ length: count }, (_, i) => addDays(start, i));
 
   // cours à afficher : réservés (à confirmer) ou confirmés
@@ -55,9 +66,8 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const inPeriod = shown.filter((l) => days.includes(l.finalSlot!.date));
   const toConfirm = inPeriod.filter((l) => l.status === "BOOKED").length;
   const offLabel = days.map((d) => offDay(d)).find(Boolean);
-  const title = count === 7
-    ? `Semaine du ${dayNum(days[0])} ${days[0].slice(5, 7) === days[6].slice(5, 7) ? "" : monthOf(days[0]) + " "}au ${dayNum(days[6])} ${monthOf(days[6])}`
-    : `${dayNum(days[0])} ${monthOf(days[0])} – ${dayNum(days[count - 1])} ${monthOf(days[count - 1])}`;
+  const last = days[count - 1];
+  const title = `Du ${dayNum(days[0])} ${days[0].slice(5, 7) === last.slice(5, 7) ? "" : monthOf(days[0]) + " "}au ${dayNum(last)} ${monthOf(last)}`;
 
   return (
     <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Mon agenda">
@@ -68,9 +78,9 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
           <p className="m-0 text-sm text-white/90">{inPeriod.length === 0 ? "Aucun cours sur cette période" : `${inPeriod.length} cours${toConfirm ? ` · ${toConfirm} à confirmer` : ""}`}</p>
         </div>
         <div className="flex items-center gap-2 max-[480px]:w-full max-[480px]:justify-between">
-          <button className="agenda-nav" aria-label="Période précédente" onClick={() => setAnchor(addDays(start, -count))}>‹</button>
-          <button className="agenda-nav !w-auto px-3 text-sm" onClick={() => setAnchor(today)}>Aujourd'hui</button>
-          <button className="agenda-nav" aria-label="Période suivante" onClick={() => setAnchor(addDays(start, count))}>›</button>
+          <button className="agenda-nav" aria-label="Période précédente" onClick={() => { setFollow(false); setAnchor(addDays(start, -count)); }}>‹</button>
+          <button className="agenda-nav !w-auto px-3 text-sm" onClick={() => { setFollow(true); setAnchor(today); }}>Aujourd'hui</button>
+          <button className="agenda-nav" aria-label="Période suivante" onClick={() => { setFollow(false); setAnchor(addDays(start, count)); }}>›</button>
         </div>
       </div>
 
