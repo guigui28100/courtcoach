@@ -21,7 +21,6 @@ const EXAMPLE_LESSONS: Lesson[] = [
   { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi"], moment: "Soirée", message: "Je voudrais fiabiliser mon service avant le tournoi.", status: "ACCEPTED", finalSlot: { date: inDays(2), time: "18:00" }, confirmedAt: new Date().toISOString(), coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m1", firstName: "Marie", lastName: "Exemple", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" } },
   { id: "ex4", type: "individuel", objective: "Volée", days: ["Mercredi"], moment: "Soirée", message: "", status: "BOOKED", finalSlot: { date: inDays(3), time: "19:00" }, coachReply: "", answeredAt: null, seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Marc", lastName: "Exemple", birthYear: 1973, level: "30/1", phone: "06 98 76 54 32" } },
   { id: "ex2", type: "duo", objective: "Revers", days: ["Samedi"], moment: "Matin", message: "", status: "ACCEPTED", finalSlot: { date: inDays(6), time: "10:00" }, confirmedAt: new Date().toISOString(), partnerFirstName: "Paul", partnerLastName: "Exemple", partnerAge: 40, partnerLevel: "30", coachReply: "", answeredAt: new Date().toISOString(), seenByMemberAt: new Date().toISOString(), createdAt: new Date().toISOString(), price: 50, memberDeclared: false, member: { id: "m2", firstName: "Luc", lastName: "Exemple", birthYear: 1979, level: "15/4", phone: "06 98 76 54 32" } },
-  { id: "ex3", type: "individuel", objective: "Smash", days: ["Mercredi"], moment: "Après-midi", message: "Plus aucun créneau libre : peux-tu me proposer une date ?", status: "PENDING", coachReply: "", answeredAt: null, seenByMemberAt: null, createdAt: new Date().toISOString(), price: 40, memberDeclared: true, member: { id: "m3", firstName: "Anne", lastName: "Exemple", birthYear: 1990, level: "30", phone: "06 11 22 33 44" } },
 ];
 
 // Cours particuliers pour un entraîneur : il clique « je souhaite donner des cours particuliers », puis remplit sa présentation, ses disponibilités et ses documents
@@ -46,7 +45,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
     if (preview) { setResp({ optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } }); setLessons(null); return; }
     try { setResp(await del<ProfMeResp>("/profs/me")); setLessons(null); } catch (x) { setErr((x as Error).message); }
   }
-  const todo = (lessons ?? []).filter((l) => l.status === "PENDING" || l.status === "BOOKED").length;
+  const todo = (lessons ?? []).filter((l) => l.status === "BOOKED").length;
   const missing = p ? p.status === "missing" || p.status === "expired" : false;
   const go = (k: string) => { setParams(k === "demandes" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const st = p ? STATUS_TEXT[p.status] : null;
@@ -100,7 +99,7 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
-      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré).</p></div>
+      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré). Tu peux ensuite libérer un cours ou arrêter une série.</p></div>
       <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
         <div><b className="block font-display text-3xl font-black text-clay">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).length}</b><small className="text-muted">cours à venir</small></div>
         <div><b className="block font-display text-3xl font-black text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
@@ -110,8 +109,6 @@ function Requests({ lessons, reload }: { lessons: Lesson[] | null; reload: () =>
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
       {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
       {group("Cours confirmés à venir", null, booked)}
-      {group("Demandes sans créneau", "Un adulte t'écrit parce qu'il n'y avait plus de créneau libre : propose-lui une date (il confirmera).", lessons.filter((l) => l.status === "PENDING"))}
-      {group("En attente de la confirmation de l'adulte", null, collapseSeries(lessons.filter((l) => l.status === "PROPOSED")))}
       {group("Annulés ou refusés", null, collapseSeries(lessons.filter((l) => l.status === "REFUSED")))}
     </section>
   );

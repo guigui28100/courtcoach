@@ -86,7 +86,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
       </div>
       {/* 8 · bouton */}
       <div className={pad + " pb-4 pt-4"}>
-        {onPick ? <button className={"w-full " + (selected ? "btn-clay" : "btn-outline")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisie" : `Choisir ${p.firstName ?? "ce professeur"}`}</button> : null}
+        {onPick ? <button className={"btn w-full !h-auto min-h-12 text-base shadow-[0_4px_0_rgba(0,0,0,0.18)] " + (p.paused ? "bg-[#e5e0d8] text-[#6b6358] shadow-none" : selected ? "bg-ok text-white hover:bg-[#25794c]" : "bg-clay text-white hover:bg-clay-dark")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"} →`}</button> : null}
         {preview && onPick && <small className="hint mt-1 block text-center">(aperçu)</small>}
       </div>
     </article>

@@ -25,7 +25,8 @@ describe("Profil de l'adulte (nom, âge, classement ou niveau)", () => {
     const a = request.agent(app.getHttpServer());
     const r = await a.post("/api/auth/signup").set(ORIGIN).send({ email: "marie@exemple.fr", password: PASSWORD, firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78", acceptPolicy: true }).expect(201);
     expect(r.body.id).toBeTruthy();
-    await a.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: [], moment: "Peu importe" }).expect(201);
+    await a.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", days: [], moment: "Peu importe" }).expect(400); // plus de demande libre : un professeur et un créneau sont obligatoires
+    await prisma.lessonRequest.create({ data: { memberId: r.body.id, type: "individuel", objective: "Service" } }); // ancienne demande (avant le planning)
     await a.post("/api/lessons").set(ORIGIN).send({ type: "video", objective: "Revers", days: [], moment: "Peu importe" }).expect(400); // plus de « reprise d'analyse » : seulement des cours sur le terrain
     const list = (await A.coach.get("/api/lessons").expect(200)).body;
     expect(list[0].member).toMatchObject({ firstName: "Marie", lastName: "Durand", birthYear: 1985, level: "30/2", phone: "06 12 34 56 78" });

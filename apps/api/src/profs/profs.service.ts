@@ -108,11 +108,6 @@ export class ProfsService {
     if (!hit.free) throw new ConflictException("Ce créneau est déjà pris. Choisis-en un autre.");
   }
 
-  // Le professeur (ou le coach) propose une date : elle ne doit pas chevaucher un autre cours de ce professeur
-  async assertNoClash(profId: string, slot: { date: string; time: string }, exceptLessonId: string) {
-    if ((await this.busyOf(profId, exceptLessonId)).some((b) => b.date === slot.date && overlaps(b.time, slot.time))) throw new ConflictException("Ce professeur a déjà un cours à ce moment-là.");
-  }
-
   // ----- Espace du professeur -----
   // Un entraîneur qui n'a pas (encore) choisi de donner des cours reçoit seulement { optedIn: false }
   async me(user: AuthUser) {
