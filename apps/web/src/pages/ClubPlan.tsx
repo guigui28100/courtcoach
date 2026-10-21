@@ -152,7 +152,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                     <li key={e.id}>
                       <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
                         <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}</span>
+                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block font-normal text-muted [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
                       </button>
                     </li>
                   ))}
