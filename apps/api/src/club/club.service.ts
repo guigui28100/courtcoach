@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { clashesWith, CLAY_COURTS, MAX_TEAMS, PlanEvent, TEAM_CATS } from "./club.constants";
+import { PersonDto } from "./club.dto";
 import { ClubEventDto } from "./club.dto";
 
 const validDate = (d: string) => { const x = new Date(`${d}T00:00:00Z`); return !Number.isNaN(x.getTime()) && x.toISOString().slice(0, 10) === d; };
@@ -17,9 +18,27 @@ export class ClubService {
     return Object.fromEntries(TEAM_CATS.map(([k, n]) => [k, Number.isInteger(saved[k]) ? saved[k] : n]));
   }
 
+  // Bénévoles, membres du bureau et autres personnes à affecter (noms saisis une seule fois par le coach)
+  private async people(): Promise<{ name: string; role: string }[]> {
+    const row = await this.prisma.clubSetting.findUnique({ where: { key: "people" } });
+    return Array.isArray(row?.value) ? (row!.value as { name: string; role: string }[]) : [];
+  }
+
+  async setPeople(list: PersonDto[]) {
+    const seen = new Set<string>(); const out: { name: string; role: string }[] = [];
+    for (const p of list) {
+      const name = p.name.trim().replace(/\s+/g, " ");
+      if (!name) throw new BadRequestException("Un nom est vide.");
+      if (seen.has(name.toLowerCase())) throw new BadRequestException(`« ${name} » est écrit deux fois.`);
+      seen.add(name.toLowerCase()); out.push({ name, role: p.role });
+    }
+    await this.prisma.clubSetting.upsert({ where: { key: "people" }, update: { value: out }, create: { key: "people", value: out } });
+    return out;
+  }
+
   async plan() {
     const events = await this.prisma.clubEvent.findMany({ orderBy: [{ startDate: "asc" }, { createdAt: "asc" }] });
-    return { events, teamCounts: await this.counts() };
+    return { events, teamCounts: await this.counts(), people: await this.people() };
   }
 
   async setTeams(counts: Record<string, number>) {
