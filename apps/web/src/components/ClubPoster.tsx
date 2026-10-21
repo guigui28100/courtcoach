@@ -6,7 +6,7 @@ export const POSTER_H = 1123;
 export type PosterModel = "liste" | "calendrier";
 
 const SHORT = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
-const PRIORITY = ["FETE", "TOURNOI", "STAGE_ENFANTS", "STAGE_ADULTES", "ANIMATION", "EQUIPES", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"];
+const PRIORITY = ["FETE", "FETE_ECOLE", "TOURNOI", "STAGE_ENFANTS", "STAGE_ADULTES", "ANIMATION", "EQUIPES", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"];
 
 const monthEnd = (m: string) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).toISOString().slice(0, 10);
 
