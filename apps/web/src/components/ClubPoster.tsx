@@ -38,7 +38,7 @@ const fullRange = (e: ClubEvent) => {
   const d = (x: string, month: boolean) => `${DAYS[weekdayOf(x)]} ${dayNum(x)}${month ? " " + MONTHS[+x.slice(5, 7) - 1].toLowerCase() : ""}`;
   if (e.startDate === e.endDate) return d(e.startDate, true);
   const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
-  return `${d(e.startDate, !same)} → ${d(e.endDate, true).replace(/^./, (c) => c.toLowerCase())}`;
+  return `Du ${d(e.startDate, !same).replace(/^./, (c) => c.toLowerCase())} au ${d(e.endDate, true).replace(/^./, (c) => c.toLowerCase())}`;
 };
 const rangeText = (e: ClubEvent) => {
   if (e.startDate === e.endDate) return `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)}`;
@@ -106,7 +106,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); return (
           <div key={e.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.14)", border: "2px solid #eadfcb" }}>
             <div style={{ background: c, color: textOn(c), padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` → ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][+e.endDate.slice(5, 7) - 1]}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{e.startDate !== e.endDate ? "DU " : ""}{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` AU ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][+e.endDate.slice(5, 7) - 1]}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
             </div>
             <div style={{ padding: "8px 14px 14px" }}>
               <div className="font-display" style={{ fontSize: 56, fontWeight: 900, lineHeight: 1, color: "#1b1863" }}>{dayNum(e.startDate)}{e.startDate !== e.endDate && e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? <small style={{ fontSize: 28 }}>–{dayNum(e.endDate)}</small> : null}</div>
@@ -128,9 +128,9 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
   const side = false; // plus de petit calendrier « le mois d'un coup d'œil » : la liste prend toute la largeur
   const rows = list.map((e) => { const c = colorOf(e); const k = kindOf(e.kind); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
     <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
-      <div style={{ minWidth: mode === "compact" ? 52 : 62, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
-        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]}</div>
-        <div className="font-display" style={{ fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi && same ? `–${dayNum(e.endDate)}` : ""}</div>
+      <div style={{ minWidth: mode === "compact" ? 62 : 74, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]}{multi ? `–${SHORT[weekdayOf(e.endDate)]}` : ""}</div>
+        <div className="font-display" style={{ fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
