@@ -94,7 +94,10 @@ function Empty() {
 }
 
 function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
-  const top = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  // Le coach choisit avec la case « ⭐ à mettre en avant » (3 au maximum, dans l'ordre des dates) ; sans aucune étoile, choix automatique d'après le type
+  const starred = list.filter((e) => e.featured).slice(0, 3);
+  const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const top = list.some((e) => e.featured) ? starred : auto;
   if (top.length === 0) return null;
   return (
     <div style={{ padding: "0 40px" }}>
@@ -118,10 +121,10 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   );
 }
 
-function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho: boolean }) {
+function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
-  const mode = n <= 6 ? "normal" : n <= 11 ? "dense" : "compact";
-  const roomy = mode === "compact" && n <= 18;
+  const mode = n <= 6 ? "normal" : n <= (withCards ? 8 : 11) ? "dense" : "compact";
+  const roomy = mode === "compact" && n <= (withCards ? 14 : 18);
   const side = false; // plus de petit calendrier « le mois d'un coup d'œil » : la liste prend toute la largeur
   const rows = list.map((e) => { const c = colorOf(e); const k = kindOf(e.kind); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
     <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
@@ -182,7 +185,7 @@ export function ClubPoster({ events, month, model, showWho }: { events: ClubEven
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <Header m={month} />
       <div style={{ marginTop: 6 }}>
-        {list.length === 0 ? <Empty /> : model === "liste" ? (<>{list.length <= 8 && <Featured list={list} showWho={showWho} />}<ListModel m={month} list={list} showWho={showWho} /></>) : <CalendarModel m={month} list={list} showWho={showWho} />}
+        {list.length === 0 ? <Empty /> : model === "liste" ? (<>{(list.length <= 8 || list.some((e) => e.featured)) && <Featured list={list} showWho={showWho} />}<ListModel m={month} list={list} showWho={showWho} withCards={list.length <= 8 || list.some((e) => e.featured)} /></>) : <CalendarModel m={month} list={list} showWho={showWho} />}
       </div>
       <Footer events={list} />
     </div>

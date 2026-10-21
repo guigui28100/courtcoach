@@ -94,6 +94,9 @@ describe("Planning du club (réservé au coach)", () => {
     expect(e.who).toEqual(["Anne Dupont", "Paul Martin"]);
     const d = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "Tournoi interne, goûter offert." }).expect(201)).body;
     expect(d.note).toBe("Tournoi interne, goûter offert."); // description libre
+    expect(d.featured).toBe(false);
+    const f = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: true }).expect(200)).body;
+    expect(f.featured).toBe(true); // « ⭐ à mettre en avant »
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "x".repeat(601) }).expect(400);
   });
 

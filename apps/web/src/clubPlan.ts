@@ -65,7 +65,7 @@ export const teamLabel = (t: string) => { const c = teamCat(t); return c ? `${c.
 const LIGHT = new Set(["#F5A623", "#A3D977", "#FAC775", "#C9E8A5", "#85C1E9", "#F5B7D5", "#F1C40F"]);
 export const textOn = (bg: string) => (LIGHT.has(bg) ? "#10203a" : "#ffffff");
 
-export interface ClubEvent { id: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string }
+export interface ClubEvent { id: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean }
 export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string }
 export interface Clash { id: string; title: string; kind: string; why: string }
 

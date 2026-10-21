@@ -421,7 +421,7 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
 const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
-interface Sel { on: boolean; who: string[]; teams: string[]; note: string; id?: string }
+interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
 function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { endInit?: string; onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
@@ -431,7 +431,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", id: e.id } : { on: false, who: [], teams: [], note: "" }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, id: e.id } : { on: false, who: [], teams: [], note: "", star: false }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -451,8 +451,8 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined });
-        else if (c.on && old && (c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, allowConflict: true });
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star });
+        else if (c.on && old && (c.star !== !!old.featured || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -486,7 +486,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
         <section key={g} className="mb-3">
           <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
           {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "" }; const old = placed(k.key);
+            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "", star: false }; const old = placed(k.key);
             return (
               <div key={k.key} className="mb-1.5">
                 <div className="flex items-center gap-2">
@@ -507,6 +507,12 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
+                )}
+                {c.on && (
+                  <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
+                    className={`ml-8 mt-1.5 flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+                    <span aria-hidden className="text-lg">{c.star ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche <small className="font-normal text-muted">(3 au maximum par mois)</small>
+                  </button>
                 )}
                 {c.on && (
                   <label className="ml-8 mt-1.5 block text-sm font-bold text-ink">📝 Description (facultatif)

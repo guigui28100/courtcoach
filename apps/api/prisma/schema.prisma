@@ -647,6 +647,7 @@ model ClubEvent {
   teams     String[] // « gar-13-14#1 » = catégorie + numéro d'équipe
   who       String[] // profs ou responsables (prénoms)
   note      String   @default("")
+  featured  Boolean  @default(false) // « ⭐ à mettre en avant » sur l'affiche du mois
   createdAt DateTime @default(now())
 
   @@index([startDate])
