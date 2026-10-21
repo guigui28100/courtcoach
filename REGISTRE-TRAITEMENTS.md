@@ -32,3 +32,8 @@
 
 **Programmations de tournoi** : document déposé par le coach ou un entraîneur de comité pour des jeunes précis (titre, fichier, jeunes concernés, auteur). Visible du coach et des entraîneurs concernés ; de la famille et du jeune seulement si le déposant l'a partagé. Conservation 12 mois, suppression avec la fiche.
 - Renseignements saisis par les parents (club, licence, classement, main, revers, entraînement, disponibilités, santé facultative) : base légale = consentement des responsables légaux ; modifiables à tout moment ; visibles du coach et des entraîneurs (santé : coach et parents seulement) ; effacés avec la fiche.
+
+## Planning du club (réservé au coach)
+- Finalité : préparer le planning prévisionnel de l'année (tournois, animations, matchs par équipes, stages, bulle, réfection des terrains) et l'affiche du mois.
+- Données : types d'événements, dates, terrains, équipes (catégories, jamais de noms d'enfants), et les NOMS de professeurs, bénévoles et membres du bureau affectés (adultes du club). Aucune donnée d'élève.
+- Accès : coach seul. Les noms n'apparaissent sur l'affiche imprimée que si le coach coche « Montrer les professeurs ». Suppression possible à tout moment par le coach.

@@ -12,6 +12,8 @@ export const TEAM_CATS: [string, number][] = [
   ["vet-35-m", 2], ["vet-45-m", 2], ["vet-35-d", 2], ["vet-45-d", 2],
 ];
 export const MAX_TEAMS = 6;
+export const PEOPLE_ROLES = ["BENEVOLE", "BUREAU", "PROF"] as const; // bénévole, membre du bureau, professeur ou entraîneur sans compte
+export const MAX_PEOPLE = 100;
 
 export interface PlanEvent { id?: string; kind: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; title?: string }
 export interface Clash { id: string; title: string; kind: string; why: string }

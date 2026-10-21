@@ -32,6 +32,7 @@ describe("Planning du club (réservé au coach)", () => {
       await A[k].get("/api/club/plan").expect(403);
       await A[k].post("/api/club/events").set(ORIGIN).send(ev()).expect(403);
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
+      await A[k].put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(403);
       await A[k].delete("/api/club/events/x").set(ORIGIN).expect(403);
     }
     await request(app.getHttpServer()).get("/api/club/plan").expect(401);
@@ -80,6 +81,17 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "EQUIPES", startDate: "2026-11-08", endDate: "2026-11-08", courts: [1], teams: ["vet-45-d#3"] }).expect(201);
     await A.coach.put("/api/club/teams").set(ORIGIN).send({ counts: { "vet-45-d": 9 } }).expect(400);
     await A.coach.put("/api/club/teams").set(ORIGIN).send({ counts: { inconnue: 2 } }).expect(400);
+  });
+
+  it("personnes à affecter : bénévoles, bureau, professeurs ; noms vérifiés, coach seul", async () => {
+    const r = (await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "  Anne  Dupont ", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }] }).expect(200)).body;
+    expect(r).toEqual([{ name: "Anne Dupont", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }]);
+    expect((await A.coach.get("/api/club/plan").expect(200)).body.people).toHaveLength(2);
+    await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "Anne", role: "BENEVOLE" }, { name: "anne", role: "BUREAU" }] }).expect(400); // doublon
+    await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "Zoé", role: "CHEF" }] }).expect(400);
+    await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "   ", role: "BUREAU" }] }).expect(400);
+    const e = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "INSCRIPTIONS", startDate: "2026-09-05", endDate: "2026-09-05", who: ["Anne Dupont", "Paul Martin"] }).expect(201)).body;
+    expect(e.who).toEqual(["Anne Dupont", "Paul Martin"]);
   });
 
   it("bulles : un décor qui ne gêne pas les événements ; la réfection de terre battue attend le démontage", async () => {
