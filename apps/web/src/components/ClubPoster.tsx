@@ -157,7 +157,9 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
 function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho: boolean }) {
   const days = monthDays(m);
   const rows = days.length / 7;
-  const cellH = Math.floor((761 - 30 - 14 - rows * 5 - 10) / rows);
+  const noted = list.filter((e) => e.note).slice(0, 5);
+  const notesH = noted.length ? 22 + noted.length * 40 : 0;
+  const cellH = Math.floor((761 - 30 - 14 - rows * 5 - 10 - notesH) / rows);
   return (
     <div style={{ padding: "0 36px", marginTop: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
@@ -175,6 +177,16 @@ function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; sho
           );
         })}
       </div>
+      {noted.length > 0 && (
+        <div style={{ marginTop: 8, background: "#fff", border: "2px solid #eadfcb", borderRadius: 10, padding: "4px 10px" }}>
+          {noted.map((e) => (
+            <div key={e.id} style={{ height: 40, overflow: "hidden", borderTop: "1px solid #f0e6d2", paddingTop: 2 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#1b1863" }}><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 5, background: colorOf(e), marginRight: 5 }} />{kindOf(e.kind).icon} {label(e)} <span style={{ fontWeight: 600, color: "#6b6557" }}>· {fullRange(e)}</span></div>
+              <div style={{ fontSize: 10.5, color: "#3b3a52", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

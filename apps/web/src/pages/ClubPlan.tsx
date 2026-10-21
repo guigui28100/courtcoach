@@ -152,7 +152,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                     <li key={e.id}>
                       <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
                         <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block font-normal text-muted [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
                       </button>
                     </li>
                   ))}
@@ -211,13 +211,34 @@ function MonthView({ month, setMonth, events, onDay, onRange }: { month: string;
               className={`min-h-[104px] rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
               <span className={`mb-1 block text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</span>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => <span key={e.id} className="block rounded-md px-1.5 py-0.5 text-xs font-bold leading-tight [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{kindOf(e.kind).icon} {titleOf(e)}</span>)}
+                {evs.slice(0, 3).map((e) => <span key={e.id} className="block rounded-md px-1.5 py-0.5 text-xs font-bold leading-tight [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{kindOf(e.kind).icon} {titleOf(e)}{e.note ? " 📝" : ""}</span>)}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </button>
           );
         })}
       </div>
+      <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
+        <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
+        {(() => {
+          const list = events.filter((e) => e.startDate.slice(0, 7) <= month && e.endDate.slice(0, 7) >= month && !e.kind.startsWith("BULLE")).sort((a, b) => a.startDate.localeCompare(b.startDate));
+          if (list.length === 0) return <p className="m-0 text-sm text-muted">Rien de prévu ce mois-ci. Touche un jour pour placer un événement.</p>;
+          return (
+            <ul className="m-0 grid list-none gap-2 p-0">{list.map((e) => (
+              <li key={e.id}>
+                <button type="button" onClick={() => onDay(e.startDate.slice(0, 7) === month ? e.startDate : first1)} className="flex w-full items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
+                  <span aria-hidden className="mt-1 size-3 shrink-0 rounded-full" style={{ background: colorOf(e) }} />
+                  <span className="min-w-0 flex-1">
+                    <b className="block text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
+                    {e.who.length > 0 && <span className="block text-sm text-muted">👤 {e.who.join(", ")}</span>}
+                    {e.note && <span className="mt-0.5 block text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
+                  </span>
+                </button>
+              </li>))}
+            </ul>
+          );
+        })()}
+      </section>
       <Legend />
     </div>
   );
@@ -242,7 +263,7 @@ function CourtView({ season, setSeason, events, onOpen }: { season: number; setS
                     <li key={e.id}>
                       <button type="button" onClick={() => onOpen(e)} className="flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left hover:border-ink">
                         <i className="size-3 shrink-0 rounded" style={{ background: colorOf(e) }} />
-                        <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{titleOf(e)}</b><span className="text-xs text-muted">{fmtRange(e.startDate, e.endDate)}{e.bands.length ? ` · ${e.bands.map((b) => BANDS.find((x) => x.key === b)?.label.toLowerCase()).join(" + ")}` : ""}{e.who.length ? ` · 👤 ${e.who.join(", ")}` : ""}</span></span>
+                        <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{titleOf(e)}</b><span className="text-xs text-muted">{fmtRange(e.startDate, e.endDate)}{e.bands.length ? ` · ${e.bands.map((b) => BANDS.find((x) => x.key === b)?.label.toLowerCase()).join(" + ")}` : ""}{e.who.length ? ` · 👤 ${e.who.join(", ")}` : ""}</span>{e.note ? <span className="block text-xs text-ink [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
                       </button>
                     </li>
                   ))}
@@ -486,7 +507,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
-              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></span>
+              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
               <button type="button" className="btn-outline" onClick={() => onDetail(e)}>⚙️ Modifier</button>
               <button type="button" className="btn-outline" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️ Supprimer</button>
             </li>))}
