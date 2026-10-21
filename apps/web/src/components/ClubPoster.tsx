@@ -132,12 +132,17 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
   if (withCards) {
     // sous le grand bandeau : liste sobre et alignée (date complète à gauche, événement à droite)
     const shown = list.slice(0, 10); const more = n - shown.length; const two = n > 6;
-    const when = (e: ClubEvent) => { if (e.startDate === e.endDate) return `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)}`; return e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? `Du ${DAYS[weekdayOf(e.startDate)].toLowerCase()} ${dayNum(e.startDate)} au ${DAYS[weekdayOf(e.endDate)].toLowerCase()} ${dayNum(e.endDate)}` : fullRange(e); };
-    const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return (
-      <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
+    const when = (e: ClubEvent) => { const mo = MONTHS[+e.endDate.slice(5, 7) - 1].toLowerCase(); if (e.startDate === e.endDate) return `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)} ${mo}`; return e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? `Du ${DAYS[weekdayOf(e.startDate)].toLowerCase()} ${dayNum(e.startDate)} au ${DAYS[weekdayOf(e.endDate)].toLowerCase()} ${dayNum(e.endDate)} ${mo}` : fullRange(e); };
+    const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return two ? (
+      <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
+        <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", marginTop: 5 }} />
+        <span><span style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 14, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{k.icon}&nbsp;{label(e)}</span></span>
+      </div>
+    ) : (
+      <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "8px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", alignSelf: "center" }} />
-        <span style={{ width: two ? 118 : 215, flex: two ? "0 0 118px" : "0 0 215px", fontSize: two ? 13 : 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
-        <span style={{ fontSize: two ? 13.5 : 15, fontWeight: 700, lineHeight: 1.25 }}>{k.icon}&nbsp;{label(e)}</span>
+        <span style={{ width: 250, flex: "0 0 250px", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.25 }}>{k.icon}&nbsp;{label(e)}</span>
       </div>
     ); };
     return (
