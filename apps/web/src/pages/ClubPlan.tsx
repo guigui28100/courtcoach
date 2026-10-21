@@ -7,7 +7,7 @@ import { BackLink, Err, Page, PageHead } from "../components/ui";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
-  vacationWeeks,
+  vacationWeeks, weekdayOf,
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
@@ -35,6 +35,7 @@ export function ClubPlan() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menuDay, setMenuDay] = useState<string | null>(null);
+  const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -70,7 +71,7 @@ export function ClubPlan() {
         <BackLink fallback="/coach" className="text-sm font-bold text-ink">← Retour</BackLink>
         <PageHead eyebrow="Réservé au coach" title="Planning du club" icon="📅">
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-clay" onClick={() => setMenuDay(day)}>＋ Ajouter</button>
+            <button type="button" className="btn-clay" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter</button>
             <button type="button" className="btn-outline" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
             <button type="button" className="btn-outline" onClick={() => setTeamsOpen(true)}>⚙️ Mes équipes</button>
             <button type="button" className="btn-outline" onClick={() => setPeopleOpen(true)}>👥 Mes personnes</button>
@@ -87,12 +88,12 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuDay(d); }} />}
+          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} />}
           {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
-      {menuDay && <DayMenu key={menuDay} day={menuDay} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} />}
+      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -118,7 +119,7 @@ function YearView({ season, setSeason, events, clashes, onOpen }: { season: numb
   const monthStarts: { w: number; label: string }[] = [];
   for (let w = 0; w < n; w++) { const d = addDays(start, w * 7 + 3); const m = +d.slice(5, 7); if (w === 0 || m !== +addDays(start, (w - 1) * 7 + 3).slice(5, 7)) monthStarts.push({ w, label: ABBR[m - 1] }); }
   const bubleEnd = Math.min(n, Math.floor(diffDays(start, `${season + 1}-05-31`) / 7) + 1);
-  const rows = [...COURTS.map((c) => ({ key: String(c.n), label: c.label, sub: c.surface, evs: inSeason.filter((e) => e.courts.includes(c.n)) })), { key: "none", label: "Sans court", sub: "animations…", evs: inSeason.filter((e) => e.courts.length === 0) }];
+  const rows = [{ key: "all", label: "Toute la saison", sub: "", evs: inSeason }];
   const cols = `repeat(${n}, minmax(0, 1fr))`;
   return (
     <div className="grid gap-4">
@@ -136,7 +137,7 @@ function YearView({ season, setSeason, events, clashes, onOpen }: { season: numb
           </ul>
         </div>
       )}
-      <div className="overflow-x-auto rounded-2xl border-2 border-line bg-white p-3">
+      <div className="overflow-x-auto rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <div className="min-w-[1000px]">
           <div className="ml-24 grid text-xs font-bold text-muted" style={{ gridTemplateColumns: cols }}>
             {monthStarts.map((m, i) => <span key={i} className="whitespace-nowrap" style={{ gridColumn: `${m.w + 1} / ${(monthStarts[i + 1]?.w ?? n) + 1}` }}>{m.label}</span>)}
@@ -156,8 +157,8 @@ function YearView({ season, setSeason, events, clashes, onOpen }: { season: numb
             return (
               <div key={r.key} className="mt-2 flex items-stretch gap-2">
                 <div className="w-22 shrink-0 pt-1 text-xs leading-tight" style={{ width: "5.5rem" }}><b className="block text-ink">{r.label}</b><span className="text-muted">{r.sub}</span></div>
-                <div className="relative min-h-[34px] flex-1 rounded-lg bg-[#faf7f0]">
-                  {r.key !== "none" && <div aria-hidden className="absolute inset-y-0 left-0 rounded-lg" style={{ width: `${(bubleEnd / n) * 100}%`, background: "repeating-linear-gradient(135deg,#fdf3c4,#fdf3c4 4px,#fff9e0 4px,#fff9e0 8px)", opacity: 0.8 }} />}
+                <div className="relative min-h-[34px] flex-1 rounded-lg border-2 border-[#9aa3b5] bg-[#faf7f0]">
+                  {<div aria-hidden className="absolute inset-y-0 left-0 rounded-lg" style={{ width: `${(bubleEnd / n) * 100}%`, background: "repeating-linear-gradient(135deg,#fdf3c4,#fdf3c4 4px,#fff9e0 4px,#fff9e0 8px)", opacity: 0.8 }} />}
                   <div className="relative grid gap-y-1 p-1" style={{ gridTemplateColumns: cols }}>
                     {lanes.length === 0 && <span style={{ gridColumn: "1 / -1" }} className="h-6" />}
                     {lanes.flatMap((l, li) => l.map((e) => (
@@ -174,7 +175,7 @@ function YearView({ season, setSeason, events, clashes, onOpen }: { season: numb
               </div>
             );
           })}
-          <p className="mb-0 ml-24 mt-3 text-xs text-muted">Fond jaune rayé : courts couverts par la bulle (septembre → mai). Rayures bleues : vacances scolaires (zone C). Touche une barre pour la modifier.</p>
+          <p className="mb-0 ml-24 mt-3 text-xs text-muted">Fond jaune rayé : période où la bulle couvre les courts (septembre → mai). Rayures bleues : vacances scolaires (zone C). Touche une barre pour la modifier.</p>
         </div>
       </div>
       <Legend />
@@ -191,28 +192,43 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, setMonth, events, onDay }: { month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void }) {
-  const first = `${month}-01`;
-  const gridStart = mondayOf(first);
+function MonthView({ month, setMonth, events, onDay, onRange }: { month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+  const [multi, setMulti] = useState(false);
+  const [first, setFirst] = useState<string | null>(null);
+  const click = (d: string) => {
+    if (!multi) return onDay(d);
+    if (!first) return setFirst(d);
+    const [a, b] = d < first ? [d, first] : [first, d];
+    setMulti(false); setFirst(null); onRange(a, b);
+  };
+  const first1 = `${month}-01`;
+  const gridStart = mondayOf(first1);
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-  const shift = (n: number) => setMonth(addDays(first, n < 0 ? -1 : 32).slice(0, 7));
+  const shift = (n: number) => setMonth(addDays(first1, n < 0 ? -1 : 32).slice(0, 7));
   const today = todayParis();
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
       <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Ce mois" />
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer sur plusieurs jours de suite"}</button>
+        {multi && <b className="text-clay">{first ? `Premier jour : ${fmtDay(first)}. Touche maintenant le DERNIER jour.` : "Touche le PREMIER jour, puis le dernier."}</b>}
+        {!multi && <span className="text-sm text-muted">Pour un seul jour, touche simplement le jour.</span>}
+      </div>
+      <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-extrabold text-ink">{DAYS.map((d) => <span key={d} className="rounded-lg bg-ink py-1 text-white">{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-1.5">
         {rows.map((d) => {
           const evs = events.filter((e) => covers(e, d) && e.kind !== "BULLE").concat(events.filter((e) => covers(e, d) && e.kind === "BULLE"));
           const out = d.slice(0, 7) !== month;
+          const weekend = weekdayOf(d) >= 5;
+          const bg = d === first ? "border-4 border-clay bg-[#ffe0cc]" : d === today ? "border-4 border-clay bg-[#fff1c2]" : out ? "border-2 border-[#b6bdcc] bg-[#e4e8ef] opacity-70" : isVacation(d) ? "border-2 border-[#5f7fb0] bg-[#dbe7f8]" : weekend ? "border-2 border-[#5b6680] bg-[#eef1f7]" : "border-2 border-[#5b6680] bg-white";
           return (
-            <button key={d} type="button" onClick={() => onDay(d)} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`}
-              className={`min-h-[74px] rounded-lg border p-1 text-left align-top ${out ? "opacity-40" : ""} ${d === today ? "border-2 border-ink bg-[#eef0ff]" : isVacation(d) ? "border-line bg-[#eef3fa]" : "border-line bg-white"} hover:border-ink`}>
-              <span className="block text-xs font-bold text-ink">{+d.slice(8, 10)}</span>
-              <span className="grid gap-0.5">
-                {evs.slice(0, 3).map((e) => <span key={e.id} className="block truncate rounded px-1 text-[10px] font-bold" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{titleOf(e)}</span>)}
-                {evs.length > 3 && <span className="text-[10px] font-bold text-muted">+{evs.length - 3}</span>}
+            <button key={d} type="button" onClick={() => click(d)} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`}
+              className={`min-h-[104px] rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
+              <span className={`mb-1 block text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</span>
+              <span className="grid gap-1">
+                {evs.slice(0, 3).map((e) => <span key={e.id} className="block rounded-md px-1.5 py-0.5 text-xs font-bold leading-tight [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{kindOf(e.kind).icon} {titleOf(e)}</span>)}
+                {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </button>
           );
@@ -234,7 +250,7 @@ function CourtView({ season, setSeason, events, onOpen }: { season: number; setS
         {COURTS.map((c) => {
           const list = inSeason.filter((e) => e.courts.includes(c.n));
           return (
-            <section key={c.n} className="rounded-2xl border-2 border-line bg-white p-4">
+            <section key={c.n} className="rounded-2xl border-2 border-[#5b6680] bg-white p-4">
               <h2 className="m-0 text-lg text-ink">{c.label} <small className="font-normal text-muted">· {c.surface}</small></h2>
               {list.length === 0 ? <p className="mb-0 text-muted">Rien de prévu.</p> : (
                 <ul className="m-0 mt-2 grid list-none gap-1.5 p-0">
@@ -422,16 +438,16 @@ const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: 
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; id?: string }
-function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
+function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { endInit?: string; onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
   const [start, setStart] = useState(day);
-  const [end, setEnd] = useState(day);
+  const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === day); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", id: e.id } : { on: false, who: [], teams: [], note: "" }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", id: e.id } : { on: false, who: [], teams: [], note: "" }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -451,7 +467,7 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who, note: c.note.trim() || undefined });
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined });
         else if (c.on && old && (c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
@@ -461,10 +477,18 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
   const groups = [...new Set(KINDS.map((k) => k.group))];
   return (
     <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
-      <details className="mb-3 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer font-bold text-ink">📆 {end === start ? "Une seule journée" : "Plusieurs jours"} · toucher pour changer les dates (stage, tournoi de 2-3 jours…)</summary>
-        <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
-          <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier : ce que tu coches s'applique à toute la période."}</p></div>
-      </details>
+      <section className="mb-3 rounded-2xl border-2 border-[#5b6680] bg-white p-3">
+        <h3 className="m-0 mb-2 text-base text-ink">📆 Combien de jours ?</h3>
+        <div className="flex flex-wrap gap-2">
+          <Pill on={end === start} onClick={() => { setEnd(start); setPickEnd(false); }}>Un seul jour</Pill>
+          {[2, 3, 4, 5, 7].map((n) => <Pill key={n} on={end !== start && diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 7 ? "1 semaine" : `${n} jours de suite`}</Pill>)}
+        </div>
+        <p className="mb-0 mt-2 text-sm font-bold text-ink">{end === start ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${diffDays(start, end) + 1} jours)`}</p>
+        <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Autre durée ou autre date de départ : choisir sur le calendrier</summary>
+          <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
+            <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
+        </details>
+      </section>
       <p className="mt-0 text-sm text-muted">Coche ce qui se passe. Tu peux en cocher plusieurs.</p>
       {groups.map((g) => (
         <section key={g} className="mb-3">
