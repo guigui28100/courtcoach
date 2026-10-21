@@ -11,8 +11,8 @@ import {
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
-type View = "annee" | "mois" | "jour" | "court";
-const VIEWS: [View, string][] = [["annee", "📆 Année"], ["mois", "🗓️ Mois"], ["jour", "📍 Jour"], ["court", "🎾 Par court"]];
+type View = "annee" | "mois" | "court";
+const VIEWS: [View, string][] = [["annee", "📆 Année"], ["mois", "🗓️ Mois"], ["court", "🎾 Par court"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 const covers = (e: ClubEvent, d: string) => e.startDate <= d && d <= e.endDate;
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
@@ -58,9 +58,7 @@ export function ClubPlan() {
   }, [me, profs, people]);
   const names = useMemo(() => crew.map((c) => c.name), [crew]);
   const clashes = useMemo(() => allClashes(events), [events]);
-  const openNew = (p: Partial<Draft> = {}) => setDraft({ kind: "TOURNOI", title: "", startDate: day, endDate: day, bands: [], courts: [], teams: [], who: [], note: "", ...p });
   const openEdit = (e: ClubEvent) => setDraft({ ...e });
-  const goDay = (d: string) => { setDay(d); setView("jour"); };
   const removeEvent = async (e: ClubEvent) => {
     if (!confirm(`Supprimer « ${titleOf(e)} » (${fmtRange(e.startDate, e.endDate)}) ?`)) return;
     try { await del(`/club/events/${e.id}`); await load(); } catch (x: any) { setErr(x.message || "Impossible de supprimer."); }
@@ -88,9 +86,8 @@ export function ClubPlan() {
       </div>
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
-          {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onDay={goDay} />}
+          {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} />}
           {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuDay(d); }} />}
-          {view === "jour" && <DayView day={day} setDay={setDay} events={events} onOpen={openEdit} onNew={openNew} onMenu={() => setMenuDay(day)} onDelete={removeEvent} />}
           {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
@@ -112,16 +109,8 @@ const Nav = ({ label, onPrev, onNext, onToday, todayLabel = "Aujourd'hui" }: { l
   </div>
 );
 
-function Chip({ e, onClick, small }: { e: ClubEvent; onClick?: () => void; small?: boolean }) {
-  const bg = colorOf(e);
-  return (
-    <button type="button" onClick={onClick} title={titleOf(e)} style={{ background: bg, color: textOn(bg) }}
-      className={`block w-full truncate rounded-md px-1.5 text-left font-bold ${small ? "py-0 text-[11px]" : "py-1 text-sm"}`}>{titleOf(e)}</button>
-  );
-}
-
 // ───────────── Année : une frise par court, de septembre à août ─────────────
-function YearView({ season, setSeason, events, clashes, onOpen, onDay }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void; onDay: (d: string) => void }) {
+function YearView({ season, setSeason, events, clashes, onOpen }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void }) {
   const start = seasonStart(season); const n = seasonWeeks(season); const vac = vacationWeeks(season);
   const end = addDays(start, n * 7 - 1);
   const weekOf = (d: string) => Math.max(0, Math.min(n - 1, Math.floor(diffDays(start, d) / 7)));
@@ -230,56 +219,6 @@ function MonthView({ month, setMonth, events, onDay }: { month: string; setMonth
         })}
       </div>
       <Legend />
-    </div>
-  );
-}
-
-// ───────────── Jour : 4 courts × 3 moments ─────────────
-function DayView({ day, setDay, events, onOpen, onNew, onMenu, onDelete }: { onDelete: (e: ClubEvent) => void; day: string; setDay: (d: string) => void; events: ClubEvent[]; onOpen: (e: ClubEvent) => void; onNew: (p: Partial<Draft>) => void; onMenu: () => void }) {
-  const evs = events.filter((e) => covers(e, day));
-  const bulles = evs.filter((e) => e.kind === "BULLE");
-  const cell = (court: number, band: string) => evs.filter((e) => e.kind !== "BULLE" && e.courts.includes(court) && (e.bands.length === 0 || e.bands.includes(band)));
-  return (
-    <div className="grid gap-4">
-      <Nav label={fmtDay(day)} onPrev={() => setDay(addDays(day, -1))} onNext={() => setDay(addDays(day, 1))} onToday={() => setDay(todayParis())} />
-      {isVacation(day) && <p className="m-0 rounded-xl bg-[#eef3fa] px-3 py-2 text-sm font-bold text-ink">🏖️ Vacances scolaires (zone C)</p>}
-      {bulles.map((b) => <p key={b.id} className="m-0 rounded-xl bg-[#fdf3c4] px-3 py-2 text-sm font-bold text-[#6b5a00]">🎈 {titleOf(b)} · courts {b.courts.join(", ")}</p>)}
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[330px] gap-1" style={{ gridTemplateColumns: "4.2rem repeat(4, minmax(0, 1fr))" }}>
-          <span />
-          {COURTS.map((c) => <div key={c.n} className="rounded-lg bg-ink px-2 py-1 text-center text-sm font-bold text-white"><span className="sm:hidden">C{c.n}</span><span className="hidden sm:inline">{c.label}</span><small className="hidden font-normal opacity-80 sm:block">{c.surface}</small></div>)}
-          {BANDS.map((b) => (
-            <div key={b.key} className="contents">
-              <div className="pt-2 text-sm font-bold text-ink">{b.label}<small className="block font-normal text-muted">{b.hours}</small></div>
-              {COURTS.map((c) => {
-                const here = cell(c.n, b.key);
-                return (
-                  <div key={c.n} className="grid min-h-[64px] content-start gap-1 rounded-lg border border-line bg-white p-1">
-                    {here.map((e) => <Chip key={e.id} e={e} onClick={() => onOpen(e)} small />)}
-                    {here.length === 0 && <button type="button" aria-label={`Ajouter sur le ${c.label}, ${b.label}`} onClick={() => onNew({ startDate: day, endDate: day, courts: [c.n], bands: [b.key] })}
-                      className="h-full min-h-[48px] rounded-md border-2 border-dashed border-line text-xl font-bold text-muted hover:border-ink hover:text-ink">＋</button>}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      <section className="rounded-2xl border-2 border-line bg-white p-4">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg text-ink">Ce jour-là</h2><button type="button" className="btn-clay" onClick={onMenu}>☑️ Choisir ce qui se passe</button></div>
-        {evs.length === 0 ? <p className="m-0 text-muted">Rien de prévu. Touche un « ＋ » ci-dessus.</p> : (
-          <ul className="m-0 grid list-none gap-2 p-0">
-            {evs.map((e) => (
-              <li key={e.id} className="flex flex-wrap items-center gap-2">
-                <i className="size-3 rounded" style={{ background: colorOf(e) }} />
-                <button type="button" className="font-bold text-ink underline" onClick={() => onOpen(e)}>{titleOf(e)}</button>
-                <span className="text-sm text-muted">{e.bands.length ? e.bands.map((b) => BANDS.find((x) => x.key === b)?.label).join(" + ") : "toute la journée"}{e.courts.length ? ` · court${e.courts.length > 1 ? "s" : ""} ${e.courts.join(", ")}` : ""}{e.who.length ? ` · ${e.who.join(", ")}` : ""}</span>
-                <button type="button" className="btn-outline ml-auto" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️ Supprimer</button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
