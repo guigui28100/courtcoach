@@ -11,8 +11,8 @@ import {
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
-type View = "annee" | "mois" | "court";
-const VIEWS: [View, string][] = [["annee", "📆 Année"], ["mois", "🗓️ Mois"], ["court", "🎾 Par court"]];
+type View = "annee" | "mois";
+const VIEWS: [View, string][] = [["annee", "📆 Année complète"], ["mois", "🗓️ Mois"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 const covers = (e: ClubEvent, d: string) => e.startDate <= d && d <= e.endDate;
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
@@ -66,6 +66,7 @@ export function ClubPlan() {
   };
 
   const [actionEv, setActionEv] = useState<ClubEvent | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const toggleStar = async (e: ClubEvent) => {
     setErr("");
     if (!e.featured && events.filter((x) => x.featured && x.id !== e.id && x.startDate.slice(0, 7) === e.startDate.slice(0, 7)).length >= 3) { setErr("Il y a déjà 3 événements à mettre en avant ce mois-ci : retire une étoile avant d'en mettre une autre."); return; }
@@ -80,8 +81,7 @@ export function ClubPlan() {
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-clay" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter</button>
             <button type="button" className="btn-outline" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
-            <button type="button" className="btn-outline" onClick={() => setTeamsOpen(true)}>⚙️ Mes équipes</button>
-            <button type="button" className="btn-outline" onClick={() => setPeopleOpen(true)}>👥 Mes personnes</button>
+            <button type="button" className="btn-outline" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
           </div>
         </PageHead>
       </div>
@@ -95,12 +95,19 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onStar={toggleStar} onEvent={setActionEv} />}
-          {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
+          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
-      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} onStar={async (e) => { await toggleStar(e); setMenuDay(null); }} />}
+      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
+      {settingsOpen && (
+        <Modal title="⚙️ Réglages" onClose={() => setSettingsOpen(false)}>
+          <div className="grid gap-2">
+            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setTeamsOpen(true); }}>🎾 Mes équipes (combien d'équipes par catégorie)</button>
+            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setPeopleOpen(true); }}>👥 Mes personnes (bénévoles, bureau)</button>
+          </div>
+        </Modal>
+      )}
       {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
@@ -130,7 +137,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
   };
   return (
     <div className="grid gap-4">
-      <Nav label={`Saison ${season} – ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Cette saison" />
+      <Nav label={`Année ${season} / ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Année en cours" />
       {clashes.length > 0 && (
         <div role="alert" className="rounded-2xl border-2 border-[#C0392B] bg-[#fdecea] p-4">
           <b className="text-[#922b21]">⚠️ {clashes.length} chose{clashes.length > 1 ? "s" : ""} à régler</b>
@@ -184,7 +191,7 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }: { onEvent: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+function MonthView({ month, setMonth, events, onDay, onRange, onEvent }: { onEvent: (e: ClubEvent) => void; month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
   const [multi, setMulti] = useState(false);
   const [first, setFirst] = useState<string | null>(null);
   const click = (d: string) => {
@@ -201,9 +208,9 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Ce mois" />
+      <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Mois en cours" />
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer sur plusieurs jours de suite"}</button>
+        <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer un événement sur plusieurs jours de suite"}</button>
         {multi && <b className="text-clay">{first ? `Premier jour : ${fmtDay(first)}. Touche maintenant le DERNIER jour.` : "Touche le PREMIER jour, puis le dernier."}</b>}
         {!multi && <span className="text-sm text-muted">Pour un seul jour, touche simplement le jour.</span>}
       </div>
@@ -219,7 +226,7 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
               className={`min-h-[104px] cursor-pointer rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title="Toucher pour voir, modifier ou annuler" onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1.5 py-0.5 text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.note ? " 📝" : ""}</button>)}
+                {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}</span></button>)}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </div>
@@ -233,8 +240,8 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
           if (list.length === 0) return <p className="m-0 text-sm text-muted">Rien de prévu ce mois-ci. Touche un jour pour placer un événement.</p>;
           return (
             <ul className="m-0 grid list-none gap-2 p-0">{list.map((e) => (
-              <li key={e.id} className="flex items-start gap-2">
-                <button type="button" onClick={() => onDay(e.startDate.slice(0, 7) === month ? e.startDate : first1)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
+              <li key={e.id}>
+                <button type="button" onClick={() => onEvent(e)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
                   <span aria-hidden className="mt-1 size-3 shrink-0 rounded-full" style={{ background: colorOf(e) }} />
                   <span className="min-w-0 flex-1">
                     <b className="block text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
@@ -242,47 +249,12 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
                     {e.note && <span className="mt-0.5 block text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
                   </span>
                 </button>
-                <button type="button" aria-pressed={!!e.featured} aria-label={e.featured ? `Retirer l'étoile : ${titleOf(e)}` : `Mettre en avant sur l'affiche : ${titleOf(e)}`} title={e.featured ? "Mis en avant sur l'affiche (touche pour retirer)" : "Mettre en avant sur l'affiche"} onClick={() => onStar(e)}
-                  className={`shrink-0 rounded-xl border-2 px-3 py-2 text-sm font-bold ${e.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>{e.featured ? "⭐ En avant" : "☆ Mettre en avant"}</button>
               </li>))}
             </ul>
           );
         })()}
       </section>
       <Legend />
-    </div>
-  );
-}
-
-// ───────────── Par court ─────────────
-function CourtView({ season, setSeason, events, onOpen }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; onOpen: (e: ClubEvent) => void }) {
-  const start = seasonStart(season); const end = `${season + 1}-08-31`;
-  const inSeason = events.filter((e) => e.endDate >= start && e.startDate <= end);
-  return (
-    <div className="grid gap-4">
-      <Nav label={`Saison ${season} – ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Cette saison" />
-      <div className="grid gap-4 md:grid-cols-2">
-        {COURTS.map((c) => {
-          const list = inSeason.filter((e) => e.courts.includes(c.n));
-          return (
-            <section key={c.n} className="rounded-2xl border-2 border-[#5b6680] bg-white p-4">
-              <h2 className="m-0 text-lg text-ink">{c.label} <small className="font-normal text-muted">· {c.surface}</small></h2>
-              {list.length === 0 ? <p className="mb-0 text-muted">Rien de prévu.</p> : (
-                <ul className="m-0 mt-2 grid list-none gap-1.5 p-0">
-                  {list.map((e) => (
-                    <li key={e.id}>
-                      <button type="button" onClick={() => onOpen(e)} className="flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left hover:border-ink">
-                        <i className="size-3 shrink-0 rounded" style={{ background: colorOf(e) }} />
-                        <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{titleOf(e)}</b><span className="text-xs text-muted">{fmtRange(e.startDate, e.endDate)}{e.bands.length ? ` · ${e.bands.map((b) => BANDS.find((x) => x.key === b)?.label.toLowerCase()).join(" + ")}` : ""}{e.who.length ? ` · 👤 ${e.who.join(", ")}` : ""}</span>{e.note ? <span className="block text-xs text-ink [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -348,7 +320,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -405,8 +377,16 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       </Step>
       <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
-        <input aria-label="Note" maxLength={300} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder="Une note (facultatif)" value={d.note} onChange={(e) => set({ note: e.target.value })} />
       </details>
+      <label className="mb-4 block font-bold text-ink">📝 Description (facultative, 600 caractères)
+        <textarea aria-label="Description de l'événement" rows={3} maxLength={600} value={d.note} onChange={(e) => set({ note: e.target.value })}
+          placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
+          className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+      </label>
+      <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
+        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+        <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
+      </button>
       {clashes.length > 0 && (
         <div role="alert" className="mb-3 rounded-xl border-2 border-[#C0392B] bg-[#fdecea] p-3 text-sm text-[#922b21]">
           <b>⚠️ Ça se chevauche :</b>
@@ -453,7 +433,7 @@ const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: 
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
-function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { onStar: (e: ClubEvent) => void; endInit?: string; onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
+function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
@@ -503,7 +483,7 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
           <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
+          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
         </div>
         <p className="mb-0 mt-2 text-sm font-bold text-ink">{end === start ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${diffDays(start, end) + 1} jours)`}</p>
         <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
@@ -518,9 +498,7 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
               <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
-              <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant" : "☆ Mettre en avant"}</button>
-              <button type="button" className="btn-outline" onClick={() => onDetail(e)}>⚙️ Modifier</button>
-              <button type="button" className="btn-outline" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️ Supprimer</button>
+              <button type="button" className="btn-outline" aria-label={`Gérer ${titleOf(e)}`} onClick={() => onEvent(e)}>Gérer ›</button>
             </li>))}
           </ul>
         </section>
