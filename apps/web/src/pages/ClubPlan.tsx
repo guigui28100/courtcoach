@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ClubPoster, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
+import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, Err, Page, PageHead } from "../components/ui";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
-  vacationWeeks,
+  vacationWeeks, weekdayOf,
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
@@ -35,6 +35,7 @@ export function ClubPlan() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menuDay, setMenuDay] = useState<string | null>(null);
+  const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -70,7 +71,7 @@ export function ClubPlan() {
         <BackLink fallback="/coach" className="text-sm font-bold text-ink">← Retour</BackLink>
         <PageHead eyebrow="Réservé au coach" title="Planning du club" icon="📅">
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-clay" onClick={() => setMenuDay(day)}>＋ Ajouter</button>
+            <button type="button" className="btn-clay" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter</button>
             <button type="button" className="btn-outline" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
             <button type="button" className="btn-outline" onClick={() => setTeamsOpen(true)}>⚙️ Mes équipes</button>
             <button type="button" className="btn-outline" onClick={() => setPeopleOpen(true)}>👥 Mes personnes</button>
@@ -86,13 +87,13 @@ export function ClubPlan() {
       </div>
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
-          {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuDay(d); }} />}
+          {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
+          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} />}
           {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
-      {menuDay && <DayMenu key={menuDay} day={menuDay} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} />}
+      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -110,16 +111,15 @@ const Nav = ({ label, onPrev, onNext, onToday, todayLabel = "Aujourd'hui" }: { l
 );
 
 // ───────────── Année : une frise par court, de septembre à août ─────────────
-function YearView({ season, setSeason, events, clashes, onOpen }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void }) {
-  const start = seasonStart(season); const n = seasonWeeks(season); const vac = vacationWeeks(season);
-  const end = addDays(start, n * 7 - 1);
-  const weekOf = (d: string) => Math.max(0, Math.min(n - 1, Math.floor(diffDays(start, d) / 7)));
-  const inSeason = events.filter((e) => e.endDate >= start && e.startDate <= end);
-  const monthStarts: { w: number; label: string }[] = [];
-  for (let w = 0; w < n; w++) { const d = addDays(start, w * 7 + 3); const m = +d.slice(5, 7); if (w === 0 || m !== +addDays(start, (w - 1) * 7 + 3).slice(5, 7)) monthStarts.push({ w, label: ABBR[m - 1] }); }
-  const bubleEnd = Math.min(n, Math.floor(diffDays(start, `${season + 1}-05-31`) / 7) + 1);
-  const rows = [...COURTS.map((c) => ({ key: String(c.n), label: c.label, sub: c.surface, evs: inSeason.filter((e) => e.courts.includes(c.n)) })), { key: "none", label: "Sans court", sub: "animations…", evs: inSeason.filter((e) => e.courts.length === 0) }];
-  const cols = `repeat(${n}, minmax(0, 1fr))`;
+function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void; onMonth: (m: string) => void }) {
+  const months = Array.from({ length: 12 }, (_, i) => { const m = ((8 + i) % 12) + 1; return `${m >= 9 ? season : season + 1}-${String(m).padStart(2, "0")}`; });
+  const today = todayParis();
+  const dayLabel = (e: ClubEvent, m: string) => {
+    const a = e.startDate < `${m}-01` ? "←" : String(+e.startDate.slice(8, 10)); const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
+    if (e.startDate === e.endDate) return a;
+    if (e.endDate.slice(0, 7) > m) return `${a} →`;
+    return same ? `${a}–${+e.endDate.slice(8, 10)}` : `${a} → ${+e.endDate.slice(8, 10)}`;
+  };
   return (
     <div className="grid gap-4">
       <Nav label={`Saison ${season} – ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Cette saison" />
@@ -136,46 +136,31 @@ function YearView({ season, setSeason, events, clashes, onOpen }: { season: numb
           </ul>
         </div>
       )}
-      <div className="overflow-x-auto rounded-2xl border-2 border-line bg-white p-3">
-        <div className="min-w-[1000px]">
-          <div className="ml-24 grid text-xs font-bold text-muted" style={{ gridTemplateColumns: cols }}>
-            {monthStarts.map((m, i) => <span key={i} className="whitespace-nowrap" style={{ gridColumn: `${m.w + 1} / ${(monthStarts[i + 1]?.w ?? n) + 1}` }}>{m.label}</span>)}
-          </div>
-          <div className="ml-24 grid h-3 overflow-hidden rounded" style={{ gridTemplateColumns: cols }} aria-label="Vacances scolaires">
-            {vac.map((v, i) => <span key={i} style={{ background: v ? "repeating-linear-gradient(45deg,#c9d6ea,#c9d6ea 3px,#e9eff8 3px,#e9eff8 6px)" : "#f4f1ea" }} />)}
-          </div>
-          {rows.map((r) => {
-            // Un nom trop long pour sa barre s'écrit à droite de la barre : on réserve cette place dans la rangée
-            const need = (e: ClubEvent) => { const w = weekOf(e.endDate) - weekOf(e.startDate) + 1; return w * 17 >= titleOf(e).length * 7 + 8 ? w : w + Math.ceil((titleOf(e).length * 7 + 8) / 17); };
-            const lanes: ClubEvent[][] = [];
-            for (const e of [...r.evs].sort((a, b) => a.startDate.localeCompare(b.startDate))) {
-              const s = weekOf(e.startDate);
-              const lane = lanes.findIndex((l) => l.every((x) => weekOf(x.startDate) + need(x) <= s));
-              if (lane === -1) lanes.push([e]); else lanes[lane].push(e);
-            }
-            return (
-              <div key={r.key} className="mt-2 flex items-stretch gap-2">
-                <div className="w-22 shrink-0 pt-1 text-xs leading-tight" style={{ width: "5.5rem" }}><b className="block text-ink">{r.label}</b><span className="text-muted">{r.sub}</span></div>
-                <div className="relative min-h-[34px] flex-1 rounded-lg bg-[#faf7f0]">
-                  {r.key !== "none" && <div aria-hidden className="absolute inset-y-0 left-0 rounded-lg" style={{ width: `${(bubleEnd / n) * 100}%`, background: "repeating-linear-gradient(135deg,#fdf3c4,#fdf3c4 4px,#fff9e0 4px,#fff9e0 8px)", opacity: 0.8 }} />}
-                  <div className="relative grid gap-y-1 p-1" style={{ gridTemplateColumns: cols }}>
-                    {lanes.length === 0 && <span style={{ gridColumn: "1 / -1" }} className="h-6" />}
-                    {lanes.flatMap((l, li) => l.map((e) => (
-                      <button key={e.id + r.key} type="button" onClick={() => onOpen(e)} title={`${titleOf(e)} · ${fmtRange(e.startDate, e.endDate)}`}
-                        style={{ gridColumn: `${weekOf(e.startDate) + 1} / ${weekOf(e.endDate) + 2}`, gridRow: li + 1, background: colorOf(e), color: textOn(colorOf(e)) }}
-                        className="relative h-6 min-w-[8px] rounded px-1 text-left text-xs font-bold">
-                        {need(e) === weekOf(e.endDate) - weekOf(e.startDate) + 1
-                          ? <span className="block truncate">{titleOf(e)}</span>
-                          : <span className="absolute left-full top-0 ml-1 whitespace-nowrap leading-6 text-ink">{titleOf(e)}</span>}
-                      </button>
-                    )))}
-                  </div>
-                </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {months.map((m) => {
+          const list = monthEvents(events, m);
+          const now = today.slice(0, 7) === m;
+          return (
+            <section key={m} className={`rounded-2xl bg-white p-3 shadow-sm ${now ? "border-4 border-clay" : "border-2 border-[#5b6680]"}`}>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="m-0 text-lg font-black text-ink">{MONTHS[+m.slice(5, 7) - 1]} {m.slice(0, 4)}</h3>
+                <button type="button" className="btn-outline" aria-label={`Ouvrir ${MONTHS[+m.slice(5, 7) - 1]}`} onClick={() => onMonth(m)}>Ouvrir ›</button>
               </div>
-            );
-          })}
-          <p className="mb-0 ml-24 mt-3 text-xs text-muted">Fond jaune rayé : courts couverts par la bulle (septembre → mai). Rayures bleues : vacances scolaires (zone C). Touche une barre pour la modifier.</p>
-        </div>
+              {list.length === 0 ? <p className="m-0 rounded-lg bg-[#f4f1ea] px-3 py-2 text-sm text-muted">Rien de prévu</p> : (
+                <ul className="m-0 grid list-none gap-1.5 p-0">
+                  {list.map((e) => (
+                    <li key={e.id}>
+                      <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
+                        <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
+                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
       </div>
       <Legend />
     </div>
@@ -191,28 +176,43 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, setMonth, events, onDay }: { month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void }) {
-  const first = `${month}-01`;
-  const gridStart = mondayOf(first);
+function MonthView({ month, setMonth, events, onDay, onRange }: { month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+  const [multi, setMulti] = useState(false);
+  const [first, setFirst] = useState<string | null>(null);
+  const click = (d: string) => {
+    if (!multi) return onDay(d);
+    if (!first) return setFirst(d);
+    const [a, b] = d < first ? [d, first] : [first, d];
+    setMulti(false); setFirst(null); onRange(a, b);
+  };
+  const first1 = `${month}-01`;
+  const gridStart = mondayOf(first1);
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-  const shift = (n: number) => setMonth(addDays(first, n < 0 ? -1 : 32).slice(0, 7));
+  const shift = (n: number) => setMonth(addDays(first1, n < 0 ? -1 : 32).slice(0, 7));
   const today = todayParis();
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
       <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Ce mois" />
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-muted">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer sur plusieurs jours de suite"}</button>
+        {multi && <b className="text-clay">{first ? `Premier jour : ${fmtDay(first)}. Touche maintenant le DERNIER jour.` : "Touche le PREMIER jour, puis le dernier."}</b>}
+        {!multi && <span className="text-sm text-muted">Pour un seul jour, touche simplement le jour.</span>}
+      </div>
+      <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-extrabold text-ink">{DAYS.map((d) => <span key={d} className="rounded-lg bg-ink py-1 text-white">{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-1.5">
         {rows.map((d) => {
           const evs = events.filter((e) => covers(e, d) && e.kind !== "BULLE").concat(events.filter((e) => covers(e, d) && e.kind === "BULLE"));
           const out = d.slice(0, 7) !== month;
+          const weekend = weekdayOf(d) >= 5;
+          const bg = d === first ? "border-4 border-clay bg-[#ffe0cc]" : d === today ? "border-4 border-clay bg-[#fff1c2]" : out ? "border-2 border-[#b6bdcc] bg-[#e4e8ef] opacity-70" : isVacation(d) ? "border-2 border-[#5f7fb0] bg-[#dbe7f8]" : weekend ? "border-2 border-[#5b6680] bg-[#eef1f7]" : "border-2 border-[#5b6680] bg-white";
           return (
-            <button key={d} type="button" onClick={() => onDay(d)} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`}
-              className={`min-h-[74px] rounded-lg border p-1 text-left align-top ${out ? "opacity-40" : ""} ${d === today ? "border-2 border-ink bg-[#eef0ff]" : isVacation(d) ? "border-line bg-[#eef3fa]" : "border-line bg-white"} hover:border-ink`}>
-              <span className="block text-xs font-bold text-ink">{+d.slice(8, 10)}</span>
-              <span className="grid gap-0.5">
-                {evs.slice(0, 3).map((e) => <span key={e.id} className="block truncate rounded px-1 text-[10px] font-bold" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{titleOf(e)}</span>)}
-                {evs.length > 3 && <span className="text-[10px] font-bold text-muted">+{evs.length - 3}</span>}
+            <button key={d} type="button" onClick={() => click(d)} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`}
+              className={`min-h-[104px] rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
+              <span className={`mb-1 block text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</span>
+              <span className="grid gap-1">
+                {evs.slice(0, 3).map((e) => <span key={e.id} className="block rounded-md px-1.5 py-0.5 text-xs font-bold leading-tight [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{kindOf(e.kind).icon} {titleOf(e)}</span>)}
+                {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </button>
           );
@@ -234,7 +234,7 @@ function CourtView({ season, setSeason, events, onOpen }: { season: number; setS
         {COURTS.map((c) => {
           const list = inSeason.filter((e) => e.courts.includes(c.n));
           return (
-            <section key={c.n} className="rounded-2xl border-2 border-line bg-white p-4">
+            <section key={c.n} className="rounded-2xl border-2 border-[#5b6680] bg-white p-4">
               <h2 className="m-0 text-lg text-ink">{c.label} <small className="font-normal text-muted">· {c.surface}</small></h2>
               {list.length === 0 ? <p className="mb-0 text-muted">Rien de prévu.</p> : (
                 <ul className="m-0 mt-2 grid list-none gap-1.5 p-0">
@@ -421,17 +421,17 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
 const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
-interface Sel { on: boolean; who: string[]; teams: string[]; id?: string }
-function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
+interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
+function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { endInit?: string; onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
   const [start, setStart] = useState(day);
-  const [end, setEnd] = useState(day);
+  const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === day); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, id: e.id } : { on: false, who: [], teams: [] }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, id: e.id } : { on: false, who: [], teams: [], note: "", star: false }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -451,8 +451,8 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who });
-        else if (c.on && old && (c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: old.note || undefined, allowConflict: true });
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star });
+        else if (c.on && old && (c.star !== !!old.featured || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -461,16 +461,32 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
   const groups = [...new Set(KINDS.map((k) => k.group))];
   return (
     <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
-      <details className="mb-3 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer font-bold text-ink">📆 {end === start ? "Une seule journée" : "Plusieurs jours"} · toucher pour changer les dates (stage, tournoi de 2-3 jours…)</summary>
-        <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
-          <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier : ce que tu coches s'applique à toute la période."}</p></div>
-      </details>
+      <section className="mb-3 rounded-2xl border-2 border-[#5b6680] bg-white p-3">
+        <h3 className="m-0 mb-2 text-base text-ink">📆 Combien de jours ? (la durée que tu veux)</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold text-ink">Durée :</span>
+          <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => setEnd(addDays(end, -1))}>−</button>
+          <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={diffDays(start, end) + 1}
+            onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
+            className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center text-lg font-black text-ink" />
+          <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setEnd(addDays(end, 1))}>＋</button>
+          <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[1, 2, 3, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
+        </div>
+        <p className="mb-0 mt-2 text-sm font-bold text-ink">{end === start ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${diffDays(start, end) + 1} jours)`}</p>
+        <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
+          <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
+            <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
+        </details>
+      </section>
       <p className="mt-0 text-sm text-muted">Coche ce qui se passe. Tu peux en cocher plusieurs.</p>
       {groups.map((g) => (
         <section key={g} className="mb-3">
           <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
           {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [] }; const old = placed(k.key);
+            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "", star: false }; const old = placed(k.key);
             return (
               <div key={k.key} className="mb-1.5">
                 <div className="flex items-center gap-2">
@@ -491,6 +507,19 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
+                )}
+                {c.on && (
+                  <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
+                    className={`ml-8 mt-1.5 flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+                    <span aria-hidden className="text-lg">{c.star ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche <small className="font-normal text-muted">(3 au maximum par mois)</small>
+                  </button>
+                )}
+                {c.on && (
+                  <label className="ml-8 mt-1.5 block text-sm font-bold text-ink">📝 Description (facultatif)
+                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                      placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
+                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                  </label>
                 )}
                 {c.on && k.key === "EQUIPES" && (
                   <details open className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>

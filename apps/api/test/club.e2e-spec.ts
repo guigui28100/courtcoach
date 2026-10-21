@@ -92,6 +92,12 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "   ", role: "BUREAU" }] }).expect(400);
     const e = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "INSCRIPTIONS", startDate: "2026-09-05", endDate: "2026-09-05", who: ["Anne Dupont", "Paul Martin"] }).expect(201)).body;
     expect(e.who).toEqual(["Anne Dupont", "Paul Martin"]);
+    const d = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "Tournoi interne, goûter offert." }).expect(201)).body;
+    expect(d.note).toBe("Tournoi interne, goûter offert."); // description libre
+    expect(d.featured).toBe(false);
+    const f = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: true }).expect(200)).body;
+    expect(f.featured).toBe(true); // « ⭐ à mettre en avant »
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "x".repeat(601) }).expect(400);
   });
 
   it("bulles : un décor qui ne gêne pas les événements ; la réfection de terre battue attend le démontage", async () => {
@@ -103,6 +109,6 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-05-17", endDate: "2027-06-04", courts: [1, 2] }).expect(201); // après le démontage
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-06-10", endDate: "2027-06-12", courts: [3] }).expect(400); // courts en dur : pas de réfection
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2026-11-14", endDate: "2026-11-14", title: "Fête du club" }).expect(201); // sans court
-    for (const kind of ["BULLE_MONTAGE", "BULLE_DEMONTAGE", "INSCRIPTIONS", "FETE", "FETE_ECOLE", "DEBUT_COURS", "FIN_COURS"]) await A.coach.post("/api/club/events").set(ORIGIN).send({ kind, startDate: "2026-09-05", endDate: "2026-09-05" }).expect(201);
+    for (const kind of ["BULLE_MONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_TB", "BULLE_DEMONTAGE_QUICK", "BULLE_MONTAGE", "BULLE_DEMONTAGE", "INSCRIPTIONS", "FETE", "FETE_ECOLE", "DEBUT_COURS", "FIN_COURS"]) await A.coach.post("/api/club/events").set(ORIGIN).send({ kind, startDate: "2026-09-05", endDate: "2026-09-05" }).expect(201);
   });
 });

@@ -1,8 +1,8 @@
 // Planning du club : types d'événements, courts, moments, catégories d'équipes et conflits (copie de apps/api/src/club/club.constants.ts)
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
-export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "DEBUT_COURS" | "FIN_COURS";
-export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean }
+export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "BULLE_MONTAGE_TB" | "BULLE_MONTAGE_QUICK" | "BULLE_DEMONTAGE_TB" | "BULLE_DEMONTAGE_QUICK" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "DEBUT_COURS" | "FIN_COURS";
+export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean; courts?: number[] }
 // Les choix proposés dans le menu d'une case du jour (rangés par famille)
 export const KINDS: KindInfo[] = [
   { key: "TOURNOI", label: "Tournoi", color: "#D35400", icon: "🏆", group: "Compétition", who: true },
@@ -10,8 +10,10 @@ export const KINDS: KindInfo[] = [
   { key: "ANIMATION", label: "Animation", color: "#8E44AD", icon: "🎉", group: "Animations et stages", who: true },
   { key: "STAGE_ENFANTS", label: "Stage enfants", color: "#27AE60", icon: "🧒", group: "Animations et stages", who: true },
   { key: "STAGE_ADULTES", label: "Stage adultes", color: "#A04000", icon: "🧑", group: "Animations et stages", who: true },
-  { key: "BULLE_MONTAGE", label: "Montage de la bulle", color: "#D4AC0D", icon: "🎈", group: "Terrains", who: false },
-  { key: "BULLE_DEMONTAGE", label: "Démontage de la bulle", color: "#B7950B", icon: "🎈", group: "Terrains", who: false },
+  { key: "BULLE_MONTAGE_TB", label: "Montage de la bulle · terre battue", color: "#CA6F1E", icon: "🎈", group: "Terrains", who: false, courts: [1, 2] },
+  { key: "BULLE_DEMONTAGE_TB", label: "Démontage de la bulle · terre battue", color: "#873600", icon: "🎈", group: "Terrains", who: false, courts: [1, 2] },
+  { key: "BULLE_MONTAGE_QUICK", label: "Montage de la bulle · quick", color: "#D4AC0D", icon: "🎈", group: "Terrains", who: false, courts: [3, 4] },
+  { key: "BULLE_DEMONTAGE_QUICK", label: "Démontage de la bulle · quick", color: "#9A7D0A", icon: "🎈", group: "Terrains", who: false, courts: [3, 4] },
   { key: "TERRE_BATTUE", label: "Réfection de la terre battue", color: "#C0392B", icon: "🧱", group: "Terrains", who: false },
   { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085", icon: "📝", group: "Vie du club", who: false },
   { key: "FETE", label: "Fête du club", color: "#E84393", icon: "🥳", group: "Vie du club", who: true },
@@ -19,9 +21,13 @@ export const KINDS: KindInfo[] = [
   { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
   { key: "FIN_COURS", label: "Fin des cours", color: "#7F8C8D", icon: "🏁", group: "Vie du club", who: false },
 ];
-// Ancien type « Bulle » (encore lisible, plus proposé)
-const LEGACY: KindInfo = { key: "BULLE", label: "Bulle", color: "#F1C40F", icon: "🎈", group: "Terrains", who: false };
-export const kindOf = (k: string) => KINDS.find((x) => x.key === k) ?? (k === "BULLE" ? LEGACY : KINDS[0]);
+// Anciens types « Bulle », « Montage / Démontage de la bulle » (encore lisibles, plus proposés)
+const LEGACY: KindInfo[] = [
+  { key: "BULLE", label: "Bulle", color: "#F1C40F", icon: "🎈", group: "Terrains", who: false },
+  { key: "BULLE_MONTAGE", label: "Montage de la bulle", color: "#D4AC0D", icon: "🎈", group: "Terrains", who: false },
+  { key: "BULLE_DEMONTAGE", label: "Démontage de la bulle", color: "#B7950B", icon: "🎈", group: "Terrains", who: false },
+];
+export const kindOf = (k: string) => KINDS.find((x) => x.key === k) ?? LEGACY.find((x) => x.key === k) ?? KINDS[0];
 export const BANDS: { key: string; label: string; hours: string }[] = [
   { key: "MATIN", label: "Matin", hours: "8 h – 13 h" },
   { key: "APRES_MIDI", label: "Après-midi", hours: "13 h – 18 h" },
@@ -59,7 +65,7 @@ export const teamLabel = (t: string) => { const c = teamCat(t); return c ? `${c.
 const LIGHT = new Set(["#F5A623", "#A3D977", "#FAC775", "#C9E8A5", "#85C1E9", "#F5B7D5", "#F1C40F"]);
 export const textOn = (bg: string) => (LIGHT.has(bg) ? "#10203a" : "#ffffff");
 
-export interface ClubEvent { id: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string }
+export interface ClubEvent { id: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean }
 export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string }
 export interface Clash { id: string; title: string; kind: string; why: string }
 
@@ -82,7 +88,7 @@ export function clashesWith(ev: Draft, others: ClubEvent[]): Clash[] {
     if (!overlap(ev, o)) continue;
     const shared = ev.courts.filter((c) => o.courts.includes(c));
     const label = titleOf(o);
-    if (["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(ev.kind) || ["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(o.kind)) continue;
+    if (ev.kind.startsWith("BULLE_") || o.kind.startsWith("BULLE_")) continue;
     if (ev.kind === "BULLE" && o.kind === "BULLE" && shared.length) { out.push({ id: o.id, title: label, kind: o.kind, why: `une autre bulle est déjà prévue sur le court ${shared[0]}` }); continue; }
     const refec = (ev.kind === "TERRE_BATTUE" && o.kind === "BULLE") || (ev.kind === "BULLE" && o.kind === "TERRE_BATTUE");
     if (refec && shared.length) { out.push({ id: o.id, title: label, kind: o.kind, why: "la bulle est montée pendant la réfection de la terre battue" }); continue; }

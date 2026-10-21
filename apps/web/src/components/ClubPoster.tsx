@@ -89,34 +89,15 @@ function Footer({ events }: { events: ClubEvent[] }) {
   );
 }
 
-function MiniMonth({ m, events }: { m: string; events: ClubEvent[] }) {
-  const days = monthDays(m);
-  return (
-    <div style={{ background: "#fff", borderRadius: 18, padding: "12px 14px", border: "2px solid #eadfcb" }}>
-      <div style={{ fontWeight: 900, color: "#1b1863", fontSize: 14, marginBottom: 6 }}>LE MOIS D'UN COUP D'ŒIL</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center", fontSize: 11 }}>
-        {SHORT.map((d) => <b key={d} style={{ color: "#8a8170", fontSize: 9 }}>{d[0]}</b>)}
-        {days.map((d) => {
-          const evs = events.filter((e) => e.startDate <= d && e.endDate >= d);
-          const out = d.slice(0, 7) !== m;
-          return (
-            <div key={d} style={{ opacity: out ? 0.25 : 1, height: 32, borderRadius: 7, background: evs.length && !out ? "#f6efe3" : "transparent", paddingTop: 2 }}>
-              <div style={{ fontWeight: 800, color: "#1b1863" }}>{dayNum(d)}</div>
-              <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 1 }}>{evs.slice(0, 3).map((e) => <i key={e.id} style={{ width: 6, height: 6, borderRadius: 3, background: colorOf(e), display: "inline-block" }} />)}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function Empty() {
   return <div style={{ margin: "40px 52px", textAlign: "center", fontSize: 24, color: "#6b6557", fontWeight: 700 }}>🎾 Le programme de ce mois arrive bientôt…</div>;
 }
 
 function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
-  const top = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  // Le coach choisit avec la case « ⭐ à mettre en avant » (3 au maximum, dans l'ordre des dates) ; sans aucune étoile, choix automatique d'après le type
+  const starred = list.filter((e) => e.featured).slice(0, 3);
+  const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const top = list.some((e) => e.featured) ? starred : auto;
   if (top.length === 0) return null;
   return (
     <div style={{ padding: "0 40px" }}>
@@ -125,12 +106,13 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); return (
           <div key={e.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.14)", border: "2px solid #eadfcb" }}>
             <div style={{ background: c, color: textOn(c), padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` → ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {MONTHS[+e.endDate.slice(5, 7) - 1].slice(0, 4).toUpperCase()}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` → ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][+e.endDate.slice(5, 7) - 1]}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
             </div>
             <div style={{ padding: "8px 14px 14px" }}>
               <div className="font-display" style={{ fontSize: 56, fontWeight: 900, lineHeight: 1, color: "#1b1863" }}>{dayNum(e.startDate)}{e.startDate !== e.endDate && e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? <small style={{ fontSize: 28 }}>–{dayNum(e.endDate)}</small> : null}</div>
               <div style={{ fontWeight: 900, fontSize: 18, color: "#1b1863", marginTop: 4, lineHeight: 1.15 }}>{label(e)}</div>
               <div style={{ fontSize: 12.5, color: "#6b6557", marginTop: 4, lineHeight: 1.3 }}>{fullRange(e)}{detail(e, showWho) ? ` · ${detail(e, showWho)}` : ""}</div>
+              {e.note && <div style={{ fontSize: 12, color: "#3b3a52", marginTop: 4, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</div>}
             </div>
           </div>
         ); })}
@@ -139,11 +121,11 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   );
 }
 
-function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho: boolean }) {
+function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
-  const mode = n <= 6 ? "normal" : n <= 11 ? "dense" : "compact";
-  const roomy = mode === "compact" && n <= 18;
-  const side = mode !== "compact";
+  const mode = n <= 6 ? "normal" : n <= (withCards ? 8 : 11) ? "dense" : "compact";
+  const roomy = mode === "compact" && n <= (withCards ? 14 : 18);
+  const side = false; // plus de petit calendrier « le mois d'un coup d'œil » : la liste prend toute la largeur
   const rows = list.map((e) => { const c = colorOf(e); const k = kindOf(e.kind); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
     <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
       <div style={{ minWidth: mode === "compact" ? 52 : 62, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
@@ -153,6 +135,7 @@ function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
         <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}>{fullRange(e)}{detail(e, showWho) ? ` · ${detail(e, showWho)}` : ""}</div>
+        {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3b3a52", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</div>}
       </div>
     </div>
   ); });
@@ -160,14 +143,11 @@ function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho
     <div style={{ padding: "0 40px", display: "grid", gridTemplateColumns: side ? "1fr 250px" : "1fr", gap: 22, marginTop: 18 }}>
       <div>
         <div style={{ fontWeight: 900, color: "#a63e1a", letterSpacing: "0.12em", fontSize: 15, marginBottom: 8 }}>📅 TOUT LE PROGRAMME</div>
-        <div style={{ display: "grid", gridTemplateColumns: side ? "1fr" : "1fr 1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
+        <div style={{ display: "grid", gridTemplateColumns: mode === "compact" ? "1fr 1fr" : "1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
       </div>
-      {side && (
-        <div style={{ display: "grid", gap: 14, alignContent: "start", marginTop: 26 }}>
-          <MiniMonth m={m} events={list} />
-          <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 14px", fontSize: 13, color: "#4a4333", lineHeight: 1.4 }}>
-            <b style={{ color: "#1b1863" }}>Envie de jouer ?</b><br />Renseignements et réservations auprès du club.
-          </div>
+      {n <= 9 && (
+        <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
+          <b style={{ color: "#1b1863" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
         </div>
       )}
     </div>
@@ -205,7 +185,7 @@ export function ClubPoster({ events, month, model, showWho }: { events: ClubEven
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <Header m={month} />
       <div style={{ marginTop: 6 }}>
-        {list.length === 0 ? <Empty /> : model === "liste" ? (<>{list.length <= 8 && <Featured list={list} showWho={showWho} />}<ListModel m={month} list={list} showWho={showWho} /></>) : <CalendarModel m={month} list={list} showWho={showWho} />}
+        {list.length === 0 ? <Empty /> : model === "liste" ? (<>{(list.length <= 8 || list.some((e) => e.featured)) && <Featured list={list} showWho={showWho} />}<ListModel m={month} list={list} showWho={showWho} withCards={list.length <= 8 || list.some((e) => e.featured)} /></>) : <CalendarModel m={month} list={list} showWho={showWho} />}
       </div>
       <Footer events={list} />
     </div>
