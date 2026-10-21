@@ -89,28 +89,6 @@ function Footer({ events }: { events: ClubEvent[] }) {
   );
 }
 
-function MiniMonth({ m, events }: { m: string; events: ClubEvent[] }) {
-  const days = monthDays(m);
-  return (
-    <div style={{ background: "#fff", borderRadius: 18, padding: "12px 14px", border: "2px solid #eadfcb" }}>
-      <div style={{ fontWeight: 900, color: "#1b1863", fontSize: 14, marginBottom: 6 }}>LE MOIS D'UN COUP D'ŒIL</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center", fontSize: 11 }}>
-        {SHORT.map((d) => <b key={d} style={{ color: "#8a8170", fontSize: 9 }}>{d[0]}</b>)}
-        {days.map((d) => {
-          const evs = events.filter((e) => e.startDate <= d && e.endDate >= d);
-          const out = d.slice(0, 7) !== m;
-          return (
-            <div key={d} style={{ opacity: out ? 0.25 : 1, height: 32, borderRadius: 7, background: evs.length && !out ? "#f6efe3" : "transparent", paddingTop: 2 }}>
-              <div style={{ fontWeight: 800, color: "#1b1863" }}>{dayNum(d)}</div>
-              <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 1 }}>{evs.slice(0, 3).map((e) => <i key={e.id} style={{ width: 6, height: 6, borderRadius: 3, background: colorOf(e), display: "inline-block" }} />)}</div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function Empty() {
   return <div style={{ margin: "40px 52px", textAlign: "center", fontSize: 24, color: "#6b6557", fontWeight: 700 }}>🎾 Le programme de ce mois arrive bientôt…</div>;
 }
@@ -144,7 +122,7 @@ function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho
   const n = list.length;
   const mode = n <= 6 ? "normal" : n <= 11 ? "dense" : "compact";
   const roomy = mode === "compact" && n <= 18;
-  const side = mode !== "compact";
+  const side = false; // plus de petit calendrier « le mois d'un coup d'œil » : la liste prend toute la largeur
   const rows = list.map((e) => { const c = colorOf(e); const k = kindOf(e.kind); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
     <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
       <div style={{ minWidth: mode === "compact" ? 52 : 62, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
@@ -162,14 +140,11 @@ function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho
     <div style={{ padding: "0 40px", display: "grid", gridTemplateColumns: side ? "1fr 250px" : "1fr", gap: 22, marginTop: 18 }}>
       <div>
         <div style={{ fontWeight: 900, color: "#a63e1a", letterSpacing: "0.12em", fontSize: 15, marginBottom: 8 }}>📅 TOUT LE PROGRAMME</div>
-        <div style={{ display: "grid", gridTemplateColumns: side ? "1fr" : "1fr 1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
+        <div style={{ display: "grid", gridTemplateColumns: mode === "compact" ? "1fr 1fr" : "1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
       </div>
-      {side && (
-        <div style={{ display: "grid", gap: 14, alignContent: "start", marginTop: 26 }}>
-          <MiniMonth m={m} events={list} />
-          <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 14px", fontSize: 13, color: "#4a4333", lineHeight: 1.4 }}>
-            <b style={{ color: "#1b1863" }}>Envie de jouer ?</b><br />Renseignements et réservations auprès du club.
-          </div>
+      {n <= 9 && (
+        <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
+          <b style={{ color: "#1b1863" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
         </div>
       )}
     </div>
