@@ -77,10 +77,11 @@ function Header({ m }: { m: string }) {
 function Footer({ events }: { events: ClubEvent[] }) {
   const kinds = [...new Set(events.map((e) => e.kind))].map(kindOf);
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 86, background: "#1b1863", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, background: "#1b1863", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
       <div>
         <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}>🎾 Tennis Club Houdan</div>
         <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>4 courts couverts · terre battue et dur · septembre → mai</div>
+        <div style={{ fontSize: 14, fontWeight: 800, marginTop: 3, color: "#ffe45c" }}>✉️ tennisclubhoudan@gmail.com</div>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", justifyContent: "flex-end", maxWidth: 360, fontSize: 12 }}>
         {kinds.map((k) => <span key={k.key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><i style={{ width: 11, height: 11, borderRadius: 3, background: k.color, display: "inline-block" }} />{k.label}</span>)}
@@ -159,7 +160,7 @@ function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; sho
   const rows = days.length / 7;
   const noted = list.filter((e) => e.note).slice(0, 5);
   const notesH = noted.length ? 22 + noted.length * 40 : 0;
-  const cellH = Math.floor((761 - 30 - 14 - rows * 5 - 10 - notesH) / rows);
+  const cellH = Math.floor((750 - 30 - 14 - rows * 5 - 10 - notesH) / rows);
   return (
     <div style={{ padding: "0 36px", marginTop: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
