@@ -344,3 +344,5 @@
 - Planning du club, CLIQUER SUR UN ÉVÉNEMENT (21/10/2026) : dans la vue Mois, chaque étiquette d'événement est un bouton (`EventActions` dans `ClubPlan.tsx`) qui ouvre une petite fenêtre : dates, personnes, description, puis « ☆ Mettre en avant », « ⚙️ Modifier » et « 🗑️ Annuler cet événement » (confirmation avant). Toucher le numéro du jour ou le vide de la case ouvre toujours le menu du jour. Aucun changement du serveur.
 
 - Planning du club, menu d'un jour sans doublon (21/10/2026) : « Modifier / Supprimer / ☆ Mettre en avant » ne sont qu'à UN endroit (l'encadré « 📌 Déjà prévu à ces dates ») ; les boutons « ⚙️ Préciser » et 🗑️ à côté des cases cochées sont retirés. Aucun changement du serveur.
+
+- Planning du club, VUES (21/10/2026, décidé avec le coach) : plus de vue « 🎾 Par court » (supprimée, `CourtView` retirée) ; il reste « 📆 Année complète » (titre « Année 2026 / 2027 », flèches pour changer d'année, bouton « Année en cours ») et « 🗓️ Mois » (bouton « Mois en cours »). Remplace les lignes plus haut sur « Par court ». Aucun changement du serveur.

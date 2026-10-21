@@ -11,8 +11,8 @@ import {
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
-type View = "annee" | "mois" | "court";
-const VIEWS: [View, string][] = [["annee", "📆 Année"], ["mois", "🗓️ Mois"], ["court", "🎾 Par court"]];
+type View = "annee" | "mois";
+const VIEWS: [View, string][] = [["annee", "📆 Année complète"], ["mois", "🗓️ Mois"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 const covers = (e: ClubEvent, d: string) => e.startDate <= d && d <= e.endDate;
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
@@ -96,7 +96,6 @@ export function ClubPlan() {
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
           {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onStar={toggleStar} onEvent={setActionEv} />}
-          {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -130,7 +129,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
   };
   return (
     <div className="grid gap-4">
-      <Nav label={`Saison ${season} – ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Cette saison" />
+      <Nav label={`Année ${season} / ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Année en cours" />
       {clashes.length > 0 && (
         <div role="alert" className="rounded-2xl border-2 border-[#C0392B] bg-[#fdecea] p-4">
           <b className="text-[#922b21]">⚠️ {clashes.length} chose{clashes.length > 1 ? "s" : ""} à régler</b>
@@ -201,7 +200,7 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Ce mois" />
+      <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Mois en cours" />
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer sur plusieurs jours de suite"}</button>
         {multi && <b className="text-clay">{first ? `Premier jour : ${fmtDay(first)}. Touche maintenant le DERNIER jour.` : "Touche le PREMIER jour, puis le dernier."}</b>}
@@ -250,39 +249,6 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }:
         })()}
       </section>
       <Legend />
-    </div>
-  );
-}
-
-// ───────────── Par court ─────────────
-function CourtView({ season, setSeason, events, onOpen }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; onOpen: (e: ClubEvent) => void }) {
-  const start = seasonStart(season); const end = `${season + 1}-08-31`;
-  const inSeason = events.filter((e) => e.endDate >= start && e.startDate <= end);
-  return (
-    <div className="grid gap-4">
-      <Nav label={`Saison ${season} – ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Cette saison" />
-      <div className="grid gap-4 md:grid-cols-2">
-        {COURTS.map((c) => {
-          const list = inSeason.filter((e) => e.courts.includes(c.n));
-          return (
-            <section key={c.n} className="rounded-2xl border-2 border-[#5b6680] bg-white p-4">
-              <h2 className="m-0 text-lg text-ink">{c.label} <small className="font-normal text-muted">· {c.surface}</small></h2>
-              {list.length === 0 ? <p className="mb-0 text-muted">Rien de prévu.</p> : (
-                <ul className="m-0 mt-2 grid list-none gap-1.5 p-0">
-                  {list.map((e) => (
-                    <li key={e.id}>
-                      <button type="button" onClick={() => onOpen(e)} className="flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left hover:border-ink">
-                        <i className="size-3 shrink-0 rounded" style={{ background: colorOf(e) }} />
-                        <span className="min-w-0 flex-1"><b className="block truncate text-sm text-ink">{titleOf(e)}</b><span className="text-xs text-muted">{fmtRange(e.startDate, e.endDate)}{e.bands.length ? ` · ${e.bands.map((b) => BANDS.find((x) => x.key === b)?.label.toLowerCase()).join(" + ")}` : ""}{e.who.length ? ` · 👤 ${e.who.join(", ")}` : ""}</span>{e.note ? <span className="block text-xs text-ink [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-      </div>
     </div>
   );
 }
