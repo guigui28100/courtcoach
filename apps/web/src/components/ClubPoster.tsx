@@ -125,12 +125,13 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); return (
           <div key={e.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.14)", border: "2px solid #eadfcb" }}>
             <div style={{ background: c, color: textOn(c), padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` → ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {MONTHS[+e.endDate.slice(5, 7) - 1].slice(0, 4).toUpperCase()}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
+              <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]} {dayNum(e.startDate)}{e.startDate !== e.endDate ? ` → ${SHORT[weekdayOf(e.endDate)]} ${dayNum(e.endDate)}` : ""} {["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][+e.endDate.slice(5, 7) - 1]}.</span><span style={{ fontSize: 30 }}>{k.icon}</span>
             </div>
             <div style={{ padding: "8px 14px 14px" }}>
               <div className="font-display" style={{ fontSize: 56, fontWeight: 900, lineHeight: 1, color: "#1b1863" }}>{dayNum(e.startDate)}{e.startDate !== e.endDate && e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? <small style={{ fontSize: 28 }}>–{dayNum(e.endDate)}</small> : null}</div>
               <div style={{ fontWeight: 900, fontSize: 18, color: "#1b1863", marginTop: 4, lineHeight: 1.15 }}>{label(e)}</div>
               <div style={{ fontSize: 12.5, color: "#6b6557", marginTop: 4, lineHeight: 1.3 }}>{fullRange(e)}{detail(e, showWho) ? ` · ${detail(e, showWho)}` : ""}</div>
+              {e.note && <div style={{ fontSize: 12, color: "#3b3a52", marginTop: 4, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</div>}
             </div>
           </div>
         ); })}
@@ -153,6 +154,7 @@ function ListModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
         <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}>{fullRange(e)}{detail(e, showWho) ? ` · ${detail(e, showWho)}` : ""}</div>
+        {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3b3a52", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</div>}
       </div>
     </div>
   ); });

@@ -16,7 +16,7 @@ export class ClubEventDto {
   @IsOptional() @IsArray() @ArrayMaxSize(4) @IsInt({ each: true }) @Min(1, { each: true }) @Max(4, { each: true }) courts?: number[];
   @IsOptional() @IsArray() @ArrayMaxSize(24) @Matches(/^[a-z0-9-]{3,24}#\d$/, { each: true, message: "Équipe invalide." }) teams?: string[];
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(60, { each: true }) who?: string[];
-  @IsOptional() @Transform(trim) @IsString() @MaxLength(300) note?: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(600) note?: string; // description libre (affichée sur l'affiche)
   @IsOptional() @IsBoolean() allowConflict?: boolean; // le coach confirme qu'il veut quand même placer l'événement
 }
 

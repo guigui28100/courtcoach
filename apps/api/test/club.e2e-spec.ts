@@ -92,6 +92,9 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "   ", role: "BUREAU" }] }).expect(400);
     const e = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "INSCRIPTIONS", startDate: "2026-09-05", endDate: "2026-09-05", who: ["Anne Dupont", "Paul Martin"] }).expect(201)).body;
     expect(e.who).toEqual(["Anne Dupont", "Paul Martin"]);
+    const d = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "Tournoi interne, goûter offert." }).expect(201)).body;
+    expect(d.note).toBe("Tournoi interne, goûter offert."); // description libre
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "x".repeat(601) }).expect(400);
   });
 
   it("bulles : un décor qui ne gêne pas les événements ; la réfection de terre battue attend le démontage", async () => {

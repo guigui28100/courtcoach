@@ -421,7 +421,7 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
 const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
-interface Sel { on: boolean; who: string[]; teams: string[]; id?: string }
+interface Sel { on: boolean; who: string[]; teams: string[]; note: string; id?: string }
 function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(day);
@@ -431,7 +431,7 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === day); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, id: e.id } : { on: false, who: [], teams: [] }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === day); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", id: e.id } : { on: false, who: [], teams: [], note: "" }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -451,8 +451,8 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who });
-        else if (c.on && old && (c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: old.note || undefined, allowConflict: true });
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who, note: c.note.trim() || undefined });
+        else if (c.on && old && (c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -470,7 +470,7 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
         <section key={g} className="mb-3">
           <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
           {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [] }; const old = placed(k.key);
+            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "" }; const old = placed(k.key);
             return (
               <div key={k.key} className="mb-1.5">
                 <div className="flex items-center gap-2">
@@ -491,6 +491,13 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
+                )}
+                {c.on && (
+                  <label className="ml-8 mt-1.5 block text-sm font-bold text-ink">📝 Description (facultatif)
+                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                      placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
+                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                  </label>
                 )}
                 {c.on && k.key === "EQUIPES" && (
                   <details open className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
