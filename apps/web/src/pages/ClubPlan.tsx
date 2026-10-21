@@ -469,7 +469,7 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
           <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
+          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
         </div>
         <p className="mb-0 mt-2 text-sm font-bold text-ink">{end === start ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${diffDays(start, end) + 1} jours)`}</p>
         <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
