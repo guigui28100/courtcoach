@@ -189,7 +189,6 @@ function YearView({ season, setSeason, events, clashes, onOpen, onDay }: { seaso
         </div>
       </div>
       <Legend />
-      <button type="button" className="btn-outline justify-self-start" onClick={() => onDay(todayParis())}>Voir aujourd'hui, jour par jour →</button>
     </div>
   );
 }
