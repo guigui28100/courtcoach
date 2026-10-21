@@ -530,7 +530,7 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
         <section key={g} className="mb-3">
           <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
           {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "", star: false }; const old = placed(k.key);
+            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "", star: false };
             return (
               <div key={k.key} className="mb-1.5">
                 <div className="flex items-center gap-2">
@@ -540,8 +540,6 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
                     <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
                     <span>{k.icon} {k.label}</span>
                   </button>
-                  {old && <button type="button" className="btn-outline" title="Terrains, moment, note…" onClick={() => onDetail(old)}>⚙️ Préciser</button>}
-                  {old && <button type="button" className="btn-outline" aria-label={`Supprimer ${k.label}`} onClick={() => onDelete(old)}>🗑️</button>}
                 </div>
                 {c.on && (
                   <details open={c.who.length > 0} className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
