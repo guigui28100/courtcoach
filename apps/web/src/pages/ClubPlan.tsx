@@ -484,33 +484,36 @@ const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
 interface Sel { on: boolean; who: string[]; teams: string[]; id?: string }
 function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetail, onDelete }: { onDelete: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
+  const [start, setStart] = useState(day);
   const [end, setEnd] = useState(day);
-  const [many, setMany] = useState(false);
   const [pickEnd, setPickEnd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const exact = useMemo(() => events.filter((e) => e.startDate === day && e.endDate === end), [events, day, end]);
-  const build = useCallback(() => {
+  // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
+  const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = exact.find((x) => x.kind === k.key); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, id: e.id } : { on: false, who: [], teams: [] }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === day); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, id: e.id } : { on: false, who: [], teams: [] }; }
     return m;
-  }, [exact]);
-  const [sel, setSel] = useState<Record<string, Sel>>(build);
-  useEffect(() => { setSel(build()); }, [build]);
-  const others = events.filter((e) => e.startDate <= end && e.endDate >= day && !exact.includes(e));
+  });
+  const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
+  const shownIds = new Set(Object.values(sel).map((c) => c.id).filter(Boolean));
+  const others = events.filter((e) => e.startDate <= end && e.endDate >= start && !shownIds.has(e.id));
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
+  const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
+  // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
   const pickDate = (x: string) => {
-    if (!pickEnd) { setEnd(x < day ? day : x); setPickEnd(true); } else { setEnd(x < day ? day : x); setPickEnd(false); }
+    if (!pickEnd) { setStart(x); setEnd(x); setPickEnd(true); }
+    else { if (x < start) { setEnd(start); setStart(x); } else setEnd(x); setPickEnd(false); }
   };
   const save = async () => {
     setBusy(true); setErr("");
     try {
       for (const k of KINDS) {
-        const c = sel[k.key]; const old = exact.find((x) => x.kind === k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: day, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who });
-        else if (c.on && old && (c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join())) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: old.startDate, endDate: old.endDate, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: old.note || undefined, allowConflict: true });
+        const c = sel[k.key]; const old = placed(k.key);
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who });
+        else if (c.on && old && (c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: old.note || undefined, allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -518,13 +521,17 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
   };
   const groups = [...new Set(KINDS.map((k) => k.group))];
   return (
-    <Modal title={`📅 ${end === day ? fmtDay(day) : fmtRange(day, end)}`} onClose={onClose}>
-      <p className="mt-0 text-sm text-muted">Coche ce qui se passe ce jour-là. Tu peux en cocher plusieurs.</p>
+    <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
+      <details className="mb-3 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer font-bold text-ink">📆 {end === start ? "Une seule journée" : "Plusieurs jours"} · toucher pour changer les dates (stage, tournoi de 2-3 jours…)</summary>
+        <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
+          <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier : ce que tu coches s'applique à toute la période."}</p></div>
+      </details>
+      <p className="mt-0 text-sm text-muted">Coche ce qui se passe. Tu peux en cocher plusieurs.</p>
       {groups.map((g) => (
         <section key={g} className="mb-3">
           <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
           {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [] }; const old = exact.find((x) => x.kind === k.key);
+            const c = sel[k.key] ?? { on: false, who: [], teams: [] }; const old = placed(k.key);
             return (
               <div key={k.key} className="mb-1.5">
                 <div className="flex items-center gap-2">
@@ -565,13 +572,8 @@ function DayMenu({ day, events, counts, crew, onPeople, onClose, onDone, onDetai
           <ul className="m-0 mt-1 grid list-none gap-1 p-0">{others.map((e) => <li key={e.id}><button type="button" className="font-bold text-ink underline" onClick={() => onDetail(e)}>{kindOf(e.kind).icon} {titleOf(e)}</button> <span className="text-muted">· {fmtRange(e.startDate, e.endDate)}</span> <button type="button" className="btn-outline" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️</button></li>)}</ul>
         </section>
       )}
-      <details className="mb-3" open={many} onToggle={(e) => setMany((e.target as HTMLDetailsElement).open)}>
-        <summary className="cursor-pointer font-bold text-ink">📆 Sur plusieurs jours ? (tournoi de 2 ou 3 jours, stage…)</summary>
-        <div className="mt-2"><MiniCalendar start={day} end={end} onPick={pickDate} />
-          <p className="mb-0 mt-1 text-xs text-muted">Le jour de départ reste {fmtDay(day)}. Touche le dernier jour : ce que tu coches s'applique à toute la période.</p></div>
-      </details>
       <Err msg={err || missing} />
-      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing} onClick={save}>✔ Enregistrer</button>
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
     </Modal>
   );
 }
