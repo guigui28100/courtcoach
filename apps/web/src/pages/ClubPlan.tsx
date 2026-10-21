@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { ClubPoster, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, Err, Page, PageHead } from "../components/ui";
@@ -30,6 +32,8 @@ export function ClubPlan() {
   const [day, setDay] = useState(today);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
+  const [menuDay, setMenuDay] = useState<string | null>(null);
+  const [posterOpen, setPosterOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -55,7 +59,8 @@ export function ClubPlan() {
         <BackLink fallback="/coach" className="text-sm font-bold text-ink">← Retour</BackLink>
         <PageHead eyebrow="Réservé au coach" title="Planning du club" icon="📅">
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-clay" onClick={() => openNew()}>＋ Ajouter</button>
+            <button type="button" className="btn-clay" onClick={() => setMenuDay(day)}>＋ Ajouter</button>
+            <button type="button" className="btn-outline" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
             <button type="button" className="btn-outline" onClick={() => setTeamsOpen(true)}>⚙️ Mes équipes</button>
           </div>
         </PageHead>
@@ -70,12 +75,14 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onDay={goDay} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={goDay} />}
-          {view === "jour" && <DayView day={day} setDay={setDay} events={events} onOpen={openEdit} onNew={openNew} />}
+          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuDay(d); }} />}
+          {view === "jour" && <DayView day={day} setDay={setDay} events={events} onOpen={openEdit} onNew={openNew} onMenu={() => setMenuDay(day)} />}
           {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
+      {menuDay && <DayMenu key={menuDay} day={menuDay} events={events} counts={counts} names={names} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} />}
+      {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
     </Page>
   );
@@ -214,7 +221,7 @@ function MonthView({ month, setMonth, events, onDay }: { month: string; setMonth
 }
 
 // ───────────── Jour : 4 courts × 3 moments ─────────────
-function DayView({ day, setDay, events, onOpen, onNew }: { day: string; setDay: (d: string) => void; events: ClubEvent[]; onOpen: (e: ClubEvent) => void; onNew: (p: Partial<Draft>) => void }) {
+function DayView({ day, setDay, events, onOpen, onNew, onMenu }: { day: string; setDay: (d: string) => void; events: ClubEvent[]; onOpen: (e: ClubEvent) => void; onNew: (p: Partial<Draft>) => void; onMenu: () => void }) {
   const evs = events.filter((e) => covers(e, day));
   const bulles = evs.filter((e) => e.kind === "BULLE");
   const cell = (court: number, band: string) => evs.filter((e) => e.kind !== "BULLE" && e.courts.includes(court) && (e.bands.length === 0 || e.bands.includes(band)));
@@ -245,7 +252,7 @@ function DayView({ day, setDay, events, onOpen, onNew }: { day: string; setDay: 
         </div>
       </div>
       <section className="rounded-2xl border-2 border-line bg-white p-4">
-        <h2 className="m-0 mb-2 text-lg text-ink">Ce jour-là</h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg text-ink">Ce jour-là</h2><button type="button" className="btn-clay" onClick={onMenu}>☑️ Choisir ce qui se passe</button></div>
         {evs.length === 0 ? <p className="m-0 text-muted">Rien de prévu. Touche un « ＋ » ci-dessus.</p> : (
           <ul className="m-0 grid list-none gap-2 p-0">
             {evs.map((e) => (
@@ -345,7 +352,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   const [sure, setSure] = useState(false);
   const set = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
   const kind = kindOf(d.kind);
-  const needsCourt = d.kind === "TOURNOI" || d.kind === "EQUIPES" || d.kind === "BULLE" || d.kind === "STAGE_ENFANTS" || d.kind === "STAGE_ADULTES" || d.kind === "TERRE_BATTUE";
+  const needsCourt = false; // les terrains sont facultatifs
   const clashes = useMemo(() => clashesWith(d, events), [d, events]);
   const busyCourt = (c: number) => clashesWith({ ...d, courts: [c] }, events).length > 0;
   const missing = d.kind === "EQUIPES" && d.teams.length === 0 ? "Choisis au moins une équipe." : needsCourt && d.courts.length === 0 ? "Choisis au moins un court." : "";
@@ -370,7 +377,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {KINDS.map((k) => (
             <button key={k.key} type="button" aria-pressed={d.kind === k.key} onClick={() => pickKind(k.key)} style={{ borderColor: d.kind === k.key ? k.color : undefined, background: d.kind === k.key ? k.color : undefined, color: d.kind === k.key ? textOn(k.color) : undefined }}
-              className="rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink hover:border-ink">{k.label}</button>
+              className="rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink hover:border-ink">{k.icon} {k.label}</button>
           ))}
         </div>
       </Step>
@@ -398,7 +405,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           {BANDS.map((b) => <Pill key={b.key} on={d.bands.includes(b.key)} onClick={() => set({ bands: toggle(d.bands, b.key) })}>{b.label} <small className="font-normal">{b.hours}</small></Pill>)}
         </div>
       </Step>
-      <Step n={d.kind === "EQUIPES" ? 5 : 4} title={!needsCourt ? "Sur quels courts ? (facultatif)" : "Sur quels courts ?"}>
+      <Step n={d.kind === "EQUIPES" ? 5 : 4} title="Sur quels courts ? (facultatif)">
         <div className="flex flex-wrap gap-2">
           {COURTS.map((c) => {
             const off = d.kind === "TERRE_BATTUE" && !CLAY_COURTS.includes(c.n);
@@ -453,6 +460,131 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
       ))}
       <Err msg={err} />
       <button type="button" className="btn-clay mt-2" disabled={busy} onClick={save}>Enregistrer</button>
+    </Modal>
+  );
+}
+
+// ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
+interface Sel { on: boolean; who: string[]; teams: string[]; id?: string }
+function DayMenu({ day, events, counts, names, onClose, onDone, onDetail }: { day: string; events: ClubEvent[]; counts: Record<string, number>; names: string[]; onClose: () => void; onDone: () => void; onDetail: (e: ClubEvent) => void }) {
+  const [end, setEnd] = useState(day);
+  const [many, setMany] = useState(false);
+  const [pickEnd, setPickEnd] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const exact = useMemo(() => events.filter((e) => e.startDate === day && e.endDate === end), [events, day, end]);
+  const build = useCallback(() => {
+    const m: Record<string, Sel> = {};
+    for (const k of KINDS) { const e = exact.find((x) => x.kind === k.key); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, id: e.id } : { on: false, who: [], teams: [] }; }
+    return m;
+  }, [exact]);
+  const [sel, setSel] = useState<Record<string, Sel>>(build);
+  useEffect(() => { setSel(build()); }, [build]);
+  const others = events.filter((e) => e.startDate <= end && e.endDate >= day && !exact.includes(e));
+  const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
+  const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
+  const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
+  const pickDate = (x: string) => {
+    if (!pickEnd) { setEnd(x < day ? day : x); setPickEnd(true); } else { setEnd(x < day ? day : x); setPickEnd(false); }
+  };
+  const save = async () => {
+    setBusy(true); setErr("");
+    try {
+      for (const k of KINDS) {
+        const c = sel[k.key]; const old = exact.find((x) => x.kind === k.key);
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: day, endDate: end, bands: [], courts: [], teams: c.teams, who: c.who });
+        else if (c.on && old && (c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join())) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: old.startDate, endDate: old.endDate, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: old.note || undefined, allowConflict: true });
+        else if (!c.on && old) await del(`/club/events/${old.id}`);
+      }
+      onDone();
+    } catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
+  };
+  const groups = [...new Set(KINDS.map((k) => k.group))];
+  return (
+    <Modal title={`📅 ${end === day ? fmtDay(day) : fmtRange(day, end)}`} onClose={onClose}>
+      <p className="mt-0 text-sm text-muted">Coche ce qui se passe ce jour-là. Tu peux en cocher plusieurs.</p>
+      {groups.map((g) => (
+        <section key={g} className="mb-3">
+          <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
+          {KINDS.filter((k) => k.group === g).map((k) => {
+            const c = sel[k.key] ?? { on: false, who: [], teams: [] }; const old = exact.find((x) => x.kind === k.key);
+            return (
+              <div key={k.key} className="mb-1.5">
+                <div className="flex items-center gap-2">
+                  <button type="button" role="checkbox" aria-checked={c.on} onClick={() => patch(k.key, { on: !c.on })}
+                    style={c.on ? { borderColor: k.color, background: `${k.color}1f` } : undefined}
+                    className="flex flex-1 items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2 text-left font-bold text-ink hover:border-ink">
+                    <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
+                    <span>{k.icon} {k.label}</span>
+                  </button>
+                  {old && <button type="button" className="btn-outline" title="Terrains, moment, note…" onClick={() => onDetail(old)}>⚙️ Préciser</button>}
+                </div>
+                {c.on && k.who && names.length > 0 && (
+                  <div className="ml-8 mt-1.5 flex flex-wrap items-center gap-1.5 text-sm"><b className="text-ink">Professeur(s) :</b>
+                    {names.map((n) => <Pill key={n} on={c.who.includes(n)} onClick={() => patch(k.key, { who: toggle(c.who, n) })}>{n}</Pill>)}</div>
+                )}
+                {c.on && k.key === "EQUIPES" && (
+                  <details open className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
+                    {cats.map((cat) => (
+                      <div key={cat.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-44 text-xs font-bold text-ink">{cat.label}</span>
+                        {Array.from({ length: counts[cat.key] ?? cat.def }, (_, i) => `${cat.key}#${i + 1}`).map((t, i) => <Pill key={t} on={c.teams.includes(t)} color={cat.color} onClick={() => patch(k.key, { teams: toggle(c.teams, t) })}>Éq. {i + 1}</Pill>)}
+                      </div>
+                    ))}
+                  </details>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      ))}
+      {others.length > 0 && (
+        <section className="mb-3 rounded-xl bg-sand p-3 text-sm"><b className="text-ink">Aussi à ces dates (autre période) :</b>
+          <ul className="m-0 mt-1 grid list-none gap-1 p-0">{others.map((e) => <li key={e.id}><button type="button" className="font-bold text-ink underline" onClick={() => onDetail(e)}>{kindOf(e.kind).icon} {titleOf(e)}</button> <span className="text-muted">· {fmtRange(e.startDate, e.endDate)}</span></li>)}</ul>
+        </section>
+      )}
+      <details className="mb-3" open={many} onToggle={(e) => setMany((e.target as HTMLDetailsElement).open)}>
+        <summary className="cursor-pointer font-bold text-ink">📆 Sur plusieurs jours ? (tournoi de 2 ou 3 jours, stage…)</summary>
+        <div className="mt-2"><MiniCalendar start={day} end={end} onPick={pickDate} />
+          <p className="mb-0 mt-1 text-xs text-muted">Le jour de départ reste {fmtDay(day)}. Touche le dernier jour : ce que tu coches s'applique à toute la période.</p></div>
+      </details>
+      <Err msg={err || missing} />
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing} onClick={save}>✔ Enregistrer</button>
+    </Modal>
+  );
+}
+
+// ───────────── Affiche du mois ─────────────
+function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; initialMonth: string; onClose: () => void }) {
+  const [month, setMonth] = useState(initialMonth);
+  const [model, setModel] = useState<PosterModel>("liste");
+  const [showWho, setShowWho] = useState(false);
+  const [scale, setScale] = useState(0.5);
+  useEffect(() => { const f = () => setScale(Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / POSTER_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const shift = (n: number) => setMonth(addDays(`${month}-01`, n < 0 ? -1 : 32).slice(0, 7));
+  const print = () => {
+    const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:0}";
+    document.head.appendChild(st); document.body.classList.add("printing-affiche");
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); window.print();
+  };
+  return (
+    <Modal title="🖨️ Affiche du mois" onClose={onClose}>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button type="button" className="btn-outline" aria-label="Mois précédent" onClick={() => shift(-1)}>‹</button>
+        <b className="min-w-[9rem] text-center text-ink">{MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)}</b>
+        <button type="button" className="btn-outline" aria-label="Mois suivant" onClick={() => shift(1)}>›</button>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Pill on={model === "liste"} onClick={() => setModel("liste")}>📋 Modèle liste</Pill>
+        <Pill on={model === "calendrier"} onClick={() => setModel("calendrier")}>🗓️ Modèle calendrier</Pill>
+        <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
+      </div>
+      <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
+        <div style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>
+      </div>
+      <button type="button" className="btn-clay mt-3" onClick={print}>🖨️ Imprimer ou enregistrer en PDF</button>
+      <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
+      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>, document.body)}
     </Modal>
   );
 }

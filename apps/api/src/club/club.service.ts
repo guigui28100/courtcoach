@@ -43,9 +43,7 @@ export class ClubService {
     for (const t of teams) { const [cat, n] = t.split("#"); if (!(cat in counts) || Number(n) < 1 || Number(n) > counts[cat]) throw new BadRequestException("Cette équipe n'existe pas dans « Mes équipes »."); }
     if (dto.kind === "EQUIPES" && teams.length === 0) throw new BadRequestException("Choisis au moins une équipe.");
     if (dto.kind !== "EQUIPES" && teams.length) throw new BadRequestException("Les équipes ne servent que pour un match par équipes.");
-    if (dto.kind === "TERRE_BATTUE" && (courts.length === 0 || courts.some((c) => !CLAY_COURTS.includes(c)))) throw new BadRequestException("La réfection concerne les courts en terre battue (1 et 2).");
-    if (dto.kind === "BULLE" && courts.length === 0) throw new BadRequestException("Choisis les courts couverts par la bulle.");
-    if (["TOURNOI", "EQUIPES", "STAGE_ENFANTS", "STAGE_ADULTES"].includes(dto.kind) && courts.length === 0) throw new BadRequestException("Choisis au moins un court.");
+    if (dto.kind === "TERRE_BATTUE" && courts.some((c) => !CLAY_COURTS.includes(c))) throw new BadRequestException("La réfection concerne les courts en terre battue (1 et 2).");
     return { kind: dto.kind, startDate: dto.startDate, endDate: dto.endDate, bands: uniq(dto.bands), courts, teams, title: (dto.title ?? "").trim() };
   }
 

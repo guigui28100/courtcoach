@@ -1,21 +1,26 @@
 // Planning du club : types d'événements, courts, moments, catégories d'équipes et conflits (copie de apps/api/src/club/club.constants.ts)
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
-export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "DEBUT_COURS" | "FIN_COURS";
-export const KINDS: { key: Kind; label: string; color: string }[] = [
-  { key: "TOURNOI", label: "Tournoi", color: "#D35400" },
-  { key: "ANIMATION", label: "Animation", color: "#8E44AD" },
-  { key: "EQUIPES", label: "Match par équipes", color: "#2E86C1" },
-  { key: "BULLE", label: "Bulle : montage / démontage", color: "#F1C40F" },
-  { key: "TERRE_BATTUE", label: "Terre battue : réfection", color: "#C0392B" },
-  { key: "STAGE_ENFANTS", label: "Stage enfants", color: "#27AE60" },
-  { key: "STAGE_ADULTES", label: "Stage adultes", color: "#A04000" },
-  { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085" },
-  { key: "FETE", label: "Fête du club", color: "#E84393" },
-  { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50" },
-  { key: "FIN_COURS", label: "Fin des cours", color: "#7F8C8D" },
+export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "DEBUT_COURS" | "FIN_COURS";
+export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean }
+// Les choix proposés dans le menu d'une case du jour (rangés par famille)
+export const KINDS: KindInfo[] = [
+  { key: "TOURNOI", label: "Tournoi", color: "#D35400", icon: "🏆", group: "Compétition", who: true },
+  { key: "EQUIPES", label: "Match par équipes", color: "#2E86C1", icon: "🎾", group: "Compétition", who: false },
+  { key: "ANIMATION", label: "Animation", color: "#8E44AD", icon: "🎉", group: "Animations et stages", who: true },
+  { key: "STAGE_ENFANTS", label: "Stage enfants", color: "#27AE60", icon: "🧒", group: "Animations et stages", who: true },
+  { key: "STAGE_ADULTES", label: "Stage adultes", color: "#A04000", icon: "🧑", group: "Animations et stages", who: true },
+  { key: "BULLE_MONTAGE", label: "Montage de la bulle", color: "#D4AC0D", icon: "🎈", group: "Terrains", who: false },
+  { key: "BULLE_DEMONTAGE", label: "Démontage de la bulle", color: "#B7950B", icon: "🎈", group: "Terrains", who: false },
+  { key: "TERRE_BATTUE", label: "Réfection de la terre battue", color: "#C0392B", icon: "🧱", group: "Terrains", who: false },
+  { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085", icon: "📝", group: "Vie du club", who: false },
+  { key: "FETE", label: "Fête du club", color: "#E84393", icon: "🥳", group: "Vie du club", who: true },
+  { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
+  { key: "FIN_COURS", label: "Fin des cours", color: "#7F8C8D", icon: "🏁", group: "Vie du club", who: false },
 ];
-export const kindOf = (k: string) => KINDS.find((x) => x.key === k) ?? KINDS[0];
+// Ancien type « Bulle » (encore lisible, plus proposé)
+const LEGACY: KindInfo = { key: "BULLE", label: "Bulle", color: "#F1C40F", icon: "🎈", group: "Terrains", who: false };
+export const kindOf = (k: string) => KINDS.find((x) => x.key === k) ?? (k === "BULLE" ? LEGACY : KINDS[0]);
 export const BANDS: { key: string; label: string; hours: string }[] = [
   { key: "MATIN", label: "Matin", hours: "8 h – 13 h" },
   { key: "APRES_MIDI", label: "Après-midi", hours: "13 h – 18 h" },
@@ -76,6 +81,7 @@ export function clashesWith(ev: Draft, others: ClubEvent[]): Clash[] {
     if (!overlap(ev, o)) continue;
     const shared = ev.courts.filter((c) => o.courts.includes(c));
     const label = titleOf(o);
+    if (["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(ev.kind) || ["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(o.kind)) continue;
     if (ev.kind === "BULLE" && o.kind === "BULLE" && shared.length) { out.push({ id: o.id, title: label, kind: o.kind, why: `une autre bulle est déjà prévue sur le court ${shared[0]}` }); continue; }
     const refec = (ev.kind === "TERRE_BATTUE" && o.kind === "BULLE") || (ev.kind === "BULLE" && o.kind === "TERRE_BATTUE");
     if (refec && shared.length) { out.push({ id: o.id, title: label, kind: o.kind, why: "la bulle est montée pendant la réfection de la terre battue" }); continue; }

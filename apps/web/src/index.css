@@ -512,3 +512,11 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 .home-open { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.6rem 1.2rem; font-weight: 800; background: #dcf247; color: #10203a; box-shadow: 0 4px 0 rgba(0,0,0,.2); white-space: nowrap; }
 .home-open:hover { background: #c9e02f; }
 @media (max-width: 767px) { .home-ball { width: 4.5rem; height: 4.5rem; right: 1rem; top: 1rem; opacity: .9; } }
+
+/* Affiche du mois du planning du club : cachée à l'écran, seule visible à l'impression */
+.affiche-print { display: none; }
+@media print {
+  body.printing-affiche #root { display: none !important; }
+  body.printing-affiche .affiche-print { display: block !important; }
+  body.printing-affiche { margin: 0; background: #fff; }
+}

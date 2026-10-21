@@ -1,5 +1,5 @@
 // Planning du club : types d'événements, moments de la journée, courts et catégories d'équipes (copie côté site : apps/web/src/clubPlan.ts)
-export const KINDS = ["TOURNOI", "ANIMATION", "EQUIPES", "BULLE", "TERRE_BATTUE", "STAGE_ENFANTS", "STAGE_ADULTES", "INSCRIPTIONS", "FETE", "DEBUT_COURS", "FIN_COURS"] as const;
+export const KINDS = ["TOURNOI", "ANIMATION", "EQUIPES", "BULLE", "BULLE_MONTAGE", "BULLE_DEMONTAGE", "TERRE_BATTUE", "STAGE_ENFANTS", "STAGE_ADULTES", "INSCRIPTIONS", "FETE", "DEBUT_COURS", "FIN_COURS"] as const;
 export type Kind = (typeof KINDS)[number];
 export const BANDS = ["MATIN", "APRES_MIDI", "SOIR"] as const;
 export const COURTS = [1, 2, 3, 4]; // 1 et 2 : terre battue couverte ; 3 et 4 : dur couvert
@@ -25,6 +25,8 @@ export function clashesWith(ev: PlanEvent, others: (PlanEvent & { id: string })[
   for (const o of others) {
     if (ev.id && o.id === ev.id) continue;
     if (!overlapDates(ev, o)) continue;
+    // Le montage et le démontage de la bulle sont de simples repères : ils ne gênent aucun autre événement
+    if (["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(ev.kind) || ["BULLE_MONTAGE", "BULLE_DEMONTAGE"].includes(o.kind)) continue;
     const sharedCourts = ev.courts.filter((c) => o.courts.includes(c));
     const label = o.title || o.kind;
     if (ev.kind === "BULLE" && o.kind === "BULLE" && sharedCourts.length) { out.push({ id: o.id, title: label, kind: o.kind, why: `une autre bulle est déjà prévue sur le court ${sharedCourts[0]}` }); continue; }
