@@ -435,8 +435,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
-  const shownIds = new Set(Object.values(sel).map((c) => c.id).filter(Boolean));
-  const others = events.filter((e) => e.startDate <= end && e.endDate >= start && !shownIds.has(e.id));
+  const already = events.filter((e) => e.startDate <= end && e.endDate >= start);
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
@@ -481,6 +480,19 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
             <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
         </details>
       </section>
+      {already.length > 0 && (
+        <section className="mb-3 rounded-2xl border-2 border-[#b8471f] bg-[#fff6f0] p-3">
+          <h3 className="m-0 mb-2 text-base text-ink">📌 Déjà prévu à ces dates ({already.length})</h3>
+          <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
+              <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
+              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></span>
+              <button type="button" className="btn-outline" onClick={() => onDetail(e)}>⚙️ Modifier</button>
+              <button type="button" className="btn-outline" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️ Supprimer</button>
+            </li>))}
+          </ul>
+        </section>
+      )}
       <p className="mt-0 text-sm text-muted">Coche ce qui se passe. Tu peux en cocher plusieurs.</p>
       {groups.map((g) => (
         <section key={g} className="mb-3">
@@ -535,11 +547,6 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
           })}
         </section>
       ))}
-      {others.length > 0 && (
-        <section className="mb-3 rounded-xl bg-sand p-3 text-sm"><b className="text-ink">Aussi à ces dates (autre période) :</b>
-          <ul className="m-0 mt-1 grid list-none gap-1 p-0">{others.map((e) => <li key={e.id}><button type="button" className="font-bold text-ink underline" onClick={() => onDetail(e)}>{kindOf(e.kind).icon} {titleOf(e)}</button> <span className="text-muted">· {fmtRange(e.startDate, e.endDate)}</span> <button type="button" className="btn-outline" aria-label={`Supprimer ${titleOf(e)}`} onClick={() => onDelete(e)}>🗑️</button></li>)}</ul>
-        </section>
-      )}
       <Err msg={err || missing} />
       <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
     </Modal>
