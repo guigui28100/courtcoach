@@ -1,7 +1,7 @@
 // Planning du club : types d'événements, courts, moments, catégories d'équipes et conflits (copie de apps/api/src/club/club.constants.ts)
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
-export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "DEBUT_COURS" | "FIN_COURS";
+export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "DEBUT_COURS" | "FIN_COURS";
 export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean }
 // Les choix proposés dans le menu d'une case du jour (rangés par famille)
 export const KINDS: KindInfo[] = [
@@ -15,6 +15,7 @@ export const KINDS: KindInfo[] = [
   { key: "TERRE_BATTUE", label: "Réfection de la terre battue", color: "#C0392B", icon: "🧱", group: "Terrains", who: false },
   { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085", icon: "📝", group: "Vie du club", who: false },
   { key: "FETE", label: "Fête du club", color: "#E84393", icon: "🥳", group: "Vie du club", who: true },
+  { key: "FETE_ECOLE", label: "Fête de l'école de tennis", color: "#00ACC1", icon: "🎊", group: "Vie du club", who: true },
   { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
   { key: "FIN_COURS", label: "Fin des cours", color: "#7F8C8D", icon: "🏁", group: "Vie du club", who: false },
 ];
