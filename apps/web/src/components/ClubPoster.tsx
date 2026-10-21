@@ -110,10 +110,10 @@ function Featured({ list, showWho, grow }: { list: ClubEvent[]; showWho: boolean
       <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#ffe45c", marginBottom: 4 }}>★ À NE PAS MANQUER</div>
       {top.map((e, i) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
         <div key={e.id} style={{ display: "flex", gap: 22, alignItems: "center", padding: "14px 0", flex: grow ? 1 : undefined, borderTop: i ? "1px solid rgba(255,255,255,.22)" : "none" }}>
-          <div style={{ width: 226, flex: "0 0 226px" }}>
-            <div className="font-display" style={{ fontSize: 54, fontWeight: 900, lineHeight: 0.95, color: "#ffe45c", whiteSpace: "nowrap", letterSpacing: "-0.02em" }}>{dayNum(e.startDate)}{multi ? <span style={{ fontSize: 28, color: "#fff" }}> – </span> : null}{multi ? dayNum(e.endDate) : null}</div>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 8, whiteSpace: "nowrap" }}>{multi ? `Du ${lc(DAYS[weekdayOf(e.startDate)])} au ${lc(DAYS[weekdayOf(e.endDate)])}` : DAYS[weekdayOf(e.startDate)]}</div>
-            <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>{same ? MOIS[+e.startDate.slice(5, 7) - 1] : `${MOIS[+e.startDate.slice(5, 7) - 1]} → ${MOIS[+e.endDate.slice(5, 7) - 1]}`}</div>
+          <div style={{ width: 272, flex: "0 0 272px" }}>
+            <div className="font-display" style={{ fontSize: 54, fontWeight: 900, lineHeight: 0.95, color: "#ffe45c", whiteSpace: "nowrap", letterSpacing: "-0.02em" }}>{dayNum(e.startDate)}{multi ? <span style={{ fontSize: 28, color: "#fff" }}> – </span> : null}{multi ? dayNum(e.endDate) : null}<span style={{ fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: 0, marginLeft: 10 }}>{same ? MOIS[+e.startDate.slice(5, 7) - 1] : ""}</span></div>
+            {!same ? <div style={{ fontSize: 17, fontWeight: 800, marginTop: 6 }}>{MOIS[+e.startDate.slice(5, 7) - 1]} → {MOIS[+e.endDate.slice(5, 7) - 1]}</div> : null}
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 9, whiteSpace: "nowrap", opacity: 0.95 }}>{multi ? `Du ${lc(DAYS[weekdayOf(e.startDate)])} au ${lc(DAYS[weekdayOf(e.endDate)])}` : DAYS[weekdayOf(e.startDate)]}</div>
           </div>
           <div style={{ width: 4, alignSelf: "stretch", background: c, borderRadius: 2, flex: "0 0 4px" }} />
           <div style={{ flex: 1, minWidth: 0 }}>
