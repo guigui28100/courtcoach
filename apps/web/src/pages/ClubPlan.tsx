@@ -65,6 +65,7 @@ export function ClubPlan() {
     try { await del(`/club/events/${e.id}`); await load(); } catch (x: any) { setErr(x.message || "Impossible de supprimer."); }
   };
 
+  const [actionEv, setActionEv] = useState<ClubEvent | null>(null);
   const toggleStar = async (e: ClubEvent) => {
     setErr("");
     if (!e.featured && events.filter((x) => x.featured && x.id !== e.id && x.startDate.slice(0, 7) === e.startDate.slice(0, 7)).length >= 3) { setErr("Il y a déjà 3 événements à mettre en avant ce mois-ci : retire une étoile avant d'en mettre une autre."); return; }
@@ -94,12 +95,13 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onStar={toggleStar} />}
+          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onStar={toggleStar} onEvent={setActionEv} />}
           {view === "court" && <CourtView season={season} setSeason={setSeason} events={events} onOpen={openEdit} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
       {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onDetail={(e) => { setMenuDay(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setMenuDay(null); }} onStar={async (e) => { await toggleStar(e); setMenuDay(null); }} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -182,7 +184,7 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, setMonth, events, onDay, onRange, onStar }: { onStar: (e: ClubEvent) => void; month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+function MonthView({ month, setMonth, events, onDay, onRange, onStar, onEvent }: { onEvent: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
   const [multi, setMulti] = useState(false);
   const [first, setFirst] = useState<string | null>(null);
   const click = (d: string) => {
@@ -213,14 +215,14 @@ function MonthView({ month, setMonth, events, onDay, onRange, onStar }: { onStar
           const weekend = weekdayOf(d) >= 5;
           const bg = d === first ? "border-4 border-clay bg-[#ffe0cc]" : d === today ? "border-4 border-clay bg-[#fff1c2]" : out ? "border-2 border-[#b6bdcc] bg-[#e4e8ef] opacity-70" : isVacation(d) ? "border-2 border-[#5f7fb0] bg-[#dbe7f8]" : weekend ? "border-2 border-[#5b6680] bg-[#eef1f7]" : "border-2 border-[#5b6680] bg-white";
           return (
-            <button key={d} type="button" onClick={() => click(d)} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`}
-              className={`min-h-[104px] rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
-              <span className={`mb-1 block text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</span>
+            <div key={d} onClick={() => click(d)}
+              className={`min-h-[104px] cursor-pointer rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
+              <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => <span key={e.id} className="block rounded-md px-1.5 py-0.5 text-xs font-bold leading-tight [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.note ? " 📝" : ""}</span>)}
+                {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title="Toucher pour voir, modifier ou annuler" onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1.5 py-0.5 text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.note ? " 📝" : ""}</button>)}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -579,6 +581,23 @@ function DayMenu({ onStar, endInit, day, events, counts, crew, onPeople, onClose
       ))}
       <Err msg={err || missing} />
       <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
+    </Modal>
+  );
+}
+
+// ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
+function EventActions({ e, onClose, onStar, onEdit, onDelete }: { e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+  const k = kindOf(e.kind);
+  return (
+    <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
+      <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}</p>
+      {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
+      {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
+      <div className="mt-3 grid gap-2">
+        <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>
+        <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
+        <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
+      </div>
     </Modal>
   );
 }
