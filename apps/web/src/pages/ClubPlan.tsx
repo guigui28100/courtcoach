@@ -320,7 +320,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -377,8 +377,16 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       </Step>
       <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
-        <input aria-label="Note" maxLength={300} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder="Une note (facultatif)" value={d.note} onChange={(e) => set({ note: e.target.value })} />
       </details>
+      <label className="mb-4 block font-bold text-ink">📝 Description (facultative, 600 caractères)
+        <textarea aria-label="Description de l'événement" rows={3} maxLength={600} value={d.note} onChange={(e) => set({ note: e.target.value })}
+          placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
+          className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+      </label>
+      <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
+        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+        <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
+      </button>
       {clashes.length > 0 && (
         <div role="alert" className="mb-3 rounded-xl border-2 border-[#C0392B] bg-[#fdecea] p-3 text-sm text-[#922b21]">
           <b>⚠️ Ça se chevauche :</b>
