@@ -144,10 +144,13 @@ export function ClubPlan() {
   );
 }
 
+const MONTH_COLOR = ["#2E86C1", "#5B6FBF", "#27AE60", "#2FA84F", "#E0A800", "#D35400", "#C0392B", "#16A085", "#CA6F1E", "#A04000", "#7D5BA6", "#4A6FA5"]; // janvier → décembre
+
 // ───────────── Année : une frise par court, de septembre à août ─────────────
 function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void; onMonth: (m: string) => void }) {
   const months = Array.from({ length: 12 }, (_, i) => { const m = ((8 + i) % 12) + 1; return `${m >= 9 ? season : season + 1}-${String(m).padStart(2, "0")}`; });
   const today = todayParis();
+  const [openSet, setOpenSet] = useState<Set<string>>(new Set());
   const dayLabel = (e: ClubEvent, m: string) => {
     const a = e.startDate < `${m}-01` ? "←" : String(+e.startDate.slice(8, 10)); const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
     if (e.startDate === e.endDate) return a;
@@ -169,29 +172,44 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
           </ul>
         </div>
       )}
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="m-0 text-sm text-muted">💡 Touche un mois pour voir ce qu'il contient.</p>
+        <button type="button" className="rounded-xl border-2 border-line bg-white px-3 py-1.5 text-sm font-bold text-ink hover:border-ink" onClick={() => setOpenSet(openSet.size > 0 ? new Set() : new Set(months))}>{openSet.size > 0 ? "▲ Tout fermer" : "▼ Tout ouvrir"}</button>
+      </div>
+      <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {months.map((m) => {
           const list = monthEvents(events, m);
           const now = today.slice(0, 7) === m;
+          const mi = +m.slice(5, 7); const color = MONTH_COLOR[mi - 1];
+          const shown = list.filter((e) => !e.kind.startsWith("BULLE"));
           return (
-            <section key={m} className={`rounded-2xl bg-white p-3 shadow-sm ${now ? "border-4 border-clay" : "border-2 border-[#5b6680]"}`}>
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="m-0 text-lg font-black text-ink">{MONTHS[+m.slice(5, 7) - 1]} {m.slice(0, 4)}</h3>
-                <button type="button" className="btn-outline" aria-label={`Ouvrir ${MONTHS[+m.slice(5, 7) - 1]}`} onClick={() => onMonth(m)}>Ouvrir ›</button>
+            <details key={m} open={openSet.has(m)} onToggle={(ev) => { const o = (ev.currentTarget as HTMLDetailsElement).open; setOpenSet((x) => { if (x.has(m) === o) return x; const n = new Set(x); if (o) n.add(m); else n.delete(m); return n; }); }}
+              className={`group overflow-hidden rounded-2xl bg-white shadow-sm ${now ? "border-4 border-clay" : "border-2"}`} style={now ? undefined : { borderColor: color }}>
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}1a` }}>
+                <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-black uppercase leading-none text-white" style={{ background: color }}>{["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][mi - 1]}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-black leading-tight text-ink">{MONTHS[mi - 1]} {m.slice(0, 4)}{now ? <small className="ml-2 rounded-full bg-clay px-2 py-0.5 align-middle text-[11px] font-extrabold text-white">Ce mois-ci</small> : null}</span>
+                  <span className="block truncate text-xs font-semibold text-muted">{shown.length === 0 ? "Rien de prévu" : shown.map((e) => `${kindOf(e.kind).icon} ${titleOf(e)}`).join(" · ")}</span>
+                </span>
+                {shown.length > 0 && <span className="grid min-w-7 place-items-center rounded-full px-2 py-0.5 text-sm font-black text-white" style={{ background: color }}>{shown.length}</span>}
+                <span aria-hidden className="text-xl font-black text-ink transition-transform group-open:rotate-90">›</span>
+              </summary>
+              <div className="p-3">
+                {list.length === 0 ? <p className="m-0 rounded-lg bg-[#f4f1ea] px-3 py-2 text-sm text-muted">Rien de prévu ce mois-ci.</p> : (
+                  <ul className="m-0 grid list-none gap-1.5 p-0">
+                    {list.map((e) => (
+                      <li key={e.id}>
+                        <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
+                          <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
+                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button type="button" className="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 font-bold text-ink hover:bg-sand" aria-label={`Ouvrir ${MONTHS[mi - 1]} en vue mois par mois`} onClick={() => onMonth(m)}>🗓️ Voir {MONTHS[mi - 1].toLowerCase()} jour par jour ›</button>
               </div>
-              {list.length === 0 ? <p className="m-0 rounded-lg bg-[#f4f1ea] px-3 py-2 text-sm text-muted">Rien de prévu</p> : (
-                <ul className="m-0 grid list-none gap-1.5 p-0">
-                  {list.map((e) => (
-                    <li key={e.id}>
-                      <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
-                        <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                        <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            </details>
           );
         })}
       </div>
