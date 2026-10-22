@@ -8,15 +8,6 @@ export const CLUB_SITE = "https://tennisclubhoudan78.jimdofree.com/"; // site in
 export const SIGNUP_ONLINE = "Sur le site internet du club : tennisclubhoudan78.jimdofree.com";
 export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "STAGE_ADULTES";
 export const isAnimation = (kind: string) => kind === "ANIMATION";
-// Modèles d'animation (un clic remplit « pour qui », « à prévoir » et la participation ; les prix éventuels restent à écrire)
-const FREE: Formula[] = [{ label: "Participation", price: "Gratuit", priceMember: "", detail: "", group: "" }];
-const OPEN: Formula[] = [{ label: "Participation", price: "", priceMember: "", detail: "", group: "" }];
-export const ANIMATION_MODELS: { name: string; audience: string; bring: string; formulas: Formula[] }[] = [
-  { name: "🎾 Animation tennis", audience: "Ouvert à tous les adhérents", bring: "Tenue de sport, bouteille d'eau", formulas: FREE },
-  { name: "🏆 Tournoi amical", audience: "Tous niveaux, jeunes et adultes", bring: "Tenue de sport, raquette, bouteille d'eau", formulas: OPEN },
-  { name: "🎉 Soirée / fête du club", audience: "Adhérents, familles et amis", bring: "Bonne humeur !", formulas: OPEN },
-  { name: "👋 Portes ouvertes / découverte", audience: "Ouvert à tous, enfants et adultes, débutants bienvenus", bring: "Tenue de sport (raquettes prêtées)", formulas: FREE },
-];
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
 // Les formules habituelles des stages enfants du club (les prix restent à écrire)
 export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
@@ -95,22 +86,12 @@ const Step = ({ n, title, hint, color, children }: { n: number; title: string; h
 // Pour un STAGE : un vrai formulaire en 5 étapes (pour qui, quand et où, formules et prix, à prévoir, inscriptions).
 export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo; onChange: (v: PosterInfo) => void; kind?: Kind | string }) {
   const set = (p: Partial<PosterInfo>) => onChange({ ...value, ...p });
-  if (kind && (isStage(kind) || isAnimation(kind))) {
+  if (kind && isStage(kind)) {
     const adults = kind === "STAGE_ADULTES";
-    const anim = isAnimation(kind);
-    const useModel = (m: (typeof ANIMATION_MODELS)[number]) => {
-      if ((value.formulas.length > 0 || value.audience) && !window.confirm("Remplacer « pour qui », « à prévoir » et la participation par ce modèle ?")) return;
-      onChange({ ...value, audience: m.audience, bring: m.bring, formulas: m.formulas.map((f) => ({ ...f })), signup: value.signup || SIGNUP_ONLINE });
-    };
     return (
       <div className="grid gap-3">
-        {anim && (
-          <div className="rounded-2xl border-2 border-dashed border-line bg-[#fbf8f2] p-3">
-            <p className="m-0 mb-2 text-sm font-bold text-ink">⚡ Pars d'un modèle <small className="font-normal text-muted">(un clic remplit les cases, tout reste modifiable)</small></p>
-            <div className="flex flex-wrap gap-1.5">{ANIMATION_MODELS.map((m) => <button key={m.name} type="button" className="btn-outline" onClick={() => useModel(m)}>{m.name}</button>)}</div>
-          </div>)}
         <Step n={1} title="Pour qui ?" color="#27AE60">
-          <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder={anim ? "Ex. Ouvert à tous les adhérents" : adults ? "Ex. Adultes, tous niveaux" : "Ex. 8 à 12 ans, tous niveaux"} className={inputCls} />
+          <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder={adults ? "Ex. Adultes, tous niveaux" : "Ex. 8 à 12 ans, tous niveaux"} className={inputCls} />
         </Step>
         <Step n={2} title="Quand et où ?" color="#2E86C1">
           <div className="grid gap-2 sm:grid-cols-2">
@@ -121,8 +102,7 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
           </div>
           <p className="mb-0 mt-1.5 text-xs text-muted">Les dates viennent du planning : elles s'écrivent toutes seules sur l'affiche.</p>
         </Step>
-        <Step n={3} title={anim ? "Participation et tarifs" : "Formules et prix"} hint={anim ? " · gratuit ou avec un tarif adhérent / non adhérent" : ` · plusieurs formules possibles, ${MAX_FORMULAS} au plus`} color="#D35400">
-          {anim && <button type="button" className="mb-2 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ formulas: FREE.map((f) => ({ ...f })) })}>🎁 Participation gratuite</button>}
+        <Step n={3} title="Formules et prix" hint={` · plusieurs formules possibles, ${MAX_FORMULAS} au plus`} color="#D35400">
           <Formulas value={value} onChange={onChange} stage kids={kind === "STAGE_ENFANTS"} />
         </Step>
         <Step n={4} title="À prévoir" hint=" · facultatif" color="#8E44AD">
@@ -154,6 +134,38 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
       <label className="block text-sm font-bold text-ink">✍️ Inscriptions
         <button type="button" className="mb-1 mt-1 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Inscriptions sur le site internet du club</button>
         <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil, jusqu'au 20 octobre" className={inputCls} /></label>
+    </div>
+  );
+}
+
+// Formulaire SIMPLE d'une animation : nom, pour qui, ce qu'il va se passer, horaires, tarif, où s'inscrire (la date vient du planning).
+export function AnimationForm({ value, onChange, title, onTitle, note, onNote }: { value: PosterInfo; onChange: (v: PosterInfo) => void; title?: string; onTitle?: (t: string) => void; note: string; onNote: (t: string) => void }) {
+  const set = (p: Partial<PosterInfo>) => onChange({ ...value, ...p });
+  const first = value.formulas[0];
+  const setPrice = (price: string) => {
+    const rest = value.formulas.slice(1);
+    set({ formulas: price.trim() === "" && !first?.priceMember && rest.length === 0 ? [] : [{ priceMember: "", detail: "", group: "", ...first, label: first?.label || "Participation", price }, ...rest] });
+  };
+  return (
+    <div className="grid gap-3">
+      {onTitle && <label className="block text-sm font-bold text-ink">🏷️ Nom de l'animation
+        <input aria-label="Nom de l'animation" maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder="Ex. Journée portes ouvertes" className={inputCls} /></label>}
+      <p className="m-0 text-xs text-muted">📅 La date vient du planning : elle s'écrit toute seule sur l'affiche.</p>
+      <label className="block text-sm font-bold text-ink">👥 Pour qui ?
+        <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. Ouvert à tous les adhérents" className={inputCls} /></label>
+      <label className="block text-sm font-bold text-ink">📝 Ce qu'il va se passer
+        <textarea aria-label="Ce qu'il va se passer" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Ex. Matchs amicaux, initiation pour les débutants, goûter offert…" className={inputCls} /></label>
+      <label className="block text-sm font-bold text-ink">🕒 Horaires
+        <input aria-label="Horaires" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. 14 h – 17 h" className={inputCls} /></label>
+      <div>
+        <label className="block text-sm font-bold text-ink">💶 Tarif
+          <input aria-label="Tarif" maxLength={30} value={first?.price ?? ""} onChange={(e) => setPrice(e.target.value)} placeholder="Ex. 5 € par personne" className={inputCls} /></label>
+        <button type="button" className="mt-1.5 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => setPrice("Gratuit")}>🎁 Gratuit</button>
+      </div>
+      <div className="text-sm font-bold text-ink">✍️ Où s'inscrire ?
+        <button type="button" className="mb-1 mt-1 block rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Sur le site internet du club</button>
+        <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil du club, avant le 20 octobre" className={inputCls} />
+      </div>
     </div>
   );
 }
