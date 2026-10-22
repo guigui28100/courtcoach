@@ -83,7 +83,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <NetLoader />
-      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-[#fff3bf] px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace de {viewAs.name}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { stopViewAs(); nav("/coach/centre?onglet=entraineurs"); }}>Quitter l'aperçu</button></div>}
+      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-[#fff3bf] px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
       <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5">

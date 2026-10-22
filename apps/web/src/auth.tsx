@@ -14,7 +14,7 @@ interface AuthCtx {
   startViewAs(v: ViewAs): void;
   stopViewAs(): void;
 }
-export interface ViewAs { name: string; playerIds: string[]; }
+export interface ViewAs { name: string; playerIds: string[]; role?: "PRESIDENT" | "BUREAU"; }
 const VIEW_KEY = "cc-view-trainer";
 function savedView(): ViewAs | null { try { const v = JSON.parse(sessionStorage.getItem(VIEW_KEY) || "null"); return v && Array.isArray(v.playerIds) ? v : null; } catch { return null; } }
 const Ctx = createContext<AuthCtx>(null as never);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { events.forEach((e) => window.removeEventListener(e, arm)); window.clearTimeout(timer.current); };
   }, [me, logout]);
 
-  const shown = me && viewAs && me.role === "COACH" ? { ...me, role: "TRAINER" as const } : me;
+  const shown = me && viewAs && me.role === "COACH" ? { ...me, role: viewAs.role ?? ("TRAINER" as const) } : me;
   const value: AuthCtx = {
     me: shown, loading, viewAs: me?.role === "COACH" ? viewAs : null,
     startViewAs: (v) => { setPreviewOnly(true); try { sessionStorage.setItem(VIEW_KEY, JSON.stringify(v)); } catch { /* sans mémoire */ } setViewAs(v); },
