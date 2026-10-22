@@ -10,13 +10,14 @@ export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "S
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
 // Les formules habituelles des stages enfants du club (les prix restent à écrire)
 export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
+export const KIDS_BRING = "Tenue de sport, bouteille d'eau · pique-nique pour les formules à la journée (10 h – 16 h)";
 export const KIDS_PRESET: Formula[] = [
-  { group: "Toute la semaine · 6 à 17 ans", label: "Journée 10 h – 16 h", detail: "pique-nique le midi", price: "" },
-  { group: "Toute la semaine · 6 à 17 ans", label: "Demi-journée 13 h – 16 h", detail: "", price: "" },
-  { group: "À la carte · 6 à 17 ans", label: "Journée 10 h – 16 h", detail: "au choix, à l'unité · pique-nique le midi", price: "" },
-  { group: "À la carte · 6 à 17 ans", label: "Demi-journée 13 h – 16 h", detail: "au choix, à l'unité", price: "" },
-  { group: "Mini tennis · 3 à 5 ans · 16 h – 17 h", label: "Toute la semaine", detail: "lundi, mardi, jeudi et vendredi", price: "" },
-  { group: "Mini tennis · 3 à 5 ans · 16 h – 17 h", label: "À la journée", detail: "au choix, à l'unité", price: "" },
+  { group: "Stage à la semaine · 6 à 17 ans", label: "Semaine · journée 10 h – 16 h", detail: "pique-nique le midi", price: "", priceMember: "" },
+  { group: "Stage à la semaine · 6 à 17 ans", label: "Semaine · demi-journée 13 h – 16 h", detail: "", price: "", priceMember: "" },
+  { group: "Stage à la journée ou à la demi-journée · 6 à 17 ans", label: "À la journée 10 h – 16 h", detail: "pique-nique le midi", price: "", priceMember: "" },
+  { group: "Stage à la journée ou à la demi-journée · 6 à 17 ans", label: "À la demi-journée 13 h – 16 h", detail: "", price: "", priceMember: "" },
+  { group: "Stage mini tennis · 3 à 5 ans · 16 h – 17 h", label: "Toute la semaine", detail: "lundi, mardi, jeudi et vendredi", price: "", priceMember: "" },
+  { group: "Stage mini tennis · 3 à 5 ans · 16 h – 17 h", label: "À la journée", detail: "au choix, à l'unité", price: "", priceMember: "" },
 ];
 const STAGE_SUGGEST = ["Semaine complète", "Journée", "Demi-journée", "Adhérent", "Non adhérent", "2e enfant"];
 
@@ -29,16 +30,16 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
   const KEY = "cc-formula-model"; // modèle personnel gardé seulement dans le navigateur du coach (rien n'est envoyé)
   const [mine, setMine] = useState<Formula[]>(() => { try { const v = JSON.parse(localStorage.getItem(KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; } });
   const saveMine = (f: Formula[]) => { const clean = f.map((x) => ({ ...x, price: "", priceMember: "" })); try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch { /* sans stockage, pas de modèle */ } setMine(clean); };
-  const replaceWith = (list: Formula[], audience?: string) => {
+  const replaceWith = (list: Formula[], audience?: string, bring?: string) => {
     if (value.formulas.length > 0 && !window.confirm("Remplacer les formules actuelles par ce modèle ? (les prix seront à ressaisir)")) return;
-    onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience, signup: audience && !value.signup ? SIGNUP_ONLINE : value.signup });
+    onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience, signup: audience && !value.signup ? SIGNUP_ONLINE : value.signup, bring: bring && !value.bring ? bring : value.bring });
   };
   const groups = [...new Set(value.formulas.map((f) => f.group ?? "").filter(Boolean))];
   const sug = (stage ? STAGE_SUGGEST : SUGGEST).filter((s) => !value.formulas.some((f) => f.label === s)).slice(0, 5);
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        {kids && <button type="button" className={value.formulas.length === 0 ? "btn-clay" : "btn-outline"} onClick={() => replaceWith(KIDS_PRESET, KIDS_AUDIENCE)}>📋 Formules habituelles des stages enfants</button>}
+        {kids && <button type="button" className={value.formulas.length === 0 ? "btn-clay" : "btn-outline"} onClick={() => replaceWith(KIDS_PRESET, KIDS_AUDIENCE, KIDS_BRING)}>📋 Formules habituelles des stages enfants</button>}
         {mine.length > 0 && <button type="button" className="btn-outline" onClick={() => replaceWith(mine)}>📂 Mon modèle ({mine.length})</button>}
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => saveMine(value.formulas)}>💾 Garder ces formules comme mon modèle</button>}
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => { if (window.confirm("Effacer toutes les formules ?")) set({ formulas: [] }); }}>🧹 Tout effacer</button>}
