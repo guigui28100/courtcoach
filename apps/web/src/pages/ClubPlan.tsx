@@ -113,7 +113,7 @@ export function ClubPlan() {
             <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Précédent" onClick={() => step(-1)}>‹</button>
             <b className="min-w-[11rem] text-center text-xl text-ink">{navLabel}</b>
             <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
-            <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Année en cours" : "Mois en cours"}</button>
+            <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
           {view === "mois" && <button type="button" aria-pressed={multi} onClick={() => setMulti(!multi)} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Plusieurs jours de suite"}</button>}
         </div>
