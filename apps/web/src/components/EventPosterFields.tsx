@@ -40,6 +40,7 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-1.5">
         {kids && <button type="button" className={value.formulas.length === 0 ? "btn-clay" : "btn-outline"} onClick={() => replaceWith(KIDS_PRESET, KIDS_AUDIENCE, KIDS_BRING)}>📋 Formules habituelles des stages enfants</button>}
+        <button type="button" className={value.formulas.length === 0 && !kids ? "btn-clay" : "btn-outline"} disabled={value.formulas.length >= MAX_FORMULAS} onClick={() => add()}>＋ Créer ma propre formule</button>
         {mine.length > 0 && <button type="button" className="btn-outline" onClick={() => replaceWith(mine)}>📂 Mon modèle ({mine.length})</button>}
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => saveMine(value.formulas)}>💾 Garder ces formules comme mon modèle</button>}
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => { if (window.confirm("Effacer toutes les formules ?")) set({ formulas: [] }); }}>🧹 Tout effacer</button>}
