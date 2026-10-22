@@ -3,6 +3,7 @@ import { onPending } from "../api";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Role } from "../types";
+import { ClubLogo } from "./ui";
 
 type NavItem = { to: string; label: string; short?: string; icon: string };
 const NAV: Record<Role, NavItem[]> = {
@@ -37,10 +38,7 @@ const Icon = ({ name }: { name: string }) => <svg viewBox="0 0 24 24" className=
 export function Brand({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className={"flex items-center gap-2 font-display text-2xl font-black no-underline " + (light ? "text-[#dcf247]" : "text-clay")} style={{ fontStretch: "80%" }} aria-label="CourtCoach, accueil">
-      <svg viewBox="0 0 32 32" className="h-7 w-7" aria-hidden="true">
-        <circle cx="16" cy="16" r="15" fill="#dcf247" />
-        <path d="M5 6c6 5 6 15 0 20M27 6c-6 5-6 15 0 20" fill="none" stroke="#10203a" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
+      <ClubLogo className={"size-12 " + (light ? "text-white" : "text-clay")} />
       CourtCoach
     </Link>
   );

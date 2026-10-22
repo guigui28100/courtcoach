@@ -47,12 +47,9 @@ const rangeText = (e: ClubEvent) => {
   return `${DAYS[weekdayOf(e.startDate)].slice(0, 3)}. ${dayNum(e.startDate)}${same ? "" : " " + MONTHS[+e.startDate.slice(5, 7) - 1].toLowerCase()} → ${DAYS[weekdayOf(e.endDate)].slice(0, 3)}. ${dayNum(e.endDate)}`;
 };
 
-const Ball = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
-    <circle cx="50" cy="50" r="48" fill="#d9e84a" stroke="#fff" strokeWidth="3" />
-    <path d="M10 26 C40 42 40 58 10 74" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-    <path d="M90 26 C60 42 60 58 90 74" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" />
-  </svg>
+// Logo du club (blanc sur transparent) : même fichier que sur le site
+const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: string; style?: React.CSSProperties }) => (
+  <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: color, WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
 function Header({ m }: { m: string }) {
@@ -62,7 +59,7 @@ function Header({ m }: { m: string }) {
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
         <rect x="40" y="40" width="714" height="230" /><line x1="397" y1="40" x2="397" y2="270" /><line x1="40" y1="95" x2="754" y2="95" /><line x1="40" y1="215" x2="754" y2="215" /><line x1="215" y1="95" x2="215" y2="215" /><line x1="579" y1="95" x2="579" y2="215" /><line x1="215" y1="155" x2="579" y2="155" />
       </svg>
-      <div style={{ position: "absolute", right: 30, top: 28, transform: "rotate(-12deg)", filter: "drop-shadow(0 8px 10px rgba(0,0,0,.35))" }}><Ball size={128} /></div>
+      <PosterLogo size={190} style={{ position: "absolute", right: 28, top: 22, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
         <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
         <div className="font-display" style={{ fontSize: 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
@@ -80,7 +77,7 @@ function Footer({ events }: { events: ClubEvent[] }) {
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, background: "#1b1863", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
       <div style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
-        <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}>🎾 Tennis Club Houdan</div>
+        <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}><PosterLogo size={26} style={{ verticalAlign: "-6px", marginRight: 8 }} />Tennis Club Houdan</div>
         <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>4 courts couverts · terre battue et dur · septembre → mai</div>
         <div style={{ fontSize: 14, fontWeight: 800, marginTop: 3, color: "#ffe45c" }}>✉️ tennisclubhoudan@gmail.com</div>
       </div>

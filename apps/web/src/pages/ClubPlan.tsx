@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { BackLink, Err, Page } from "../components/ui";
+import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -87,7 +87,7 @@ export function ClubPlan() {
           <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="none" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><rect x="10" y="8" width="380" height="84" /><line x1="200" y1="8" x2="200" y2="92" /><line x1="70" y1="8" x2="70" y2="92" /><line x1="330" y1="8" x2="330" y2="92" /><line x1="70" y1="50" x2="330" y2="50" /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-2xl bg-[#dff04a] text-3xl shadow">🎾</span>
+              <ClubLogo className="size-16 text-white drop-shadow" />
               <div className="min-w-0">
                 <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Réservé au coach · Saison {season} / {season + 1}</p>
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>

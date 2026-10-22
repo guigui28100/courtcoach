@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
   return (
     <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-sand to-[#f6e3d1]">
-      <BallArt className="pointer-events-none absolute -right-2 top-1/2 h-32 w-32 -translate-y-1/2 opacity-90 max-md:hidden" />
+      <ClubLogo className="pointer-events-none absolute -right-2 top-1/2 size-36 -translate-y-1/2 text-clay opacity-90 max-md:hidden" />
       <div className="relative mx-auto flex max-w-6xl items-center gap-4 px-4 py-7">
         {icon}
         <div className="min-w-0">
@@ -72,6 +72,12 @@ export function ProgressBar({ value, color = "#b8471f" }: { value: number; color
   );
 }
 
+// Logo du Tennis Club Houdan (« TCH ») : un fichier blanc sur fond transparent, coloré comme le texte autour (currentColor), donc utilisable sur n'importe quel fond
+export function ClubLogo({ className = "", label }: { className?: string; label?: string }) {
+  const mask = "url(/logo-tch.png) center / contain no-repeat";
+  return <span role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} className={`inline-block shrink-0 bg-current ${className}`} style={{ WebkitMask: mask, mask, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }} />;
+}
+
 // Balle de tennis dessinée en SVG (aucune image extérieure) : dégradé, coutures, reflet, ombre et traits de vitesse
 export function BallArt({ className = "" }: { className?: string }) {
   return (
@@ -102,7 +108,7 @@ export function CoachHero({ eyebrow, title, subtitle, chips, actions, tone = "de
           {chips && <div className="flex flex-wrap gap-2">{chips}</div>}
           {actions && <div className="mt-1 flex flex-wrap gap-2">{actions}</div>}
         </div>
-        <BallArt className="coach-ball h-40 w-44 justify-self-center max-md:hidden lg:h-48 lg:w-52" />
+        <ClubLogo className="coach-ball size-40 justify-self-center text-white max-md:hidden lg:size-48" />
       </div>
     </section>
   );

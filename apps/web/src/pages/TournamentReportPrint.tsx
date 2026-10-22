@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { get } from "../api";
-import { BackLink, Empty } from "../components/ui";
+import { BackLink, ClubLogo, Empty } from "../components/ui";
 import { fmtPeriod, Player, REPORT_FEELINGS, REPORT_THEMES, reportStarsOf, TournamentReport } from "../types";
 
 // Version imprimable du bilan de tournoi (à enregistrer en PDF avec « Imprimer ») : sans le nom de l'entraîneur, sans notes privées.
@@ -30,7 +30,7 @@ export default function TournamentReportPrint() {
       </div>
       <article className="print-exact overflow-hidden rounded-2xl border-2 border-line bg-white text-[#1a2233]" aria-label={`Bilan de tournoi de ${p.firstName}`}>
         <header className="px-6 py-5 text-white" style={{ background: "#1f7a4d", borderBottom: "6px solid #dcf247" }}>
-          <p className="m-0 text-sm font-bold uppercase tracking-widest opacity-90">🎾 Tennis Club Houdan · Centre de compétition jeunes</p>
+          <p className="m-0 text-sm font-bold uppercase tracking-widest opacity-90"><ClubLogo className="mr-2 size-7 align-middle" />Tennis Club Houdan · Centre de compétition jeunes</p>
           <h1 className="m-0 text-3xl !text-white">Bilan de tournoi</h1>
           <p className="m-0 text-lg">{p.firstName} {p.lastName} · {r.name}</p>
           <p className="m-0 opacity-90">{fmtPeriod(r.dateFrom, r.dateTo)}</p>
