@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, seasonOf, teamCat, textOn, titleOf, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
@@ -228,13 +229,38 @@ function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; sho
   );
 }
 
+// Zone libre entre l'en-tête et le bandeau bleu du bas (modèle « liste »).
+const BODY_TOP = 296, BODY_BOTTOM = 112;
+function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; showWho: boolean }) {
+  const cards = list.length <= 8 || list.some((e) => e.featured);
+  const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
+  const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 1, gap: 0 });
+  useLayoutEffect(() => {
+    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM;
+    const ha = refA.current?.offsetHeight ?? 0; const hb = refB.current?.offsetHeight ?? 0;
+    const total = ha + hb;
+    if (total > avail) setFit({ scale: avail / total, gap: 0 });
+    else setFit({ scale: 1, gap: cards && ha > 0 ? Math.max(0, (avail - total) / 2) : 0 }); // peu d'événements : la suite est centrée dans la place restante
+  }, [list, month, showWho, cards]);
+  return (
+    <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM, overflow: "hidden" }}>
+      <div style={{ transform: `scale(${fit.scale})`, transformOrigin: "top center", width: POSTER_W }}>
+        <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
+        <div style={{ height: fit.gap }} />
+        <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>
+      </div>
+    </div>
+  );
+}
+
 export function ClubPoster({ events, month, model, showWho }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean }) {
   const list = monthEvents(events, month);
   return (
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <Header m={month} />
       <div style={{ marginTop: 6 }}>
-        {list.length === 0 ? <Empty /> : model === "liste" ? (<>{(list.length <= 8 || list.some((e) => e.featured)) && <Featured list={list} showWho={showWho} />}<ListModel m={month} list={(list.length <= 8 || list.some((e) => e.featured)) ? list.filter((e) => !pickTop(list).includes(e)) : list} showWho={showWho} withCards={list.length <= 8 || list.some((e) => e.featured)} /></>) : <CalendarModel m={month} list={list} showWho={showWho} />}
+        {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} /> : <CalendarModel m={month} list={list} showWho={showWho} />}
       </div>
       <Footer events={list} />
     </div>
