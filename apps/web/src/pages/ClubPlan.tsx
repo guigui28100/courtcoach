@@ -399,6 +399,10 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           ))}
         </Step>
       )}
+      {d.kind === "EQUIPES" && (
+        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+          <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+        </label>)}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
         <p className="mb-0 mt-2 font-bold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
@@ -633,6 +637,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
+                  {k.key === "EQUIPES" && (
+                    <label className="mt-2 block rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+                      <input aria-label="Club rencontré" maxLength={80} value={c.info.audience} onChange={(e) => patch(k.key, { info: { ...c.info, audience: e.target.value } })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+                    </label>)}
                   {k.key === "EQUIPES" && (
                     <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
                       {cats.map((cat) => (

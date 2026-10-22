@@ -13,7 +13,7 @@ const short = (d: string) => `${DAYS[weekdayOf(d)].slice(0, 3)}. ${+d.slice(8, 1
 const dateLabel = (e: ClubEvent) => (e.startDate === e.endDate ? short(e.startDate) : `${short(e.startDate)} – ${short(e.endDate).toLowerCase()}`);
 const prices = (e: ClubEvent) => (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember).map((f) => `${f.label ? `${f.label} : ` : ""}${[f.priceMember && `adhérent ${f.priceMember}`, f.price && (f.priceMember ? `non adhérent ${f.price}` : f.price)].filter(Boolean).join(" · ")}`).join(" · ");
 const where = (e: ClubEvent) => [e.place, e.courts.length ? `Court${e.courts.length > 1 ? "s" : ""} ${e.courts.join(", ")}` : ""].filter(Boolean).join(" · ");
-const details = (e: ClubEvent, withWho: boolean) => [e.time, e.audience, prices(e), e.signup && `Inscriptions : ${e.signup}`, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ");
+const details = (e: ClubEvent, withWho: boolean) => [e.time, e.kind === "EQUIPES" ? "" : e.audience, prices(e), e.signup && `Inscriptions : ${e.signup}`, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ");
 const monthsBetween = (from: string, to: string) => { const out: string[] = []; let m = from.slice(0, 7); while (m <= to.slice(0, 7)) { out.push(m); m = addDays(`${m}-28`, 5).slice(0, 7); } return out; };
 const touches = (e: ClubEvent, m: string) => e.startDate.slice(0, 7) <= m && e.endDate.slice(0, 7) >= m;
 const monthLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;

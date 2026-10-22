@@ -9,7 +9,7 @@ export const inPeriod = (events: ClubEvent[], from: string, to: string) =>
   events.filter((e) => e.endDate >= from && e.startDate <= to).sort((a, b) => a.startDate.localeCompare(b.startDate) || a.title.localeCompare(b.title));
 
 const dmy = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
-export const nameOf = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? e.teams.map(teamLabel).join(" + ") || "Match par équipes" : titleOf(e));
+export const nameOf = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title && !e.teams.length ? `Match par équipes${e.audience ? ` · contre ${e.audience}` : ""}` : titleOf(e));
 const bandsOf = (e: ClubEvent) => e.bands.map((b) => BANDS.find((x) => x.key === b)?.label ?? b).join(", ");
 const formulasOf = (e: ClubEvent) => (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember).map((f) => `${f.label}${f.priceMember ? ` adhérent ${f.priceMember}` : ""}${f.price ? ` ${f.priceMember ? "non adhérent " : ""}${f.price}` : ""}`).join(" / ");
 
