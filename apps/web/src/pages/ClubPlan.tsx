@@ -4,7 +4,7 @@ import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../com
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
-import { AnimationForm, emptyInfo, EventPosterFields, isAnimation, isStage, PosterInfo } from "../components/EventPosterFields";
+import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
 import {
@@ -410,8 +410,8 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <Step n={d.kind === "EQUIPES" ? 6 : 5} title="Quel(s) professeur(s) ? (facultatif)">
         {names.length === 0 ? <p className="m-0 text-sm text-muted">Aucun professeur pour le moment.</p> : <div className="flex flex-wrap gap-2">{names.map((n) => <Pill key={n} on={d.who.includes(n)} onClick={() => set({ who: toggle(d.who, n) })}>{n}</Pill>)}</div>}
       </Step>
-      {isAnimation(d.kind) ? (
-        <div className="mb-4 rounded-xl border-2 border-line bg-white p-3"><AnimationForm title={d.title} onTitle={(t) => set({ title: t })} note={d.note} onNote={(t) => set({ note: t })} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
+      {hasSimpleForm(d.kind) ? (
+        <div className="mb-4 rounded-xl border-2 border-line bg-white p-3"><AnimationForm tournoi={isTournoi(d.kind)} title={d.title} onTitle={(t) => set({ title: t })} note={d.note} onNote={(t) => set({ note: t })} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       ) : (<>
       <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
@@ -579,12 +579,12 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
                   </div>
-                  {isAnimation(k.key) ? (
-                    <div className="mt-1"><AnimationForm title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
+                  {hasSimpleForm(k.key) ? (
+                    <div className="mt-1"><AnimationForm tournoi={isTournoi(k.key)} title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   ) : (<>
                   <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
                     <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
-                      placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
+                      placeholder="Quelques mots à ajouter sur l'affiche"
                       className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                   </label>
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
