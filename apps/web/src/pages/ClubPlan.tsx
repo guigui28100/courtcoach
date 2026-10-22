@@ -4,7 +4,7 @@ import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../com
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
-import { emptyInfo, EventPosterFields, isStage, PosterInfo } from "../components/EventPosterFields";
+import { AnimationForm, emptyInfo, EventPosterFields, isAnimation, isStage, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
 import {
@@ -355,7 +355,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -410,6 +410,9 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <Step n={d.kind === "EQUIPES" ? 6 : 5} title="Quel(s) professeur(s) ? (facultatif)">
         {names.length === 0 ? <p className="m-0 text-sm text-muted">Aucun professeur pour le moment.</p> : <div className="flex flex-wrap gap-2">{names.map((n) => <Pill key={n} on={d.who.includes(n)} onClick={() => set({ who: toggle(d.who, n) })}>{n}</Pill>)}</div>}
       </Step>
+      {isAnimation(d.kind) ? (
+        <div className="mb-4 rounded-xl border-2 border-line bg-white p-3"><AnimationForm title={d.title} onTitle={(t) => set({ title: t })} note={d.note} onNote={(t) => set({ note: t })} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
+      ) : (<>
       <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
       </details>
@@ -422,6 +425,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
         <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       </details>
+      </>)}
       <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
@@ -486,9 +490,9 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 );
 }
 
-interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+interface Sel { title?: string; on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
 const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
-const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
+const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), priceMember: (f.priceMember ?? "").trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
@@ -499,7 +503,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -520,8 +524,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) });
-        else if (c.on && old && (c.star !== !!old.featured || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
+        if (c.on && !old) await post("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) });
+        else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -575,6 +579,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
                   </div>
+                  {isAnimation(k.key) ? (
+                    <div className="mt-1"><AnimationForm title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
+                  ) : (<>
                   <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
                     <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
                       placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
@@ -583,6 +590,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
                     <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   </details>
+                  </>)}
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
