@@ -22,6 +22,25 @@ export const KIDS_PRESET: Formula[] = [
 ];
 const STAGE_SUGGEST = ["Semaine complète", "Journée", "Demi-journée", "Adhérent", "Non adhérent", "2e enfant"];
 
+// Prix : un menu déroulant de tarifs habituels, ou « Autre » pour l'écrire à la main (une valeur déjà écrite reste affichée)
+export const PRICE_CHOICES = ["Gratuit", ...[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 200].map((n) => `${n} €`)];
+const PRICE_OTHER = "__autre__";
+function PriceField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [other, setOther] = useState(false);
+  const custom = other || (value !== "" && !PRICE_CHOICES.includes(value));
+  return (
+    <div className="grid gap-1.5">
+      <select aria-label={label} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" value={custom ? PRICE_OTHER : value}
+        onChange={(e) => { const v = e.target.value; if (v === PRICE_OTHER) { setOther(true); if (PRICE_CHOICES.includes(value)) onChange(""); } else { setOther(false); onChange(v); } }}>
+        <option value="">Choisir un prix…</option>
+        {PRICE_CHOICES.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value={PRICE_OTHER}>✏️ Autre : je l'écris moi-même</option>
+      </select>
+      {custom && <input aria-label={`${label} : écrit à la main`} maxLength={30} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder ?? "Ex. 5 € par personne"} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" />}
+    </div>
+  );
+}
+
 const inputCls = "mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal text-ink";
 
 function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChange: (v: PosterInfo) => void; stage: boolean; kids?: boolean }) {
@@ -57,10 +76,10 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
               <button type="button" className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-sm font-bold text-ink hover:border-ink" aria-label={`Retirer la formule ${i + 1}`} onClick={() => set({ formulas: value.formulas.filter((_, k) => k !== i) })}>🗑️</button>
             </div>
             <div className="mt-2 flex gap-2">
-              <label className="flex-1 text-xs font-black uppercase tracking-wide text-muted">Tarif adhérent
-                <input aria-label={`Prix adhérent ${i + 1}`} maxLength={30} value={f.priceMember ?? ""} onChange={(e) => setF(i, { priceMember: e.target.value })} placeholder="ex. 100 €" className="mt-0.5 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" /></label>
-              <label className="flex-1 text-xs font-black uppercase tracking-wide text-muted">Tarif non adhérent
-                <input aria-label={`Prix non adhérent ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="ex. 120 €" className="mt-0.5 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" /></label>
+              <div className="flex-1"><span className="mb-0.5 block text-xs font-black uppercase tracking-wide text-muted">Tarif adhérent</span>
+                <PriceField label={`Prix adhérent ${i + 1}`} value={f.priceMember ?? ""} onChange={(v) => setF(i, { priceMember: v })} placeholder="Ex. 100 €" /></div>
+              <div className="flex-1"><span className="mb-0.5 block text-xs font-black uppercase tracking-wide text-muted">Tarif non adhérent</span>
+                <PriceField label={`Prix non adhérent ${i + 1}`} value={f.price} onChange={(v) => setF(i, { price: v })} placeholder="Ex. 120 €" /></div>
             </div>
             <input aria-label={`Rubrique de la formule ${i + 1}`} list="formula-groups" maxLength={60} value={f.group ?? ""} onChange={(e) => setF(i, { group: e.target.value })} placeholder="Rubrique (facultatif) : 6 à 17 ans, Mini tennis 3 à 5 ans…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
             <input aria-label={`Détail de la formule ${i + 1}`} maxLength={60} value={f.detail ?? ""} onChange={(e) => setF(i, { detail: e.target.value })} placeholder="Précision (facultatif) : 5 matinées de 9 h à 12 h, goûter compris…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
@@ -157,10 +176,8 @@ export function AnimationForm({ value, onChange, title, onTitle, note, onNote }:
         <textarea aria-label="Ce qu'il va se passer" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Ex. Matchs amicaux, initiation pour les débutants, goûter offert…" className={inputCls} /></label>
       <label className="block text-sm font-bold text-ink">🕒 Horaires
         <input aria-label="Horaires" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. 14 h – 17 h" className={inputCls} /></label>
-      <div>
-        <label className="block text-sm font-bold text-ink">💶 Tarif
-          <input aria-label="Tarif" maxLength={30} value={first?.price ?? ""} onChange={(e) => setPrice(e.target.value)} placeholder="Ex. 5 € par personne" className={inputCls} /></label>
-        <button type="button" className="mt-1.5 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => setPrice("Gratuit")}>🎁 Gratuit</button>
+      <div className="text-sm font-bold text-ink">💶 Tarif
+        <div className="mt-1"><PriceField label="Tarif" value={first?.price ?? ""} onChange={setPrice} placeholder="Ex. 5 € par personne" /></div>
       </div>
       <div className="text-sm font-bold text-ink">✍️ Où s'inscrire ?
         <button type="button" className="mb-1 mt-1 block rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Sur le site internet du club</button>
