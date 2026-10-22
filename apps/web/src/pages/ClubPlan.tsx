@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
@@ -577,7 +577,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
             {on.map((k) => {
               const c = sel[k.key];
               return (
-                <div key={k.key} className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
+                <Fragment key={k.key}>
+                <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
                     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
@@ -597,24 +598,6 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                         className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                     </label>
                   </div>
-                  {(() => {
-                    const filled = !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring);
-                    const wants = wantPoster[k.key] ?? filled;
-                    const toggleP = () => {
-                      if (wants && filled && !confirm("Ne plus faire d'affiche ? Les informations déjà écrites pour l'affiche seront effacées.")) return;
-                      if (wants) patch(k.key, { info: emptyInfo() });
-                      setWantPoster((w) => ({ ...w, [k.key]: !wants }));
-                    };
-                    return (<>
-                      <button type="button" role="checkbox" aria-checked={wants} onClick={toggleP}
-                        className={`mt-2 flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3 text-left ${wants ? "border-[#6d4fc2] bg-[#efe9ff]" : "border-dashed border-[#9a8cc9] bg-[#f5f2ff] hover:border-[#6d4fc2]"}`}>
-                        <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md border-2 text-sm text-white" style={{ background: wants ? "#6d4fc2" : "#fff", borderColor: wants ? "#6d4fc2" : "#9a8cc9" }}>{wants ? "✔" : ""}</span>
-                        <span><b className="block text-ink">🪧 Faire aussi une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"}</b>
-                          <span className="block text-sm text-muted">{wants ? "Remplis les infos ci-dessous : elles servent seulement à fabriquer l'affiche." : "Facultatif. Si tu ne coches pas, tu n'as rien de plus à faire : l'événement est enregistré sans affiche."}</span></span>
-                      </button>
-                      {wants && <div className="mt-2 rounded-xl border-2 border-[#9a8cc9] bg-white p-3"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>}
-                    </>);
-                  })()}
                   </>)}
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
@@ -633,6 +616,30 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     </details>
                   )}
                 </div>
+                {!hasSimpleForm(k.key) && (
+                  <div className="mt-3 rounded-xl border-2 border-[#6d4fc2] bg-[#f5f2ff] p-3">
+                    <p className="m-0 mb-2 text-sm font-extrabold text-[#3b2a7a]">🪧 Affiche de « {k.label} » (séparé du planning)</p>
+                  {(() => {
+                    const filled = !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring);
+                    const wants = wantPoster[k.key] ?? filled;
+                    const toggleP = () => {
+                      if (wants && filled && !confirm("Ne plus faire d'affiche ? Les informations déjà écrites pour l'affiche seront effacées.")) return;
+                      if (wants) patch(k.key, { info: emptyInfo() });
+                      setWantPoster((w) => ({ ...w, [k.key]: !wants }));
+                    };
+                    return (<>
+                      <button type="button" role="checkbox" aria-checked={wants} onClick={toggleP}
+                        className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3 text-left ${wants ? "border-[#6d4fc2] bg-[#efe9ff]" : "border-dashed border-[#9a8cc9] bg-[#f5f2ff] hover:border-[#6d4fc2]"}`}>
+                        <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md border-2 text-sm text-white" style={{ background: wants ? "#6d4fc2" : "#fff", borderColor: wants ? "#6d4fc2" : "#9a8cc9" }}>{wants ? "✔" : ""}</span>
+                        <span><b className="block text-ink">🪧 Faire aussi une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"}</b>
+                          <span className="block text-sm text-muted">{wants ? "Remplis les infos ci-dessous : elles servent seulement à fabriquer l'affiche." : "Facultatif. Si tu ne coches pas, tu n'as rien de plus à faire : l'événement est enregistré sans affiche."}</span></span>
+                      </button>
+                      {wants && <div className="mt-2 rounded-xl border-2 border-[#9a8cc9] bg-white p-3"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>}
+                    </>);
+                  })()}
+                  </div>
+                )}
+                </Fragment>
               );
             })}
           </Fold>
