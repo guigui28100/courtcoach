@@ -34,7 +34,7 @@ export function ClubPlan() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("annee");
-  const [multi, setMulti] = useState(false);
+  const multi = false; const setMulti = (_: boolean) => {};
   const today = todayParis();
   const [season, setSeason] = useState(seasonOf(today));
   const [month, setMonth] = useState(today.slice(0, 7));
@@ -126,15 +126,13 @@ export function ClubPlan() {
             <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
-          {view === "mois" && !readOnly && <button type="button" aria-pressed={multi} onClick={() => setMulti(!multi)} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Plusieurs jours de suite"}</button>}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-[#16a34a] bg-[#e8f7ee] px-3 py-2">
           <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Tableau Excel, agenda du téléphone ou liste en PDF.</span>
           <button type="button" className="whitespace-nowrap rounded-xl border-2 border-[#166534] bg-[#16a34a] px-4 py-2 font-extrabold text-white shadow hover:bg-[#15803d]" onClick={() => setExportOpen(true)}>📤 Exporter le planning</button>
         </div>
-        {view === "mois" && !multi && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
+        {view === "mois" && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
         {readOnly && <p className="m-0 rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
-        {view === "mois" && multi && <p className="m-0 rounded-xl bg-[#fff1c2] px-3 py-2 font-bold text-[#5a4300]">📆 Touche le PREMIER jour, puis le DERNIER jour de l'événement.</p>}
       </div>
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
