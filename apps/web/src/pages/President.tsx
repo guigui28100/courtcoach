@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
 import { ProfsAdmin } from "../components/Profs";
@@ -38,7 +38,7 @@ export default function PresidentPage() {
 
   return (
     <>
-      <CoachHero eyebrow="Espace du président" title={`Bonjour ${me?.firstName ?? ""}`.trim()} subtitle="Toute l'activité des cours particuliers : ce que donne chaque professeur, les demandes des adhérents et la validation des professeurs. Le planning du club est dans le menu « Club »." />
+      <CoachHero eyebrow="Espace du président" title={`Bonjour ${me?.firstName ?? ""}`.trim()} subtitle="Toute l'activité des cours particuliers : ce que donne chaque professeur, les demandes des adhérents et la validation des professeurs. Le planning du club est dans le menu « Club »."  actions={<><Link to="/president/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Je vois comme un adhérent</Link><Link to="/president/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Je vois comme un professeur</Link></>} />
       <Page>
         <TabsBar side={false} label="Cours particuliers" active={tab} onChange={(k) => setParams(k === "activite" ? {} : { onglet: k })}
           tabs={[["activite", "📊 Activité des professeurs", toConfirm.length], ["demandes", "📨 Demandes de cours", old.length], ["profs", "👩‍🏫 Professeurs"]]} />
