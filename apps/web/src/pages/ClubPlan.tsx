@@ -8,6 +8,7 @@ import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
+import { byMonth, download, inPeriod, nameOf, rangeText, toCsv, toIcs } from "../clubExport";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -44,6 +45,7 @@ export function ClubPlan() {
   const [askNew, setAskNew] = useState(false); // « Ajouter un événement » : on demande d'abord la date
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
   const navLabel = view === "annee" ? `Année ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
   const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
@@ -99,13 +101,14 @@ export function ClubPlan() {
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>
               </div>
             </div>
-            {!readOnly && (
             <div className="flex flex-wrap gap-2">
+              {!readOnly && (<>
               <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
+              </>)}
+              <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setExportOpen(true)}>📤 Exporter</button>
             </div>
-            )}
           </div>
         </section>
       </div>
@@ -148,6 +151,7 @@ export function ClubPlan() {
       )}
       {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onEdit={(e) => { setPosterEv(null); openEdit(e); }} />}
+      {exportOpen && <ExportModal events={events} season={season} month={month} onClose={() => setExportOpen(false)} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -714,6 +718,62 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, readOnly
         <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
         <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
       </div>}
+    </Modal>
+  );
+}
+
+// ───────────── Exporter le planning : tableau Excel, agenda, liste imprimable ─────────────
+function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; season: number; month: string; onClose: () => void }) {
+  const [scope, setScope] = useState<"saison" | "mois">("saison");
+  const [withWho, setWithWho] = useState(false);
+  const from = scope === "saison" ? `${season}-09-01` : `${month}-01`;
+  const to = scope === "saison" ? `${season + 1}-08-31` : addDays(`${addDays(`${month}-01`, 32).slice(0, 7)}-01`, -1);
+  const opts = { from, to, withWho };
+  const n = inPeriod(events, from, to).length;
+  const groups = byMonth(events, from, to);
+  const tag = scope === "saison" ? `saison-${season}-${season + 1}` : month;
+  const print = () => {
+    const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:14mm}";
+    document.head.appendChild(st); document.body.classList.add("printing-affiche");
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); window.print();
+  };
+  const title = scope === "saison" ? `Saison ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
+  return (
+    <Modal title="📤 Exporter le planning" onClose={onClose}>
+      <p className="mt-0 text-sm text-ink">Choisis ce que tu veux sortir du planning. Le fichier est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
+      <p className="mb-1 text-sm font-extrabold text-ink">1. Quelle période ?</p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Pill on={scope === "saison"} onClick={() => setScope("saison")}>📆 Toute la saison {season} / {season + 1}</Pill>
+        <Pill on={scope === "mois"} onClick={() => setScope("mois")}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
+      </div>
+      <p className="mb-1 text-sm font-extrabold text-ink">2. Les noms des personnes ?</p>
+      <div className="mb-3"><Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe » (bénévoles, professeurs)</Pill></div>
+      <p className="mb-1 text-sm font-extrabold text-ink">3. Quel format ? <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""})</span></p>
+      <div className="grid gap-2">
+        <button type="button" className="btn-clay" disabled={!n} onClick={() => download(`planning-${tag}.csv`, "text/csv", toCsv(events, opts))}>📊 Tableau pour Excel (.csv)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>📅 Agenda pour Google, Outlook, iPhone (.ics)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={print}>🖨️ Liste à imprimer ou en PDF</button>
+      </div>
+      {!n && <p className="mb-0 mt-2 text-sm text-muted">Il n'y a aucun événement sur cette période.</p>}
+      <p className="mb-0 mt-3 text-xs text-muted">Le tableau s'ouvre avec Excel ou LibreOffice. L'agenda s'importe dans ton application de calendrier (une journée entière par événement). Pour la liste : dans la fenêtre d'impression, choisis « Enregistrer au format PDF ».</p>
+      {createPortal(
+        <div className="affiche-print" style={{ background: "#fff", color: "#111", padding: 0, fontFamily: "Archivo, system-ui, sans-serif" }}>
+          <h1 style={{ margin: "0 0 4px", fontSize: 26 }}>Tennis Club Houdan · Planning</h1>
+          <p style={{ margin: "0 0 14px", fontSize: 15, color: "#444" }}>{title}</p>
+          {groups.map((g) => (
+            <section key={g.label} style={{ marginBottom: 14, breakInside: "avoid" }}>
+              <h2 style={{ margin: "0 0 6px", fontSize: 17, background: "#1b1863", color: "#fff", padding: "4px 10px" }}>{g.label}</h2>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+                <tbody>{g.items.map((e) => (
+                  <tr key={e.id} style={{ borderBottom: "1px solid #ccc", verticalAlign: "top" }}>
+                    <td style={{ padding: "4px 8px 4px 0", width: "34%", fontWeight: 700 }}>{rangeText(e)}</td>
+                    <td style={{ padding: "4px 8px", fontWeight: 700 }}>{kindOf(e.kind).icon} {nameOf(e)}<span style={{ fontWeight: 400, color: "#555" }}> · {kindOf(e.kind).label}</span>
+                      {(e.time || e.place || e.note || (withWho && e.who.length > 0)) && <div style={{ fontWeight: 400, color: "#444" }}>{[e.time, e.place, e.note, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ")}</div>}</td>
+                  </tr>))}</tbody>
+              </table>
+            </section>))}
+        </div>, document.body)}
     </Modal>
   );
 }
