@@ -548,10 +548,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   };
   const FAMILIES: { name: string; icon: string; color: string; kinds: string[] }[] = [
     { name: "Compétition", icon: "🏆", color: "#D35400", kinds: ["TOURNOI", "EQUIPES"] },
-    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE", "FETE_ECOLE"] },
+    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE"] },
     { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
     { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "TERRE_BATTUE"] },
-    { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
+    { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
