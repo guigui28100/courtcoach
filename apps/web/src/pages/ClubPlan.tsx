@@ -12,7 +12,7 @@ import {
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
 type View = "annee" | "mois";
-const VIEWS: [View, string][] = [["annee", "📆 Année complète"], ["mois", "🗓️ Mois"]];
+const VIEWS: [View, string][] = [["annee", "📆 Vue année entière"], ["mois", "🗓️ Vue mois par mois"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 const covers = (e: ClubEvent, d: string) => e.startDate <= d && d <= e.endDate;
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
