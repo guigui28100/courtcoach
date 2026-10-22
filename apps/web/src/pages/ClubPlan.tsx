@@ -506,6 +506,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
+  const [wantPoster, setWantPoster] = useState<Record<string, boolean>>({});
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
     for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
@@ -588,21 +589,34 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     <div className="mt-1"><AnimationForm tournoi={isTournoi(k.key)} title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   ) : (<>
                   <div className="rounded-xl border-2 border-line bg-white p-3">
-                    <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted">① Pour le planning</p>
-                    <p className="m-0 mb-2 text-sm text-ink">Cocher « {k.label} » suffit pour le placer dans le calendrier. Tu peux ajouter quelques mots (facultatif).</p>
+                    <p className="m-0 text-sm font-extrabold text-ink">📅 Dans le planning</p>
+                    <p className="m-0 mb-2 text-sm text-muted">« {k.label} » est déjà placé dans le calendrier. Tu peux seulement ajouter quelques mots.</p>
                     <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
                       <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
                         placeholder="Quelques mots sur cet événement"
                         className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                     </label>
                   </div>
-                  <details className="mt-2 rounded-xl border-2 border-dashed border-[#9a8cc9] bg-[#f5f2ff] p-3" open={!!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}>
-                    <summary className="cursor-pointer text-sm font-bold text-ink">② 🪧 Je veux créer une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"} <span className="font-normal text-muted">(facultatif : ouvre ici pour remplir)</span></summary>
-                    <p className="m-0 mt-2 rounded-lg bg-white px-3 py-2 text-sm text-ink">Ces informations servent <b>seulement à fabriquer l'affiche</b> (horaires, lieu, formules et prix…). Si tu ne veux pas d'affiche, laisse ce menu fermé : l'événement sera quand même enregistré.</p>
-                    <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
-                  </details>
+                  {(() => {
+                    const filled = !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring);
+                    const wants = wantPoster[k.key] ?? filled;
+                    const toggleP = () => {
+                      if (wants && filled && !confirm("Ne plus faire d'affiche ? Les informations déjà écrites pour l'affiche seront effacées.")) return;
+                      if (wants) patch(k.key, { info: emptyInfo() });
+                      setWantPoster((w) => ({ ...w, [k.key]: !wants }));
+                    };
+                    return (<>
+                      <button type="button" role="checkbox" aria-checked={wants} onClick={toggleP}
+                        className={`mt-2 flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3 text-left ${wants ? "border-[#6d4fc2] bg-[#efe9ff]" : "border-dashed border-[#9a8cc9] bg-[#f5f2ff] hover:border-[#6d4fc2]"}`}>
+                        <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md border-2 text-sm text-white" style={{ background: wants ? "#6d4fc2" : "#fff", borderColor: wants ? "#6d4fc2" : "#9a8cc9" }}>{wants ? "✔" : ""}</span>
+                        <span><b className="block text-ink">🪧 Faire aussi une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"}</b>
+                          <span className="block text-sm text-muted">{wants ? "Remplis les infos ci-dessous : elles servent seulement à fabriquer l'affiche." : "Facultatif. Si tu ne coches pas, tu n'as rien de plus à faire : l'événement est enregistré sans affiche."}</span></span>
+                      </button>
+                      {wants && <div className="mt-2 rounded-xl border-2 border-[#9a8cc9] bg-white p-3"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>}
+                    </>);
+                  })()}
                   </>)}
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">③ 👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
