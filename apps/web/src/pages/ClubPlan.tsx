@@ -8,7 +8,8 @@ import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
-import { byMonth, download, inPeriod, nameOf, rangeText, toCsv, toIcs } from "../clubExport";
+import { download, inPeriod, toIcs } from "../clubExport";
+import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -748,54 +749,51 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, readOnly
 function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; season: number; month: string; onClose: () => void }) {
   const [scope, setScope] = useState<"saison" | "mois">("saison");
   const [withWho, setWithWho] = useState(false);
+  const [cover, setCover] = useState(true);
+  const [pageNo, setPageNo] = useState(0);
+  const [scale, setScale] = useState(0.5);
+  useEffect(() => { const f = () => setScale(Math.min(0.6, (Math.min(window.innerWidth, 720) - 56) / DOSSIER_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   const from = scope === "saison" ? `${season}-09-01` : `${month}-01`;
   const to = scope === "saison" ? `${season + 1}-08-31` : addDays(`${addDays(`${month}-01`, 32).slice(0, 7)}-01`, -1);
   const opts = { from, to, withWho };
   const n = inPeriod(events, from, to).length;
-  const groups = byMonth(events, from, to);
+  const pages = useMemo(() => buildDossier(events, { from, to, withWho, season: scope === "saison" ? season : undefined, cover: scope === "saison" && cover }), [events, from, to, withWho, scope, season, cover]);
+  const idx = Math.min(pageNo, Math.max(0, pages.length - 1));
   const tag = scope === "saison" ? `saison-${season}-${season + 1}` : month;
   const print = () => {
-    const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:14mm}";
+    const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:0}";
     document.head.appendChild(st); document.body.classList.add("printing-affiche");
     const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done); window.print();
   };
-  const title = scope === "saison" ? `Saison ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
   return (
     <Modal title="📤 Exporter le planning" onClose={onClose}>
-      <p className="mt-0 text-sm text-ink">Choisis ce que tu veux sortir du planning. Le fichier est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
+      <p className="mt-0 text-sm text-ink">Le document est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
       <p className="mb-1 text-sm font-extrabold text-ink">1. Quelle période ?</p>
       <div className="mb-3 flex flex-wrap gap-2">
-        <Pill on={scope === "saison"} onClick={() => setScope("saison")}>📆 Toute la saison {season} / {season + 1}</Pill>
-        <Pill on={scope === "mois"} onClick={() => setScope("mois")}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
+        <Pill on={scope === "saison"} onClick={() => { setScope("saison"); setPageNo(0); }}>📆 Toute la saison {season} / {season + 1}</Pill>
+        <Pill on={scope === "mois"} onClick={() => { setScope("mois"); setPageNo(0); }}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
       </div>
-      <p className="mb-1 text-sm font-extrabold text-ink">2. Les noms des personnes ?</p>
-      <div className="mb-3"><Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe » (bénévoles, professeurs)</Pill></div>
-      <p className="mb-1 text-sm font-extrabold text-ink">3. Quel format ? <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""})</span></p>
-      <div className="grid gap-2">
-        <button type="button" className="btn-clay" disabled={!n} onClick={() => download(`planning-${tag}.csv`, "text/csv", toCsv(events, opts))}>📊 Tableau pour Excel (.csv)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>📅 Agenda pour Google, Outlook, iPhone (.ics)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={print}>🖨️ Liste à imprimer ou en PDF</button>
+      <p className="mb-1 text-sm font-extrabold text-ink">2. Options</p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {scope === "saison" && <Pill on={cover} onClick={() => { setCover(!cover); setPageNo(0); }}>📘 Avec la couverture</Pill>}
+        <Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe »</Pill>
       </div>
-      {!n && <p className="mb-0 mt-2 text-sm text-muted">Il n'y a aucun événement sur cette période.</p>}
-      <p className="mb-0 mt-3 text-xs text-muted">Le tableau s'ouvre avec Excel ou LibreOffice. L'agenda s'importe dans ton application de calendrier (une journée entière par événement). Pour la liste : dans la fenêtre d'impression, choisis « Enregistrer au format PDF ».</p>
-      {createPortal(
-        <div className="affiche-print" style={{ background: "#fff", color: "#111", padding: 0, fontFamily: "Archivo, system-ui, sans-serif" }}>
-          <h1 style={{ margin: "0 0 4px", fontSize: 26 }}>Tennis Club Houdan · Planning</h1>
-          <p style={{ margin: "0 0 14px", fontSize: 15, color: "#444" }}>{title}</p>
-          {groups.map((g) => (
-            <section key={g.label} style={{ marginBottom: 14, breakInside: "avoid" }}>
-              <h2 style={{ margin: "0 0 6px", fontSize: 17, background: "#1b1863", color: "#fff", padding: "4px 10px" }}>{g.label}</h2>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
-                <tbody>{g.items.map((e) => (
-                  <tr key={e.id} style={{ borderBottom: "1px solid #ccc", verticalAlign: "top" }}>
-                    <td style={{ padding: "4px 8px 4px 0", width: "34%", fontWeight: 700 }}>{rangeText(e)}</td>
-                    <td style={{ padding: "4px 8px", fontWeight: 700 }}>{kindOf(e.kind).icon} {nameOf(e)}<span style={{ fontWeight: 400, color: "#555" }}> · {kindOf(e.kind).label}</span>
-                      {(e.time || e.place || e.note || (withWho && e.who.length > 0)) && <div style={{ fontWeight: 400, color: "#444" }}>{[e.time, e.place, e.note, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ")}</div>}</td>
-                  </tr>))}</tbody>
-              </table>
-            </section>))}
-        </div>, document.body)}
+      <p className="mb-1 text-sm font-extrabold text-ink">3. Le dossier de saison <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""} · {pages.length} page{pages.length > 1 ? "s" : ""})</span></p>
+      {n > 0 && pages.length > 0 ? (<>
+        <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: DOSSIER_W * scale, height: DOSSIER_H * scale }}>
+          <div style={{ width: DOSSIER_W, height: DOSSIER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>{pages[idx]}</div>
+        </div>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <button type="button" className="btn-outline" aria-label="Page précédente" disabled={idx === 0} onClick={() => setPageNo(idx - 1)}>‹</button>
+          <b className="text-ink">Page {idx + 1} / {pages.length}</b>
+          <button type="button" className="btn-outline" aria-label="Page suivante" disabled={idx >= pages.length - 1} onClick={() => setPageNo(idx + 1)}>›</button>
+        </div>
+        <button type="button" className="btn-clay mt-3 w-full" onClick={print}>📘 Imprimer ou enregistrer en PDF</button>
+        <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » (format A4, marges : aucune).</p>
+      </>) : <p className="mb-0 mt-1 text-sm text-muted">Il n'y a aucun événement sur cette période.</p>}
+      <button type="button" className="btn-outline mt-4 w-full bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>📅 Agenda pour Google, Outlook, iPhone (.ics)</button>
+      {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
     </Modal>
   );
 }
