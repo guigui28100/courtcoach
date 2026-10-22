@@ -220,48 +220,36 @@ export function CoachHome() {
   const week = [...d.upcoming.map((l) => ({ l, wait: false })), ...d.booked.map((l) => ({ l, wait: true }))]
     .filter((x) => x.l.finalSlot!.date >= today && x.l.finalSlot!.date <= inAWeek)
     .sort((x, y) => (x.l.finalSlot!.date + x.l.finalSlot!.time).localeCompare(y.l.finalSlot!.date + y.l.finalSlot!.time));
-  const stat = (n: number, label: string, cls = "text-ink") => <div className="rounded-2xl border border-line bg-white px-4 py-4 text-center shadow-[0_10px_24px_-12px_rgba(16,32,58,0.3)]"><b className={"block font-display text-4xl font-black leading-none " + cls}>{n}</b><span className="text-sm text-muted">{label}</span></div>;
+  const chip = (n: number, label: string) => <div className="rounded-2xl bg-white/15 px-4 py-3 text-center ring-1 ring-white/30 backdrop-blur-sm"><b className="block font-display text-3xl font-black leading-none text-white">{n}</b><span className="text-sm font-semibold text-white/90">{label}</span></div>;
   const toDo = adultWait.length + d.booked.length + d.pending.length + d.profsWaiting;
+  const Title = ({ n, children, sub }: { n: string; children: React.ReactNode; sub?: string }) => <div className="flex flex-wrap items-baseline gap-x-3"><span aria-hidden="true" className="grid size-7 place-items-center rounded-full bg-ink text-sm font-black text-ball">{n}</span><h2 className="m-0 text-xl">{children}</h2>{sub && <span className="text-sm text-muted">{sub}</span>}</div>;
   return (
     <>
-      <section aria-label="Bienvenue" className="home-hero relative overflow-hidden pb-28 pt-9 text-white print:hidden">
-        <svg aria-hidden="true" viewBox="0 0 1200 400" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-50" fill="none" stroke="#fff" strokeWidth="3"><rect x="120" y="40" width="960" height="340" /><line x1="120" y1="120" x2="1080" y2="120" /><line x1="120" y1="300" x2="1080" y2="300" /><line x1="600" y1="120" x2="600" y2="300" /><line x1="360" y1="120" x2="360" y2="300" /><line x1="840" y1="120" x2="840" y2="300" /><line x1="600" y1="20" x2="600" y2="400" strokeDasharray="8 8" /></svg>
-        <ClubLogo className="absolute right-[4%] top-5 size-32 text-white drop-shadow-lg max-xl:hidden" />
-        <div className="relative mx-auto max-w-6xl px-4">
-          <p className="m-0 text-xs font-black uppercase tracking-[0.16em] text-ball">Espace coach · {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
-          <h1 className="m-0 mt-1 max-w-[18ch] text-[2.1rem] leading-[1.05] text-white [text-shadow:0_2px_0_rgba(0,0,0,0.15)] sm:max-w-none sm:text-5xl lg:pr-44">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first},<br />{line2}</h1>
-          <div className="mt-5 flex flex-wrap gap-3">
+      <section aria-label="Bienvenue" className="home-hero relative overflow-hidden pb-8 pt-8 text-white print:hidden">
+        <svg aria-hidden="true" viewBox="0 0 1200 400" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-40" fill="none" stroke="#fff" strokeWidth="3"><rect x="120" y="40" width="960" height="340" /><line x1="120" y1="120" x2="1080" y2="120" /><line x1="120" y1="300" x2="1080" y2="300" /><line x1="600" y1="120" x2="600" y2="300" /><line x1="360" y1="120" x2="360" y2="300" /><line x1="840" y1="120" x2="840" y2="300" /><line x1="600" y1="20" x2="600" y2="400" strokeDasharray="8 8" /></svg>
+        <ClubLogo className="absolute right-[4%] top-5 size-28 text-white drop-shadow-lg max-xl:hidden" />
+        <div className="relative mx-auto grid max-w-6xl gap-5 px-4">
+          <div>
+            <p className="m-0 text-xs font-black uppercase tracking-[0.16em] text-ball">Espace coach · {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
+            <h1 className="m-0 mt-1 max-w-[18ch] text-[2rem] leading-[1.05] text-white [text-shadow:0_2px_0_rgba(0,0,0,0.15)] sm:max-w-none sm:text-4xl lg:pr-40">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first}, {line2}</h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
             <Link to="/coach/centre/fin-de-cours" className="home-big bg-ball text-ink no-underline">⭐ Fin de cours</Link>
             <Link to="/coach/centre?onglet=videos" className="home-big bg-white text-ink no-underline">🎬 Analyser une vidéo</Link>
             <Link to="/coach/prof" className="home-big bg-ink text-white no-underline">📅 Mon agenda</Link>
           </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Chiffres du jour">
+            {chip(todos.length, todos.length > 1 ? "choses à faire" : "chose à faire")}
+            {chip(d.booked.length, "cours à confirmer")}
+            {chip(adultWait.length + youthWait.length, adultWait.length + youthWait.length > 1 ? "vidéos à analyser" : "vidéo à analyser")}
+            {chip(d.players.length, d.players.length > 1 ? "jeunes suivis" : "jeune suivi")}
+          </div>
         </div>
       </section>
       <Page>
-        <div className="relative z-10 -mt-24 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Chiffres du jour">
-          {stat(todos.length, todos.length > 1 ? "choses à faire" : "chose à faire", "text-clay")}
-          {stat(d.booked.length, d.booked.length > 1 ? "cours à confirmer" : "cours à confirmer")}
-          {stat(adultWait.length + youthWait.length, adultWait.length + youthWait.length > 1 ? "vidéos à analyser" : "vidéo à analyser")}
-          {stat(d.players.length, d.players.length > 1 ? "jeunes suivis" : "jeune suivi", "text-ok")}
-        </div>
-        <div className="grid gap-5 lg:grid-cols-3">
-          <section aria-labelledby="t-semaine" className="card grid content-start gap-3">
-            <h2 id="t-semaine" className="m-0 text-lg">📅 Ma semaine</h2>
-            {week.length === 0 ? <p className="m-0 rounded-xl bg-sand p-3 text-center text-muted">Aucun cours dans les 7 prochains jours.</p> : (
-              <ul className="m-0 grid list-none gap-2 p-0">
-                {week.slice(0, 5).map(({ l, wait }) => { const dt = new Date(`${l.finalSlot!.date}T12:00:00`); return (
-                  <li key={l.id} className="flex min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-sand px-3 py-2">
-                    <b className="shrink-0 whitespace-nowrap font-display text-sm font-black">{dt.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "").replace(/^./, (c) => c.toUpperCase())} {fmtHour(l.finalSlot!.time)}</b>
-                    <span className="min-w-0 flex-1 truncate text-sm">{adultName(l.member, "Adhérent")} · {l.objective}{l.prof && l.prof.id !== me?.id ? ` · avec ${l.prof.firstName ?? "un prof"}` : ""}</span>
-                    {wait && <span className="shrink-0 whitespace-nowrap rounded-full bg-[#fff3cd] px-2 py-0.5 text-xs font-bold text-[#7a5a00]">⏳ à confirmer</span>}
-                  </li>
-                ); })}
-              </ul>
-            )}
-            <Link to="/coach/prof" className="font-bold text-clay no-underline hover:underline">Voir mon agenda →</Link>
-          </section>
+        <div className="grid items-start gap-5 lg:grid-cols-[3fr_2fr]">
           <section aria-labelledby="t-todo" className="card grid content-start gap-3">
-            <h2 id="t-todo" className="m-0 text-lg">✅ À faire{todos.length > 0 && <span className="ml-2 rounded-full bg-clay px-2.5 py-0.5 align-middle text-sm font-black text-white">{todos.length}</span>}</h2>
+            <Title n="1" sub="ce qui demande ton attention"><span id="t-todo">✅ À faire{todos.length > 0 && <span className="ml-2 rounded-full bg-clay px-2.5 py-0.5 align-middle text-sm font-black text-white">{todos.length}</span>}</span></Title>
             {todos.length === 0 ? <p className="m-0 rounded-xl bg-sand p-3 text-center">Tout est à jour 🎾</p> : (
               <ul className="m-0 grid list-none gap-0 p-0">
                 {todos.slice(0, 6).map((t, i) => (
@@ -275,21 +263,39 @@ export function CoachHome() {
             )}
             {todos.length > 6 && <p className="hint m-0">… et {todos.length - 6} autre{todos.length - 6 > 1 ? "s" : ""} dans les espaces Adultes et Jeunes.</p>}
           </section>
-          <section aria-labelledby="t-raccourcis" className="card grid content-start gap-3">
-            <h2 id="t-raccourcis" className="m-0 text-lg">⚡ Raccourcis</h2>
-            <ul className="m-0 grid list-none gap-2 p-0">{quick.map(([ic, label, to]) => <li key={label}><Link to={to} className="flex items-center gap-2 rounded-xl bg-sand px-3 py-2.5 font-semibold text-ink no-underline hover:bg-[#ead8c4]"><span aria-hidden="true">{ic}</span>{label}</Link></li>)}</ul>
+          <section aria-labelledby="t-semaine" className="card grid content-start gap-3">
+            <Title n="2" sub="7 prochains jours"><span id="t-semaine">📅 Ma semaine</span></Title>
+            {week.length === 0 ? <p className="m-0 rounded-xl bg-sand p-3 text-center text-muted">Aucun cours dans les 7 prochains jours.</p> : (
+              <ul className="m-0 grid list-none gap-2 p-0">
+                {week.slice(0, 5).map(({ l, wait }) => { const dt = new Date(`${l.finalSlot!.date}T12:00:00`); return (
+                  <li key={l.id} className="flex min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-sand px-3 py-2">
+                    <b className="shrink-0 whitespace-nowrap font-display text-sm font-black">{dt.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "").replace(/^./, (c) => c.toUpperCase())} {fmtHour(l.finalSlot!.time)}</b>
+                    <span className="min-w-0 flex-1 truncate text-sm">{adultName(l.member, "Adhérent")} · {l.objective}{l.prof && l.prof.id !== me?.id ? ` · avec ${l.prof.firstName ?? "un prof"}` : ""}</span>
+                    {wait && <span className="shrink-0 whitespace-nowrap rounded-full bg-[#fff3cd] px-2 py-0.5 text-xs font-bold text-[#7a5a00]">⏳ à confirmer</span>}
+                  </li>
+                ); })}
+              </ul>
+            )}
+            <Link to="/coach/prof" className="font-bold text-clay no-underline hover:underline">Voir mon agenda →</Link>
           </section>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2" aria-label="Mes deux espaces">
-          <div className="relative grid min-h-48 content-between gap-3 overflow-hidden rounded-[1.6rem] p-6 text-white" style={{ background: "linear-gradient(135deg,#17325c,#2a6fb0)" }}>
-            <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
-            <div className="flex items-end justify-between gap-3"><div><b className="font-display text-5xl font-black leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open no-underline">Ouvrir →</Link></div>
+        <section className="grid gap-3" aria-label="Mes deux espaces">
+          <Title n="3" sub="les deux parties de CourtCoach, jamais mélangées">🚪 Mes deux espaces</Title>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="relative grid min-h-40 content-between gap-3 overflow-hidden rounded-[1.6rem] p-6 text-white" style={{ background: "linear-gradient(135deg,#17325c,#2a6fb0)" }}>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 1</span><h3 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h3><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-black leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open no-underline">Ouvrir →</Link></div>
+            </div>
+            <div className="relative grid min-h-40 content-between gap-3 overflow-hidden rounded-[1.6rem] p-6 text-white" style={{ background: "linear-gradient(135deg,#0f2a24,#2f8f5b)" }}>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 2</span><h3 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h3><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-black leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open no-underline">Ouvrir →</Link></div>
+            </div>
           </div>
-          <div className="relative grid min-h-48 content-between gap-3 overflow-hidden rounded-[1.6rem] p-6 text-white" style={{ background: "linear-gradient(135deg,#0f2a24,#2f8f5b)" }}>
-            <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
-            <div className="flex items-end justify-between gap-3"><div><b className="font-display text-5xl font-black leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open no-underline">Ouvrir →</Link></div>
-          </div>
-        </div>
+        </section>
+        <section aria-labelledby="t-raccourcis" className="grid gap-3">
+          <Title n="4" sub="accès directs"><span id="t-raccourcis">⚡ Raccourcis</span></Title>
+          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3 lg:grid-cols-5">{quick.map(([ic, label, to]) => <li key={label}><Link to={to} className="flex h-full items-center gap-2 rounded-xl border border-line bg-white px-3 py-3 font-semibold text-ink no-underline shadow-sm hover:bg-sand"><span aria-hidden="true" className="text-xl">{ic}</span>{label}</Link></li>)}</ul>
+        </section>
       </Page>
     </>
   );
