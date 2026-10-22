@@ -34,7 +34,7 @@ export function ClubPlan() {
   const [profs, setProfs] = useState<string[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("annee");
+  const [view, setView] = useState<View>("mois");
   const multi = false; const setMulti = (_: boolean) => {};
   const today = todayParis();
   const [season, setSeason] = useState(seasonOf(today));
@@ -130,7 +130,7 @@ export function ClubPlan() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-[#16a34a] bg-[#e8f7ee] px-3 py-2">
-          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Tableau Excel, agenda du téléphone ou liste en PDF.</span>
+          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Dossier de saison en PDF ou agenda du téléphone.</span>
           <button type="button" className="whitespace-nowrap rounded-xl border-2 border-[#166534] bg-[#16a34a] px-4 py-2 font-extrabold text-white shadow hover:bg-[#15803d]" onClick={() => setExportOpen(true)}>📤 Exporter le planning</button>
         </div>
         {view === "mois" && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
