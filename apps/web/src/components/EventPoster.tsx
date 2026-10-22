@@ -39,9 +39,11 @@ function Fit({ top, bottom, h, w, children }: { top: number; bottom: number; h: 
   const ref = useRef<HTMLDivElement>(null);
   const [sc, setSc] = useState(1);
   useLayoutEffect(() => {
-    const avail = h - top - bottom; const ch = ref.current?.offsetHeight ?? 0;
-    const n = ch > avail ? avail / ch : 1;
-    setSc((p) => (Math.abs(p - n) < 0.001 ? p : n));
+    const calc = () => { const avail = h - top - bottom; const ch = ref.current?.offsetHeight ?? 0; const n = ch > avail ? avail / ch : 1; setSc((p) => (Math.abs(p - n) < 0.001 ? p : n)); };
+    calc();
+    const ro = typeof ResizeObserver !== "undefined" && ref.current ? new ResizeObserver(calc) : null; // le texte peut changer de taille quand la police est chargée
+    ro?.observe(ref.current!); document.fonts?.ready.then(calc).catch(() => {});
+    return () => ro?.disconnect();
   });
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top, height: h - top - bottom, overflow: "hidden" }}>
@@ -54,12 +56,14 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const k = kindOf(e.kind); const a = ambiance(e.kind);
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
-  const px = sq ? 64 : 56; const hd = sq ? 400 : 390;
-  // Taille du titre : le plus long mot doit tenir sur une ligne dans la place à gauche du médaillon
-  const gap = sq ? 310 : 270; const avail = w - px - gap; const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 1);
-  const base = name.length <= 12 ? 100 : name.length <= 20 ? 78 : name.length <= 30 ? 62 : 50;
-  const fs = Math.max(38, Math.min(base * (sq ? 1.05 : 1), avail / (longest * 0.82)));
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price);
+  const infoCount = [e.audience, e.time, e.place, e.bring, e.signup].filter(Boolean).length;
+  const dense = infoCount + formulas.length * 1.4 > (sq ? 11 : 9); // beaucoup de contenu : bandeau du haut plus bas pour laisser la place
+  const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 140 : sq ? 210 : 190;
+  // Taille du titre : le plus long mot doit tenir sur une ligne dans la place à gauche du médaillon
+  const gap = medal + (sq ? 100 : 80); const avail = w - px - gap; const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 1);
+  const base = name.length <= 12 ? 100 : name.length <= 20 ? 78 : name.length <= 30 ? 62 : 50;
+  const fs = Math.max(34, Math.min(base * (sq ? 1.05 : 1) * (dense ? 0.78 : 1), avail / (longest * 0.82)));
   const rows: { icon: string; title: string; text: string }[] = [];
   if (e.audience) rows.push({ icon: "👥", title: "POUR QUI", text: e.audience });
   if (e.time) rows.push({ icon: "🕒", title: "HORAIRES", text: e.time });
@@ -69,15 +73,15 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
   const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 5px 12px rgba(27,24,99,.12)" } as const;
   return (
-    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
+    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
       <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
         <Decor deco={a.deco} w={w} h={hd} />
         <div style={{ position: "absolute", left: px, top: 44, right: gap }}>
           <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
           <div style={{ fontSize: fs, fontWeight: 900, lineHeight: 1, marginTop: 14, textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
         </div>
-        <div aria-hidden style={{ position: "absolute", right: sq ? 56 : 48, top: 40, width: sq ? 210 : 190, height: sq ? 210 : 190, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: sq ? 104 : 94, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
-        <div style={{ position: "absolute", left: px, bottom: 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: sq ? 34 : 30, boxShadow: "0 8px 18px rgba(0,0,0,.25)", maxWidth: w - px * 2 }}>{fullRange(e)}</div>
+        <div aria-hidden style={{ position: "absolute", right: sq ? 56 : 48, top: 40, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
+        <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dense ? 26 : sq ? 34 : 30, boxShadow: "0 8px 18px rgba(0,0,0,.25)", maxWidth: w - px * 2 }}>{fullRange(e)}</div>
       </div>
       <Fit top={hd + 4} bottom={sq ? 100 : 112} h={h} w={w}>
         <div style={{ padding: `22px ${px}px 0`, display: "grid", gap: 12 }}>
@@ -93,9 +97,12 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
             <div style={{ ...card, padding: "12px 20px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}</div>
               {formulas.map((f, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "7px 0", borderTop: i ? `2px dotted ${mix(a.c1, "#ffffff", 0.6)}` : "none" }}>
+                <div key={i}>
+                  {(f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group ? <div style={{ marginTop: i ? 10 : 2, padding: "6px 12px", background: a.c1, color: "#fff", borderRadius: 10, fontSize: 16, fontWeight: 900, letterSpacing: "0.04em" }}>{f.group}</div> : null}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "7px 0", borderTop: i && !((f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group) ? `2px dotted ${mix(a.c1, "#ffffff", 0.6)}` : "none" }}>
                   <span style={{ flex: 1, minWidth: 0, fontSize: 25, fontWeight: 800, overflowWrap: "anywhere" }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: 16, fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
                   <span style={{ flex: "0 0 auto", fontSize: 32, fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{f.price}</span>
+                </div>
                 </div>))}
             </div>)}
           {e.note && <div style={{ background: a.soft, borderLeft: `10px solid ${a.c1}`, borderRadius: 16, padding: "14px 20px", fontSize: 22, lineHeight: 1.35, color: "#2b2a42", overflowWrap: "anywhere" }}>{e.note}</div>}

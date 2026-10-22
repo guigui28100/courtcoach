@@ -99,10 +99,10 @@ describe("Planning du club (réservé au coach)", () => {
     expect(f.featured).toBe(true); // « ⭐ à mettre en avant »
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", note: "x".repeat(601) }).expect(400);
     // Infos de l'affiche : horaires, lieu, inscriptions et plusieurs formules avec leur prix
-    const g = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: true, time: "9 h – 18 h", place: "Courts couverts", signup: "À l'accueil jusqu'au 10 novembre", formulas: [{ label: "Adhérent", price: "10 €", detail: "repas compris" }, { label: "Non adhérent", price: "15 €" }, { label: "  ", price: "  " }], audience: "8 à 12 ans", bring: "Tenue de sport" }).expect(200)).body;
+    const g = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: true, time: "9 h – 18 h", place: "Courts couverts", signup: "À l'accueil jusqu'au 10 novembre", formulas: [{ label: "Adhérent", price: "10 €", detail: "repas compris", group: "6 à 17 ans" }, { label: "Non adhérent", price: "15 €" }, { label: "  ", price: "  " }], audience: "8 à 12 ans", bring: "Tenue de sport" }).expect(200)).body;
     expect(g.audience).toBe("8 à 12 ans"); expect(g.bring).toBe("Tenue de sport");
     expect(g.time).toBe("9 h – 18 h"); expect(g.place).toBe("Courts couverts"); expect(g.signup).toContain("10 novembre");
-    expect(g.formulas).toEqual([{ label: "Adhérent", price: "10 €", detail: "repas compris" }, { label: "Non adhérent", price: "15 €", detail: "" }]); // la ligne vide est ignorée
+    expect(g.formulas).toEqual([{ label: "Adhérent", price: "10 €", detail: "repas compris", group: "6 à 17 ans" }, { label: "Non adhérent", price: "15 €", detail: "", group: "" }]); // la ligne vide est ignorée
     const h = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: false }).expect(200)).body;
     expect(h.formulas).toHaveLength(2); expect(h.time).toBe("9 h – 18 h"); expect(h.audience).toBe("8 à 12 ans"); // un simple ⭐ ne supprime pas les infos de l'affiche
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", formulas: Array.from({ length: 9 }, (_, i) => ({ label: `F${i}`, price: "1 €" })) }).expect(400); // 8 au plus

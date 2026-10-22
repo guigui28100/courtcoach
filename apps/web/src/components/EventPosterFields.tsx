@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Formula, Kind } from "../clubPlan";
 
 export interface PosterInfo { time: string; place: string; signup: string; formulas: Formula[]; audience: string; bring: string }
@@ -5,17 +6,43 @@ export const emptyInfo = (): PosterInfo => ({ time: "", place: "", signup: "", f
 export const MAX_FORMULAS = 8;
 export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "STAGE_ADULTES";
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
+// Les formules habituelles des stages enfants du club (les prix restent à écrire)
+export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
+export const KIDS_PRESET: Formula[] = [
+  { group: "Toute la semaine · 6 à 17 ans", label: "Journée 10 h – 16 h", detail: "pique-nique le midi", price: "" },
+  { group: "Toute la semaine · 6 à 17 ans", label: "Demi-journée 13 h – 16 h", detail: "", price: "" },
+  { group: "À la carte · 6 à 17 ans", label: "Journée 10 h – 16 h", detail: "au choix, à l'unité · pique-nique le midi", price: "" },
+  { group: "À la carte · 6 à 17 ans", label: "Demi-journée 13 h – 16 h", detail: "au choix, à l'unité", price: "" },
+  { group: "Mini tennis · 3 à 5 ans · 16 h – 17 h", label: "Toute la semaine", detail: "lundi, mardi, jeudi et vendredi", price: "" },
+  { group: "Mini tennis · 3 à 5 ans · 16 h – 17 h", label: "À la journée", detail: "au choix, à l'unité", price: "" },
+];
 const STAGE_SUGGEST = ["Semaine complète", "Journée", "Demi-journée", "Adhérent", "Non adhérent", "2e enfant"];
 
 const inputCls = "mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal text-ink";
 
-function Formulas({ value, onChange, stage }: { value: PosterInfo; onChange: (v: PosterInfo) => void; stage: boolean }) {
+function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChange: (v: PosterInfo) => void; stage: boolean; kids?: boolean }) {
   const set = (p: Partial<PosterInfo>) => onChange({ ...value, ...p });
   const setF = (i: number, p: Partial<Formula>) => set({ formulas: value.formulas.map((f, k) => (k === i ? { ...f, ...p } : f)) });
-  const add = (label = "") => value.formulas.length < MAX_FORMULAS && set({ formulas: [...value.formulas, { label, price: "", detail: "" }] });
+  const add = (label = "") => value.formulas.length < MAX_FORMULAS && set({ formulas: [...value.formulas, { label, price: "", detail: "", group: value.formulas[value.formulas.length - 1]?.group ?? "" }] });
+  const KEY = "cc-formula-model"; // modèle personnel gardé seulement dans le navigateur du coach (rien n'est envoyé)
+  const [mine, setMine] = useState<Formula[]>(() => { try { const v = JSON.parse(localStorage.getItem(KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; } });
+  const saveMine = (f: Formula[]) => { const clean = f.map((x) => ({ ...x, price: "" })); try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch { /* sans stockage, pas de modèle */ } setMine(clean); };
+  const replaceWith = (list: Formula[], audience?: string) => {
+    if (value.formulas.length > 0 && !window.confirm("Remplacer les formules actuelles par ce modèle ? (les prix seront à ressaisir)")) return;
+    onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience });
+  };
+  const groups = [...new Set(value.formulas.map((f) => f.group ?? "").filter(Boolean))];
   const sug = (stage ? STAGE_SUGGEST : SUGGEST).filter((s) => !value.formulas.some((f) => f.label === s)).slice(0, 5);
   return (
     <div>
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        {kids && <button type="button" className={value.formulas.length === 0 ? "btn-clay" : "btn-outline"} onClick={() => replaceWith(KIDS_PRESET, KIDS_AUDIENCE)}>📋 Formules habituelles des stages enfants</button>}
+        {mine.length > 0 && <button type="button" className="btn-outline" onClick={() => replaceWith(mine)}>📂 Mon modèle ({mine.length})</button>}
+        {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => saveMine(value.formulas)}>💾 Garder ces formules comme mon modèle</button>}
+        {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => { if (window.confirm("Effacer toutes les formules ?")) set({ formulas: [] }); }}>🧹 Tout effacer</button>}
+      </div>
+      {value.formulas.length === 0 && <p className="mb-2 mt-0 text-sm text-muted">Écris tes propres formules avec « ＋ Ajouter une formule », ou pars d'un modèle ci-dessus : tout reste modifiable (noms, prix, rubriques, précisions).</p>}
+      <datalist id="formula-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
       <ul className="m-0 grid list-none gap-2.5 p-0">
         {value.formulas.map((f, i) => (
           <li key={i} className="rounded-xl border-2 border-line bg-white p-2.5">
@@ -25,6 +52,7 @@ function Formulas({ value, onChange, stage }: { value: PosterInfo; onChange: (v:
               <input aria-label={`Prix ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="Prix (ex. 120 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
               <button type="button" className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-sm font-bold text-ink hover:border-ink" aria-label={`Retirer la formule ${i + 1}`} onClick={() => set({ formulas: value.formulas.filter((_, k) => k !== i) })}>🗑️</button>
             </div>
+            <input aria-label={`Rubrique de la formule ${i + 1}`} list="formula-groups" maxLength={60} value={f.group ?? ""} onChange={(e) => setF(i, { group: e.target.value })} placeholder="Rubrique (facultatif) : 6 à 17 ans, Mini tennis 3 à 5 ans…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
             <input aria-label={`Détail de la formule ${i + 1}`} maxLength={60} value={f.detail ?? ""} onChange={(e) => setF(i, { detail: e.target.value })} placeholder="Précision (facultatif) : 5 matinées de 9 h à 12 h, goûter compris…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
           </li>))}
       </ul>
@@ -65,7 +93,7 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
           <p className="mb-0 mt-1.5 text-xs text-muted">Les dates du stage viennent du planning : elles s'écrivent toutes seules sur l'affiche.</p>
         </Step>
         <Step n={3} title="Formules et prix" hint={` · plusieurs formules possibles, ${MAX_FORMULAS} au plus`} color="#D35400">
-          <Formulas value={value} onChange={onChange} stage />
+          <Formulas value={value} onChange={onChange} stage kids={kind === "STAGE_ENFANTS"} />
         </Step>
         <Step n={4} title="À prévoir" hint=" · facultatif" color="#8E44AD">
           <input aria-label="À prévoir" maxLength={160} value={value.bring} onChange={(e) => set({ bring: e.target.value })} placeholder="Ex. Tenue de sport, bouteille d'eau, raquette (prêt possible)" className={inputCls} />

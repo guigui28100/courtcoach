@@ -488,7 +488,7 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
 const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
-const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim() })) });
+const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);

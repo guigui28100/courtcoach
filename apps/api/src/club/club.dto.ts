@@ -10,6 +10,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 export class FormulaDto {
   @Transform(trim) @IsString() @MaxLength(40) label!: string; // ex. « Adhérent », « Semaine complète »
   @Transform(trim) @IsString() @MaxLength(30) price!: string; // ex. « 60 € »
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) group?: string; // rubrique, ex. « Mini tennis · 3 à 5 ans »
   @IsOptional() @Transform(trim) @IsString() @MaxLength(60) detail?: string; // précision, ex. « 5 matinées de 9 h à 12 h »
 }
 
