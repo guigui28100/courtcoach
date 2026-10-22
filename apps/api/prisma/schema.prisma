@@ -15,6 +15,8 @@ enum Role {
   GUARDIAN   // parent ou responsable légal d'un jeune du Centre
   YOUTH      // compte d'un jeune, ouvert sur invitation du coach (facultatif)
   TRAINER    // entraîneur de comité : créé par le coach, ne voit que les jeunes que le coach lui a choisis (jamais les demandes de coaching)
+  PRESIDENT  // président du club : planning du club (gestion), cours particuliers et demandes de cours (gestion) ; jamais le Centre de compétition jeunes
+  BUREAU     // membre du bureau : planning du club en LECTURE SEULE, rien d'autre
 }
 
 enum Axis {
@@ -158,8 +160,8 @@ model Invitation {
   tokenHash   String    @unique
   email       String
   role        Role
-  playerId    String
-  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    String?   // vide pour une invitation du club (président, bureau)
+  player      Player?   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   invitedById String
   invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
   expiresAt   DateTime

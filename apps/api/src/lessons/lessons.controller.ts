@@ -5,8 +5,8 @@ import { CurrentUser, Roles } from "../common/decorators";
 import { AnswerLessonDto, CancelLessonDto, CreateLessonDto, StopSeriesDto } from "./lessons.dto";
 import { LessonsService } from "./lessons.service";
 
-// Les demandes de cours : adultes, coach, et professeurs de cours particuliers (seulement SES demandes). Ni familles, ni entraîneurs de comité ou de club.
-@Roles(Role.COACH, Role.ADULT, Role.TRAINER)
+// Les demandes de cours : adultes, coach, président du club, et professeurs de cours particuliers (seulement SES demandes). Ni familles, ni entraîneurs de comité ou de club.
+@Roles(Role.COACH, Role.PRESIDENT, Role.ADULT, Role.TRAINER)
 @Controller("lessons")
 export class LessonsController {
   constructor(private readonly svc: LessonsService) {}

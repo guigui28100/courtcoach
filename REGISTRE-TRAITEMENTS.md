@@ -28,6 +28,8 @@
 
 **Droits des personnes** : accès et copie (bouton « télécharger »), effacement (bouton « supprimer »), rectification (le coach), retrait du droit à l'image (les vidéos du jeune sont alors supprimées).
 
+**Président et bureau du club** (22/10/2026) : comptes créés sur invitation du coach (e-mail, prénom, mot de passe chiffré ; lien à usage unique valable 7 jours). Le PRÉSIDENT gère le planning du club et voit les cours particuliers : demandes de cours des adultes (nom, âge, niveau, téléphone), activité et pièces justificatives des professeurs, comme le coach ; il peut confirmer / libérer un cours, arrêter une série et valider un professeur (ouverture d'une pièce inscrite au journal). Les MEMBRES DU BUREAU voient seulement le planning du club, en lecture seule. Ni l'un ni l'autre n'a accès aux jeunes du Centre de compétition jeunes, aux vidéos ni au tableau de bord (refus par défaut côté serveur). Accès retiré à tout moment par le coach ; double authentification possible (obligatoire pour le président si `REQUIRE_STAFF_2FA`). Test `apps/api/test/club-access.e2e-spec.ts`.
+
 **Entraîneurs de comité** : comptes créés par le coach (e-mail, prénom, mot de passe chiffré). Chacun ne voit que les jeunes que le coach coche ; ni santé, ni notes privées ; aucun accès aux adultes. Ouvertures de fiche et de vidéo inscrites au journal (12 mois). Compte supprimable à tout moment par le coach ; double authentification possible.
 
 **Programmations de tournoi** : document déposé par le coach ou un entraîneur de comité pour des jeunes précis (titre, fichier, jeunes concernés, auteur). Visible du coach et des entraîneurs concernés ; de la famille et du jeune seulement si le déposant l'a partagé. Conservation 12 mois, suppression avec la fiche.

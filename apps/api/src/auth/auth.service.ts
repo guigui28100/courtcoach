@@ -141,7 +141,7 @@ export class AuthService {
   async previewInvitation(token: string) {
     const inv = await this.prisma.invitation.findUnique({ where: { tokenHash: sha256(token) }, include: { player: { select: { firstName: true } } } });
     if (!inv || inv.usedAt || inv.expiresAt < new Date()) throw new NotFoundException("Invitation introuvable ou expirée.");
-    return { email: inv.email, role: inv.role, playerFirstName: inv.player.firstName };
+    return { email: inv.email, role: inv.role, playerFirstName: inv.player?.firstName ?? null };
   }
 
   async acceptInvitation(dto: { token: string; password: string; firstName?: string }) {
@@ -149,7 +149,7 @@ export class AuthService {
     const inv = await this.prisma.invitation.findUnique({ where: { tokenHash: sha256(dto.token) } });
     if (!inv || inv.usedAt || inv.expiresAt < new Date()) throw new NotFoundException("Invitation introuvable ou expirée.");
     // Un jeune ne peut avoir un compte que si l'accord écrit de ses parents est déjà enregistré.
-    if (inv.role === Role.YOUTH) {
+    if (inv.role === Role.YOUTH && inv.playerId) {
       const ok = await this.prisma.consent.findFirst({ where: { playerId: inv.playerId, kind: ConsentKind.ACCOUNT, withdrawnAt: null } });
       if (!ok) throw new ForbiddenException("L'accord des parents pour un compte en ligne n'est pas encore enregistré.");
     }
@@ -158,10 +158,10 @@ export class AuthService {
       const u = await tx.user.create({
         data: {
           email: inv.email, role: inv.role, firstName: dto.firstName || null, passwordHash: await hash(dto.password),
-          consents: { create: { kind: ConsentKind.PRIVACY_POLICY, givenBy: dto.firstName || inv.email, playerId: inv.playerId, policyVersion: POLICY_VERSION } },
+          consents: { create: { kind: ConsentKind.PRIVACY_POLICY, givenBy: dto.firstName || inv.email, ...(inv.playerId ? { playerId: inv.playerId } : {}), policyVersion: POLICY_VERSION } },
         },
       });
-      await tx.playerAccess.create({ data: { userId: u.id, playerId: inv.playerId, relation: inv.role === Role.YOUTH ? "jeune" : "parent" } });
+      if (inv.playerId) await tx.playerAccess.create({ data: { userId: u.id, playerId: inv.playerId, relation: inv.role === Role.YOUTH ? "jeune" : "parent" } });
       await tx.invitation.update({ where: { id: inv.id }, data: { usedAt: new Date() } });
       return u;
     });
@@ -204,7 +204,7 @@ export class AuthService {
   // Droit à l'effacement : le compte et ses données personnelles sont supprimés.
   async eraseAccount(userId: string) {
     const me = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (me.role === Role.COACH || me.role === Role.TRAINER) throw new ForbiddenException("Ce compte ne peut pas être supprimé depuis le site : demande au coach.");
+    if (me.role === Role.COACH || me.role === Role.TRAINER || me.role === Role.PRESIDENT || me.role === Role.BUREAU) throw new ForbiddenException("Ce compte ne peut pas être supprimé depuis le site : demande au coach.");
     await this.prisma.$transaction([
       this.prisma.video.deleteMany({ where: { ownerId: userId } }),
       this.prisma.lessonRequest.deleteMany({ where: { memberId: userId } }),

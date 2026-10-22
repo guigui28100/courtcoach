@@ -29,6 +29,7 @@ const Securite = lazy(() => import("./pages/Securite"));
 const VideoReview = lazy(() => import("./pages/VideoReview"));
 const YouthSpace = lazy(() => import("./pages/Youth"));
 const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
+const PresidentPage = lazy(() => import("./pages/President"));
 
 // Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
 function Apercu() { const { id = "" } = useParams(); return <YouthSpace previewId={id} />; }
@@ -49,7 +50,7 @@ export default function App() {
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/adultes/apercu" element={<Guard roles={["COACH"]}><AdultPreview /></Guard>} />
         <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
-        <Route path="/coach/securite" element={<Guard roles={["COACH", "TRAINER"]}><Securite /></Guard>} />
+        <Route path="/coach/securite" element={<Guard roles={["COACH", "TRAINER", "PRESIDENT", "BUREAU"]}><Securite /></Guard>} />
         <Route path="/coach/centre/apercu-entraineur" element={<Guard roles={["COACH"]}><TrainerPreview /></Guard>} />
         <Route path="/coach/centre" element={<Guard roles={["COACH", "TRAINER"]}><Centre /></Guard>} />
         <Route path="/coach/centre/fin-de-cours" element={<Guard roles={["COACH", "TRAINER"]}><FinDeCours /></Guard>} />
@@ -60,7 +61,8 @@ export default function App() {
         <Route path="/coach/centre/:id/bulletin/:season/:t" element={<Guard roles={["COACH", "TRAINER"]}><Bulletin /></Guard>} />
         <Route path="/coach/adultes/apercu-prof" element={<Guard roles={["COACH"]}><ProfSpace preview /></Guard>} />
         <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
-        <Route path="/coach/club" element={<Guard roles={["COACH"]}><ClubPlan /></Guard>} />
+        <Route path="/coach/club" element={<Guard roles={["COACH", "PRESIDENT", "BUREAU"]}><ClubPlan /></Guard>} />
+        <Route path="/president" element={<Guard roles={["PRESIDENT"]}><PresidentPage /></Guard>} />
         <Route path="/coach/prof" element={<Guard roles={["COACH"]}><ProfSpace /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />

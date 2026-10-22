@@ -4,7 +4,7 @@ import { coversSlot, overlaps } from "../profs/planning";
 import { seriesDates } from "../profs/series";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import { AuthUser } from "../common/auth.types";
+import { AuthUser, isManager } from "../common/auth.types";
 import { AnswerLessonDto, CancelLessonDto, CreateLessonDto, StopSeriesDto } from "./lessons.dto";
 import { expireStaleBookings } from "../profs/bookings";
 import { ProfsService } from "../profs/profs.service";
@@ -76,7 +76,7 @@ export class LessonsService {
   // Un adulte voit les siennes ; le coach voit toutes les demandes ; un professeur ne voit QUE celles qui lui sont adressées.
   async list(user: AuthUser) {
     await expireStaleBookings(this.prisma);
-    if (user.role === Role.COACH) {
+    if (isManager(user)) {
       return this.withProf(await this.prisma.lessonRequest.findMany({ orderBy: { createdAt: "desc" }, include: { member: { select: { id: true, firstName: true, lastName: true, birthYear: true, level: true, phone: true, email: true } } } }));
     }
     if (user.role === Role.TRAINER) {
@@ -88,9 +88,9 @@ export class LessonsService {
 
   // Le coach (ou le professeur choisi, pour SES cours) refuse ou annule un cours : le créneau est libéré et l'adulte est prévenu. (Plus de « proposer une date » : l'adulte choisit lui-même son créneau dans le planning.)
   async answer(user: AuthUser, id: string, dto: AnswerLessonDto) {
-    if (user.role !== Role.COACH) await this.profs.assertProf(user.id);
+    if (!isManager(user)) await this.profs.assertProf(user.id);
     const l = await this.prisma.lessonRequest.findUnique({ where: { id } });
-    if (!l || l.status === LessonStatus.REFUSED || (user.role !== Role.COACH && l.profId !== user.id)) throw new NotFoundException("Demande introuvable ou déjà traitée");
+    if (!l || l.status === LessonStatus.REFUSED || (!isManager(user) && l.profId !== user.id)) throw new NotFoundException("Demande introuvable ou déjà traitée");
     if (l.status === LessonStatus.BOOKED && l.seriesId) { // « Je ne peux pas » sur une série à confirmer : toute la série est refusée
       await this.prisma.lessonRequest.updateMany({ where: { seriesId: l.seriesId, status: LessonStatus.BOOKED }, data: { status: LessonStatus.REFUSED, slotKey: null, coachReply: dto.reply ?? "", answeredAt: new Date(), seenByMemberAt: null } });
       return this.prisma.lessonRequest.findUnique({ where: { id } });
@@ -101,9 +101,9 @@ export class LessonsService {
 
   // Le professeur (pour SES cours) ou le coach confirme un créneau réservé par l'adulte
   async confirm(user: AuthUser, id: string) {
-    if (user.role !== Role.COACH) await this.profs.assertProf(user.id);
+    if (!isManager(user)) await this.profs.assertProf(user.id);
     await expireStaleBookings(this.prisma);
-    const l = await this.prisma.lessonRequest.findFirst({ where: { id, status: LessonStatus.BOOKED, ...(user.role !== Role.COACH ? { profId: user.id } : {}) } });
+    const l = await this.prisma.lessonRequest.findFirst({ where: { id, status: LessonStatus.BOOKED, ...(!isManager(user) ? { profId: user.id } : {}) } });
     if (!l) throw new NotFoundException("Aucune réservation à confirmer pour cette demande");
     // une série se confirme d'un seul coup (tous les cours « réservés » de la série)
     await this.prisma.lessonRequest.updateMany({ where: l.seriesId ? { seriesId: l.seriesId, status: LessonStatus.BOOKED } : { id }, data: { status: LessonStatus.ACCEPTED, confirmedAt: new Date(), answeredAt: new Date(), seenByMemberAt: null } });
@@ -112,10 +112,10 @@ export class LessonsService {
 
   // Le professeur (pour SES cours) ou le coach arrête une série : tous les cours à venir sont annulés et leurs créneaux libérés (les cours passés restent)
   async stopSeries(user: AuthUser, id: string, dto: StopSeriesDto) {
-    if (user.role !== Role.COACH) await this.profs.assertProf(user.id);
-    const l = await this.prisma.lessonRequest.findFirst({ where: { id, seriesId: { not: null }, ...(user.role !== Role.COACH ? { profId: user.id } : {}) } });
+    if (!isManager(user)) await this.profs.assertProf(user.id);
+    const l = await this.prisma.lessonRequest.findFirst({ where: { id, seriesId: { not: null }, ...(!isManager(user) ? { profId: user.id } : {}) } });
     if (!l) throw new NotFoundException("Série introuvable");
-    return { stopped: await this.endSeries(l.seriesId!, dto.reply || "Le professeur a arrêté cette série de cours : les créneaux sont libérés.", { onlyProf: user.role !== Role.COACH ? user.id : undefined }) };
+    return { stopped: await this.endSeries(l.seriesId!, dto.reply || "Le professeur a arrêté cette série de cours : les créneaux sont libérés.", { onlyProf: !isManager(user) ? user.id : undefined }) };
   }
 
   // Annule tous les cours à venir d'une série (créneaux libérés, l'adulte est prévenu)

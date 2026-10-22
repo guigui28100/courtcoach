@@ -8,6 +8,8 @@ export const CLUB_SITE = "https://tennisclubhoudan78.jimdofree.com/"; // site in
 export const SIGNUP_ONLINE = "Sur le site internet du club : tennisclubhoudan78.jimdofree.com";
 export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "STAGE_ADULTES";
 export const isAnimation = (kind: string) => kind === "ANIMATION";
+export const isTournoi = (kind: string) => kind === "TOURNOI";
+export const hasSimpleForm = (kind: string) => isAnimation(kind) || isTournoi(kind);
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
 // Les formules habituelles des stages enfants du club (les prix restent à écrire)
 export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
@@ -40,6 +42,24 @@ function PriceField({ label, value, onChange, placeholder }: { label: string; va
     </div>
   );
 }
+
+// Menu déroulant générique + « Autre » pour écrire à la main
+function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…" }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string }) {
+  const [other, setOther] = useState(false);
+  const custom = other || (value !== "" && !options.includes(value));
+  return (
+    <div className="grid gap-1.5">
+      <select aria-label={label} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" value={custom ? PRICE_OTHER : value}
+        onChange={(e) => { const v = e.target.value; if (v === PRICE_OTHER) { setOther(true); if (options.includes(value)) onChange(""); } else { setOther(false); onChange(v); } }}>
+        <option value="">{first}</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value={PRICE_OTHER}>✏️ Autre : je l'écris moi-même</option>
+      </select>
+      {custom && <input aria-label={`${label} : écrit à la main`} maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" />}
+    </div>
+  );
+}
+export const SURFACES = ["Terre battue", "Dur (quick)", "Terre battue et dur", "Moquette", "Gazon synthétique"];
 
 const inputCls = "mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal text-ink";
 
@@ -157,29 +177,70 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
   );
 }
 
-// Formulaire SIMPLE d'une animation : nom, pour qui, ce qu'il va se passer, horaires, tarif, où s'inscrire (la date vient du planning).
-export function AnimationForm({ value, onChange, title, onTitle, note, onNote }: { value: PosterInfo; onChange: (v: PosterInfo) => void; title?: string; onTitle?: (t: string) => void; note: string; onNote: (t: string) => void }) {
+// Formulaire SIMPLE d'une animation ou d'un tournoi : nom, pour qui, ce qu'il va se passer, horaires, (lieu), tarif, (à prévoir), où s'inscrire (la date vient du planning).
+export function AnimationForm({ value, onChange, title, onTitle, note, onNote, tournoi }: { value: PosterInfo; onChange: (v: PosterInfo) => void; title?: string; onTitle?: (t: string) => void; note: string; onNote: (t: string) => void; tournoi?: boolean }) {
   const set = (p: Partial<PosterInfo>) => onChange({ ...value, ...p });
   const first = value.formulas[0];
-  const setPrice = (price: string) => {
+  const setPrices = (p: { price?: string; priceMember?: string }) => {
     const rest = value.formulas.slice(1);
-    set({ formulas: price.trim() === "" && !first?.priceMember && rest.length === 0 ? [] : [{ priceMember: "", detail: "", group: "", ...first, label: first?.label || "Participation", price }, ...rest] });
+    const next = { priceMember: "", detail: "", group: "", ...first, label: first?.label || (tournoi ? "Inscription" : "Participation"), price: first?.price ?? "", ...p };
+    set({ formulas: !next.price.trim() && !(next.priceMember ?? "").trim() && rest.length === 0 ? [] : [next, ...rest] });
   };
+  const setPrice = (price: string) => setPrices({ price });
+  if (tournoi) {
+    return (
+      <div className="grid gap-3">
+        {onTitle && <label className="block text-sm font-bold text-ink">🏷️ Nom du tournoi
+          <input aria-label="Nom du tournoi" maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder="Ex. TMC messieurs de 15/1 à 4/6" className={inputCls} /></label>}
+        <p className="m-0 text-xs text-muted">📅 Les dates du tournoi viennent du planning : elles s'écrivent toutes seules sur l'affiche.</p>
+        <div className="text-sm font-bold text-ink">🎨 Catégorie <small className="font-normal text-muted">(change les couleurs de l'affiche)</small>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {["Messieurs (adultes)", "Dames (adultes)", "Jeunes"].map((c) => (
+              <button key={c} type="button" aria-pressed={value.audience === c} onClick={() => set({ audience: value.audience === c ? "" : c })}
+                className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${value.audience === c ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{c === "Messieurs (adultes)" ? "👨 " : c === "Dames (adultes)" ? "👩 " : "🧒 "}{c}</button>))}
+          </div></div>
+        <div className="text-sm font-bold text-ink">🎾 Surface
+          <div className="mt-1"><ChoiceField label="Surface" options={SURFACES} value={value.place} onChange={(v) => set({ place: v })} placeholder="Ex. Terre battue couverte" /></div></div>
+        <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour
+          <input aria-label="Horaires des matchs" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className={inputCls} /></label>
+        <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale
+          <input aria-label="Finale" maxLength={120} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className={inputCls} /></label>
+        <label className="block text-sm font-bold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
+          <textarea aria-label="Petit message" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Ex. Buvette sur place, remise des prix après la finale…" className={inputCls} /></label>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-3">
-      {onTitle && <label className="block text-sm font-bold text-ink">🏷️ Nom de l'animation
-        <input aria-label="Nom de l'animation" maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder="Ex. Journée portes ouvertes" className={inputCls} /></label>}
+      {onTitle && <label className="block text-sm font-bold text-ink">🏷️ {tournoi ? "Nom du tournoi" : "Nom de l'animation"}
+        <input aria-label={tournoi ? "Nom du tournoi" : "Nom de l'animation"} maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder={tournoi ? "Ex. Tournoi interne de la Toussaint" : "Ex. Journée portes ouvertes"} className={inputCls} /></label>}
       <p className="m-0 text-xs text-muted">📅 La date vient du planning : elle s'écrit toute seule sur l'affiche.</p>
       <label className="block text-sm font-bold text-ink">👥 Pour qui ?
         <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. Ouvert à tous les adhérents" className={inputCls} /></label>
-      <label className="block text-sm font-bold text-ink">📝 Ce qu'il va se passer
-        <textarea aria-label="Ce qu'il va se passer" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Ex. Matchs amicaux, initiation pour les débutants, goûter offert…" className={inputCls} /></label>
-      <label className="block text-sm font-bold text-ink">🕒 Horaires
-        <input aria-label="Horaires" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. 14 h – 17 h" className={inputCls} /></label>
-      <div className="text-sm font-bold text-ink">💶 Tarif
-        <div className="mt-1"><PriceField label="Tarif" value={first?.price ?? ""} onChange={setPrice} placeholder="Ex. 5 € par personne" /></div>
+      <label className="block text-sm font-bold text-ink">📝 {tournoi ? "Format et déroulement" : "Ce qu'il va se passer"}
+        <textarea aria-label="Ce qu'il va se passer" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder={tournoi ? "Ex. Poules puis tableau final, matchs de 6 jeux, remise des prix à 18 h, buvette sur place…" : "Ex. Matchs amicaux, initiation pour les débutants, goûter offert…"} className={inputCls} /></label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm font-bold text-ink">🕒 Horaires
+          <input aria-label="Horaires" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. 9 h – 18 h" className={inputCls} /></label>
+        {tournoi && <label className="block text-sm font-bold text-ink">📍 Lieu
+          <input aria-label="Lieu" maxLength={120} value={value.place} onChange={(e) => set({ place: e.target.value })} placeholder="Ex. Courts couverts, Houdan" className={inputCls} /></label>}
       </div>
-      <div className="text-sm font-bold text-ink">✍️ Où s'inscrire ?
+      {tournoi ? (
+        <div className="text-sm font-bold text-ink">💶 Droits d'inscription
+          <div className="mt-1 grid gap-2 sm:grid-cols-2">
+            <div><span className="mb-0.5 block text-xs font-black uppercase tracking-wide text-muted">Adhérent</span><PriceField label="Tarif adhérent" value={first?.priceMember ?? ""} onChange={(v) => setPrices({ priceMember: v })} placeholder="Ex. 10 €" /></div>
+            <div><span className="mb-0.5 block text-xs font-black uppercase tracking-wide text-muted">Non adhérent</span><PriceField label="Tarif non adhérent" value={first?.price ?? ""} onChange={setPrice} placeholder="Ex. 15 €" /></div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm font-bold text-ink">💶 Tarif
+          <div className="mt-1"><PriceField label="Tarif" value={first?.price ?? ""} onChange={setPrice} placeholder="Ex. 5 € par personne" /></div>
+          <button type="button" className="mt-1.5 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => setPrice("Gratuit")}>🎁 Gratuit</button>
+        </div>
+      )}
+      {tournoi && <label className="block text-sm font-bold text-ink">🎒 À prévoir <small className="font-normal text-muted">(facultatif)</small>
+        <input aria-label="À prévoir" maxLength={160} value={value.bring} onChange={(e) => set({ bring: e.target.value })} placeholder="Ex. Tenue de sport, raquettes, bouteille d'eau (balles fournies)" className={inputCls} /></label>}
+      <div className="text-sm font-bold text-ink">✍️ {tournoi ? "Où et jusqu'à quand s'inscrire ?" : "Où s'inscrire ?"}
         <button type="button" className="mb-1 mt-1 block rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Sur le site internet du club</button>
         <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil du club, avant le 20 octobre" className={inputCls} />
       </div>
