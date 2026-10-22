@@ -89,7 +89,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5">
           <span className="shrink-0 whitespace-nowrap"><Brand light={galaxy} /></span>
           <nav aria-label="Menu principal" className="hidden items-center gap-4 md:flex xl:gap-5">
-            {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><span className="hidden lg:inline-flex"><Icon name={i.icon} /></span>{i.short && i.short !== i.label ? <><span className="xl:hidden">{i.short}</span><span className="hidden xl:inline">{i.label}</span></> : i.label}</NavLink>)}
+            {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><span className="hidden lg:inline-flex"><Icon name={i.icon} /></span>{i.short && i.short !== i.label ? <><span className="2xl:hidden">{i.short}</span><span className="hidden 2xl:inline">{i.label}</span></> : i.label}</NavLink>)}
             {me ? (
               <button className={galaxy ? "btn btn-sm shrink-0 whitespace-nowrap border-2 border-white/70 text-white hover:bg-white hover:text-ink" : "btn-outline btn-sm shrink-0 whitespace-nowrap"} onClick={async () => { await logout(); nav("/"); }}><span className="lg:hidden">Quitter</span><span className="hidden lg:inline">Se déconnecter</span></button>
             ) : (

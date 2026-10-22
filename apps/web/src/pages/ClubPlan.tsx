@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
@@ -8,6 +8,7 @@ import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
+import { byMonth, download, inPeriod, nameOf, rangeText, toCsv, toIcs } from "../clubExport";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -44,6 +45,7 @@ export function ClubPlan() {
   const [askNew, setAskNew] = useState(false); // « Ajouter un événement » : on demande d'abord la date
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
   const navLabel = view === "annee" ? `Année ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
   const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
@@ -99,13 +101,13 @@ export function ClubPlan() {
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>
               </div>
             </div>
-            {!readOnly && (
             <div className="flex flex-wrap gap-2">
+              {!readOnly && (<>
               <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
+              </>)}
             </div>
-            )}
           </div>
         </section>
       </div>
@@ -125,6 +127,10 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
           {view === "mois" && !readOnly && <button type="button" aria-pressed={multi} onClick={() => setMulti(!multi)} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Plusieurs jours de suite"}</button>}
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-[#16a34a] bg-[#e8f7ee] px-3 py-2">
+          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Tableau Excel, agenda du téléphone ou liste en PDF.</span>
+          <button type="button" className="whitespace-nowrap rounded-xl border-2 border-[#166534] bg-[#16a34a] px-4 py-2 font-extrabold text-white shadow hover:bg-[#15803d]" onClick={() => setExportOpen(true)}>📤 Exporter le planning</button>
         </div>
         {view === "mois" && !multi && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
         {readOnly && <p className="m-0 rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
@@ -148,6 +154,7 @@ export function ClubPlan() {
       )}
       {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onEdit={(e) => { setPosterEv(null); openEdit(e); }} />}
+      {exportOpen && <ExportModal events={events} season={season} month={month} onClose={() => setExportOpen(false)} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -427,7 +434,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
       <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
-        <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
+        <summary className="cursor-pointer font-bold text-ink">🪧 Je veux créer une affiche <span className="font-normal text-muted">(facultatif : ouvre ici pour remplir horaires, lieu, formules et prix)</span></summary>
         <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       </details>
       </>)}
@@ -506,6 +513,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
+  const [wantPoster, setWantPoster] = useState<Record<string, boolean>>({});
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
     for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
@@ -576,7 +584,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
             {on.map((k) => {
               const c = sel[k.key];
               return (
-                <div key={k.key} className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
+                <Fragment key={k.key}>
+                <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
                     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
@@ -587,16 +596,17 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                   {hasSimpleForm(k.key) ? (
                     <div className="mt-1"><AnimationForm tournoi={isTournoi(k.key)} title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   ) : (<>
-                  <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
-                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
-                      placeholder="Quelques mots à ajouter sur l'affiche"
-                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
-                  </label>
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
-                    <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
-                  </details>
+                  <div className="rounded-xl border-2 border-line bg-white p-3">
+                    <p className="m-0 text-sm font-extrabold text-ink">📅 Dans le planning</p>
+                    <p className="m-0 mb-2 text-sm text-muted">« {k.label} » est déjà placé dans le calendrier. Tu peux seulement ajouter quelques mots.</p>
+                    <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+                      <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                        placeholder="Quelques mots sur cet événement"
+                        className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                    </label>
+                  </div>
                   </>)}
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
@@ -613,6 +623,30 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     </details>
                   )}
                 </div>
+                {!hasSimpleForm(k.key) && (
+                  <div className="mt-3 rounded-xl border-2 border-[#6d4fc2] bg-[#f5f2ff] p-3">
+                    <p className="m-0 mb-2 text-sm font-extrabold text-[#3b2a7a]">🪧 Affiche de « {k.label} » (séparé du planning)</p>
+                  {(() => {
+                    const filled = !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring);
+                    const wants = wantPoster[k.key] ?? filled;
+                    const toggleP = () => {
+                      if (wants && filled && !confirm("Ne plus faire d'affiche ? Les informations déjà écrites pour l'affiche seront effacées.")) return;
+                      if (wants) patch(k.key, { info: emptyInfo() });
+                      setWantPoster((w) => ({ ...w, [k.key]: !wants }));
+                    };
+                    return (<>
+                      <button type="button" role="checkbox" aria-checked={wants} onClick={toggleP}
+                        className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-3 text-left ${wants ? "border-[#6d4fc2] bg-[#efe9ff]" : "border-dashed border-[#9a8cc9] bg-[#f5f2ff] hover:border-[#6d4fc2]"}`}>
+                        <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md border-2 text-sm text-white" style={{ background: wants ? "#6d4fc2" : "#fff", borderColor: wants ? "#6d4fc2" : "#9a8cc9" }}>{wants ? "✔" : ""}</span>
+                        <span><b className="block text-ink">🪧 Faire aussi une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"}</b>
+                          <span className="block text-sm text-muted">{wants ? "Remplis les infos ci-dessous : elles servent seulement à fabriquer l'affiche." : "Facultatif. Si tu ne coches pas, tu n'as rien de plus à faire : l'événement est enregistré sans affiche."}</span></span>
+                      </button>
+                      {wants && <div className="mt-2 rounded-xl border-2 border-[#9a8cc9] bg-white p-3"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>}
+                    </>);
+                  })()}
+                  </div>
+                )}
+                </Fragment>
               );
             })}
           </Fold>
@@ -687,6 +721,62 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, readOnly
         <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
         <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
       </div>}
+    </Modal>
+  );
+}
+
+// ───────────── Exporter le planning : tableau Excel, agenda, liste imprimable ─────────────
+function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; season: number; month: string; onClose: () => void }) {
+  const [scope, setScope] = useState<"saison" | "mois">("saison");
+  const [withWho, setWithWho] = useState(false);
+  const from = scope === "saison" ? `${season}-09-01` : `${month}-01`;
+  const to = scope === "saison" ? `${season + 1}-08-31` : addDays(`${addDays(`${month}-01`, 32).slice(0, 7)}-01`, -1);
+  const opts = { from, to, withWho };
+  const n = inPeriod(events, from, to).length;
+  const groups = byMonth(events, from, to);
+  const tag = scope === "saison" ? `saison-${season}-${season + 1}` : month;
+  const print = () => {
+    const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:14mm}";
+    document.head.appendChild(st); document.body.classList.add("printing-affiche");
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); window.print();
+  };
+  const title = scope === "saison" ? `Saison ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
+  return (
+    <Modal title="📤 Exporter le planning" onClose={onClose}>
+      <p className="mt-0 text-sm text-ink">Choisis ce que tu veux sortir du planning. Le fichier est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
+      <p className="mb-1 text-sm font-extrabold text-ink">1. Quelle période ?</p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Pill on={scope === "saison"} onClick={() => setScope("saison")}>📆 Toute la saison {season} / {season + 1}</Pill>
+        <Pill on={scope === "mois"} onClick={() => setScope("mois")}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
+      </div>
+      <p className="mb-1 text-sm font-extrabold text-ink">2. Les noms des personnes ?</p>
+      <div className="mb-3"><Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe » (bénévoles, professeurs)</Pill></div>
+      <p className="mb-1 text-sm font-extrabold text-ink">3. Quel format ? <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""})</span></p>
+      <div className="grid gap-2">
+        <button type="button" className="btn-clay" disabled={!n} onClick={() => download(`planning-${tag}.csv`, "text/csv", toCsv(events, opts))}>📊 Tableau pour Excel (.csv)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>📅 Agenda pour Google, Outlook, iPhone (.ics)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={print}>🖨️ Liste à imprimer ou en PDF</button>
+      </div>
+      {!n && <p className="mb-0 mt-2 text-sm text-muted">Il n'y a aucun événement sur cette période.</p>}
+      <p className="mb-0 mt-3 text-xs text-muted">Le tableau s'ouvre avec Excel ou LibreOffice. L'agenda s'importe dans ton application de calendrier (une journée entière par événement). Pour la liste : dans la fenêtre d'impression, choisis « Enregistrer au format PDF ».</p>
+      {createPortal(
+        <div className="affiche-print" style={{ background: "#fff", color: "#111", padding: 0, fontFamily: "Archivo, system-ui, sans-serif" }}>
+          <h1 style={{ margin: "0 0 4px", fontSize: 26 }}>Tennis Club Houdan · Planning</h1>
+          <p style={{ margin: "0 0 14px", fontSize: 15, color: "#444" }}>{title}</p>
+          {groups.map((g) => (
+            <section key={g.label} style={{ marginBottom: 14, breakInside: "avoid" }}>
+              <h2 style={{ margin: "0 0 6px", fontSize: 17, background: "#1b1863", color: "#fff", padding: "4px 10px" }}>{g.label}</h2>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+                <tbody>{g.items.map((e) => (
+                  <tr key={e.id} style={{ borderBottom: "1px solid #ccc", verticalAlign: "top" }}>
+                    <td style={{ padding: "4px 8px 4px 0", width: "34%", fontWeight: 700 }}>{rangeText(e)}</td>
+                    <td style={{ padding: "4px 8px", fontWeight: 700 }}>{kindOf(e.kind).icon} {nameOf(e)}<span style={{ fontWeight: 400, color: "#555" }}> · {kindOf(e.kind).label}</span>
+                      {(e.time || e.place || e.note || (withWho && e.who.length > 0)) && <div style={{ fontWeight: 400, color: "#444" }}>{[e.time, e.place, e.note, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ")}</div>}</td>
+                  </tr>))}</tbody>
+              </table>
+            </section>))}
+        </div>, document.body)}
     </Modal>
   );
 }
