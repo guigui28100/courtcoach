@@ -432,6 +432,21 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
 const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
+// Un menu déroulant FERMÉ par défaut : le titre dit déjà l'essentiel
+function Fold({ color, icon, title, hint, badge, children }: { color: string; icon: string; title: string; hint?: React.ReactNode; badge?: number; children: React.ReactNode }) {
+  return (
+  <details className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
+    <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}14` }}>
+      <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-white" style={{ background: color }}>{icon}</span>
+      <span className="min-w-0 flex-1"><span className="block font-extrabold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
+      {badge ? <span className="grid min-w-6 place-items-center rounded-full px-2 py-0.5 text-xs font-black text-white" style={{ background: color }}>{badge}</span> : null}
+      <span aria-hidden className="text-lg font-black text-ink transition-transform group-open:rotate-90">›</span>
+    </summary>
+    <div className="p-3">{children}</div>
+  </details>
+);
+}
+
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
 function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
@@ -469,14 +484,16 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
     } catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
   const groups = [...new Set(KINDS.map((k) => k.group))];
+  const GROUP_META: Record<string, { icon: string; color: string }> = { "Compétition": { icon: "🏆", color: "#D35400" }, "Animations et stages": { icon: "🎉", color: "#8E44AD" }, "Terrains": { icon: "🧱", color: "#A04000" }, "Vie du club": { icon: "🥳", color: "#16A085" } };
+  const nbDays = diffDays(start, end) + 1;
   return (
     <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
-      <section className="mb-3 rounded-2xl border-2 border-[#5b6680] bg-white p-3">
-        <h3 className="m-0 mb-2 text-base text-ink">📆 Combien de jours ? (la durée que tu veux)</h3>
+      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.</p>
+      <Fold color="#2E86C1" icon="📆" title="Durée" hint={nbDays === 1 ? "Une seule journée" : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-bold text-ink">Durée :</span>
           <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => setEnd(addDays(end, -1))}>−</button>
-          <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={diffDays(start, end) + 1}
+          <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={nbDays}
             onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
             className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center text-lg font-black text-ink" />
           <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setEnd(addDays(end, 1))}>＋</button>
@@ -485,76 +502,75 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
         <div className="mt-2 flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
         </div>
-        <p className="mb-0 mt-2 text-sm font-bold text-ink">{end === start ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${diffDays(start, end) + 1} jours)`}</p>
         <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
           <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
             <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
         </details>
-      </section>
+      </Fold>
       {already.length > 0 && (
-        <section className="mb-3 rounded-2xl border-2 border-[#b8471f] bg-[#fff6f0] p-3">
-          <h3 className="m-0 mb-2 text-base text-ink">📌 Déjà prévu à ces dates ({already.length})</h3>
+        <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
-            <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
+            <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#fff6f0] p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
               <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
               <button type="button" className="btn-outline" aria-label={`Gérer ${titleOf(e)}`} onClick={() => onEvent(e)}>Gérer ›</button>
             </li>))}
           </ul>
-        </section>
+        </Fold>
       )}
-      <p className="mt-0 text-sm text-muted">Coche ce qui se passe. Tu peux en cocher plusieurs.</p>
-      {groups.map((g) => (
-        <section key={g} className="mb-3">
-          <h3 className="m-0 mb-1 text-xs font-extrabold uppercase tracking-wide text-muted">{g}</h3>
-          {KINDS.filter((k) => k.group === g).map((k) => {
-            const c = sel[k.key] ?? { on: false, who: [], teams: [], note: "", star: false };
-            return (
-              <div key={k.key} className="mb-1.5">
-                <div className="flex items-center gap-2">
-                  <button type="button" role="checkbox" aria-checked={c.on} onClick={() => patch(k.key, { on: !c.on })}
-                    style={c.on ? { borderColor: k.color, background: `${k.color}1f` } : undefined}
-                    className="flex flex-1 items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2 text-left font-bold text-ink hover:border-ink">
-                    <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
-                    <span>{k.icon} {k.label}</span>
-                  </button>
-                </div>
-                {c.on && (
-                  <details open={c.who.length > 0} className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
+      {groups.map((g) => {
+        const gk = KINDS.filter((k) => k.group === g); const gm = GROUP_META[g] ?? { icon: "📅", color: "#2E86C1" };
+        const on = gk.filter((k) => sel[k.key]?.on);
+        return (
+          <Fold key={g} color={gm.color} icon={gm.icon} title={g} badge={on.length} hint={on.length ? `✔ ${on.map((k) => k.label).join(" · ")}` : `${gk.length} choix`}>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {gk.map((k) => { const c = sel[k.key] ?? { on: false }; return (
+                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => patch(k.key, { on: !c.on })}
+                  style={c.on ? { borderColor: k.color, background: `${k.color}22` } : undefined}
+                  className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-bold text-ink hover:border-ink">
+                  <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
+                  <span>{k.icon} {k.label}</span>
+                </button>
+              ); })}
+            </div>
+            {on.map((k) => {
+              const c = sel[k.key];
+              return (
+                <div key={k.key} className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <b className="text-ink">{k.icon} {k.label}</b>
+                    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
+                      className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+                      <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
+                    </button>
+                  </div>
+                  <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                      placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
+                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                  </label>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
-                )}
-                {c.on && (
-                  <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
-                    className={`ml-8 mt-1.5 flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
-                    <span aria-hidden className="text-lg">{c.star ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche <small className="font-normal text-muted">(3 au maximum par mois)</small>
-                  </button>
-                )}
-                {c.on && (
-                  <label className="ml-8 mt-1.5 block text-sm font-bold text-ink">📝 Description (facultatif)
-                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
-                      placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
-                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
-                  </label>
-                )}
-                {c.on && k.key === "EQUIPES" && (
-                  <details open className="ml-8 mt-1.5 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
-                    {cats.map((cat) => (
-                      <div key={cat.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-44 text-xs font-bold text-ink">{cat.label}</span>
-                        {Array.from({ length: counts[cat.key] ?? cat.def }, (_, i) => `${cat.key}#${i + 1}`).map((t, i) => <Pill key={t} on={c.teams.includes(t)} color={cat.color} onClick={() => patch(k.key, { teams: toggle(c.teams, t) })}>Éq. {i + 1}</Pill>)}
-                      </div>
-                    ))}
-                  </details>
-                )}
-              </div>
-            );
-          })}
-        </section>
-      ))}
+                  {k.key === "EQUIPES" && (
+                    <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
+                      {cats.map((cat) => (
+                        <div key={cat.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-44 text-xs font-bold text-ink">{cat.label}</span>
+                          {Array.from({ length: counts[cat.key] ?? cat.def }, (_, i) => `${cat.key}#${i + 1}`).map((t, i) => <Pill key={t} on={c.teams.includes(t)} color={cat.color} onClick={() => patch(k.key, { teams: toggle(c.teams, t) })}>Éq. {i + 1}</Pill>)}
+                        </div>
+                      ))}
+                    </details>
+                  )}
+                </div>
+              );
+            })}
+          </Fold>
+        );
+      })}
       <Err msg={err || missing} />
       <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
     </Modal>
