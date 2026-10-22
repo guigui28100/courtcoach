@@ -22,7 +22,7 @@ export class JwtAuthGuard implements CanActivate {
       if (payload.pv !== passwordStamp(user.passwordHash)) throw new UnauthorizedException(); // mot de passe changé depuis : cette session n'est plus valable
       req.user = { id: user.id, role: user.role, email: user.email };
       // Option « double authentification obligatoire » (REQUIRE_STAFF_2FA=true) : coach et entraîneurs doivent l'activer avant de continuer (seules les pages du compte restent ouvertes)
-      if (process.env.REQUIRE_STAFF_2FA === "true" && (user.role === Role.COACH || user.role === Role.TRAINER) && !user.totpEnabled && !String(req.originalUrl || req.url).startsWith("/api/auth/")) {
+      if (process.env.REQUIRE_STAFF_2FA === "true" && (user.role === Role.COACH || user.role === Role.TRAINER || user.role === Role.PRESIDENT) && !user.totpEnabled && !String(req.originalUrl || req.url).startsWith("/api/auth/")) {
         throw new ForbiddenException({ message: "Active d'abord la double authentification (menu Sécurité).", code: "TWO_FACTOR_REQUIRED" });
       }
       // Mot de passe provisoire : on ne peut rien faire d'autre que le changer.
@@ -43,8 +43,11 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
   canActivate(ctx: ExecutionContext) {
     const roles = this.reflector.getAllAndOverride<Role[]>("roles", [ctx.getHandler(), ctx.getClass()]);
+    const req = ctx.switchToHttp().getRequest();
+    const user = req.user;
+    // Président et bureau : REFUS par défaut. Ils n'ont accès qu'aux routes qui nomment leur rôle (et aux pages de leur compte : /api/auth/…).
+    if ((!roles || !roles.length) && user && (user.role === Role.PRESIDENT || user.role === Role.BUREAU) && !String(req.originalUrl || req.url).startsWith("/api/auth/")) throw new ForbiddenException("Accès non autorisé");
     if (!roles || !roles.length) return true;
-    const user = ctx.switchToHttp().getRequest().user;
     if (!user || !roles.includes(user.role)) throw new ForbiddenException("Accès non autorisé");
     return true;
   }

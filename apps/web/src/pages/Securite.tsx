@@ -4,6 +4,8 @@ import { get, post } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
 import { fmtMo } from "../types";
+import { homeFor } from "../components/Guard";
+import { ClubAccess } from "../components/ClubAccess";
 import { SignaturePad } from "../components/SignaturePad";
 
 // Sécurité du compte du coach : double authentification (code à 6 chiffres sur le téléphone).
@@ -28,7 +30,7 @@ export default function Securite() {
 
   return (
     <>
-      <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : "Espace coach"} title="Sécurité de mon compte"><BackLink fallback={me?.role === "TRAINER" ? "/coach/centre" : "/coach"} className="mb-2 inline-block font-bold text-ink underline">← Retour</BackLink><br />{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
+      <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : me?.role === "PRESIDENT" ? "Espace du président" : me?.role === "BUREAU" ? "Espace du bureau" : "Espace coach"} title="Sécurité de mon compte"><BackLink fallback={me ? homeFor(me.role) : "/coach"} className="mb-2 inline-block font-bold text-ink underline">← Retour</BackLink><br />{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
       <Page>
         {me?.role === "COACH" && me.totpKeyShared && (
           <section className="grid gap-2 rounded-2xl border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-cle">
@@ -46,6 +48,7 @@ export default function Securite() {
           </section>
         )}
         {me?.role === "COACH" && <SignaturePad />}
+        {me?.role === "COACH" && <ClubAccess />}
         <section className="card grid gap-3" aria-labelledby="s-2fa">
           <h2 id="s-2fa" className="m-0">Double authentification {on ? "✅ activée" : "⚠️ pas encore activée"}</h2>
           <p className="m-0">À chaque connexion, en plus de ton mot de passe, tu entres un code à 6 chiffres qui change toutes les 30 secondes et qui s'affiche sur ton téléphone. Même si quelqu'un devine ton mot de passe, il ne peut pas entrer.</p>

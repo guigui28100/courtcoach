@@ -10,3 +10,6 @@ export const isStaff = (u: { role: Role }) => u.role === Role.COACH || u.role ==
 
 // Empreinte (non réversible) du mot de passe, glissée dans le jeton de connexion : un changement de mot de passe ferme aussitôt les anciennes sessions
 export const passwordStamp = (passwordHash: string) => createHash("sha256").update("pv:" + passwordHash).digest("base64url").slice(0, 16);
+
+// Coach ou président du club : gèrent les cours particuliers (professeurs, demandes) et le planning du club. Jamais le Centre de compétition jeunes.
+export const isManager = (u: { role: Role }) => u.role === Role.COACH || u.role === Role.PRESIDENT;

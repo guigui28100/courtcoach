@@ -8,7 +8,7 @@ export default function Invitation() {
   const { token = "" } = useParams();
   const { acceptInvitation } = useAuth();
   const nav = useNavigate();
-  const [info, setInfo] = useState<{ email: string; role: string; playerFirstName: string } | null>(null);
+  const [info, setInfo] = useState<{ email: string; role: string; playerFirstName: string | null } | null>(null);
   const [invalid, setInvalid] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { get(`/auth/invitations/${encodeURIComponent(token)}`).then(setInfo).catch(() => setInvalid(true)); }, [token]);
@@ -19,7 +19,7 @@ export default function Invitation() {
     setError("");
     try {
       await acceptInvitation({ token, password: String(f.get("password")), firstName: String(f.get("firstName") || "") || undefined, acceptPolicy: f.get("policy") === "on" });
-      nav("/suivi");
+      nav(info?.role === "PRESIDENT" ? "/president" : info?.role === "BUREAU" ? "/coach/club" : "/suivi");
     } catch (err) { setError((err as Error).message); }
   }
 
@@ -27,8 +27,10 @@ export default function Invitation() {
   if (!info) return <p className="p-8 text-center text-muted">Chargement…</p>;
   return (
     <>
-      <PageHead eyebrow="Invitation du coach" title={`Suivi de ${info.playerFirstName}`}>
-        Crée ton accès pour consulter, en lecture seule, les objectifs, les évaluations et les bulletins.
+      <PageHead eyebrow="Invitation du coach" title={info.playerFirstName ? `Suivi de ${info.playerFirstName}` : info.role === "PRESIDENT" ? "Accès du président" : "Accès du bureau"}>
+        {info.playerFirstName ? "Crée ton accès pour consulter, en lecture seule, les objectifs, les évaluations et les bulletins."
+          : info.role === "PRESIDENT" ? "Crée ton accès pour gérer le planning du club et suivre les cours particuliers et les demandes de cours."
+          : "Crée ton accès pour consulter le planning du club (en lecture seule : tu ne peux rien modifier)."}
       </PageHead>
       <div className="mx-auto grid max-w-lg gap-4 px-4 py-8">
         <form onSubmit={submit} className="card grid gap-4" noValidate>

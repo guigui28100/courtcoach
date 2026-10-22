@@ -35,7 +35,7 @@ describe("Matrice des droits de toutes les routes", () => {
       }
     }
     await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.user.deleteMany();
-    for (const [email, role] of [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER]] as [string, Role][]) await prisma.user.create({ data: { email, role, passwordHash: await hash(PASSWORD) } });
+    for (const [email, role] of [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER], ["president@exemple.fr", Role.PRESIDENT], ["bureau@exemple.fr", Role.BUREAU]] as [string, Role][]) await prisma.user.create({ data: { email, role, passwordHash: await hash(PASSWORD) } });
   });
   afterAll(async () => { await prisma.auditLog.deleteMany(); await prisma.refreshToken.deleteMany(); await prisma.user.deleteMany(); await app.close(); });
 
@@ -55,8 +55,8 @@ describe("Matrice des droits de toutes les routes", () => {
     }
   });
 
-  it("les routes réservées au coach refusent adulte, parent, jeune et entraîneur (403)", async () => {
-    const who: [string, Role][] = [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER]];
+  it("les routes réservées au coach refusent adulte, parent, jeune, entraîneur, président et bureau (403)", async () => {
+    const who: [string, Role][] = [["adulte@exemple.fr", Role.ADULT], ["parent@exemple.fr", Role.GUARDIAN], ["jeune@exemple.fr", Role.YOUTH], ["entraineur@exemple.fr", Role.TRAINER], ["president@exemple.fr", Role.PRESIDENT], ["bureau@exemple.fr", Role.BUREAU]];
     const coachOnly = routes.filter((r) => !r.pub && r.roles && r.roles.length === 1 && r.roles[0] === Role.COACH);
     expect(coachOnly.length).toBeGreaterThanOrEqual(4);
     for (const [email, role] of who) {
@@ -68,13 +68,15 @@ describe("Matrice des droits de toutes les routes", () => {
     }
   });
 
-  it("l'espace Centre (joueurs) est fermé aux adultes sur toutes ses routes", async () => {
-    const a = request.agent(app.getHttpServer()); await a.post("/api/auth/login").set(ORIGIN).send({ email: "adulte@exemple.fr", password: PASSWORD }).expect(200);
-    const centre = routes.filter((r) => /^\/api\/(players|goals|matches|tournaments|tournament-reports)/.test(r.url));
-    expect(centre.length).toBeGreaterThan(15);
-    for (const r of centre) {
-      const res = await (a as any)[r.method](r.url).set(ORIGIN).send({});
-      expect([r.method, r.url, res.status]).toEqual([r.method, r.url, 403]);
+  it("l'espace Centre (joueurs) est fermé aux adultes, au président et au bureau sur toutes ses routes", async () => {
+    for (const email of ["adulte@exemple.fr", "president@exemple.fr", "bureau@exemple.fr"]) {
+      const a = request.agent(app.getHttpServer()); await a.post("/api/auth/login").set(ORIGIN).send({ email, password: PASSWORD }).expect(200);
+      const centre = routes.filter((r) => (email.startsWith("adulte") ? /^\/api\/(players|goals|matches|tournaments|tournament-reports)/ : /^\/api\/(players|goals|matches|tournaments|tournament-reports|videos|dashboard)/).test(r.url));
+      expect(centre.length).toBeGreaterThan(15);
+      for (const r of centre) {
+        const res = await (a as any)[r.method](r.url).set(ORIGIN).send({});
+        expect([email, r.method, r.url, res.status]).toEqual([email, r.method, r.url, 403]);
+      }
     }
   });
 });

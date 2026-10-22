@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Role } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
-import { AuthUser } from "../common/auth.types";
+import { AuthUser, isManager } from "../common/auth.types";
 import { sniffDoc } from "../tournaments/tournaments.service";
 import { DOC_KINDS, DocKind, ProfProfileDto, SlotDto } from "./profs.dto";
 import { PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA } from "./pricing";
@@ -214,10 +214,10 @@ export class ProfsService {
 
   // Le coach (ou le professeur lui-même) ouvre un document ; jamais un autre professeur ni un adulte
   async file(user: AuthUser, ownerId: string, kind: DocKind) {
-    if (user.role !== Role.COACH && user.id !== ownerId) throw new NotFoundException("Document introuvable");
+    if (!isManager(user) && user.id !== ownerId) throw new NotFoundException("Document introuvable");
     const d = await this.prisma.profDocument.findUnique({ where: { userId_kind: { userId: ownerId, kind } } });
     if (!d) throw new NotFoundException("Document introuvable");
-    if (user.role === Role.COACH) await this.audit.log(user.id, "view", "ProfDocument", `${ownerId}:${kind}`);
+    if (isManager(user)) await this.audit.log(user.id, "view", "ProfDocument", `${ownerId}:${kind}`);
     return { data: Buffer.from(d.data), mime: d.mimeType, name: d.fileName };
   }
 
