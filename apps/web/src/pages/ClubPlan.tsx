@@ -821,6 +821,8 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
   const [scale, setScale] = useState(0.5);
+  const [msg, setMsg] = useState("");
+  const holder = useRef<HTMLDivElement>(null);
   useEffect(() => { const f = () => setScale(Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / POSTER_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   const shift = (n: number) => setMonth(addDays(`${month}-01`, n < 0 ? -1 : 32).slice(0, 7));
   const print = () => {
@@ -828,6 +830,14 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
     document.head.appendChild(st); document.body.classList.add("printing-affiche");
     const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done); window.print();
+  };
+  const png = async () => {
+    setMsg("Je prépare l'image…");
+    try {
+      const blob = await posterToPng(holder.current?.firstElementChild as HTMLElement, POSTER_W, POSTER_H);
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `affiche-${month}-${model}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
+    } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
   };
   return (
     <Modal title="🖨️ Affiche du mois" onClose={onClose}>
@@ -842,9 +852,13 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
       </div>
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>
+        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>
       </div>
-      <button type="button" className="btn-clay mt-3" onClick={print}>🖨️ Imprimer ou enregistrer en PDF</button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn-clay" onClick={png}>💾 Enregistrer en image (PNG)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={print}>🖨️ Imprimer ou enregistrer en PDF</button>
+      </div>
+      {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
       {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>, document.body)}
     </Modal>
