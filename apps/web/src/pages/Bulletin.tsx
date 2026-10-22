@@ -8,7 +8,7 @@ import { CourtMark, Planet, Stars } from "../components/Galaxy";
 import { useYouthTheme } from "../components/theme";
 import { Radar } from "../components/Radar";
 import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
-import { BackLink, Empty } from "../components/ui";
+import { BackLink, ClubLogo, Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
 import { MISSION_TOPICS, ageOf, isTeen, AXES, START_ITEMS, itemKey, LEVELS, levelOf, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
@@ -115,7 +115,7 @@ export default function Bulletin() {
           <header className="bulletin-hero grid items-center gap-4 p-6 sm:grid-cols-[1fr_150px] sm:p-8">
             <div className="stars" aria-hidden="true" />
             <div className="relative grid gap-2">
-              <p className="m-0 text-xs font-bold uppercase tracking-[0.2em] text-[#dcf247]">{t === 0 ? "Bilan de départ" : "Bulletin"} · Tennis Club Houdan</p>
+              <p className="m-0 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#dcf247]"><ClubLogo className="size-9 text-white" />{t === 0 ? "Bilan de départ" : "Bulletin"} · Tennis Club Houdan</p>
               <h1 className="m-0 text-4xl font-black text-white sm:text-5xl">{fullName(p)}</h1>
               <p className="m-0 text-lg text-white/90">{periodLabel(season, t)} {t > 0 && <span className="text-white/70">· {TRIMESTER_MONTHS[t]}</span>}</p>
               {facts.length > 0 && <ul className="m-0 mt-1 flex list-none flex-wrap gap-2 p-0">{facts.map(([k, v]) => <li key={k} className="gal-chip"><span className="text-white/70">{k}</span> {v}</li>)}</ul>}

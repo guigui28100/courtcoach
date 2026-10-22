@@ -6,7 +6,7 @@ import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
 import { ProfsAdmin } from "../components/Profs";
 import { TournamentsTab } from "../components/Tournaments";
-import { Avatar, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
+import { Avatar, ClubLogo, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { MarkBadge, useVideos } from "../components/Videos";
 import { adultFacts, adultName, collapseSeries, everyDay, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
@@ -226,7 +226,7 @@ export function CoachHome() {
     <>
       <section aria-label="Bienvenue" className="home-hero relative overflow-hidden pb-28 pt-9 text-white print:hidden">
         <svg aria-hidden="true" viewBox="0 0 1200 400" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-50" fill="none" stroke="#fff" strokeWidth="3"><rect x="120" y="40" width="960" height="340" /><line x1="120" y1="120" x2="1080" y2="120" /><line x1="120" y1="300" x2="1080" y2="300" /><line x1="600" y1="120" x2="600" y2="300" /><line x1="360" y1="120" x2="360" y2="300" /><line x1="840" y1="120" x2="840" y2="300" /><line x1="600" y1="20" x2="600" y2="400" strokeDasharray="8 8" /></svg>
-        <span aria-hidden="true" className="home-ball" />
+        <ClubLogo className="absolute right-[4%] top-5 size-32 text-white drop-shadow-lg max-xl:hidden" />
         <div className="relative mx-auto max-w-6xl px-4">
           <p className="m-0 text-xs font-black uppercase tracking-[0.16em] text-ball">Espace coach · {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
           <h1 className="m-0 mt-1 max-w-[18ch] text-[2.1rem] leading-[1.05] text-white [text-shadow:0_2px_0_rgba(0,0,0,0.15)] sm:max-w-none sm:text-5xl lg:pr-44">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first},<br />{line2}</h1>

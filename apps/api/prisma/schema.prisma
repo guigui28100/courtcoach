@@ -648,6 +648,13 @@ model ClubEvent {
   who       String[] // profs ou responsables (prénoms)
   note      String   @default("")
   featured  Boolean  @default(false) // « ⭐ à mettre en avant » sur l'affiche du mois
+  // Infos de l'affiche d'un événement (toutes facultatives)
+  time      String   @default("") // horaires, ex. « 9 h – 12 h »
+  place     String   @default("") // lieu
+  signup    String   @default("") // inscriptions, ex. « À l'accueil, jusqu'au 20 octobre »
+  formulas  Json     @default("[]") // formules et prix : [{ label, price, detail? }], 8 au plus
+  audience  String   @default("") // pour qui ? ex. « 8 à 12 ans, tous niveaux »
+  bring     String   @default("") // à prévoir, ex. « Tenue de sport, bouteille d'eau »
   createdAt DateTime @default(now())
 
   @@index([startDate])

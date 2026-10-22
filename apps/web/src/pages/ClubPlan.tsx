@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { BackLink, Err, Page } from "../components/ui";
+import { BackLink, ClubLogo, Err, Page } from "../components/ui";
+import { emptyInfo, EventPosterFields, isStage, PosterInfo } from "../components/EventPosterFields";
+import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
+import { posterToPng } from "../components/exportPoster";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -36,6 +39,7 @@ export function ClubPlan() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menuDay, setMenuDay] = useState<string | null>(null);
+  const [askNew, setAskNew] = useState(false); // « Ajouter un événement » : on demande d'abord la date
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
@@ -71,6 +75,7 @@ export function ClubPlan() {
   };
 
   const [actionEv, setActionEv] = useState<ClubEvent | null>(null);
+  const [posterEv, setPosterEv] = useState<ClubEvent | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const toggleStar = async (e: ClubEvent) => {
     setErr("");
@@ -86,14 +91,14 @@ export function ClubPlan() {
           <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="none" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><rect x="10" y="8" width="380" height="84" /><line x1="200" y1="8" x2="200" y2="92" /><line x1="70" y1="8" x2="70" y2="92" /><line x1="330" y1="8" x2="330" y2="92" /><line x1="70" y1="50" x2="330" y2="50" /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-2xl bg-[#dff04a] text-3xl shadow">🎾</span>
+              <ClubLogo className="size-16 text-white drop-shadow" />
               <div className="min-w-0">
                 <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Réservé au coach · Saison {season} / {season + 1}</p>
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter un événement</button>
+              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
             </div>
@@ -123,11 +128,11 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
-      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
+      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}-${askNew}`} ask={askNew} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
       {settingsOpen && (
         <Modal title="⚙️ Réglages" onClose={() => setSettingsOpen(false)}>
           <div className="grid gap-2">
@@ -136,7 +141,8 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} />}
+      {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onEdit={(e) => { setPosterEv(null); openEdit(e); }} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
@@ -349,7 +355,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -412,6 +418,10 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
+      <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
+        <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
+        <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
+      </details>
       <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
@@ -462,9 +472,9 @@ const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: 
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
 // Un menu déroulant FERMÉ par défaut : le titre dit déjà l'essentiel
-function Fold({ color, icon, title, hint, badge, children }: { color: string; icon: string; title: string; hint?: React.ReactNode; badge?: number; children: React.ReactNode }) {
+function Fold({ open, color, icon, title, hint, badge, children }: { open?: boolean; color: string; icon: string; title: string; hint?: React.ReactNode; badge?: number; children: React.ReactNode }) {
   return (
-  <details className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
+  <details open={open} className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
     <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}14` }}>
       <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-white" style={{ background: color }}>{icon}</span>
       <span className="min-w-0 flex-1"><span className="block font-extrabold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
@@ -476,17 +486,20 @@ function Fold({ color, icon, title, hint, badge, children }: { color: string; ic
 );
 }
 
-interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
-function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
+interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
+const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
+function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, id: e.id } : { on: false, who: [], teams: [], note: "", star: false }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -496,7 +509,9 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
   const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
   // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
+  const pickLast = (x: string) => { setChosen(true); setPickEnd(false); setEnd(x < start ? start : x); }; // fiche d'un jour : on choisit seulement le dernier jour
   const pickDate = (x: string) => {
+    setChosen(true);
     if (!pickEnd) { setStart(x); setEnd(x); setPickEnd(true); }
     else { if (x < start) { setEnd(start); setStart(x); } else setEnd(x); setPickEnd(false); }
   };
@@ -505,8 +520,8 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
     try {
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star });
-        else if (c.on && old && (c.star !== !!old.featured || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, allowConflict: true });
+        if (c.on && !old) await post("/club/events", { kind: k.key, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) });
+        else if (c.on && old && (c.star !== !!old.featured || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: old.title || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone();
@@ -516,25 +531,12 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
   const GROUP_META: Record<string, { icon: string; color: string }> = { "Compétition": { icon: "🏆", color: "#D35400" }, "Animations et stages": { icon: "🎉", color: "#8E44AD" }, "Terrains": { icon: "🧱", color: "#A04000" }, "Vie du club": { icon: "🥳", color: "#16A085" } };
   const nbDays = diffDays(start, end) + 1;
   return (
-    <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
-      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.</p>
-      <Fold color="#2E86C1" icon="📆" title="Durée" hint={nbDays === 1 ? "Une seule journée" : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-bold text-ink">Durée :</span>
-          <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => setEnd(addDays(end, -1))}>−</button>
-          <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={nbDays}
-            onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
-            className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center text-lg font-black text-ink" />
-          <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setEnd(addDays(end, 1))}>＋</button>
-          <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
-        </div>
-        <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
-          <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
-            <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
-        </details>
+    <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
+      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{!chosen ? "1. Choisis la date (ou les dates) sur le calendrier · 2. Coche ce qui se passe." : `${nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.`}</p>
+      <Fold open={ask} color="#2E86C1" icon="📆" title={ask ? "À quelle date ?" : "Jusqu'à quel jour ?"} hint={!chosen ? "👉 Choisis d'abord la date" : nbDays === 1 ? `Une seule journée : le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
+        <MiniCalendar start={start} end={end} onPick={ask ? pickDate : pickLast} />
+        <p className="mb-0 mt-2 text-sm font-bold text-ink">{ask ? (!chosen ? "Touche le jour de l'événement. S'il dure plusieurs jours, touche le premier puis le dernier." : pickEnd ? "Si l'événement dure plusieurs jours, touche maintenant le DERNIER jour (sinon, c'est bon : une seule journée)." : nbDays === 1 ? `✔ Le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)}`) : (nbDays === 1 ? `L'événement commence le ${fmtDay(start)}. Touche le DERNIER jour s'il dure plusieurs jours.` : `✔ Du ${fmtDay(start)} jusqu'au ${fmtDay(end)} (${nbDays} jours)`)}</p>
+        {nbDays > 1 && <button type="button" className="btn-outline mt-2" onClick={() => { setEnd(start); setPickEnd(false); }}>↩ Une seule journée</button>}
       </Fold>
       {already.length > 0 && (
         <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
@@ -578,6 +580,9 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
                       placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
                       className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                   </label>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
+                    <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
+                  </details>
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
@@ -601,13 +606,62 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
         );
       })}
       <Err msg={err || missing} />
-      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
+    </Modal>
+  );
+}
+
+// ───────────── Affiche d'un événement : A4 à imprimer ou carré pour les réseaux, enregistrée en PDF ou en image ─────────────
+function EventPosterModal({ e, onClose, onEdit }: { e: ClubEvent; onClose: () => void; onEdit: (e: ClubEvent) => void }) {
+  const [format, setFormat] = useState<PosterFormat>("A4");
+  const [showWho, setShowWho] = useState(false);
+  const [scale, setScale] = useState(0.5);
+  const [msg, setMsg] = useState("");
+  const holder = useRef<HTMLDivElement>(null);
+  const { w, h } = SIZES[format];
+  useEffect(() => { const f = () => setScale(Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / w)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
+  const print = () => {
+    const st = document.createElement("style"); st.textContent = `@page{size:${w}px ${h}px;margin:0}`;
+    document.head.appendChild(st); document.body.classList.add("printing-affiche");
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); window.print();
+  };
+  const png = async () => {
+    setMsg("Je prépare l'image…");
+    try {
+      const node = holder.current?.firstElementChild as HTMLElement;
+      const blob = await posterToPng(node, w, h);
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = `affiche-${titleOf(e).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${format === "A4" ? "a4" : "carre"}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
+    } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
+  };
+  const empty = !e.time && !e.place && !e.signup && !e.audience && !e.bring && !(e.formulas ?? []).length;
+  return (
+    <Modal title={`🪧 Affiche : ${titleOf(e)}`} onClose={onClose}>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Pill on={format === "A4"} onClick={() => setFormat("A4")}>📄 A4 à imprimer</Pill>
+        <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>📱 Carré (WhatsApp, Facebook)</Pill>
+        {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
+      </div>
+      {empty && <p className="mb-3 mt-0 rounded-xl bg-[#fff1c2] p-3 text-sm font-bold text-[#5a4300]">💡 Pour une affiche plus complète, ajoute les horaires, le lieu, les formules et les prix. <button type="button" className="font-extrabold underline" onClick={() => onEdit(e)}>Compléter l'événement ›</button></p>}
+      <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
+        <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={e} format={format} showWho={showWho} /></div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn-clay" onClick={png}>💾 Enregistrer en image (PNG)</button>
+        <button type="button" className="btn-outline" onClick={print}>🖨️ Imprimer ou enregistrer en PDF</button>
+        <button type="button" className="btn-outline" onClick={() => onEdit(e)}>✏️ Modifier les infos</button>
+      </div>
+      {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
+      <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. Aucun nom d'élève sur l'affiche.</p>
+      {createPortal(<div className="affiche-print"><EventPoster e={e} format={format} showWho={showWho} /></div>, document.body)}
     </Modal>
   );
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onStar, onEdit, onDelete }: { e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster }: { onPoster: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
@@ -616,6 +670,7 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete }: { e: ClubEvent; 
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
       <div className="mt-3 grid gap-2">
         <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>
+        <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 Créer l'affiche de cet événement</button>
         <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
         <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
       </div>
