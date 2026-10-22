@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
   return (
     <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-sand to-[#f6e3d1]">
-      <ClubLogo className="pointer-events-none absolute -right-2 top-1/2 size-36 -translate-y-1/2 text-clay opacity-90 max-md:hidden" />
+      <ClubLogo className="pointer-events-none absolute -right-2 top-1/2 size-36 -translate-y-1/2 text-clay opacity-90 max-lg:hidden" />
       <div className="relative mx-auto flex max-w-6xl items-center gap-4 px-4 py-7">
         {icon}
         <div className="min-w-0">

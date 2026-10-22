@@ -72,15 +72,25 @@ export class ClubService {
     if (clashes.length && !dto.allowConflict) throw new ConflictException({ message: `Conflit : ${clashes[0].why}.`, clashes });
   }
 
+  // Infos de l'affiche : si le champ n'est pas envoyé (ex. simple ⭐), on garde ce qui est déjà enregistré
+  private posterData(dto: ClubEventDto) {
+    const d: { time?: string; place?: string; signup?: string; formulas?: { label: string; price: string }[] } = {};
+    if (dto.time !== undefined) d.time = dto.time.trim();
+    if (dto.place !== undefined) d.place = dto.place.trim();
+    if (dto.signup !== undefined) d.signup = dto.signup.trim();
+    if (dto.formulas !== undefined) d.formulas = dto.formulas.map((f) => ({ label: f.label.trim(), price: f.price.trim() })).filter((f) => f.label || f.price);
+    return d;
+  }
+
   async create(dto: ClubEventDto) {
     const ev = await this.clean(dto); await this.check(ev, dto);
-    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true } });
+    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...this.posterData(dto) } });
   }
 
   async update(id: string, dto: ClubEventDto) {
     if (!(await this.prisma.clubEvent.findUnique({ where: { id } }))) throw new NotFoundException("Événement introuvable");
     const ev = await this.clean(dto); await this.check(ev, dto, id);
-    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true } });
+    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...this.posterData(dto) } });
   }
 
   async remove(id: string) {

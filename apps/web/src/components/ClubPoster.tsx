@@ -32,10 +32,10 @@ function detail(e: ClubEvent, showWho: boolean) {
   if (showWho && e.who.length) parts.push(`avec ${e.who.map((w) => w.replace(" (moi)", "")).join(", ")}`);
   return parts.join(" · ");
 }
-const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? "Match par équipes" : titleOf(e));
+export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? "Match par équipes" : titleOf(e));
 const dayNum = (d: string) => +d.slice(8, 10);
 // Date complète : « Samedi 14 novembre » ou « Samedi 14 → dimanche 15 novembre »
-const fullRange = (e: ClubEvent) => {
+export const fullRange = (e: ClubEvent) => {
   const d = (x: string, month: boolean) => `${DAYS[weekdayOf(x)]} ${dayNum(x)}${month ? " " + MONTHS[+x.slice(5, 7) - 1].toLowerCase() : ""}`;
   if (e.startDate === e.endDate) return d(e.startDate, true);
   const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
@@ -59,13 +59,13 @@ function Header({ m }: { m: string }) {
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
         <rect x="40" y="40" width="714" height="230" /><line x1="397" y1="40" x2="397" y2="270" /><line x1="40" y1="95" x2="754" y2="95" /><line x1="40" y1="215" x2="754" y2="215" /><line x1="215" y1="95" x2="215" y2="215" /><line x1="579" y1="95" x2="579" y2="215" /><line x1="215" y1="155" x2="579" y2="155" />
       </svg>
-      <PosterLogo size={190} style={{ position: "absolute", right: 28, top: 22, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
+      <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
         <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
-        <div className="font-display" style={{ fontSize: 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
+        <div className="font-display" style={{ fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
           <span style={{ background: "#f2d230", color: "#3a2c00", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
-          <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1} · Au programme ce mois-ci</span>
+          <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1}</span>
         </div>
       </div>
     </div>
