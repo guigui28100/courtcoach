@@ -515,6 +515,7 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 
 /* Affiche du mois du planning du club : cachée à l'écran, seule visible à l'impression */
 .affiche-print { display: none; }
+.affiche-print, .affiche-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 @media print {
   body.printing-affiche #root { display: none !important; }
   body.printing-affiche .affiche-print { display: block !important; }
