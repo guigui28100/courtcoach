@@ -74,13 +74,13 @@ export class ClubService {
 
   // Infos de l'affiche : si le champ n'est pas envoyé (ex. simple ⭐), on garde ce qui est déjà enregistré
   private posterData(dto: ClubEventDto) {
-    const d: { time?: string; place?: string; signup?: string; formulas?: { label: string; price: string; detail?: string; group?: string }[]; audience?: string; bring?: string } = {};
+    const d: { time?: string; place?: string; signup?: string; formulas?: { label: string; price: string; priceMember?: string; detail?: string; group?: string }[]; audience?: string; bring?: string } = {};
     if (dto.time !== undefined) d.time = dto.time.trim();
     if (dto.place !== undefined) d.place = dto.place.trim();
     if (dto.signup !== undefined) d.signup = dto.signup.trim();
     if (dto.audience !== undefined) d.audience = dto.audience.trim();
     if (dto.bring !== undefined) d.bring = dto.bring.trim();
-    if (dto.formulas !== undefined) d.formulas = dto.formulas.map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })).filter((f) => f.label || f.price);
+    if (dto.formulas !== undefined) d.formulas = dto.formulas.map((f) => ({ label: f.label.trim(), price: f.price.trim(), priceMember: (f.priceMember ?? "").trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })).filter((f) => f.label || f.price || f.priceMember);
     return d;
   }
 

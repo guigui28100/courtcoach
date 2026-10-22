@@ -28,7 +28,7 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
   const add = (label = "") => value.formulas.length < MAX_FORMULAS && set({ formulas: [...value.formulas, { label, price: "", detail: "", group: value.formulas[value.formulas.length - 1]?.group ?? "" }] });
   const KEY = "cc-formula-model"; // modèle personnel gardé seulement dans le navigateur du coach (rien n'est envoyé)
   const [mine, setMine] = useState<Formula[]>(() => { try { const v = JSON.parse(localStorage.getItem(KEY) ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; } });
-  const saveMine = (f: Formula[]) => { const clean = f.map((x) => ({ ...x, price: "" })); try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch { /* sans stockage, pas de modèle */ } setMine(clean); };
+  const saveMine = (f: Formula[]) => { const clean = f.map((x) => ({ ...x, price: "", priceMember: "" })); try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch { /* sans stockage, pas de modèle */ } setMine(clean); };
   const replaceWith = (list: Formula[], audience?: string) => {
     if (value.formulas.length > 0 && !window.confirm("Remplacer les formules actuelles par ce modèle ? (les prix seront à ressaisir)")) return;
     onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience, signup: audience && !value.signup ? SIGNUP_ONLINE : value.signup });
@@ -43,7 +43,7 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => saveMine(value.formulas)}>💾 Garder ces formules comme mon modèle</button>}
         {value.formulas.length > 0 && <button type="button" className="btn-outline" onClick={() => { if (window.confirm("Effacer toutes les formules ?")) set({ formulas: [] }); }}>🧹 Tout effacer</button>}
       </div>
-      {value.formulas.length === 0 && <p className="mb-2 mt-0 text-sm text-muted">Écris tes propres formules avec « ＋ Ajouter une formule », ou pars d'un modèle ci-dessus : tout reste modifiable (noms, prix, rubriques, précisions).</p>}
+      {value.formulas.length === 0 && <p className="mb-2 mt-0 text-sm text-muted">Pour chaque formule, écris un prix « adhérent » et un prix « non adhérent » (ou un seul des deux). Écris tes propres formules avec « ＋ Ajouter une formule », ou pars d'un modèle ci-dessus : tout reste modifiable (noms, prix, rubriques, précisions).</p>}
       <datalist id="formula-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
       <ul className="m-0 grid list-none gap-2.5 p-0">
         {value.formulas.map((f, i) => (
@@ -51,7 +51,8 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
             <div className="flex flex-wrap items-center gap-2">
               <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-xs font-black text-white">{i + 1}</span>
               <input aria-label={`Formule ${i + 1}`} maxLength={40} value={f.label} onChange={(e) => setF(i, { label: e.target.value })} placeholder="Nom de la formule (ex. Semaine complète)" className="min-w-0 flex-[3_1_11rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink" />
-              <input aria-label={`Prix ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="Prix (ex. 120 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
+              <input aria-label={`Prix adhérent ${i + 1}`} maxLength={30} value={f.priceMember ?? ""} onChange={(e) => setF(i, { priceMember: e.target.value })} placeholder="Adhérent (ex. 100 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
+              <input aria-label={`Prix non adhérent ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="Non adhérent (ex. 120 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
               <button type="button" className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-sm font-bold text-ink hover:border-ink" aria-label={`Retirer la formule ${i + 1}`} onClick={() => set({ formulas: value.formulas.filter((_, k) => k !== i) })}>🗑️</button>
             </div>
             <input aria-label={`Rubrique de la formule ${i + 1}`} list="formula-groups" maxLength={60} value={f.group ?? ""} onChange={(e) => setF(i, { group: e.target.value })} placeholder="Rubrique (facultatif) : 6 à 17 ans, Mini tennis 3 à 5 ans…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />

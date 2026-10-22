@@ -56,7 +56,8 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const k = kindOf(e.kind); const a = ambiance(e.kind);
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
-  const formulas = (e.formulas ?? []).filter((f) => f.label || f.price);
+  const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
+  const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const infoCount = [e.audience, e.time, e.place, e.bring, e.signup].filter(Boolean).length;
   const dense = infoCount + formulas.length * 1.4 > (sq ? 11 : 9); // beaucoup de contenu : bandeau du haut plus bas pour laisser la place
   const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 100 : sq ? 150 : 130; const logoSize = dense ? 110 : 140;
@@ -96,13 +97,15 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
             </div>)}
           {formulas.length > 0 && (
             <div style={{ ...card, padding: "12px 20px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}
+                {twoPrices && <span style={{ marginLeft: "auto", display: "flex", gap: 12, fontSize: 13 }}><span style={{ width: 120, textAlign: "right", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>ADHÉRENT</span><span style={{ width: 120, textAlign: "right", whiteSpace: "nowrap", letterSpacing: "0.04em" }}>NON ADHÉRENT</span></span>}
+              </div>
               {formulas.map((f, i) => (
                 <div key={i}>
                   {(f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group ? <div style={{ marginTop: i ? 10 : 2, padding: "6px 12px", background: a.c1, color: "#fff", borderRadius: 10, fontSize: fit(f.group, w - px * 2 - 64, 16, 11, 0.58), fontWeight: 900, letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{f.group}</div> : null}
                 <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "7px 0", borderTop: i && !((f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group) ? `2px dotted ${mix(a.c1, "#ffffff", 0.6)}` : "none" }}>
-                  <span style={{ flex: 1, minWidth: 0, fontWeight: 800, whiteSpace: "nowrap", fontSize: fit(f.label, w - px * 2 - 40 - f.price.length * 22 - 40, 25, 13) }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: fit(f.detail, w - px * 2 - 40 - f.price.length * 22 - 40, 16, 11, 0.5), fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
-                  <span style={{ flex: "0 0 auto", fontSize: 32, fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{f.price}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 800, whiteSpace: "nowrap", fontSize: fit(f.label, w - px * 2 - 40 - (twoPrices ? 240 : f.price.length * 22) - 40, 25, 13) }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: fit(f.detail, w - px * 2 - 40 - (twoPrices ? 240 : f.price.length * 22) - 40, 16, 11, 0.5), fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
+                  {twoPrices ? [f.priceMember, f.price].map((p, k) => <span key={k} style={{ flex: "0 0 120px", textAlign: "right", fontSize: fit(p || "—", 120, 30, 16, 0.6), fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{p || "—"}</span>) : <span style={{ flex: "0 0 auto", fontSize: 32, fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{f.priceMember ? `Adhérent ${f.priceMember}` : f.price}</span>}
                 </div>
                 </div>))}
             </div>)}
