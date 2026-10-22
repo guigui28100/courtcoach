@@ -509,6 +509,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
+  const [multi, setMulti] = useState(endInit !== undefined && endInit !== day);
   const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -544,17 +546,47 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
       onDone();
     } catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
-  const groups = [...new Set(KINDS.map((k) => k.group))];
-  const GROUP_META: Record<string, { icon: string; color: string }> = { "Compétition": { icon: "🏆", color: "#D35400" }, "Animations et stages": { icon: "🎉", color: "#8E44AD" }, "Terrains": { icon: "🧱", color: "#A04000" }, "Vie du club": { icon: "🥳", color: "#16A085" } };
+  const FAMILIES: { name: string; icon: string; color: string; kinds: string[] }[] = [
+    { name: "Compétition", icon: "🏆", color: "#D35400", kinds: ["TOURNOI", "EQUIPES"] },
+    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE", "FETE_ECOLE"] },
+    { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
+    { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "TERRE_BATTUE"] },
+    { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
+  ];
+  const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
   return (
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
-      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{!chosen ? "1. Choisis la date (ou les dates) sur le calendrier · 2. Coche ce qui se passe." : `${nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.`}</p>
-      <Fold open={ask} color="#2E86C1" icon="📆" title={ask ? "À quelle date ?" : "Jusqu'à quel jour ?"} hint={!chosen ? "👉 Choisis d'abord la date" : nbDays === 1 ? `Une seule journée : le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
-        <MiniCalendar start={start} end={end} onPick={ask ? pickDate : pickLast} />
-        <p className="mb-0 mt-2 text-sm font-bold text-ink">{ask ? (!chosen ? "Touche le jour de l'événement. S'il dure plusieurs jours, touche le premier puis le dernier." : pickEnd ? "Si l'événement dure plusieurs jours, touche maintenant le DERNIER jour (sinon, c'est bon : une seule journée)." : nbDays === 1 ? `✔ Le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)}`) : (nbDays === 1 ? `L'événement commence le ${fmtDay(start)}. Touche le DERNIER jour s'il dure plusieurs jours.` : `✔ Du ${fmtDay(start)} jusqu'au ${fmtDay(end)} (${nbDays} jours)`)}</p>
-        {nbDays > 1 && <button type="button" className="btn-outline mt-2" onClick={() => { setEnd(start); setPickEnd(false); }}>↩ Une seule journée</button>}
-      </Fold>
+      {step === 1 ? (
+        <div>
+          <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
+            <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
+          </div>
+          {multi && !ask && (
+            <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
+              <p className="m-0 mb-2 text-sm font-extrabold text-ink">Durée</p>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <button type="button" className="btn-outline" aria-label="Un jour de moins" onClick={() => setDays(nbDays - 1)}>−</button>
+                <input aria-label="Nombre de jours" type="number" min={1} max={365} value={nbDays} onChange={(e) => setDays(+e.target.value || 1)} className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center font-bold" />
+                <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setDays(nbDays + 1)}>＋</button>
+                <span className="font-bold text-ink">jours</span>
+              </div>
+              <div className="flex flex-wrap gap-2">{[[2, "2 jours"], [3, "3 jours"], [5, "5 jours"], [7, "1 semaine"], [14, "2 semaines"], [30, "1 mois"]].map(([n, l]) => <Pill key={n} on={nbDays === n} onClick={() => setDays(n as number)}>{l}</Pill>)}</div>
+            </div>
+          )}
+          {(ask || multi) && (
+            <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
+              <p className="m-0 mb-2 text-sm font-extrabold text-ink">{ask ? (multi ? "Touche le premier puis le dernier jour" : "Touche le jour de l'événement") : "Ou touche le dernier jour sur le calendrier"}</p>
+              <MiniCalendar start={start} end={end} onPick={ask ? (multi ? pickDate : (x: string) => { setChosen(true); setStart(x); setEnd(x); }) : pickLast} />
+            </div>
+          )}
+          <p className="mb-3 mt-0 text-sm font-bold text-ink">{!chosen ? "👉 Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
+          <button type="button" className="btn-clay" disabled={!chosen} onClick={() => setStep(2)}>Valider la durée →</button>
+        </div>
+      ) : (<>
+      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-extrabold text-[#1b1863]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
       {already.length > 0 && (
         <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
@@ -566,8 +598,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           </ul>
         </Fold>
       )}
-      {groups.map((g) => {
-        const gk = KINDS.filter((k) => k.group === g); const gm = GROUP_META[g] ?? { icon: "📅", color: "#2E86C1" };
+      {FAMILIES.map((fam) => {
+        const g = fam.name; const gk = fam.kinds.map((id) => KINDS.find((k) => k.key === id)!).filter(Boolean); const gm = fam;
         const on = gk.filter((k) => sel[k.key]?.on);
         return (
           <Fold key={g} color={gm.color} icon={gm.icon} title={g} badge={on.length} hint={on.length ? `✔ ${on.map((k) => k.label).join(" · ")}` : `${gk.length} choix`}>
@@ -654,6 +686,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
       })}
       <Err msg={err || missing} />
       <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
+      </>)}
     </Modal>
   );
 }
