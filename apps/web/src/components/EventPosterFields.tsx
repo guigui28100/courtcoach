@@ -215,8 +215,6 @@ export function AnimationForm({ value, onChange, title, onTitle, note, onNote, t
       {onTitle && <label className="block text-sm font-bold text-ink">🏷️ {tournoi ? "Nom du tournoi" : "Nom de l'animation"}
         <input aria-label={tournoi ? "Nom du tournoi" : "Nom de l'animation"} maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder={tournoi ? "Ex. Tournoi interne de la Toussaint" : "Ex. Journée portes ouvertes"} className={inputCls} /></label>}
       <p className="m-0 text-xs text-muted">📅 La date vient du planning : elle s'écrit toute seule sur l'affiche.</p>
-      <label className="block text-sm font-bold text-ink">👥 {tournoi ? "Qui peut jouer ? (catégories)" : "Pour qui ?"}
-        <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder={tournoi ? "Ex. Simple messieurs et dames, tous niveaux" : "Ex. Ouvert à tous les adhérents"} className={inputCls} /></label>
       <label className="block text-sm font-bold text-ink">📝 {tournoi ? "Format et déroulement" : "Ce qu'il va se passer"}
         <textarea aria-label="Ce qu'il va se passer" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder={tournoi ? "Ex. Poules puis tableau final, matchs de 6 jeux, remise des prix à 18 h, buvette sur place…" : "Ex. Matchs amicaux, initiation pour les débutants, goûter offert…"} className={inputCls} /></label>
       <div className="grid gap-3 sm:grid-cols-2">

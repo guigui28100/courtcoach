@@ -90,6 +90,18 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const twoCol = sq && rows.length > 1 && rows.every((r) => r.text.length <= 26);
   const rowW = (twoCol ? (w - px * 2 - 12) / 2 : w - px * 2) - 120; // place pour le texte à côté de l'icône
   const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 5px 12px rgba(27,24,99,.12)" } as const;
+  const anim = e.kind === "ANIMATION"; // animation : description, horaires, tarif, puis où s'inscrire
+  const rowsBlock = (list: typeof rows) => list.length > 0 && (
+
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr" }}>
+              {list.map((r) => (
+                <div key={r.title} style={{ ...card, display: "flex", alignItems: "center", gap: 16, padding: (tour || anim) ? "18px 22px" : "10px 18px" }}>
+                  <span aria-hidden style={{ flex: "0 0 48px", width: 48, height: 48, borderRadius: 14, background: a.c1, color: "#fff", display: "grid", placeItems: "center", fontSize: 26 }}>{r.icon}</span>
+                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: fit(r.text, rowW, (tour || anim) ? 32 : 25, 13), fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>{r.text}</div></div>
+                </div>))}
+            </div>
+  );
+  const noteBlock = e.note && <div style={{ background: a.soft, borderLeft: `10px solid ${a.c1}`, borderRadius: 16, padding: "14px 20px", fontSize: 22, lineHeight: 1.35, color: "#2b2a42", overflowWrap: "anywhere" }}>{e.note}</div>;
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
       <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
@@ -102,14 +114,8 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
       </div>
       <Fit top={hd + 4} bottom={sq ? 100 : 112} h={h} w={w}>
         <div style={{ padding: `22px ${px}px 0`, display: "grid", gap: 12 }}>
-          {rows.length > 0 && (
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr" }}>
-              {rows.map((r) => (
-                <div key={r.title} style={{ ...card, display: "flex", alignItems: "center", gap: 16, padding: tour ? "18px 22px" : "10px 18px" }}>
-                  <span aria-hidden style={{ flex: "0 0 48px", width: 48, height: 48, borderRadius: 14, background: a.c1, color: "#fff", display: "grid", placeItems: "center", fontSize: 26 }}>{r.icon}</span>
-                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: fit(r.text, rowW, tour ? 32 : 25, 13), fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>{r.text}</div></div>
-                </div>))}
-            </div>)}
+          {anim && noteBlock}
+          {rowsBlock(anim ? rows.filter((r) => r.title !== "INSCRIPTIONS") : rows)}
           {formulas.length > 0 && (
             <div style={{ ...card, padding: "12px 20px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}
@@ -124,7 +130,8 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
                 </div>
                 </div>))}
             </div>)}
-          {e.note && <div style={{ background: a.soft, borderLeft: `10px solid ${a.c1}`, borderRadius: 16, padding: "14px 20px", fontSize: 22, lineHeight: 1.35, color: "#2b2a42", overflowWrap: "anywhere" }}>{e.note}</div>}
+          {anim && rowsBlock(rows.filter((r) => r.title === "INSCRIPTIONS"))}
+          {!anim && noteBlock}
         </div>
       </Fit>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: sq ? 88 : 96, background: "#1b1863", color: "#fff", padding: `0 ${px}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
