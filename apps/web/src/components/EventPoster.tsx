@@ -10,9 +10,15 @@ const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
 const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
 const mix = (a: string, b: string, t: number) => { const x = hex(a), y = hex(b); return `#${x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("")}`; };
 
-type Deco = "court" | "confetti" | "waves" | "lines";
+type Deco = "court" | "confetti" | "waves" | "lines" | "ribbons";
 const DECO: Record<string, Deco> = { TOURNOI: "court", EQUIPES: "court", ANIMATION: "confetti", FETE: "confetti", FETE_ECOLE: "confetti", STAGE_ENFANTS: "waves", STAGE_ADULTES: "waves" };
-const ambiance = (kind: string) => { const c1 = kindOf(kind).color; return { c1, c2: mix(c1, "#000000", 0.4), bg: mix(c1, "#ffffff", 0.93), soft: mix(c1, "#ffffff", 0.86), acc: "#e3f24b", deco: DECO[kind] ?? "lines" as Deco }; };
+// Tournoi : TROIS présentations (choisies par la catégorie) : messieurs adultes (bleu marine, lignes de court), dames adultes (framboise, rubans), jeunes (vert vif, confettis)
+export const TOURNOI_STYLES: Record<string, { c1: string; acc: string; deco: Deco; icon: string; bg: string }> = {
+  "Messieurs (adultes)": { c1: "#1e3a8a", acc: "#e3f24b", deco: "court", icon: "🏆", bg: "#eef2fb" },
+  "Dames (adultes)": { c1: "#be185d", acc: "#fde68a", deco: "ribbons", icon: "🏆", bg: "#fdf0f6" },
+  "Jeunes": { c1: "#15a34a", acc: "#ffd23f", deco: "confetti", icon: "🎾", bg: "#effaf2" },
+};
+const ambiance = (kind: string, audience = "") => { const t = kind === "TOURNOI" ? TOURNOI_STYLES[audience] : undefined; const c1 = t?.c1 ?? kindOf(kind).color; return { c1, c2: mix(c1, "#000000", 0.4), bg: t?.bg ?? mix(c1, "#ffffff", 0.93), soft: mix(c1, "#ffffff", 0.86), acc: t?.acc ?? "#e3f24b", deco: t?.deco ?? DECO[kind] ?? "lines" as Deco, icon: t?.icon }; };
 
 function Decor({ deco, w, h }: { deco: Deco; w: number; h: number }) {
   const common = { position: "absolute", inset: 0, width: "100%", height: "100%" } as const;
@@ -24,6 +30,12 @@ function Decor({ deco, w, h }: { deco: Deco; w: number; h: number }) {
     <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
       <g fill="#fff" opacity=".35"><circle cx="90" cy="80" r="10" /><circle cx="300" cy="40" r="6" /><circle cx="520" cy="110" r="12" /><circle cx="700" cy="300" r="9" /><circle cx="420" cy="330" r="8" /><circle cx="60" cy="300" r="6" /><circle cx="250" cy="250" r="7" /></g>
       <g fill="#ffd23f" opacity=".75"><path d="M200 120l8 18 19 2-14 13 4 19-17-10-17 10 4-19-14-13 19-2z" /><path d="M560 260l6 14 15 2-11 10 3 15-13-8-13 8 3-15-11-10 15-2z" /><path d="M360 300l5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z" /></g>
+    </svg>);
+  if (deco === "ribbons") return (
+    <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
+      <g fill="none" stroke="#fff" strokeWidth="4" opacity=".3"><path d="M-20 120C150 20 250 220 420 120S700 20 820 120" /><path d="M-20 190C150 90 250 290 420 190S700 90 820 190" /><path d="M-20 260C150 160 250 360 420 260S700 160 820 260" /></g>
+      <g fill="#fff" opacity=".25"><circle cx="680" cy="80" r="46" /><circle cx="120" cy="300" r="30" /><circle cx="560" cy="330" r="16" /></g>
+      <g fill="#fde68a" opacity=".8"><circle cx="330" cy="60" r="7" /><circle cx="740" cy="230" r="9" /><circle cx="210" cy="150" r="6" /></g>
     </svg>);
   if (deco === "waves") return (
     <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
@@ -54,7 +66,7 @@ function Fit({ top, bottom, h, w, children }: { top: number; bottom: number; h: 
 
 export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: PosterFormat; showWho: boolean }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
-  const k = kindOf(e.kind); const a = ambiance(e.kind);
+  const k = kindOf(e.kind); const a = ambiance(e.kind, e.audience);
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
@@ -66,11 +78,14 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const fs = fit(name, w - px * 2, (sq ? 110 : 96) * (dense ? 0.85 : 1), 30, 0.8);
   const dateTxt = fullRange(e); const dateFs = fit(dateTxt, w - px * 2 - 48, dense ? 26 : sq ? 34 : 30, 16, 0.56);
   const rows: { icon: string; title: string; text: string }[] = [];
-  if (e.audience) rows.push({ icon: "👥", title: "POUR QUI", text: e.audience });
-  if (e.time) rows.push({ icon: "🕒", title: "HORAIRES", text: e.time });
-  if (e.place) rows.push({ icon: "📍", title: "LIEU", text: e.place });
+  const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
+  if (e.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_STYLES[e.audience] ? "CATÉGORIE" : "POUR QUI", text: e.audience });
+  if (e.place && tour) rows.push({ icon: "🎾", title: "SURFACE", text: e.place });
+  if (e.time) rows.push({ icon: "🕒", title: tour ? "MATCHS, JOUR PAR JOUR" : "HORAIRES", text: e.time });
+  if (e.signup && tour) rows.push({ icon: "🏆", title: "FINALE", text: e.signup });
+  if (e.place && !tour) rows.push({ icon: "📍", title: "LIEU", text: e.place });
   if (e.bring) rows.push({ icon: "🎒", title: "À PRÉVOIR", text: e.bring });
-  if (e.signup) rows.push({ icon: "✍️", title: "INSCRIPTIONS", text: e.signup });
+  if (e.signup && !tour) rows.push({ icon: "✍️", title: "INSCRIPTIONS", text: e.signup });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
   const twoCol = sq && rows.length > 1 && rows.every((r) => r.text.length <= 26);
   const rowW = (twoCol ? (w - px * 2 - 12) / 2 : w - px * 2) - 120; // place pour le texte à côté de l'icône
@@ -82,7 +97,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
         <span aria-hidden style={{ position: "absolute", left: px - 8, top: 20, width: logoSize, height: logoSize, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", filter: "drop-shadow(0 3px 5px rgba(0,0,0,.3))" }} />
         <div style={{ position: "absolute", left: px + logoSize, top: 20 + logoSize / 2 - 10, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
         <div style={{ position: "absolute", left: px, right: px, top: Math.max(26 + medal, 20 + logoSize) + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
-        <div aria-hidden style={{ position: "absolute", right: px, top: 26, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
+        <div aria-hidden style={{ position: "absolute", right: px, top: 26, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{a.icon ?? k.icon}</div>
         <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dateFs, whiteSpace: "nowrap", boxShadow: "0 8px 18px rgba(0,0,0,.25)" }}>{dateTxt}</div>
       </div>
       <Fit top={hd + 4} bottom={sq ? 100 : 112} h={h} w={w}>
@@ -90,9 +105,9 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
           {rows.length > 0 && (
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr" }}>
               {rows.map((r) => (
-                <div key={r.title} style={{ ...card, display: "flex", alignItems: "center", gap: 16, padding: "10px 18px" }}>
+                <div key={r.title} style={{ ...card, display: "flex", alignItems: "center", gap: 16, padding: tour ? "18px 22px" : "10px 18px" }}>
                   <span aria-hidden style={{ flex: "0 0 48px", width: 48, height: 48, borderRadius: 14, background: a.c1, color: "#fff", display: "grid", placeItems: "center", fontSize: 26 }}>{r.icon}</span>
-                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: fit(r.text, rowW, 25, 13), fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>{r.text}</div></div>
+                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: fit(r.text, rowW, tour ? 32 : 25, 13), fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>{r.text}</div></div>
                 </div>))}
             </div>)}
           {formulas.length > 0 && (

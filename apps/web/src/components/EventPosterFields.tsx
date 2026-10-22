@@ -43,6 +43,24 @@ function PriceField({ label, value, onChange, placeholder }: { label: string; va
   );
 }
 
+// Menu déroulant générique + « Autre » pour écrire à la main
+function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…" }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string }) {
+  const [other, setOther] = useState(false);
+  const custom = other || (value !== "" && !options.includes(value));
+  return (
+    <div className="grid gap-1.5">
+      <select aria-label={label} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" value={custom ? PRICE_OTHER : value}
+        onChange={(e) => { const v = e.target.value; if (v === PRICE_OTHER) { setOther(true); if (options.includes(value)) onChange(""); } else { setOther(false); onChange(v); } }}>
+        <option value="">{first}</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value={PRICE_OTHER}>✏️ Autre : je l'écris moi-même</option>
+      </select>
+      {custom && <input aria-label={`${label} : écrit à la main`} maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" />}
+    </div>
+  );
+}
+export const SURFACES = ["Terre battue", "Dur (quick)", "Terre battue et dur", "Moquette", "Gazon synthétique"];
+
 const inputCls = "mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal text-ink";
 
 function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChange: (v: PosterInfo) => void; stage: boolean; kids?: boolean }) {
@@ -169,6 +187,29 @@ export function AnimationForm({ value, onChange, title, onTitle, note, onNote, t
     set({ formulas: !next.price.trim() && !(next.priceMember ?? "").trim() && rest.length === 0 ? [] : [next, ...rest] });
   };
   const setPrice = (price: string) => setPrices({ price });
+  if (tournoi) {
+    return (
+      <div className="grid gap-3">
+        {onTitle && <label className="block text-sm font-bold text-ink">🏷️ Nom du tournoi
+          <input aria-label="Nom du tournoi" maxLength={80} value={title ?? ""} onChange={(e) => onTitle(e.target.value)} placeholder="Ex. TMC messieurs de 15/1 à 4/6" className={inputCls} /></label>}
+        <p className="m-0 text-xs text-muted">📅 Les dates du tournoi viennent du planning : elles s'écrivent toutes seules sur l'affiche.</p>
+        <div className="text-sm font-bold text-ink">🎨 Catégorie <small className="font-normal text-muted">(change les couleurs de l'affiche)</small>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {["Messieurs (adultes)", "Dames (adultes)", "Jeunes"].map((c) => (
+              <button key={c} type="button" aria-pressed={value.audience === c} onClick={() => set({ audience: value.audience === c ? "" : c })}
+                className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${value.audience === c ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{c === "Messieurs (adultes)" ? "👨 " : c === "Dames (adultes)" ? "👩 " : "🧒 "}{c}</button>))}
+          </div></div>
+        <div className="text-sm font-bold text-ink">🎾 Surface
+          <div className="mt-1"><ChoiceField label="Surface" options={SURFACES} value={value.place} onChange={(v) => set({ place: v })} placeholder="Ex. Terre battue couverte" /></div></div>
+        <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour
+          <input aria-label="Horaires des matchs" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className={inputCls} /></label>
+        <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale
+          <input aria-label="Finale" maxLength={120} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className={inputCls} /></label>
+        <label className="block text-sm font-bold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
+          <textarea aria-label="Petit message" rows={3} maxLength={600} value={note} onChange={(e) => onNote(e.target.value)} placeholder="Ex. Buvette sur place, remise des prix après la finale…" className={inputCls} /></label>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-3">
       {onTitle && <label className="block text-sm font-bold text-ink">🏷️ {tournoi ? "Nom du tournoi" : "Nom de l'animation"}
