@@ -59,11 +59,11 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price);
   const infoCount = [e.audience, e.time, e.place, e.bring, e.signup].filter(Boolean).length;
   const dense = infoCount + formulas.length * 1.4 > (sq ? 11 : 9); // beaucoup de contenu : bandeau du haut plus bas pour laisser la place
-  const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 140 : sq ? 210 : 190;
-  // Taille du titre : le plus long mot doit tenir sur une ligne dans la place à gauche du médaillon
-  const gap = medal + (sq ? 100 : 80); const avail = w - px - gap; const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 1);
-  const base = name.length <= 12 ? 100 : name.length <= 20 ? 78 : name.length <= 30 ? 62 : 50;
-  const fs = Math.max(34, Math.min(base * (sq ? 1.05 : 1) * (dense ? 0.78 : 1), avail / (longest * 0.82)));
+  const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 100 : sq ? 150 : 130;
+  // Tout le texte important tient sur UNE SEULE LIGNE : la taille s'ajuste à la longueur et à la place disponible
+  const fit = (text: string, width: number, max: number, min = 14, k = 0.55) => Math.max(min, Math.min(max, width / (Math.max(text.length, 1) * k)));
+  const fs = fit(name, w - px * 2, (sq ? 110 : 96) * (dense ? 0.85 : 1), 30, 0.8);
+  const dateTxt = fullRange(e); const dateFs = fit(dateTxt, w - px * 2 - 48, dense ? 26 : sq ? 34 : 30, 16, 0.56);
   const rows: { icon: string; title: string; text: string }[] = [];
   if (e.audience) rows.push({ icon: "👥", title: "POUR QUI", text: e.audience });
   if (e.time) rows.push({ icon: "🕒", title: "HORAIRES", text: e.time });
@@ -71,26 +71,26 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   if (e.bring) rows.push({ icon: "🎒", title: "À PRÉVOIR", text: e.bring });
   if (e.signup) rows.push({ icon: "✍️", title: "INSCRIPTIONS", text: e.signup });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
+  const twoCol = sq && rows.length > 1 && rows.every((r) => r.text.length <= 26);
+  const rowW = (twoCol ? (w - px * 2 - 12) / 2 : w - px * 2) - 120; // place pour le texte à côté de l'icône
   const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 5px 12px rgba(27,24,99,.12)" } as const;
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
       <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
         <Decor deco={a.deco} w={w} h={hd} />
-        <div style={{ position: "absolute", left: px, top: 44, right: gap }}>
-          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
-          <div style={{ fontSize: fs, fontWeight: 900, lineHeight: 1, marginTop: 14, textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
-        </div>
-        <div aria-hidden style={{ position: "absolute", right: sq ? 56 : 48, top: 40, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
-        <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dense ? 26 : sq ? 34 : 30, boxShadow: "0 8px 18px rgba(0,0,0,.25)", maxWidth: w - px * 2 }}>{fullRange(e)}</div>
+        <div style={{ position: "absolute", left: px, top: 40, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
+        <div style={{ position: "absolute", left: px, right: px, top: 26 + medal + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
+        <div aria-hidden style={{ position: "absolute", right: px, top: 26, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
+        <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dateFs, whiteSpace: "nowrap", boxShadow: "0 8px 18px rgba(0,0,0,.25)" }}>{dateTxt}</div>
       </div>
       <Fit top={hd + 4} bottom={sq ? 100 : 112} h={h} w={w}>
         <div style={{ padding: `22px ${px}px 0`, display: "grid", gap: 12 }}>
           {rows.length > 0 && (
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: sq && rows.length > 1 ? "1fr 1fr" : "1fr" }}>
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: twoCol ? "1fr 1fr" : "1fr" }}>
               {rows.map((r) => (
                 <div key={r.title} style={{ ...card, display: "flex", alignItems: "center", gap: 16, padding: "10px 18px" }}>
                   <span aria-hidden style={{ flex: "0 0 48px", width: 48, height: 48, borderRadius: 14, background: a.c1, color: "#fff", display: "grid", placeItems: "center", fontSize: 26 }}>{r.icon}</span>
-                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: sq ? 24 : 25, fontWeight: 800, lineHeight: 1.2, overflowWrap: "anywhere" }}>{r.text}</div></div>
+                  <div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#6b6557" }}>{r.title}</div><div style={{ fontSize: fit(r.text, rowW, 25, 13), fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>{r.text}</div></div>
                 </div>))}
             </div>)}
           {formulas.length > 0 && (
@@ -98,9 +98,9 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}</div>
               {formulas.map((f, i) => (
                 <div key={i}>
-                  {(f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group ? <div style={{ marginTop: i ? 10 : 2, padding: "6px 12px", background: a.c1, color: "#fff", borderRadius: 10, fontSize: 16, fontWeight: 900, letterSpacing: "0.04em" }}>{f.group}</div> : null}
+                  {(f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group ? <div style={{ marginTop: i ? 10 : 2, padding: "6px 12px", background: a.c1, color: "#fff", borderRadius: 10, fontSize: fit(f.group, w - px * 2 - 64, 16, 11, 0.58), fontWeight: 900, letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{f.group}</div> : null}
                 <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "7px 0", borderTop: i && !((f.group ?? "") !== (formulas[i - 1]?.group ?? "") && f.group) ? `2px dotted ${mix(a.c1, "#ffffff", 0.6)}` : "none" }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 25, fontWeight: 800, overflowWrap: "anywhere" }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: 16, fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 800, whiteSpace: "nowrap", fontSize: fit(f.label, w - px * 2 - 40 - f.price.length * 22 - 40, 25, 13) }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: fit(f.detail, w - px * 2 - 40 - f.price.length * 22 - 40, 16, 11, 0.5), fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
                   <span style={{ flex: "0 0 auto", fontSize: 32, fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{f.price}</span>
                 </div>
                 </div>))}

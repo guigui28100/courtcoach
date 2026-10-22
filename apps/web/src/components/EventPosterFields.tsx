@@ -4,6 +4,8 @@ import { Formula, Kind } from "../clubPlan";
 export interface PosterInfo { time: string; place: string; signup: string; formulas: Formula[]; audience: string; bring: string }
 export const emptyInfo = (): PosterInfo => ({ time: "", place: "", signup: "", formulas: [], audience: "", bring: "" });
 export const MAX_FORMULAS = 8;
+export const CLUB_SITE = "https://tennisclubhoudan78.jimdofree.com/"; // site internet du club (simple texte sur l'affiche, rien n'est chargé)
+export const SIGNUP_ONLINE = "Sur le site internet du club : tennisclubhoudan78.jimdofree.com";
 export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "STAGE_ADULTES";
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
 // Les formules habituelles des stages enfants du club (les prix restent à écrire)
@@ -29,7 +31,7 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
   const saveMine = (f: Formula[]) => { const clean = f.map((x) => ({ ...x, price: "" })); try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch { /* sans stockage, pas de modèle */ } setMine(clean); };
   const replaceWith = (list: Formula[], audience?: string) => {
     if (value.formulas.length > 0 && !window.confirm("Remplacer les formules actuelles par ce modèle ? (les prix seront à ressaisir)")) return;
-    onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience });
+    onChange({ ...value, formulas: list.map((f) => ({ ...f })), audience: audience && !value.audience ? audience : value.audience, signup: audience && !value.signup ? SIGNUP_ONLINE : value.signup });
   };
   const groups = [...new Set(value.formulas.map((f) => f.group ?? "").filter(Boolean))];
   const sug = (stage ? STAGE_SUGGEST : SUGGEST).filter((s) => !value.formulas.some((f) => f.label === s)).slice(0, 5);
@@ -99,7 +101,8 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
           <input aria-label="À prévoir" maxLength={160} value={value.bring} onChange={(e) => set({ bring: e.target.value })} placeholder="Ex. Tenue de sport, bouteille d'eau, raquette (prêt possible)" className={inputCls} />
         </Step>
         <Step n={5} title="Inscriptions" color="#16A085">
-          <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil du club, avant le 20 octobre" className={inputCls} />
+          <button type="button" className="mb-1 mt-1 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Inscriptions sur le site internet du club</button>
+        <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil du club, avant le 20 octobre" className={inputCls} />
         </Step>
       </div>
     );
@@ -121,6 +124,7 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
       <label className="block text-sm font-bold text-ink">🎒 À prévoir <small className="font-normal text-muted">(facultatif)</small>
         <input aria-label="À prévoir" maxLength={160} value={value.bring} onChange={(e) => set({ bring: e.target.value })} placeholder="Ex. Tenue de sport, bouteille d'eau" className={inputCls} /></label>
       <label className="block text-sm font-bold text-ink">✍️ Inscriptions
+        <button type="button" className="mb-1 mt-1 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Inscriptions sur le site internet du club</button>
         <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil, jusqu'au 20 octobre" className={inputCls} /></label>
     </div>
   );
