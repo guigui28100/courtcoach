@@ -20,24 +20,62 @@ export const TOURNOI_STYLES: Record<string, { c1: string; acc: string; deco: Dec
 };
 const ambiance = (kind: string, audience = "") => { const t = kind === "TOURNOI" ? TOURNOI_STYLES[audience] : undefined; const c1 = t?.c1 ?? kindOf(kind).color; return { c1, c2: mix(c1, "#000000", 0.4), bg: t?.bg ?? mix(c1, "#ffffff", 0.93), soft: mix(c1, "#ffffff", 0.86), acc: t?.acc ?? "#e3f24b", deco: t?.deco ?? DECO[kind] ?? "lines" as Deco, icon: t?.icon }; };
 
-// Fond commun à TOUS les événements : terre battue texturée (dégradé + grain + stries), lignes de court blanches ; la couleur du type ne sert qu'aux accents (icônes, médaillon, bandes)
-function ClayBackground({ w, h }: { w: number; h: number }) {
+// Six fonds d'affiche, un par « famille » d'événement (choisis par le coach sur maquettes) : terre battue, nuit néon, aurore, géométrique, élégant, trame pop.
+export type Look = "clay" | "neon" | "aurore" | "geo" | "elegant" | "pop";
+const LOOK_OF_KIND: Record<string, Look> = { TOURNOI: "clay", EQUIPES: "clay", ANIMATION: "aurore", FETE: "aurore", FETE_ECOLE: "geo", STAGE_ENFANTS: "pop", STAGE_ADULTES: "neon", INSCRIPTIONS: "elegant" };
+const LOOK_OF_CATEGORY: Record<string, Look> = { "Messieurs (adultes)": "neon", "Dames (adultes)": "elegant", "Jeunes": "geo" }; // tournoi : une présentation par catégorie
+export const lookOf = (kind: string, audience = ""): Look => (kind === "TOURNOI" ? LOOK_OF_CATEGORY[audience] : undefined) ?? LOOK_OF_KIND[kind] ?? "clay";
+const BORDER: Record<Look, string> = { clay: "", neon: "#d7ff3a", aurore: "#ffffff", geo: "#14213d", elegant: "#c9ad63", pop: "#ffffff" };
+const SHADOW: Record<Look, string> = { clay: "0 8px 18px rgba(60,15,0,.38)", neon: "0 8px 22px rgba(0,0,0,.5)", aurore: "0 10px 26px rgba(60,10,90,.32)", geo: "5px 6px 0 rgba(20,33,61,.9)", elegant: "0 6px 16px rgba(60,45,10,.2)", pop: "0 8px 18px rgba(0,60,60,.35)" };
+
+function PosterBackground({ look, w, h, hd }: { look: Look; w: number; h: number; hd: number }) {
   const common = { position: "absolute", inset: 0, width: "100%", height: "100%" } as const;
-  return (
-    <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={common}>
-      <defs>
-        <linearGradient id="clay-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#d9622f" /><stop offset="1" stopColor="#8f3115" /></linearGradient>
-        <filter id="clay-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" seed="9" /><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .05  0 0 0 0 0  0 0 0 .55 0" /></filter>
-        <filter id="clay-brush" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".04 .5" numOctaves="2" seed="3" /><feColorMatrix values="0 0 0 0 1  0 0 0 0 .85  0 0 0 0 .7  0 0 0 .22 0" /></filter>
-      </defs>
-      <rect width={w} height={h} fill="url(#clay-g)" />
-      <rect width={w} height={h} filter="url(#clay-brush)" />
-      <rect width={w} height={h} filter="url(#clay-grain)" opacity=".7" />
-      <g stroke="#fff" strokeWidth={Math.round(w / 150)} fill="none" opacity=".55" strokeLinecap="round">
-        <path d={`M${-w * 0.02} ${h * 0.52}L${w * 1.02} ${h * 0.4}`} />
-        <path d={`M${w * 0.5} ${h * 0.34}L${w * 0.44} ${h}`} />
-      </g>
-    </svg>);
+  const sw = Math.max(2, Math.round(w / 150));
+  const defs: Record<Look, React.ReactNode> = {
+    clay: (<>
+      <linearGradient id="clay-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#d9622f" /><stop offset="1" stopColor="#8f3115" /></linearGradient>
+      <filter id="clay-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" seed="9" /><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .05  0 0 0 0 0  0 0 0 .55 0" /></filter>
+      <filter id="clay-brush" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".04 .5" numOctaves="2" seed="3" /><feColorMatrix values="0 0 0 0 1  0 0 0 0 .85  0 0 0 0 .7  0 0 0 .22 0" /></filter></>),
+    neon: (<>
+      <radialGradient id="ne-a" cx="15%" cy="8%" r="65%"><stop offset="0" stopColor="#5b3cff" stopOpacity=".9" /><stop offset="1" stopColor="#5b3cff" stopOpacity="0" /></radialGradient>
+      <radialGradient id="ne-b" cx="95%" cy="30%" r="60%"><stop offset="0" stopColor="#00e0a4" stopOpacity=".6" /><stop offset="1" stopColor="#00e0a4" stopOpacity="0" /></radialGradient>
+      <linearGradient id="ne-c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d7ff3a" stopOpacity="0" /><stop offset="1" stopColor="#d7ff3a" stopOpacity=".5" /></linearGradient></>),
+    aurore: (<>
+      <radialGradient id="au-a" cx="8%" cy="0%" r="80%"><stop offset="0" stopColor="#ff7a45" /><stop offset="1" stopColor="#ff7a45" stopOpacity="0" /></radialGradient>
+      <radialGradient id="au-b" cx="100%" cy="28%" r="75%"><stop offset="0" stopColor="#c026d3" /><stop offset="1" stopColor="#c026d3" stopOpacity="0" /></radialGradient>
+      <radialGradient id="au-c" cx="40%" cy="100%" r="85%"><stop offset="0" stopColor="#3b82f6" /><stop offset="1" stopColor="#3b82f6" stopOpacity="0" /></radialGradient>
+      <filter id="au-grain" x="0" y="0" width="100%" height="100%"><feTurbulence baseFrequency=".9" numOctaves="2" seed="4" /><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .22 0" /></filter></>),
+    geo: null, elegant: (<linearGradient id="el-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#b8903a" /><stop offset=".5" stopColor="#e9d08a" /><stop offset="1" stopColor="#a9822f" /></linearGradient>),
+    pop: (<>
+      <pattern id="po-d" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><circle cx="11" cy="11" r="5" fill="#fff" /></pattern>
+      <radialGradient id="po-m" cx="88%" cy="10%" r="95%"><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <mask id="po-k"><rect width={w} height={h} fill="url(#po-m)" /></mask></>),
+  };
+  const body: Record<Look, React.ReactNode> = {
+    clay: (<>
+      <rect width={w} height={h} fill="url(#clay-g)" /><rect width={w} height={h} filter="url(#clay-brush)" /><rect width={w} height={h} filter="url(#clay-grain)" opacity=".7" />
+      <g stroke="#fff" strokeWidth={sw} fill="none" opacity=".55" strokeLinecap="round"><path d={`M${-w * 0.02} ${h * 0.52}L${w * 1.02} ${h * 0.4}`} /><path d={`M${w * 0.5} ${h * 0.34}L${w * 0.44} ${h}`} /></g></>),
+    neon: (<>
+      <rect width={w} height={h} fill="#0b0f2a" /><rect width={w} height={h} fill="url(#ne-a)" /><rect width={w} height={h} fill="url(#ne-b)" />
+      <rect y={h * 0.45} width={w} height={h * 0.55} fill="url(#ne-c)" opacity=".4" />
+      <g stroke="#d7ff3a" strokeWidth={sw * 0.7} fill="none" opacity=".7"><path d={`M${w * 0.15} ${h}L${w * 0.38} ${h * 0.46}M${w * 0.85} ${h}L${w * 0.62} ${h * 0.46}M${-w * 0.02} ${h}L${w * 0.27} ${h * 0.46}M${w * 1.02} ${h}L${w * 0.73} ${h * 0.46}M${w * 0.5} ${h}V${h * 0.46}`} /><path d={`M${w * 0.29} ${h * 0.52}H${w * 0.71}M${w * 0.23} ${h * 0.64}H${w * 0.77}M${w * 0.15} ${h * 0.8}H${w * 0.85}`} /></g></>),
+    aurore: (<>
+      <rect width={w} height={h} fill="#fff0e3" /><rect width={w} height={h} fill="url(#au-a)" /><rect width={w} height={h} fill="url(#au-b)" opacity=".85" /><rect width={w} height={h} fill="url(#au-c)" opacity=".9" /><rect width={w} height={h} filter="url(#au-grain)" />
+      <circle cx={w * 0.2} cy={h * 0.78} r={w * 0.2} fill="none" stroke="#fff" strokeWidth={sw * 0.6} opacity=".5" /><circle cx={w * 0.2} cy={h * 0.78} r={w * 0.12} fill="#fff" opacity=".18" /></>),
+    geo: (<>
+      <rect width={w} height={h} fill="#f4efe6" /><rect width={w} height={hd} fill="#14213d" />
+      <circle cx={w * 0.9} cy={hd * 0.08} r={w * 0.17} fill="#e63946" opacity=".92" /><path d={`M${w} ${hd} L${w} ${hd - w * 0.16} A${w * 0.16} ${w * 0.16} 0 0 0 ${w * 0.84} ${hd}Z`} fill="#ffd23f" opacity=".95" />
+      <rect y={hd} width={w} height={h * 0.015} fill="#2a9d8f" />
+      <path d={`M${w} ${h} L${w} ${h * 0.7} A${w * 0.3} ${w * 0.3} 0 0 0 ${w * 0.7} ${h}Z`} fill="#2a9d8f" /><path d={`M${w} ${h} L${w} ${h * 0.82} A${w * 0.18} ${w * 0.18} 0 0 0 ${w * 0.82} ${h}Z`} fill="#ffd23f" /></>),
+    elegant: (<>
+      <rect width={w} height={h} fill="#f7f1e3" /><rect width={w} height={hd} fill="#1f3a2e" />
+      <rect x="0" y={hd - 5} width={w} height="5" fill="url(#el-g)" />
+      <rect x={w * 0.03} y={w * 0.03} width={w * 0.94} height={h - w * 0.06} fill="none" stroke="url(#el-g)" strokeWidth={sw * 0.8} /><rect x={w * 0.045} y={w * 0.045} width={w * 0.91} height={h - w * 0.09} fill="none" stroke="url(#el-g)" strokeWidth={sw * 0.3} /></>),
+    pop: (<>
+      <rect width={w} height={h} fill="#0ea5a4" /><rect width={w} height={h} fill="url(#po-d)" mask="url(#po-k)" opacity=".5" />
+      <path d={`M0 ${hd * 0.95}L${w} ${hd * 0.62}V${h}H0Z`} fill="#fde047" /><path d={`M0 ${hd * 1.05}L${w} ${hd * 0.72}V${h}H0Z`} fill="#ff5d73" /></>),
+  };
+  return (<svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={common}><defs>{defs[look]}</defs>{body[look]}</svg>);
 }
 
 // Si le contenu est trop long pour la place, il est rétréci pour ne jamais toucher le pied de page
@@ -60,7 +98,7 @@ function Fit({ top, bottom, h, w, children }: { top: number; bottom: number; h: 
 
 export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: PosterFormat; showWho: boolean }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
-  const k = kindOf(e.kind); const a = ambiance(e.kind, e.audience);
+  const k = kindOf(e.kind); const a = ambiance(e.kind, e.audience); const look = lookOf(e.kind, e.audience);
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
@@ -83,7 +121,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
   const twoCol = sq && rows.length > 1 && rows.every((r) => r.text.length <= 26);
   const rowW = (twoCol ? (w - px * 2 - 12) / 2 : w - px * 2) - 120; // place pour le texte à côté de l'icône
-  const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 8px 18px rgba(60,15,0,.38)" } as const;
+  const card = { background: "#fff", border: `3px solid ${BORDER[look] || a.c1}`, borderRadius: 18, boxShadow: SHADOW[look] } as const;
   const anim = e.kind === "ANIMATION"; // animation : description, horaires, tarif, puis où s'inscrire
   const rowsBlock = (list: typeof rows) => list.length > 0 && (
 
@@ -97,8 +135,8 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   );
   const noteBlock = e.note && <div style={{ background: a.soft, borderLeft: `10px solid ${a.c1}`, borderRadius: 16, padding: "14px 20px", fontSize: 22, lineHeight: 1.35, color: "#2b2a42", overflowWrap: "anywhere" }}>{e.note}</div>;
   return (
-    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#b8471f", color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
-      <ClayBackground w={w} h={h} />
+    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: look === "geo" ? "#f4efe6" : look === "elegant" ? "#f7f1e3" : "#b8471f", color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
+      <PosterBackground look={look} w={w} h={h} hd={hd} />
       <div style={{ position: "relative", height: hd, color: "#fff" }}>
         <span aria-hidden style={{ position: "absolute", left: px - 8, top: 20, width: logoSize, height: logoSize, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", filter: "drop-shadow(0 3px 5px rgba(0,0,0,.3))" }} />
         <div style={{ position: "absolute", left: px + logoSize, top: 20 + logoSize / 2 - 10, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
