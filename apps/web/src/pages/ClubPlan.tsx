@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { BackLink, Err, Page, PageHead } from "../components/ui";
+import { BackLink, Err, Page } from "../components/ui";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
@@ -28,6 +28,7 @@ export function ClubPlan() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("annee");
+  const [multi, setMulti] = useState(false);
   const today = todayParis();
   const [season, setSeason] = useState(seasonOf(today));
   const [month, setMonth] = useState(today.slice(0, 7));
@@ -37,6 +38,10 @@ export function ClubPlan() {
   const [menuDay, setMenuDay] = useState<string | null>(null);
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
+  const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
+  const navLabel = view === "annee" ? `Année ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
+  const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
+  const goToday = () => { if (view === "annee") setSeason(seasonOf(todayParis())); else setMonth(todayParis().slice(0, 7)); };
 
   const load = useCallback(async () => {
     try {
@@ -77,25 +82,48 @@ export function ClubPlan() {
     <Page>
       <div className="grid gap-3">
         <BackLink fallback="/coach" className="text-sm font-bold text-ink">← Retour</BackLink>
-        <PageHead eyebrow="Réservé au coach" title="Planning du club" icon="📅">
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-clay" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter</button>
-            <button type="button" className="btn-outline" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
-            <button type="button" className="btn-outline" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#d0592b] via-[#a63e1a] to-[#7d2c12] px-5 py-5 text-white shadow-md">
+          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="none" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><rect x="10" y="8" width="380" height="84" /><line x1="200" y1="8" x2="200" y2="92" /><line x1="70" y1="8" x2="70" y2="92" /><line x1="330" y1="8" x2="330" y2="92" /><line x1="70" y1="50" x2="330" y2="50" /></g></svg>
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-2xl bg-[#dff04a] text-3xl shadow">🎾</span>
+              <div className="min-w-0">
+                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">Réservé au coach · Saison {season} / {season + 1}</p>
+                <h1 className="m-0 text-3xl text-white">Planning du club</h1>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter</button>
+              <button type="button" className="rounded-xl border-2 border-white/80 bg-white/10 px-4 py-2 font-bold text-white hover:bg-white/25" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
+              <button type="button" className="rounded-xl border-2 border-white/80 bg-white/10 px-4 py-2 font-bold text-white hover:bg-white/25" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
+            </div>
           </div>
-        </PageHead>
+        </section>
       </div>
       <Err msg={err} />
-      <div role="tablist" aria-label="Façon de voir le planning" className="flex flex-wrap gap-2">
-        {VIEWS.map(([k, l]) => (
-          <button key={k} role="tab" aria-selected={view === k} type="button" onClick={() => setView(k)}
-            className={`rounded-xl border-2 px-4 py-2 font-bold ${view === k ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{l}</button>
-        ))}
+      <div className="grid gap-2">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-[#5b6680] bg-white p-2.5 shadow-sm">
+          <div role="tablist" aria-label="Façon de voir le planning" className="flex rounded-xl bg-[#e9edf5] p-1">
+            {VIEWS.map(([k, l]) => (
+              <button key={k} role="tab" aria-selected={view === k} type="button" onClick={() => { setView(k); setMulti(false); }}
+                className={`rounded-lg px-4 py-2 font-extrabold ${view === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
+            ))}
+          </div>
+          <div className="flex flex-1 items-center justify-center gap-2">
+            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Précédent" onClick={() => step(-1)}>‹</button>
+            <b className="min-w-[11rem] text-center text-xl text-ink">{navLabel}</b>
+            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
+            <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Année en cours" : "Mois en cours"}</button>
+          </div>
+          {view === "mois" && <button type="button" aria-pressed={multi} onClick={() => setMulti(!multi)} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Plusieurs jours de suite"}</button>}
+        </div>
+        {view === "mois" && !multi && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
+        {view === "mois" && multi && <p className="m-0 rounded-xl bg-[#fff1c2] px-3 py-2 font-bold text-[#5a4300]">📆 Touche le PREMIER jour, puis le DERNIER jour de l'événement.</p>}
       </div>
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} setMonth={setMonth} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -116,15 +144,6 @@ export function ClubPlan() {
   );
 }
 
-const Nav = ({ label, onPrev, onNext, onToday, todayLabel = "Aujourd'hui" }: { label: string; onPrev: () => void; onNext: () => void; onToday?: () => void; todayLabel?: string }) => (
-  <div className="flex flex-wrap items-center gap-2">
-    <button type="button" className="btn-outline" aria-label="Précédent" onClick={onPrev}>‹</button>
-    <b className="min-w-[10rem] text-center text-lg text-ink">{label}</b>
-    <button type="button" className="btn-outline" aria-label="Suivant" onClick={onNext}>›</button>
-    {onToday && <button type="button" className="btn-outline" onClick={onToday}>{todayLabel}</button>}
-  </div>
-);
-
 // ───────────── Année : une frise par court, de septembre à août ─────────────
 function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { season: number; setSeason: (n: number) => void; events: ClubEvent[]; clashes: ReturnType<typeof allClashes>; onOpen: (e: ClubEvent) => void; onMonth: (m: string) => void }) {
   const months = Array.from({ length: 12 }, (_, i) => { const m = ((8 + i) % 12) + 1; return `${m >= 9 ? season : season + 1}-${String(m).padStart(2, "0")}`; });
@@ -137,7 +156,6 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
   };
   return (
     <div className="grid gap-4">
-      <Nav label={`Année ${season} / ${season + 1}`} onPrev={() => setSeason(season - 1)} onNext={() => setSeason(season + 1)} onToday={() => setSeason(seasonOf(todayParis()))} todayLabel="Année en cours" />
       {clashes.length > 0 && (
         <div role="alert" className="rounded-2xl border-2 border-[#C0392B] bg-[#fdecea] p-4">
           <b className="text-[#922b21]">⚠️ {clashes.length} chose{clashes.length > 1 ? "s" : ""} à régler</b>
@@ -191,29 +209,22 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, setMonth, events, onDay, onRange, onEvent }: { onEvent: (e: ClubEvent) => void; month: string; setMonth: (m: string) => void; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
-  const [multi, setMulti] = useState(false);
+function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: boolean; onEvent: (e: ClubEvent) => void; month: string; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
   const [first, setFirst] = useState<string | null>(null);
+  useEffect(() => { if (!multi) setFirst(null); }, [multi]);
   const click = (d: string) => {
     if (!multi) return onDay(d);
     if (!first) return setFirst(d);
     const [a, b] = d < first ? [d, first] : [first, d];
-    setMulti(false); setFirst(null); onRange(a, b);
+    setFirst(null); onRange(a, b);
   };
   const first1 = `${month}-01`;
   const gridStart = mondayOf(first1);
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-  const shift = (n: number) => setMonth(addDays(first1, n < 0 ? -1 : 32).slice(0, 7));
   const today = todayParis();
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <Nav label={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onPrev={() => shift(-1)} onNext={() => shift(1)} onToday={() => setMonth(today.slice(0, 7))} todayLabel="Mois en cours" />
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" aria-pressed={multi} onClick={() => { setMulti(!multi); setFirst(null); }} className={`rounded-xl border-2 px-4 py-2 font-bold ${multi ? "border-clay bg-clay text-white" : "border-ink bg-white text-ink hover:bg-sand"}`}>📆 {multi ? "Annuler" : "Placer un événement sur plusieurs jours de suite"}</button>
-        {multi && <b className="text-clay">{first ? `Premier jour : ${fmtDay(first)}. Touche maintenant le DERNIER jour.` : "Touche le PREMIER jour, puis le dernier."}</b>}
-        {!multi && <span className="text-sm text-muted">Pour un seul jour, touche simplement le jour.</span>}
-      </div>
       <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-extrabold text-ink">{DAYS.map((d) => <span key={d} className="rounded-lg bg-ink py-1 text-white">{d.slice(0, 3)}</span>)}</div>
       <div className="grid grid-cols-7 gap-1.5">
         {rows.map((d) => {
