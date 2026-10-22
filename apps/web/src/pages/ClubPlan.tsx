@@ -36,6 +36,7 @@ export function ClubPlan() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [menuDay, setMenuDay] = useState<string | null>(null);
+  const [askNew, setAskNew] = useState(false); // « Ajouter un événement » : on demande d'abord la date
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
@@ -93,7 +94,7 @@ export function ClubPlan() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setMenuEnd(null); setMenuDay(day); }}>＋ Ajouter un événement</button>
+              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
               <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
             </div>
@@ -123,11 +124,11 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
-      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}`} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
+      {menuDay && <DayMenu key={`${menuDay}-${menuEnd}-${askNew}`} ask={askNew} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={() => { setMenuDay(null); load(); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
       {settingsOpen && (
         <Modal title="⚙️ Réglages" onClose={() => setSettingsOpen(false)}>
           <div className="grid gap-2">
@@ -462,9 +463,9 @@ const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: 
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
 // Un menu déroulant FERMÉ par défaut : le titre dit déjà l'essentiel
-function Fold({ color, icon, title, hint, badge, children }: { color: string; icon: string; title: string; hint?: React.ReactNode; badge?: number; children: React.ReactNode }) {
+function Fold({ open, color, icon, title, hint, badge, children }: { open?: boolean; color: string; icon: string; title: string; hint?: React.ReactNode; badge?: number; children: React.ReactNode }) {
   return (
-  <details className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
+  <details open={open} className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
     <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}14` }}>
       <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-white" style={{ background: color }}>{icon}</span>
       <span className="min-w-0 flex-1"><span className="block font-extrabold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
@@ -477,10 +478,11 @@ function Fold({ color, icon, title, hint, badge, children }: { color: string; ic
 }
 
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; id?: string }
-function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
+function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
@@ -497,6 +499,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
   const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
   // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
   const pickDate = (x: string) => {
+    setChosen(true);
     if (!pickEnd) { setStart(x); setEnd(x); setPickEnd(true); }
     else { if (x < start) { setEnd(start); setStart(x); } else setEnd(x); setPickEnd(false); }
   };
@@ -516,25 +519,27 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
   const GROUP_META: Record<string, { icon: string; color: string }> = { "Compétition": { icon: "🏆", color: "#D35400" }, "Animations et stages": { icon: "🎉", color: "#8E44AD" }, "Terrains": { icon: "🧱", color: "#A04000" }, "Vie du club": { icon: "🥳", color: "#16A085" } };
   const nbDays = diffDays(start, end) + 1;
   return (
-    <Modal title={`📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}`} onClose={onClose}>
-      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.</p>
-      <Fold color="#2E86C1" icon="📆" title="Durée" hint={nbDays === 1 ? "Une seule journée" : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
+    <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
+      <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{!chosen ? "1. Choisis la date (ou les dates) sur le calendrier · 2. Coche ce qui se passe." : `${nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.`}</p>
+      <Fold open={ask} color="#2E86C1" icon="📆" title={ask ? "À quelle date ?" : "Durée"} hint={!chosen ? "👉 Choisis d'abord la date" : nbDays === 1 ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
+        {ask && <div className="mb-3"><MiniCalendar start={start} end={end} onPick={pickDate} />
+          <p className="mb-0 mt-1 text-sm font-bold text-ink">{!chosen ? "Touche le jour de l'événement. S'il dure plusieurs jours, touche le premier puis le dernier." : pickEnd ? "Si l'événement dure plusieurs jours, touche maintenant le DERNIER jour (sinon, c'est bon : une seule journée)." : nbDays === 1 ? `✔ Le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)}`}</p></div>}
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-bold text-ink">Durée :</span>
-          <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => setEnd(addDays(end, -1))}>−</button>
+          <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => { setChosen(true); setEnd(addDays(end, -1)); }}>−</button>
           <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={nbDays}
-            onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
+            onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setChosen(true); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
             className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center text-lg font-black text-ink" />
-          <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setEnd(addDays(end, 1))}>＋</button>
+          <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => { setChosen(true); setEnd(addDays(end, 1)); }}>＋</button>
           <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
+          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setChosen(true); setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
         </div>
-        <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
+        {!ask && <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
           <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
             <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
-        </details>
+        </details>}
       </Fold>
       {already.length > 0 && (
         <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
@@ -601,7 +606,7 @@ function DayMenu({ endInit, day, events, counts, crew, onPeople, onClose, onDone
         );
       })}
       <Err msg={err || missing} />
-      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing} onClick={save}>✔ Enregistrer</button>
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
     </Modal>
   );
 }
