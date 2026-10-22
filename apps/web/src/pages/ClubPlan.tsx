@@ -562,21 +562,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
             <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
             <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
           </div>
-          {multi && !ask && (
-            <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-extrabold text-ink">Durée</p>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <button type="button" className="btn-outline" aria-label="Un jour de moins" onClick={() => setDays(nbDays - 1)}>−</button>
-                <input aria-label="Nombre de jours" type="number" min={1} max={365} value={nbDays} onChange={(e) => setDays(+e.target.value || 1)} className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center font-bold" />
-                <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => setDays(nbDays + 1)}>＋</button>
-                <span className="font-bold text-ink">jours</span>
-              </div>
-              <div className="flex flex-wrap gap-2">{[[2, "2 jours"], [3, "3 jours"], [5, "5 jours"], [7, "1 semaine"], [14, "2 semaines"], [30, "1 mois"]].map(([n, l]) => <Pill key={n} on={nbDays === n} onClick={() => setDays(n as number)}>{l}</Pill>)}</div>
-            </div>
-          )}
           {(ask || multi) && (
             <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-extrabold text-ink">{ask ? (multi ? "Touche le premier puis le dernier jour" : "Touche le jour de l'événement") : "Ou touche le dernier jour sur le calendrier"}</p>
+              <p className="m-0 mb-2 text-sm font-extrabold text-ink">{ask ? (multi ? "Touche le premier puis le dernier jour" : "Touche le jour de l'événement") : "Touche sur le calendrier le DERNIER jour de l'événement"}</p>
               <MiniCalendar start={start} end={end} onPick={ask ? (multi ? pickDate : (x: string) => { setChosen(true); setStart(x); setEnd(x); }) : pickLast} />
             </div>
           )}
