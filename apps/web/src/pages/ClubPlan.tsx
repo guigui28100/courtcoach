@@ -4,7 +4,7 @@ import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../com
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
-import { emptyInfo, EventPosterFields, isStage, PosterInfo } from "../components/EventPosterFields";
+import { emptyInfo, EventPosterFields, isAnimation, isStage, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
 import {
@@ -418,7 +418,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
-      <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
+      <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || isAnimation(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
         <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
         <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       </details>
@@ -580,7 +580,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                       placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
                       className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                   </label>
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || isAnimation(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
                     <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   </details>
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
