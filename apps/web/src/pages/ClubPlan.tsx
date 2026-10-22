@@ -427,7 +427,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
       <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
-        <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
+        <summary className="cursor-pointer font-bold text-ink">🪧 Je veux créer une affiche <span className="font-normal text-muted">(facultatif : ouvre ici pour remplir horaires, lieu, formules et prix)</span></summary>
         <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       </details>
       </>)}
@@ -587,16 +587,22 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                   {hasSimpleForm(k.key) ? (
                     <div className="mt-1"><AnimationForm tournoi={isTournoi(k.key)} title={c.title} onTitle={(t) => patch(k.key, { title: t })} note={c.note} onNote={(t) => patch(k.key, { note: t })} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   ) : (<>
-                  <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
-                    <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
-                      placeholder="Quelques mots à ajouter sur l'affiche"
-                      className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
-                  </label>
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
+                  <div className="rounded-xl border-2 border-line bg-white p-3">
+                    <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted">① Pour le planning</p>
+                    <p className="m-0 mb-2 text-sm text-ink">Cocher « {k.label} » suffit pour le placer dans le calendrier. Tu peux ajouter quelques mots (facultatif).</p>
+                    <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+                      <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                        placeholder="Quelques mots sur cet événement"
+                        className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                    </label>
+                  </div>
+                  <details className="mt-2 rounded-xl border-2 border-dashed border-[#9a8cc9] bg-[#f5f2ff] p-3" open={!!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}>
+                    <summary className="cursor-pointer text-sm font-bold text-ink">② 🪧 Je veux créer une affiche pour {isStage(k.key) ? "ce stage" : "cet événement"} <span className="font-normal text-muted">(facultatif : ouvre ici pour remplir)</span></summary>
+                    <p className="m-0 mt-2 rounded-lg bg-white px-3 py-2 text-sm text-ink">Ces informations servent <b>seulement à fabriquer l'affiche</b> (horaires, lieu, formules et prix…). Si tu ne veux pas d'affiche, laisse ce menu fermé : l'événement sera quand même enregistré.</p>
                     <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   </details>
                   </>)}
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">③ 👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
