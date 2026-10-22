@@ -4,7 +4,7 @@ import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../com
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
-import { emptyInfo, EventPosterFields, PosterInfo } from "../components/EventPosterFields";
+import { emptyInfo, EventPosterFields, isStage, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPng } from "../components/exportPoster";
 import {
@@ -355,7 +355,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim()), allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -418,9 +418,9 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
-      <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={!!(d.time || d.place || d.signup || d.formulas?.length)}>
+      <details className="mb-4 rounded-xl border-2 border-line bg-white p-3" open={isStage(d.kind) || !!(d.time || d.place || d.signup || d.formulas?.length || d.audience || d.bring)}>
         <summary className="cursor-pointer font-bold text-ink">🪧 Infos pour l'affiche de l'événement (horaires, lieu, formules et prix…)</summary>
-        <div className="mt-3"><EventPosterFields value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [] }} onChange={(v) => set(v)} /></div>
+        <div className="mt-3"><EventPosterFields kind={d.kind} value={{ time: d.time ?? "", place: d.place ?? "", signup: d.signup ?? "", formulas: d.formulas ?? [], audience: d.audience ?? "", bring: d.bring ?? "" }} onChange={(v) => set(v)} /></div>
       </details>
       <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
@@ -487,8 +487,8 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 }
 
 interface Sel { on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
-const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [] });
-const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim() })) });
+const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
+const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), detail: (f.detail ?? "").trim() })) });
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: () => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
@@ -580,8 +580,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                       placeholder={k.key === "TOURNOI" ? "Ex. Tournoi interne simple messieurs, inscriptions à l'accueil jusqu'au 10 novembre, goûter offert…" : "Quelques mots à ajouter sur l'affiche"}
                       className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                   </label>
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={!!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length)}><summary className="cursor-pointer text-sm font-bold text-ink">🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)</summary>
-                    <div className="mt-2"><EventPosterFields value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2" open={isStage(k.key) || !!(c.info.time || c.info.place || c.info.signup || c.info.formulas.length || c.info.audience || c.info.bring)}><summary className="cursor-pointer text-sm font-bold text-ink">{isStage(k.key) ? "📝 Formulaire du stage (pour l'affiche)" : "🪧 Infos pour l'affiche (horaires, lieu, formules et prix…)"}</summary>
+                    <div className="mt-2"><EventPosterFields kind={k.key} value={c.info} onChange={(v) => patch(k.key, { info: v })} /></div>
                   </details>
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length})</summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
@@ -636,7 +636,7 @@ function EventPosterModal({ e, onClose, onEdit }: { e: ClubEvent; onClose: () =>
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
     } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
   };
-  const empty = !e.time && !e.place && !e.signup && !(e.formulas ?? []).length;
+  const empty = !e.time && !e.place && !e.signup && !e.audience && !e.bring && !(e.formulas ?? []).length;
   return (
     <Modal title={`🪧 Affiche : ${titleOf(e)}`} onClose={onClose}>
       <div className="mb-3 flex flex-wrap gap-2">

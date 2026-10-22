@@ -56,13 +56,15 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
   const px = sq ? 64 : 56; const hd = sq ? 400 : 390;
   // Taille du titre : le plus long mot doit tenir sur une ligne dans la place à gauche du médaillon
-  const avail = w - px - 270; const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 1);
+  const gap = sq ? 310 : 270; const avail = w - px - gap; const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 1);
   const base = name.length <= 12 ? 100 : name.length <= 20 ? 78 : name.length <= 30 ? 62 : 50;
   const fs = Math.max(38, Math.min(base * (sq ? 1.05 : 1), avail / (longest * 0.82)));
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price);
   const rows: { icon: string; title: string; text: string }[] = [];
+  if (e.audience) rows.push({ icon: "👥", title: "POUR QUI", text: e.audience });
   if (e.time) rows.push({ icon: "🕒", title: "HORAIRES", text: e.time });
   if (e.place) rows.push({ icon: "📍", title: "LIEU", text: e.place });
+  if (e.bring) rows.push({ icon: "🎒", title: "À PRÉVOIR", text: e.bring });
   if (e.signup) rows.push({ icon: "✍️", title: "INSCRIPTIONS", text: e.signup });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
   const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 5px 12px rgba(27,24,99,.12)" } as const;
@@ -70,7 +72,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
       <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
         <Decor deco={a.deco} w={w} h={hd} />
-        <div style={{ position: "absolute", left: px, top: 44, right: 270 }}>
+        <div style={{ position: "absolute", left: px, top: 44, right: gap }}>
           <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
           <div style={{ fontSize: fs, fontWeight: 900, lineHeight: 1, marginTop: 14, textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
         </div>
@@ -92,7 +94,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
               <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 900, letterSpacing: "0.16em", color: a.c2, marginBottom: 6 }}><span aria-hidden style={{ fontSize: 22 }}>💶</span>{formulas.length > 1 ? "NOS FORMULES" : "TARIF"}</div>
               {formulas.map((f, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "7px 0", borderTop: i ? `2px dotted ${mix(a.c1, "#ffffff", 0.6)}` : "none" }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 25, fontWeight: 800, overflowWrap: "anywhere" }}>{f.label}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 25, fontWeight: 800, overflowWrap: "anywhere" }}>{f.label}{f.detail ? <span style={{ display: "block", fontSize: 16, fontWeight: 600, color: "#6b6557", marginTop: 2 }}>{f.detail}</span> : null}</span>
                   <span style={{ flex: "0 0 auto", fontSize: 32, fontWeight: 900, color: a.c2, whiteSpace: "nowrap" }}>{f.price}</span>
                 </div>))}
             </div>)}
