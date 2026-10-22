@@ -7,7 +7,7 @@ import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
-import { posterToPng } from "../components/exportPoster";
+import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
@@ -479,6 +479,10 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
 
 const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
+function saveBlob(blob: Blob, name: string) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 const POSTER_KINDS = ["TOURNOI", "ANIMATION", "STAGE_ENFANTS", "STAGE_ADULTES", "FETE", "FETE_ECOLE"];
 const hasPoster = (e: ClubEvent) => !!(e.time || e.place || e.signup || e.audience || e.bring || (e.formulas ?? []).length);
 
@@ -707,6 +711,13 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
     } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
   };
+  const pdf = async () => {
+    setMsg("Je prépare le PDF…");
+    try {
+      const blob = await posterToPdf(holder.current?.firstElementChild as HTMLElement, w, h);
+      saveBlob(blob, `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${format === "A4" ? "a4" : "carre"}.pdf`); setMsg("✔ PDF enregistré dans tes téléchargements.");
+    } catch { setMsg("Impossible de faire le PDF sur cet appareil : utilise plutôt « Imprimer »."); }
+  };
   return (
     <Modal wide title={`🪧 Affiche : ${titleOf(draft)}`} onClose={onClose}>
       <p className="mb-3 mt-0 text-sm text-muted">📅 {fmtRange(e.startDate, e.endDate)} <span className="text-xs">(les dates viennent du planning)</span></p>
@@ -733,8 +744,9 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="btn-clay" disabled={busy} onClick={() => run(png)}>💾 Enregistrer en image (PNG)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(print)}>🖨️ Imprimer ou PDF</button>
+        <button type="button" className="btn-clay" disabled={busy} onClick={() => run(pdf)}>📄 Enregistrer en PDF (haute qualité)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(png)}>💾 Enregistrer en image (PNG)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(print)}>🖨️ Imprimer</button>
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(() => { setMsg("✔ Infos de l'affiche enregistrées."); })}>✔ Enregistrer les infos</button>
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
@@ -839,6 +851,11 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
     } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
   };
+  const pdf = async () => {
+    setMsg("Je prépare le PDF…");
+    try { saveBlob(await posterToPdf(holder.current?.firstElementChild as HTMLElement, POSTER_W, POSTER_H), `affiche-${month}-${model}.pdf`); setMsg("✔ PDF enregistré dans tes téléchargements."); }
+    catch { setMsg("Impossible de faire le PDF sur cet appareil : utilise plutôt « Imprimer »."); }
+  };
   return (
     <Modal title="🖨️ Affiche du mois" onClose={onClose}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -855,8 +872,9 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="btn-clay" onClick={png}>💾 Enregistrer en image (PNG)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={print}>🖨️ Imprimer ou enregistrer en PDF</button>
+        <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={png}>💾 Enregistrer en image (PNG)</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={print}>🖨️ Imprimer</button>
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
