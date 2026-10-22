@@ -20,30 +20,24 @@ export const TOURNOI_STYLES: Record<string, { c1: string; acc: string; deco: Dec
 };
 const ambiance = (kind: string, audience = "") => { const t = kind === "TOURNOI" ? TOURNOI_STYLES[audience] : undefined; const c1 = t?.c1 ?? kindOf(kind).color; return { c1, c2: mix(c1, "#000000", 0.4), bg: t?.bg ?? mix(c1, "#ffffff", 0.93), soft: mix(c1, "#ffffff", 0.86), acc: t?.acc ?? "#e3f24b", deco: t?.deco ?? DECO[kind] ?? "lines" as Deco, icon: t?.icon }; };
 
-function Decor({ deco, w, h }: { deco: Deco; w: number; h: number }) {
+// Fond commun à TOUS les événements : terre battue texturée (dégradé + grain + stries), lignes de court blanches ; la couleur du type ne sert qu'aux accents (icônes, médaillon, bandes)
+function ClayBackground({ w, h }: { w: number; h: number }) {
   const common = { position: "absolute", inset: 0, width: "100%", height: "100%" } as const;
-  if (deco === "court") return (
-    <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ ...common, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="3">
-      <rect x="40" y="40" width={w - 80} height={h - 80} /><line x1={w / 2} y1="40" x2={w / 2} y2={h - 40} /><line x1={w * 0.2} y1="40" x2={w * 0.2} y2={h - 40} /><line x1={w * 0.8} y1="40" x2={w * 0.8} y2={h - 40} /><line x1={w * 0.2} y1={h / 2} x2={w * 0.8} y2={h / 2} />
-    </svg>);
-  if (deco === "confetti") return (
-    <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
-      <g fill="#fff" opacity=".35"><circle cx="90" cy="80" r="10" /><circle cx="300" cy="40" r="6" /><circle cx="520" cy="110" r="12" /><circle cx="700" cy="300" r="9" /><circle cx="420" cy="330" r="8" /><circle cx="60" cy="300" r="6" /><circle cx="250" cy="250" r="7" /></g>
-      <g fill="#ffd23f" opacity=".75"><path d="M200 120l8 18 19 2-14 13 4 19-17-10-17 10 4-19-14-13 19-2z" /><path d="M560 260l6 14 15 2-11 10 3 15-13-8-13 8 3-15-11-10 15-2z" /><path d="M360 300l5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z" /></g>
-    </svg>);
-  if (deco === "ribbons") return (
-    <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
-      <g fill="none" stroke="#fff" strokeWidth="4" opacity=".3"><path d="M-20 120C150 20 250 220 420 120S700 20 820 120" /><path d="M-20 190C150 90 250 290 420 190S700 90 820 190" /><path d="M-20 260C150 160 250 360 420 260S700 160 820 260" /></g>
-      <g fill="#fff" opacity=".25"><circle cx="680" cy="80" r="46" /><circle cx="120" cy="300" r="30" /><circle cx="560" cy="330" r="16" /></g>
-      <g fill="#fde68a" opacity=".8"><circle cx="330" cy="60" r="7" /><circle cx="740" cy="230" r="9" /><circle cx="210" cy="150" r="6" /></g>
-    </svg>);
-  if (deco === "waves") return (
-    <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" style={common}>
-      <g fill="#fff" opacity=".25"><circle cx="110" cy="90" r="40" /><circle cx="520" cy="60" r="22" /><circle cx="690" cy="320" r="46" /><circle cx="400" cy="120" r="12" /></g>
-      <g fill="none" stroke="#fff" strokeWidth="5" opacity=".35"><path d="M0 300q100-60 200 0t200 0t200 0t200 0" /><path d="M0 340q100-60 200 0t200 0t200 0t200 0" /></g>
-    </svg>);
   return (
-    <svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="none" style={{ ...common, opacity: 0.18 }} fill="none" stroke="#fff" strokeWidth="3"><path d="M0 300L800 120M0 360L800 180M0 240L800 60" /></svg>);
+    <svg aria-hidden viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={common}>
+      <defs>
+        <linearGradient id="clay-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#d9622f" /><stop offset="1" stopColor="#8f3115" /></linearGradient>
+        <filter id="clay-grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" seed="9" /><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .05  0 0 0 0 0  0 0 0 .55 0" /></filter>
+        <filter id="clay-brush" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".04 .5" numOctaves="2" seed="3" /><feColorMatrix values="0 0 0 0 1  0 0 0 0 .85  0 0 0 0 .7  0 0 0 .22 0" /></filter>
+      </defs>
+      <rect width={w} height={h} fill="url(#clay-g)" />
+      <rect width={w} height={h} filter="url(#clay-brush)" />
+      <rect width={w} height={h} filter="url(#clay-grain)" opacity=".7" />
+      <g stroke="#fff" strokeWidth={Math.round(w / 150)} fill="none" opacity=".55" strokeLinecap="round">
+        <path d={`M${-w * 0.02} ${h * 0.52}L${w * 1.02} ${h * 0.4}`} />
+        <path d={`M${w * 0.5} ${h * 0.34}L${w * 0.44} ${h}`} />
+      </g>
+    </svg>);
 }
 
 // Si le contenu est trop long pour la place, il est rétréci pour ne jamais toucher le pied de page
@@ -89,7 +83,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "AVEC", text: e.who.join(", ") });
   const twoCol = sq && rows.length > 1 && rows.every((r) => r.text.length <= 26);
   const rowW = (twoCol ? (w - px * 2 - 12) / 2 : w - px * 2) - 120; // place pour le texte à côté de l'icône
-  const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 5px 12px rgba(27,24,99,.12)" } as const;
+  const card = { background: "#fff", border: `3px solid ${a.c1}`, borderRadius: 18, boxShadow: "0 8px 18px rgba(60,15,0,.38)" } as const;
   const anim = e.kind === "ANIMATION"; // animation : description, horaires, tarif, puis où s'inscrire
   const rowsBlock = (list: typeof rows) => list.length > 0 && (
 
@@ -103,12 +97,12 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   );
   const noteBlock = e.note && <div style={{ background: a.soft, borderLeft: `10px solid ${a.c1}`, borderRadius: 16, padding: "14px 20px", fontSize: 22, lineHeight: 1.35, color: "#2b2a42", overflowWrap: "anywhere" }}>{e.note}</div>;
   return (
-    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
-      <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
-        <Decor deco={a.deco} w={w} h={hd} />
+    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#b8471f", color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
+      <ClayBackground w={w} h={h} />
+      <div style={{ position: "relative", height: hd, color: "#fff" }}>
         <span aria-hidden style={{ position: "absolute", left: px - 8, top: 20, width: logoSize, height: logoSize, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", filter: "drop-shadow(0 3px 5px rgba(0,0,0,.3))" }} />
         <div style={{ position: "absolute", left: px + logoSize, top: 20 + logoSize / 2 - 10, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
-        <div style={{ position: "absolute", left: px, right: px, top: Math.max(26 + medal, 20 + logoSize) + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
+        <div style={{ position: "absolute", left: px, right: px, top: Math.max(26 + medal, 20 + logoSize) + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.25)" }}>{name}</div>
         <div aria-hidden style={{ position: "absolute", right: px, top: 26, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{a.icon ?? k.icon}</div>
         <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dateFs, whiteSpace: "nowrap", boxShadow: "0 8px 18px rgba(0,0,0,.25)" }}>{dateTxt}</div>
       </div>
