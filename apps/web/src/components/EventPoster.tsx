@@ -59,7 +59,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price);
   const infoCount = [e.audience, e.time, e.place, e.bring, e.signup].filter(Boolean).length;
   const dense = infoCount + formulas.length * 1.4 > (sq ? 11 : 9); // beaucoup de contenu : bandeau du haut plus bas pour laisser la place
-  const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 100 : sq ? 150 : 130;
+  const px = sq ? 64 : 56; const hd = dense ? (sq ? 330 : 290) : sq ? 400 : 390; const medal = dense ? 100 : sq ? 150 : 130; const logoSize = dense ? 84 : 104;
   // Tout le texte important tient sur UNE SEULE LIGNE : la taille s'ajuste à la longueur et à la place disponible
   const fit = (text: string, width: number, max: number, min = 14, k = 0.55) => Math.max(min, Math.min(max, width / (Math.max(text.length, 1) * k)));
   const fs = fit(name, w - px * 2, (sq ? 110 : 96) * (dense ? 0.85 : 1), 30, 0.8);
@@ -78,8 +78,9 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: a.bg, color: "#1b1863", fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, letterSpacing: "normal", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact", textAlign: "left" }}>
       <div style={{ position: "relative", height: hd, background: `linear-gradient(135deg,${a.c1} 0%,${a.c2} 100%)`, color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
         <Decor deco={a.deco} w={w} h={hd} />
-        <div style={{ position: "absolute", left: px, top: 40, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
-        <div style={{ position: "absolute", left: px, right: px, top: 26 + medal + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
+        <span aria-hidden style={{ position: "absolute", left: px - 8, top: 20, width: logoSize, height: logoSize, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", filter: "drop-shadow(0 3px 5px rgba(0,0,0,.3))" }} />
+        <div style={{ position: "absolute", left: px + logoSize, top: 20 + logoSize / 2 - 10, fontSize: 15, fontWeight: 800, letterSpacing: "0.3em", opacity: 0.95, whiteSpace: "nowrap" }}>TENNIS CLUB HOUDAN</div>
+        <div style={{ position: "absolute", left: px, right: px, top: Math.max(26 + medal, 20 + logoSize) + 10, fontSize: fs, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap", textShadow: "0 4px 0 rgba(0,0,0,.15)" }}>{name}</div>
         <div aria-hidden style={{ position: "absolute", right: px, top: 26, width: medal, height: medal, borderRadius: "50%", background: a.acc, border: "6px solid #fff", display: "grid", placeItems: "center", fontSize: medal * 0.5, boxShadow: "0 10px 24px rgba(0,0,0,.28)" }}>{k.icon}</div>
         <div style={{ position: "absolute", left: px, bottom: dense ? 30 : 44, background: "#fff", color: a.c2, borderRadius: 18, padding: "10px 22px", fontWeight: 900, fontSize: dateFs, whiteSpace: "nowrap", boxShadow: "0 8px 18px rgba(0,0,0,.25)" }}>{dateTxt}</div>
       </div>
