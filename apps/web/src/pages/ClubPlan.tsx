@@ -498,6 +498,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
   const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
   // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
+  const pickLast = (x: string) => { setChosen(true); setPickEnd(false); setEnd(x < start ? start : x); }; // fiche d'un jour : on choisit seulement le dernier jour
   const pickDate = (x: string) => {
     setChosen(true);
     if (!pickEnd) { setStart(x); setEnd(x); setPickEnd(true); }
@@ -521,25 +522,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   return (
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">{!chosen ? "1. Choisis la date (ou les dates) sur le calendrier · 2. Coche ce qui se passe." : `${nbDays === 1 ? "Une seule journée" : `${nbDays} jours de suite`} · touche un titre pour l'ouvrir, coche ce qui se passe.`}</p>
-      <Fold open={ask} color="#2E86C1" icon="📆" title={ask ? "À quelle date ?" : "Durée"} hint={!chosen ? "👉 Choisis d'abord la date" : nbDays === 1 ? `Le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
-        {ask && <div className="mb-3"><MiniCalendar start={start} end={end} onPick={pickDate} />
-          <p className="mb-0 mt-1 text-sm font-bold text-ink">{!chosen ? "Touche le jour de l'événement. S'il dure plusieurs jours, touche le premier puis le dernier." : pickEnd ? "Si l'événement dure plusieurs jours, touche maintenant le DERNIER jour (sinon, c'est bon : une seule journée)." : nbDays === 1 ? `✔ Le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)}`}</p></div>}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-bold text-ink">Durée :</span>
-          <button type="button" className="btn-outline" aria-label="Un jour de moins" disabled={end === start} onClick={() => { setChosen(true); setEnd(addDays(end, -1)); }}>−</button>
-          <input aria-label="Nombre de jours" type="number" min={1} max={366} inputMode="numeric" value={nbDays}
-            onChange={(e) => { const n = Math.max(1, Math.min(366, Math.floor(+e.target.value) || 1)); setChosen(true); setEnd(addDays(start, n - 1)); setPickEnd(false); }}
-            className="w-20 rounded-xl border-2 border-line px-2 py-2 text-center text-lg font-black text-ink" />
-          <button type="button" className="btn-outline" aria-label="Un jour de plus" onClick={() => { setChosen(true); setEnd(addDays(end, 1)); }}>＋</button>
-          <span className="font-bold text-ink">jour{end !== start ? "s" : ""}</span>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5, 7, 14, 21, 30].map((n) => <Pill key={n} on={diffDays(start, end) === n - 1} onClick={() => { setChosen(true); setEnd(addDays(start, n - 1)); setPickEnd(false); }}>{n === 1 ? "1 jour" : n === 7 ? "1 semaine" : n === 14 ? "2 semaines" : n === 21 ? "3 semaines" : n === 30 ? "1 mois" : `${n} jours`}</Pill>)}
-        </div>
-        {!ask && <details className="mt-2"><summary className="cursor-pointer text-sm font-bold text-clay">Ou choisir le dernier jour (ou changer le premier) sur le calendrier</summary>
-          <div className="mt-2"><MiniCalendar start={start} end={end} onPick={pickDate} />
-            <p className="mb-0 mt-1 text-xs text-muted">{pickEnd ? "Touche maintenant le DERNIER jour (ou le même jour)." : "Touche le premier jour, puis le dernier."}</p></div>
-        </details>}
+      <Fold open={ask} color="#2E86C1" icon="📆" title={ask ? "À quelle date ?" : "Jusqu'à quel jour ?"} hint={!chosen ? "👉 Choisis d'abord la date" : nbDays === 1 ? `Une seule journée : le ${fmtDay(start)}` : `Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}>
+        <MiniCalendar start={start} end={end} onPick={ask ? pickDate : pickLast} />
+        <p className="mb-0 mt-2 text-sm font-bold text-ink">{ask ? (!chosen ? "Touche le jour de l'événement. S'il dure plusieurs jours, touche le premier puis le dernier." : pickEnd ? "Si l'événement dure plusieurs jours, touche maintenant le DERNIER jour (sinon, c'est bon : une seule journée)." : nbDays === 1 ? `✔ Le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)}`) : (nbDays === 1 ? `L'événement commence le ${fmtDay(start)}. Touche le DERNIER jour s'il dure plusieurs jours.` : `✔ Du ${fmtDay(start)} jusqu'au ${fmtDay(end)} (${nbDays} jours)`)}</p>
+        {nbDays > 1 && <button type="button" className="btn-outline mt-2" onClick={() => { setEnd(start); setPickEnd(false); }}>↩ Une seule journée</button>}
       </Fold>
       {already.length > 0 && (
         <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
