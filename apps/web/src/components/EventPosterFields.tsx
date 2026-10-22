@@ -12,8 +12,8 @@ const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Sem
 export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
 export const KIDS_BRING = "Tenue de sport, bouteille d'eau · pique-nique pour les formules à la journée (10 h – 16 h)";
 export const KIDS_PRESET: Formula[] = [
-  { group: "Stage à la semaine · 6 à 17 ans", label: "Toute la semaine · journée 10 h – 16 h", detail: "tous les jours de la semaine · pique-nique le midi", price: "", priceMember: "" },
-  { group: "Stage à la semaine · 6 à 17 ans", label: "Toute la semaine · demi-journée 13 h – 16 h", detail: "tous les jours de la semaine", price: "", priceMember: "" },
+  { group: "Stage à la semaine · 6 à 17 ans", label: "Toute la semaine · 10 h – 16 h", detail: "journée, tous les jours de la semaine · pique-nique le midi", price: "", priceMember: "" },
+  { group: "Stage à la semaine · 6 à 17 ans", label: "Toute la semaine · 13 h – 16 h", detail: "demi-journée, tous les jours de la semaine", price: "", priceMember: "" },
   { group: "Stage à la journée ou à la demi-journée · 6 à 17 ans", label: "À la journée 10 h – 16 h", detail: "au choix, à l'unité · pique-nique le midi", price: "", priceMember: "" },
   { group: "Stage à la journée ou à la demi-journée · 6 à 17 ans", label: "À la demi-journée 13 h – 16 h", detail: "au choix, à l'unité", price: "", priceMember: "" },
   { group: "Stage mini tennis · 3 à 5 ans · 16 h – 17 h", label: "Toute la semaine", detail: "lundi, mardi, jeudi et vendredi", price: "", priceMember: "" },
@@ -52,9 +52,13 @@ function Formulas({ value, onChange, stage, kids }: { value: PosterInfo; onChang
             <div className="flex flex-wrap items-center gap-2">
               <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-xs font-black text-white">{i + 1}</span>
               <input aria-label={`Formule ${i + 1}`} maxLength={40} value={f.label} onChange={(e) => setF(i, { label: e.target.value })} placeholder="Nom de la formule (ex. Semaine complète)" className="min-w-0 flex-[3_1_11rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink" />
-              <input aria-label={`Prix adhérent ${i + 1}`} maxLength={30} value={f.priceMember ?? ""} onChange={(e) => setF(i, { priceMember: e.target.value })} placeholder="Adhérent (ex. 100 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
-              <input aria-label={`Prix non adhérent ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="Non adhérent (ex. 120 €)" className="w-32 flex-[1_1_7rem] rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black text-ink" />
               <button type="button" className="rounded-lg border-2 border-line bg-white px-2.5 py-1.5 text-sm font-bold text-ink hover:border-ink" aria-label={`Retirer la formule ${i + 1}`} onClick={() => set({ formulas: value.formulas.filter((_, k) => k !== i) })}>🗑️</button>
+            </div>
+            <div className="mt-2 flex gap-2">
+              <label className="flex-1 text-xs font-black uppercase tracking-wide text-muted">Tarif adhérent
+                <input aria-label={`Prix adhérent ${i + 1}`} maxLength={30} value={f.priceMember ?? ""} onChange={(e) => setF(i, { priceMember: e.target.value })} placeholder="ex. 100 €" className="mt-0.5 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" /></label>
+              <label className="flex-1 text-xs font-black uppercase tracking-wide text-muted">Tarif non adhérent
+                <input aria-label={`Prix non adhérent ${i + 1}`} maxLength={30} value={f.price} onChange={(e) => setF(i, { price: e.target.value })} placeholder="ex. 120 €" className="mt-0.5 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-black normal-case text-ink" /></label>
             </div>
             <input aria-label={`Rubrique de la formule ${i + 1}`} list="formula-groups" maxLength={60} value={f.group ?? ""} onChange={(e) => setF(i, { group: e.target.value })} placeholder="Rubrique (facultatif) : 6 à 17 ans, Mini tennis 3 à 5 ans…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
             <input aria-label={`Détail de la formule ${i + 1}`} maxLength={60} value={f.detail ?? ""} onChange={(e) => setF(i, { detail: e.target.value })} placeholder="Précision (facultatif) : 5 matinées de 9 h à 12 h, goûter compris…" className="mt-2 w-full rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-3 py-1.5 text-sm text-ink" />
