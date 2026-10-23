@@ -1,5 +1,6 @@
 // Dossier de saison : un vrai document A4 (couverture, saison en un coup d'œil, une page par mois). Dessiné en HTML dans le navigateur, imprimé ou enregistré en PDF : rien n'est envoyé sur Internet.
 import type { CSSProperties, ReactNode } from "react";
+import { NoBreak } from "./NoBreak";
 import { addDays, ClubEvent, DAYS, kindOf, MONTHS, weekdayOf } from "../clubPlan";
 import { inPeriod, nameOf } from "../clubExport";
 import { ClubLogo } from "./ui";
@@ -86,7 +87,7 @@ function Program({ list, withWho }: { list: ClubEvent[]; withWho: boolean }) {
         <tr key={e.id} style={{ borderBottom: `1.5px solid ${LINE}`, verticalAlign: "top" }}>
           <td style={{ padding: "9px 8px 9px 0", fontWeight: 800, width: 132 }}>{dateLabel(e)}{e.featured ? " ⭐" : ""}</td>
           <td style={{ padding: "9px 8px", width: 108 }}><span style={{ background: k.color, color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>{k.group === "Compétition" ? "Compétition" : k.label.length > 16 ? k.label.slice(0, 15) + "…" : k.label}</span></td>
-          <td style={{ padding: "9px 8px" }}><b>{k.icon} {nameOf(e)}</b>{sub ? <div style={{ color: MUTED, fontSize: 12, marginTop: 1 }}>{sub}</div> : null}{e.note ? <div style={{ color: "#3a4256", fontSize: 12, marginTop: 2, overflowWrap: "anywhere" }}>{e.note.length > 240 ? e.note.slice(0, 239) + "…" : e.note}</div> : null}</td>
+          <td style={{ padding: "9px 8px" }}><b>{k.icon} {nameOf(e)}</b>{sub ? <div style={{ color: MUTED, fontSize: 12, marginTop: 1 }}><NoBreak text={sub} /></div> : null}{e.note ? <div style={{ color: "#3a4256", fontSize: 12, marginTop: 2, overflowWrap: "break-word" }}><NoBreak text={e.note.length > 240 ? e.note.slice(0, 239) + "…" : e.note} /></div> : null}</td>
           <td style={{ padding: "9px 0 9px 8px", width: 110, fontSize: 12, color: MUTED }}>{where(e)}</td>
         </tr>); })}</tbody>
     </table>
@@ -112,7 +113,7 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
         <div style={{ position: "absolute", left: 56, right: 56, top: 560, bottom: 150, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, alignContent: "center" }}>
           {stats.map(([v, l]) => <div key={l as string} style={{ background: "#ffffff14", border: "2px solid #ffffff44", borderRadius: 16, padding: 16 }}><b style={{ display: "block", fontSize: 44, color: GOLD, lineHeight: 1.1 }}>{v}</b><span style={{ fontSize: 14, opacity: .9 }}>{l}</span></div>)}
         </div>
-        <div style={{ position: "absolute", left: 56, right: 56, bottom: 50, display: "flex", justifyContent: "space-between", fontSize: 14, opacity: .85, borderTop: "2px solid #fff4", paddingTop: 14 }}><span>Document du bureau · Version du {new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span><span>tennisclubhoudan@gmail.com</span></div>
+        <div style={{ position: "absolute", left: 56, right: 56, bottom: 50, display: "flex", justifyContent: "space-between", fontSize: 14, opacity: .85, borderTop: "2px solid #fff4", paddingTop: 14 }}><span>Document du bureau · Version du {new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span><span style={{ whiteSpace: "nowrap" }}>tennisclubhoudan@gmail.com</span></div>
       </Frame>));
   }
   if (o.season) {
