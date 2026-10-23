@@ -109,6 +109,8 @@ function pickTop(list: ClubEvent[]): ClubEvent[] {
   const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
   return list.some((e) => e.featured) ? starred : auto;
 }
+// Couleur plus foncée (0 = noir, 1 = inchangée)
+const shade = (hex: string, f: number) => { const n = parseInt(hex.slice(1), 16); const ch = (v: number) => Math.round(v * f).toString(16).padStart(2, "0"); return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`; };
 function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   const top = pickTop(list);
   if (top.length === 0) return null;
@@ -118,13 +120,34 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
     <div style={{ padding: "0 40px", textAlign: "left" }}>
       <div className="font-display" style={{ fontWeight: 900, color: "#fff", background: "#a63e1a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
-        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; return (
+        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
+            {multi ? (
+              // Période : le carré est coupé en diagonale (bas gauche → haut droite) ; premier jour en haut à gauche, dernier jour en bas à droite
+              <div style={{ position: "relative", width: "31%", flex: "0 0 31%", minHeight: 200, color: "#fff", overflow: "hidden" }}>
+                <svg aria-hidden width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0 }}>
+                  <polygon points="0,0 100,0 0,100" fill={shade(c, 0.9)} />
+                  <polygon points="100,0 100,100 0,100" fill={shade(c, 0.62)} />
+                  <line x1="0" y1="100" x2="100" y2="0" stroke="#fff" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+                </svg>
+                <div style={{ position: "absolute", left: 14, top: 10, textAlign: "left" }}>
+                  <div style={{ ...dayName, fontSize: 17 }}>{DAYS[weekdayOf(e.startDate)]}</div>
+                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
+                  <div style={line}>{MOIS[+e.startDate.slice(5, 7) - 1]}</div>
+                </div>
+                <div style={{ position: "absolute", right: 14, bottom: 10, textAlign: "right" }}>
+                  <div style={{ ...dayName, fontSize: 17 }}>{DAYS[weekdayOf(e.endDate)]}</div>
+                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
+                  <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+                </div>
+              </div>
+            ) : (
             <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-              <div style={line}>{multi ? `Du ${lc(DAYS[weekdayOf(e.startDate)])}` : DAYS[weekdayOf(e.startDate)]}</div>
-              <div className="font-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}{multi && !same ? <small style={{ fontSize: 18 }}> {MOIS[+e.startDate.slice(5, 7) - 1]}</small> : null}</div>
-              <div style={line}>{multi ? `au ${lc(DAYS[weekdayOf(e.endDate)])} ${dayNum(e.endDate)} ` : ""}{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+              <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
+              <div className="font-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
+              <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
             </div>
+            )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <span data-nw style={{ whiteSpace: "nowrap" }}>{labelParts(e)[1]}</span> : <>{k.icon} {labelParts(e)[0]}</>}</div>
