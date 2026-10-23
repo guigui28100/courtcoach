@@ -13,7 +13,7 @@ import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
-  vacationWeeks, weekdayOf,
+  vacationWeeks, VENUE_AWAY, VENUE_HOME, weekdayOf,
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
@@ -403,6 +403,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
           <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
         </label>)}
+      {d.kind === "EQUIPES" && <VenuePick value={d.place ?? ""} onChange={(v) => set({ place: v })} />}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
         <p className="mb-0 mt-2 font-bold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
@@ -507,6 +508,23 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 }
 
 interface Sel { title?: string; on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+// Match par équipes : deux gros boutons « à domicile » / « en déplacement » (on retouche pour effacer)
+function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-bold text-ink" role="group" aria-label="Où se joue le match ?">
+      <span>📍 Où se joue le match ? <span className="font-normal text-muted">(facultatif)</span></span>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, s]) => (
+          <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(value === v ? "" : v)}
+            className={`rounded-xl border-2 px-3 py-3 text-left ${value === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+            <span className="block">{l}</span><span className="block text-xs font-normal opacity-80">{s}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
 const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), priceMember: (f.priceMember ?? "").trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: (created?: ClubEvent) => void }) {
@@ -641,6 +659,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     <label className="mt-2 block rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
                       <input aria-label="Club rencontré" maxLength={80} value={c.info.audience} onChange={(e) => patch(k.key, { info: { ...c.info, audience: e.target.value } })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
+                  {k.key === "EQUIPES" && <div className="mt-2"><VenuePick value={c.info.place} onChange={(v) => patch(k.key, { info: { ...c.info, place: v } })} /></div>}
                   {k.key === "EQUIPES" && (
                     <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
                       {cats.map((cat) => (

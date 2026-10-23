@@ -75,9 +75,16 @@ export interface Clash { id: string; title: string; kind: string; why: string }
 export const colorOf = (e: { kind: string; teams: string[] }) => (e.kind === "EQUIPES" && e.teams[0] ? teamCat(e.teams[0])?.color ?? kindOf(e.kind).color : kindOf(e.kind).color);
 // Match par équipes : le « club rencontré » est gardé dans la colonne `audience` (aucun changement du serveur)
 export const opponentOf = (e: { kind: string; audience?: string }) => (e.kind === "EQUIPES" ? (e.audience ?? "").trim() : "");
-export function titleOf(e: { kind: string; title: string; teams: string[]; audience?: string }) {
-  if (e.title) return e.title;
-  if (e.kind === "EQUIPES") return e.teams.map(teamLabel).join(" + ") + (opponentOf(e) ? `${e.teams.length ? " · " : ""}contre ${opponentOf(e)}` : "");
+// Match par équipes : à domicile ou en déplacement, gardé dans la colonne `place` (aucun changement du serveur)
+export const VENUE_HOME = "À domicile";
+export const VENUE_AWAY = "En déplacement";
+export const venueOf = (e: { kind: string; place?: string }): "home" | "away" | "" => (e.kind !== "EQUIPES" ? "" : e.place === VENUE_HOME ? "home" : e.place === VENUE_AWAY ? "away" : "");
+export const venueTag = (e: { kind: string; place?: string }) => (venueOf(e) === "home" ? "🏠 à domicile" : venueOf(e) === "away" ? "🚌 en déplacement" : "");
+export function titleOf(e: { kind: string; title: string; teams: string[]; audience?: string; place?: string }) {
+  const tag = venueTag(e);
+  const sfx = tag ? ` · ${tag}` : "";
+  if (e.title) return e.title + (e.kind === "EQUIPES" && !e.title.includes(tag) ? sfx : "");
+  if (e.kind === "EQUIPES") return e.teams.map(teamLabel).join(" + ") + (opponentOf(e) ? `${e.teams.length ? " · " : ""}contre ${opponentOf(e)}` : "") + sfx;
   return kindOf(e.kind).label;
 }
 // Nom proposé automatiquement quand le coach n'en écrit pas

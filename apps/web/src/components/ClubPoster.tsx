@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
-import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, textOn, titleOf, weekdayOf } from "../clubPlan";
+import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
 export const POSTER_W = 794;
@@ -33,7 +33,7 @@ function detail(e: ClubEvent, showWho: boolean) {
   if (showWho && e.who.length) parts.push(`avec ${e.who.map((w) => w.replace(" (moi)", "")).join(", ")}`);
   return parts.join(" · ");
 }
-export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}` : titleOf(e));
+export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}${venueTag(e) ? ` · ${venueTag(e)}` : ""}` : titleOf(e));
 const dayNum = (d: string) => +d.slice(8, 10);
 // Date complète : « Samedi 14 novembre » ou « Samedi 14 → dimanche 15 novembre »
 export const fullRange = (e: ClubEvent) => {
