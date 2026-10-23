@@ -13,16 +13,20 @@ const short = (d: string) => `${DAYS[weekdayOf(d)].slice(0, 3)}. ${+d.slice(8, 1
 const dateLabel = (e: ClubEvent) => (e.startDate === e.endDate ? short(e.startDate) : `${short(e.startDate)} – ${short(e.endDate).toLowerCase()}`);
 const prices = (e: ClubEvent) => (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember).map((f) => `${f.label ? `${f.label} : ` : ""}${[f.priceMember && `adhérent ${f.priceMember}`, f.price && (f.priceMember ? `non adhérent ${f.price}` : f.price)].filter(Boolean).join(" · ")}`).join(" · ");
 const where = (e: ClubEvent) => [e.place, e.courts.length ? `Court${e.courts.length > 1 ? "s" : ""} ${e.courts.join(", ")}` : ""].filter(Boolean).join(" · ");
-const details = (e: ClubEvent, withWho: boolean) => [e.time, e.audience, prices(e), e.signup && `Inscriptions : ${e.signup}`, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ");
+const details = (e: ClubEvent, withWho: boolean) => [e.time, e.kind === "EQUIPES" ? "" : e.audience, prices(e), e.signup && `Inscriptions : ${e.signup}`, withWho && e.who.length ? `Avec : ${e.who.join(", ")}` : ""].filter(Boolean).join(" · ");
 const monthsBetween = (from: string, to: string) => { const out: string[] = []; let m = from.slice(0, 7); while (m <= to.slice(0, 7)) { out.push(m); m = addDays(`${m}-28`, 5).slice(0, 7); } return out; };
 const touches = (e: ClubEvent, m: string) => e.startDate.slice(0, 7) <= m && e.endDate.slice(0, 7) >= m;
 const monthLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
 
 const Frame = ({ children, n, total, style }: { children: ReactNode; n: number; total: number; style?: CSSProperties }) => (
-  <div className="dossier-page" style={{ width: DOSSIER_W, height: DOSSIER_H, background: "#fff", position: "relative", overflow: "hidden", fontFamily: FONT, color: INK, breakAfter: "page", ...style }}>
+  <div className="dossier-page" style={{ width: DOSSIER_W, height: DOSSIER_H, background: "#fff", position: "relative", overflow: "hidden", fontFamily: FONT, color: INK, breakAfter: "page", display: "flex", flexDirection: "column", ...style }}>
     {children}
     <div style={{ position: "absolute", left: 40, right: 40, bottom: 20, display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6b7385", borderTop: `1.5px solid ${LINE}`, paddingTop: 8 }}><span>Tennis Club Houdan · Planning de la saison</span><span>{n} / {total}</span></div>
   </div>
+);
+// Corps d'une page : remplit toute la hauteur entre l'en-tête et le pied ; les blocs sont répartis (rien de collé en haut, rien de vide en bas)
+const Body = ({ children, center }: { children: ReactNode; center?: boolean }) => (
+  <div style={{ flex: 1, minHeight: 0, padding: "24px 40px 60px", display: "flex", flexDirection: "column", justifyContent: center ? "center" : "space-between", gap: 14 }}>{children}</div>
 );
 const Head = ({ title, sub }: { title: string; sub: string }) => (
   <div>
@@ -44,9 +48,9 @@ function MiniMonth({ m, list }: { m: string; list: ClubEvent[] }) {
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: nd }, (_, i) => i + 1)]; while (cells.length % 7) cells.push(null);
   const colorOf = (d: number) => { const ds = `${m}-${String(d).padStart(2, "0")}`; const e = list.find((x) => x.startDate <= ds && x.endDate >= ds && !kindOf(x.kind).key.startsWith("BULLE_")) ?? list.find((x) => x.startDate <= ds && x.endDate >= ds); return e ? kindOf(e.kind).color : ""; };
   return (
-    <div style={{ border: `2px solid ${LINE}`, borderRadius: 12, padding: "6px 9px" }}>
+    <div style={{ border: `2px solid ${LINE}`, borderRadius: 12, padding: "8px 10px", display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ fontSize: 13, fontWeight: 900, color: CLAY, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 3 }}>{monthLabel(m)}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", fontSize: 10.5, textAlign: "center", rowGap: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", fontSize: 11, textAlign: "center", flex: 1, alignContent: "space-evenly" }}>
         {"LMMJVSD".split("").map((d, i) => <b key={i} style={{ color: "#8a91a3", fontWeight: 700 }}>{d}</b>)}
         {cells.map((d, i) => { const c = d ? colorOf(d) : ""; return <span key={i} style={{ height: 17, lineHeight: "17px", width: 17, margin: "0 auto", borderRadius: "50%", background: c || "transparent", color: c ? "#fff" : INK, fontWeight: c ? 800 : 400 }}>{d ?? ""}</span>; })}
       </div>
@@ -57,17 +61,17 @@ function MiniMonth({ m, list }: { m: string; list: ClubEvent[] }) {
 function BigMonth({ m, list }: { m: string; list: ClubEvent[] }) {
   const lead = weekdayOf(`${m}-01`); const nd = new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: nd }, (_, i) => i + 1)]; while (cells.length % 7) cells.push(null);
-  const rows = cells.length / 7; const h = rows > 5 ? 78 : 92;
+  const rows = cells.length / 7;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", border: `1.5px solid #cfd4e0` }}>
+    <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gridTemplateRows: `auto repeat(${rows},minmax(0,1fr))`, border: `1.5px solid #cfd4e0` }}>
       {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => <div key={d} style={{ background: INK, color: "#fff", textAlign: "center", padding: 6, fontSize: 12, fontWeight: 800 }}>{d}</div>)}
       {cells.map((d, i) => {
         const ds = d ? `${m}-${String(d).padStart(2, "0")}` : ""; const evs = d ? list.filter((e) => e.startDate <= ds && e.endDate >= ds && !kindOf(e.kind).key.startsWith("BULLE_")) : [];
         return (
-          <div key={i} style={{ height: h, borderTop: `1.5px solid #cfd4e0`, borderLeft: i % 7 ? `1.5px solid #cfd4e0` : "none", padding: 4, background: !d ? "#f1f2f6" : i % 7 >= 5 ? "#faf6ee" : "#fff", overflow: "hidden", minWidth: 0 }}>
+          <div key={i} style={{ minHeight: 0, borderTop: `1.5px solid #cfd4e0`, borderLeft: i % 7 ? `1.5px solid #cfd4e0` : "none", padding: 4, background: !d ? "#f1f2f6" : i % 7 >= 5 ? "#faf6ee" : "#fff", overflow: "hidden", minWidth: 0 }}>
             {d && <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1 }}>{d}</div>}
-            {evs.slice(0, 2).map((e) => <div key={e.id} style={{ marginTop: 3, background: kindOf(e.kind).color, color: "#fff", borderRadius: 5, padding: "2px 5px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kindOf(e.kind).icon} {nameOf(e)}</div>)}
-            {evs.length > 2 && <div style={{ marginTop: 2, fontSize: 10, fontWeight: 800, color: MUTED }}>+ {evs.length - 2} autre{evs.length > 3 ? "s" : ""}</div>}
+            {evs.slice(0, 3).map((e) => <div key={e.id} style={{ marginTop: 3, background: kindOf(e.kind).color, color: "#fff", borderRadius: 5, padding: "2px 5px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kindOf(e.kind).icon} {nameOf(e)}</div>)}
+            {evs.length > 3 && <div style={{ marginTop: 2, fontSize: 10, fontWeight: 800, color: MUTED }}>+ {evs.length - 3} autre{evs.length > 4 ? "s" : ""}</div>}
           </div>
         );
       })}
@@ -105,7 +109,7 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
         <div style={{ position: "absolute", left: 58, top: 236, fontWeight: 800, letterSpacing: ".3em", fontSize: 18, color: GOLD }}>TENNIS CLUB HOUDAN</div>
         <div style={{ position: "absolute", left: 56, top: 280, fontSize: 84, lineHeight: .95, fontWeight: 900, letterSpacing: -2 }}>Planning<br />de la saison</div>
         <div style={{ position: "absolute", left: 58, top: 488, fontSize: 32, fontWeight: 700 }}>{title}</div>
-        <div style={{ position: "absolute", left: 56, right: 56, top: 640, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+        <div style={{ position: "absolute", left: 56, right: 56, top: 560, bottom: 150, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, alignContent: "center" }}>
           {stats.map(([v, l]) => <div key={l as string} style={{ background: "#ffffff14", border: "2px solid #ffffff44", borderRadius: 16, padding: 16 }}><b style={{ display: "block", fontSize: 44, color: GOLD, lineHeight: 1.1 }}>{v}</b><span style={{ fontSize: 14, opacity: .9 }}>{l}</span></div>)}
         </div>
         <div style={{ position: "absolute", left: 56, right: 56, bottom: 50, display: "flex", justifyContent: "space-between", fontSize: 14, opacity: .85, borderTop: "2px solid #fff4", paddingTop: 14 }}><span>Document du bureau · Version du {new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span><span>tennisclubhoudan@gmail.com</span></div>
@@ -116,12 +120,12 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
     pages.push((n, t) => (
       <Frame key="year" n={n} total={t}>
         <Head title="La saison en un coup d'œil" sub={`Septembre ${o.season} → août ${o.season! + 1}`} />
-        <div style={{ padding: "18px 40px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>{months.map((m) => <MiniMonth key={m} m={m} list={list.filter((e) => touches(e, m))} />)}</div>
-          <div style={{ marginTop: 12 }}><Legend list={list} /></div>
-          {top.length > 0 && <><div style={{ marginTop: 16, marginBottom: 4, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>Les grandes dates</div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}><tbody>{top.map((e) => <tr key={e.id} style={{ borderBottom: `1.5px solid ${LINE}` }}><td style={{ padding: "6px 8px 6px 0", fontWeight: 800, width: 190 }}>{dateLabel(e)}</td><td style={{ padding: 6 }}><b>{kindOf(e.kind).icon} {nameOf(e)}</b></td></tr>)}</tbody></table></>}
-        </div>
+        <Body>
+          <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gridTemplateRows: "repeat(4,minmax(0,1fr))", gap: 10 }}>{months.map((m) => <MiniMonth key={m} m={m} list={list.filter((e) => touches(e, m))} />)}</div>
+          <Legend list={list} />
+          {top.length > 0 && <div><div style={{ marginBottom: 4, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>Les grandes dates</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}><tbody>{top.map((e) => <tr key={e.id} style={{ borderBottom: `1.5px solid ${LINE}` }}><td style={{ padding: "6px 8px 6px 0", fontWeight: 800, width: 190 }}>{dateLabel(e)}</td><td style={{ padding: 6 }}><b>{kindOf(e.kind).icon} {nameOf(e)}</b></td></tr>)}</tbody></table></div>}
+        </Body>
       </Frame>));
   }
   for (const m of months) {
@@ -129,22 +133,24 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
     const prog = evs;
     // Découpe par hauteur estimée : la 1re page porte le calendrier (peu de place), les suivantes sont presque vides
     const est = (e: ClubEvent) => { const sub = details(e, o.withWho); return 28 + (sub ? 16 * Math.ceil(sub.length / 72) : 0) + (e.note ? 16 * Math.ceil(Math.min(e.note.length, 240) / 78) : 0); };
-    const first: ClubEvent[] = [], chunks: ClubEvent[][] = []; let used = 0, cap = 240, cur = first;
+    const first: ClubEvent[] = [], chunks: ClubEvent[][] = []; let used = 0, cap = 300, cur = first;
     for (const e of prog) { const h = est(e); if (used + h > cap && cur.length) { cur = []; chunks.push(cur); used = 0; cap = 860; } cur.push(e); used += h; }
     pages.push((n, t) => (
       <Frame key={m} n={n} total={t}>
         <Head title={monthLabel(m)} sub={`${evs.length} événement${evs.length > 1 ? "s" : ""}`} />
-        <div style={{ padding: "22px 40px" }}>
+        <Body>
           <BigMonth m={m} list={evs} />
-          <div style={{ margin: "20px 0 4px", fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>Au programme</div>
-          <Program list={first} withWho={o.withWho} />
-          <div style={{ marginTop: 14 }}><Legend list={evs} /></div>
-        </div>
+          <div>
+            <div style={{ marginBottom: 4, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>Au programme</div>
+            <Program list={first} withWho={o.withWho} />
+          </div>
+          <Legend list={evs} />
+        </Body>
       </Frame>));
     chunks.forEach((c, i) => pages.push((n, t) => (
       <Frame key={`${m}-${i}`} n={n} total={t}>
         <Head title={`${monthLabel(m)} (suite)`} sub="Au programme" />
-        <div style={{ padding: "22px 40px" }}><Program list={c} withWho={o.withWho} /></div>
+        <Body center><Program list={c} withWho={o.withWho} /></Body>
       </Frame>)));
   }
   return pages.map((p, i) => p(i + 1, pages.length));

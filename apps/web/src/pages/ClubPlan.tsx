@@ -34,7 +34,7 @@ export function ClubPlan() {
   const [profs, setProfs] = useState<string[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("annee");
+  const [view, setView] = useState<View>("mois");
   const multi = false; const setMulti = (_: boolean) => {};
   const today = todayParis();
   const [season, setSeason] = useState(seasonOf(today));
@@ -130,7 +130,7 @@ export function ClubPlan() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-[#16a34a] bg-[#e8f7ee] px-3 py-2">
-          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Tableau Excel, agenda du téléphone ou liste en PDF.</span>
+          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Dossier de saison en PDF ou agenda du téléphone.</span>
           <button type="button" className="whitespace-nowrap rounded-xl border-2 border-[#166534] bg-[#16a34a] px-4 py-2 font-extrabold text-white shadow hover:bg-[#15803d]" onClick={() => setExportOpen(true)}>📤 Exporter le planning</button>
         </div>
         {view === "mois" && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
@@ -399,6 +399,10 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           ))}
         </Step>
       )}
+      {d.kind === "EQUIPES" && (
+        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+          <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+        </label>)}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
         <p className="mb-0 mt-2 font-bold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
@@ -633,6 +637,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
+                  {k.key === "EQUIPES" && (
+                    <label className="mt-2 block rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+                      <input aria-label="Club rencontré" maxLength={80} value={c.info.audience} onChange={(e) => patch(k.key, { info: { ...c.info, audience: e.target.value } })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+                    </label>)}
                   {k.key === "EQUIPES" && (
                     <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
                       {cats.map((cat) => (

@@ -33,7 +33,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
   const rows: Row[] = [];
-  if (e.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[e.audience] ? "Catégorie" : "Pour qui", text: e.audience });
+  if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[e.audience] ? "Catégorie" : "Pour qui", text: e.audience });
   if (e.place && tour) rows.push({ icon: "🎾", title: "Surface", text: e.place });
   if (e.time) rows.push({ icon: "🕒", title: tour ? "Matchs, jour par jour" : "Horaires", text: e.time });
   if (e.signup && tour) rows.push({ icon: "🏆", title: "Finale", text: e.signup });

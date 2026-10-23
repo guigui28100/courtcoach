@@ -28,7 +28,7 @@ export default function Connexion() {
   }
 
   return (
-    <AuthShell eyebrow={mode === "connexion" ? "Connexion" : "Nouveau compte"} title={mode === "connexion" ? "Content de te revoir !" : "Créer mon compte"} subtitle={mode === "connexion" ? "Connecte-toi pour retrouver tes vidéos et ton suivi." : "Gratuit pour les adhérents adultes du club."}>
+    <AuthShell tour eyebrow={mode === "connexion" ? "Connexion" : "Nouveau compte"} title={mode === "connexion" ? "Content de te revoir !" : "Créer mon compte"} subtitle={mode === "connexion" ? "Connecte-toi pour retrouver tes vidéos et ton suivi." : "Gratuit pour les adhérents adultes du club."}>
       <div role="tablist" aria-label="Connexion ou inscription" className="grid grid-cols-2 gap-1 rounded-full bg-sand p-1">
         {(["connexion", "inscription"] as const).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setError(""); setNeedCode(false); }}

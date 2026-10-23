@@ -73,9 +73,11 @@ export interface Clash { id: string; title: string; kind: string; why: string }
 
 // Couleur d'un événement : celle de sa catégorie si c'est un match par équipes (la première), sinon celle de son type
 export const colorOf = (e: { kind: string; teams: string[] }) => (e.kind === "EQUIPES" && e.teams[0] ? teamCat(e.teams[0])?.color ?? kindOf(e.kind).color : kindOf(e.kind).color);
-export function titleOf(e: { kind: string; title: string; teams: string[] }) {
+// Match par équipes : le « club rencontré » est gardé dans la colonne `audience` (aucun changement du serveur)
+export const opponentOf = (e: { kind: string; audience?: string }) => (e.kind === "EQUIPES" ? (e.audience ?? "").trim() : "");
+export function titleOf(e: { kind: string; title: string; teams: string[]; audience?: string }) {
   if (e.title) return e.title;
-  if (e.kind === "EQUIPES") return e.teams.map(teamLabel).join(" + ");
+  if (e.kind === "EQUIPES") return e.teams.map(teamLabel).join(" + ") + (opponentOf(e) ? `${e.teams.length ? " · " : ""}contre ${opponentOf(e)}` : "");
   return kindOf(e.kind).label;
 }
 // Nom proposé automatiquement quand le coach n'en écrit pas
