@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
@@ -83,7 +84,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
       {rows.map((r) => (
         <div key={r.title} style={card}>
           <span aria-hidden style={{ flex: `0 0 ${p(44)}`, width: p(44), height: p(44), borderRadius: 12, background: acc, display: "grid", placeItems: "center", fontSize: p(23) }}>{r.icon}</span>
-          <div style={{ minWidth: 0 }}><div style={{ fontSize: p(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: p(20), fontWeight: 800, lineHeight: 1.2, color: NAVY, overflowWrap: "anywhere" }}>{r.text}</div></div>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: p(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: p(20), fontWeight: 800, lineHeight: 1.2, color: NAVY, overflowWrap: "break-word" }}><NoBreak text={r.text} /></div></div>
         </div>))}
     </div>
   );
@@ -105,7 +106,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: p(16), fontSize: p(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", overflowWrap: "anywhere" }}>{e.note}</p>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: p(16), fontSize: p(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", overflowWrap: "break-word" }}><NoBreak text={e.note} /></p>;
   const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: p(120), height: p(9), background: acc, borderRadius: 6, marginTop: p(14) }} /></div>;
 
   const gap = p(16);
@@ -125,9 +126,9 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: ftH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 24, padding: `0 ${px}px` }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", color: GOLD }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
-          <div style={{ fontSize: sq ? 22 : 25, fontWeight: 900, lineHeight: 1.2, marginTop: 4, overflowWrap: "anywhere" }}>{inscription || "Au club ou par e-mail"}</div>
+          <div style={{ fontSize: Math.min(sq ? 22 : 25, Math.floor((w - px * 2 - 64 - 48 - 250) / (Math.max(longestLink(inscription), 1) * 0.62))), fontWeight: 900, lineHeight: 1.2, marginTop: 4, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
         </div>
-        <div style={{ fontSize: 15, opacity: 0.92, textAlign: "right" }}>✉️ tennisclubhoudan@gmail.com</div>
+        <div style={{ fontSize: 15, opacity: 0.92, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>✉️ tennisclubhoudan@gmail.com</div>
         <span aria-hidden style={{ display: "inline-block", width: 64, height: 64, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
     </div>
