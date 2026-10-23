@@ -639,17 +639,15 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : "de l'animation"} (facultatif)
                       <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
-                  <div className="rounded-xl border-2 border-line bg-white p-3">
-                    <p className="m-0 text-sm font-extrabold text-ink">📅 Dans le planning</p>
-                    <p className="m-0 mb-2 text-sm text-muted">« {k.label} » sera inscrit au planning du club. {POSTER_KINDS.includes(k.key) ? "Tu pourras ensuite, si tu veux, créer son affiche (c'est là que tu écris la description)." : ""}</p>
-                    {!POSTER_KINDS.includes(k.key) && (
+                  {!POSTER_KINDS.includes(k.key) && (
+                    <div className="rounded-xl border-2 border-line bg-white p-3">
                       <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
                         <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
                           placeholder="Quelques mots sur cet événement"
                           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                       </label>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
