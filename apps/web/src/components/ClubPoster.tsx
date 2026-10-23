@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
-import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
+import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
 export const POSTER_W = 794;
@@ -28,12 +28,18 @@ function teamsText(e: ClubEvent) {
 const BAND_TXT: Record<string, string> = { MATIN: "matin", APRES_MIDI: "après-midi", SOIR: "soirée" };
 function detail(e: ClubEvent, showWho: boolean) {
   const parts: string[] = [];
-  if (e.kind === "EQUIPES" && e.teams.length) parts.push(teamsText(e));
+  if (e.kind === "EQUIPES" && e.teams.length && e.title) parts.push(teamsText(e)); // sans nom écrit à la main, catégorie et numéro sont déjà dans le titre
   if (e.bands.length) parts.push(e.bands.map((b) => BAND_TXT[b]).join(" + "));
   if (showWho && e.who.length) parts.push(`avec ${e.who.map((w) => w.replace(" (moi)", "")).join(", ")}`);
   return parts.join(" · ");
 }
-export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}${venueTag(e) ? ` · ${venueTag(e)}` : ""}` : titleOf(e));
+// Match par équipes sans nom écrit à la main : « Match · Seniors messieurs · Éq. 1 · contre TC Dreux · 🏠 à domicile »
+export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? (e.teams.length ? `Match · ${titleOf(e)}` : `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}${venueTag(e) ? ` · ${venueTag(e)}` : ""}`) : titleOf(e));
+// Titre en deux lignes pour un match : « Match · Seniors messieurs · Éq. 1 » puis « contre TC Dreux · 🏠 à domicile »
+const matchLines = (e: ClubEvent) => {
+  if (e.kind !== "EQUIPES" || e.title || !e.teams.length) return { main: label(e), sub: "" };
+  return { main: `Match · ${e.teams.map(teamLabel).join(" + ")}`, sub: [opponentOf(e) ? `contre ${opponentOf(e)}` : "", venueTag(e)].filter(Boolean).join(" · ") };
+};
 const dayNum = (d: string) => +d.slice(8, 10);
 // Date complète : « Samedi 14 novembre » ou « Samedi 14 → dimanche 15 novembre »
 export const fullRange = (e: ClubEvent) => {
@@ -116,7 +122,8 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
               <div style={line}>{multi ? `au ${lc(DAYS[weekdayOf(e.endDate)])} ${dayNum(e.endDate)} ` : ""}{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
             </div>
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
+              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {matchLines(e).main}</div>
+              {matchLines(e).sub ? <div style={{ fontWeight: 800, fontSize: 17, color: "#1b1863", marginTop: 2 }}>{matchLines(e).sub}</div> : null}
               {detail(e, showWho) ? <div style={{ fontSize: 13, fontWeight: 700, color: "#6b6557", marginTop: 3 }}>{detail(e, showWho)}</div> : null}
               {e.note && <div style={{ fontSize: 14, color: "#2b2a42", marginTop: 5, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={e.note} /></div>}
             </div>
@@ -233,17 +240,29 @@ function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; 
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, gap: 0 });
+  const wrap = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 1, top: 0, gap: 0 });
+  // Le texte est agrandi ou réduit (le contenu se remet en page à la nouvelle taille) jusqu'à remplir la zone libre ; le reste est réparti également (haut, milieu, bas).
   useLayoutEffect(() => {
-    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM;
-    const ha = refA.current?.offsetHeight ?? 0; const hb = refB.current?.offsetHeight ?? 0;
-    const total = ha + hb;
-    if (total > avail) setFit({ scale: avail / total, gap: 0 });
-    else setFit({ scale: 1, gap: cards && ha > 0 ? Math.max(0, (avail - total) / 2) : 0 }); // peu d'événements : la suite est centrée dans la place restante
+    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM - 16; // marge de 16 px au-dessus du bandeau bleu
+    const measure = (s: number) => {
+      if (wrap.current) wrap.current.style.width = `${POSTER_W / s}px`;
+      return ((refA.current?.offsetHeight ?? 0) + (refB.current?.offsetHeight ?? 0)) * s;
+    };
+    const run = () => {
+      let lo = 0.4, hi = cards ? 1.3 : 1.6;
+      if (measure(hi) <= avail) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (measure(mid) <= avail) lo = mid; else hi = mid; }
+      const used = measure(lo); const left = Math.max(0, avail - used); const hasA = cards && (refA.current?.offsetHeight ?? 0) > 0;
+      setFit({ scale: lo, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 / lo : 0 });
+    };
+    run();
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    let live = true; fonts?.ready.then(() => { if (live) run(); });
+    return () => { live = false; };
   }, [list, month, showWho, cards]);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM, overflow: "hidden" }}>
-      <div style={{ transform: `scale(${fit.scale})`, transformOrigin: "top center", width: POSTER_W }}>
+      <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale})`, transformOrigin: "top left", width: POSTER_W / fit.scale }}>
         <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
         <div style={{ height: fit.gap }} />
         <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>
