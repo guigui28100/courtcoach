@@ -136,15 +136,14 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
       </div>}
       {date ? (
         dayRows === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : dayRows.length === 0 ? <Empty>Aucun professeur n'est visible pour le moment.</Empty> : (
-          <div className="grid gap-4 md:grid-cols-3">{dayRows.map((r) => (
-            <div key={r.prof.id} className="grid content-start gap-2 rounded-3xl border-2 border-line bg-white p-4 shadow-sm">
-              <Avatar name={profName(r.prof)} />
-              <strong className="font-display text-xl">{profName(r.prof)}</strong>
+          <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-3">{dayRows.map((r) => (
+            <article key={r.prof.id} aria-label={`Professeur : ${profName(r.prof)}`} className="mb-4 grid min-w-0 gap-y-3 rounded-3xl border-2 border-line bg-white p-4 shadow-sm" style={{ gridRow: "span 5", gridTemplateRows: "subgrid" }}>
+              <div className="flex items-center gap-3"><Avatar name={profName(r.prof)} /><strong className="font-display text-xl leading-tight">{profName(r.prof)}</strong></div>
               <small className="text-muted">{r.prof.ranking ? `Classement ${r.prof.ranking} · ` : ""}{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>
               <p className="m-0 font-display text-3xl font-black">{priceOn(yp, date)} € <small className="text-sm font-bold text-muted">{member ? "ton tarif adhérent" : "la séance"}</small></p>
-              <div className="flex flex-wrap gap-1.5">{r.free.map((t) => <span key={t} className="rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
-              <button className={r.free.length ? "btn-clay" : "btn-outline"} disabled={!r.free.length} onClick={() => onPick(r.prof, yp)}>{r.free.length ? `Choisir ${r.prof.firstName ?? "ce professeur"} →` : "Complet ce jour-là"}</button>
-            </div>
+              <div className="flex flex-wrap content-start gap-1.5">{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
+              <button className={(r.free.length ? "btn-clay" : "btn-outline") + " self-end"} disabled={!r.free.length} onClick={() => onPick(r.prof, yp)}>{r.free.length ? `Choisir ${r.prof.firstName ?? "ce professeur"} →` : "Complet ce jour-là"}</button>
+            </article>
           ))}</div>
         )
       ) : profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
