@@ -7,6 +7,7 @@ import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
 import { ClayHero, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
+import { CourseCalendar, DayHours, DaySheet, LessonSheet } from "../components/CourseCalendar";
 
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
@@ -36,14 +37,14 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, prof, price: basePrice, onClose, onSent }: { preview: boolean; prof: ProfCard | null; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
+function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onSent }: { preview: boolean; prof: ProfCard | null; date?: string; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
   const [err, setErr] = useState("");
   const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
   const price = basePrice && slot ? priceOn(basePrice, slot.date) : basePrice; // +10 € le dimanche
   const loadPlan = useCallback(() => { if (!prof) return; if (preview) { setPlan(previewPlanning(prof.slots)); return; } get<{ days: PlanDay[] }>(`/profs/${prof.id}/planning`).then((r) => setPlan(r.days)).catch(() => setPlan([])); }, [prof, preview]);
   useEffect(loadPlan, [loadPlan]);
-  const hasPlan = !!plan && plan.some((d) => d.slots.some((s) => s.free));
+  const hasPlan = !!plan && plan.some((d) => (!date || d.date === date) && d.slots.some((s) => s.free)); // si un jour est déjà choisi : seulement les heures de ce jour
   const chosen = slot ? plan?.find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time) : null;
   const [weekly, setWeekly] = useState(false); // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin
   const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
@@ -59,7 +60,7 @@ function NewLessonForm({ preview, prof, price: basePrice, onClose, onSent }: { p
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      {hasPlan && <ClayHero title="Choisis ton créneau" text={`${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
+      {hasPlan && <ClayHero title={date ? "Choisis ton heure" : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
       {prof ? (
         <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
       ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
@@ -89,8 +90,8 @@ function NewLessonForm({ preview, prof, price: basePrice, onClose, onSent }: { p
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
       {hasPlan ? (
-        <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>Choisis ton créneau <small className="font-body font-normal text-muted">(1 heure)</small></legend>
-          <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />
+        <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>{date ? "Choisis ton heure" : "Choisis ton créneau"} <small className="font-body font-normal text-muted">(1 heure)</small></legend>
+          {date ? <DayHours day={plan!.find((d) => d.date === date)} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} /> : <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />}
           {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
             <label className={"grid cursor-pointer gap-2 rounded-2xl border-2 p-4 " + (weekly ? "border-clay bg-[#fdf1ea] shadow-[0_5px_0_var(--color-clay)]" : "border-line bg-white")}>
               <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je prends ce créneau toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
@@ -168,6 +169,9 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
   const [step, setStep] = useState<null | "choose" | "form">(null); // choix du professeur, puis formulaire
   const [prof, setProf] = useState<ProfCard | null>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [askDate, setAskDate] = useState<string | undefined>(undefined); // jour choisi dans le calendrier
+  const [view, setView] = useState<"cal" | "liste">("cal");
+  const [sheet, setSheet] = useState<{ lesson: Lesson } | { day: string } | null>(null);
   const open = step !== null;
   const [sent, setSent] = useState<false | "request" | "booked">(false);
   const [serieInfo, setSerieInfo] = useState<{ count: number; skipped: { date: string; why: string }[] } | null>(null);
@@ -197,19 +201,32 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
   // Un cours confirmé est visible tout de suite en haut : on le marque comme vu dès que l'adulte ouvre « Mes cours »
   const unseenConfirmed = confirmed.filter((l) => isNew(l)).map((l) => l.id).join(",");
   useEffect(() => { confirmed.filter((l) => isNew(l)).forEach(onSeen); }, [unseenConfirmed]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ask = () => { setStep("choose"); setProf(null); setSent(false); setSerieInfo(null); };
+  const ask = (date?: string) => { setAskDate(date); setStep("choose"); setProf(null); setSent(false); setSerieInfo(null); window.scrollTo({ top: 0, behavior: "smooth" }); };
   return (
     <section aria-labelledby="t-cours" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
-        {!open && <button className="btn-clay" onClick={ask}>{c.button}</button>}
+        {!open && <button className="btn-clay" onClick={() => ask()}>{c.button}</button>}
       </div>
       {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
       <Err msg={cancelErr} />
-      {step === "choose" && <ProfChooser preview={preview} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} />}
-      {step === "form" && <NewLessonForm preview={preview} prof={prof} price={price} onClose={() => setStep(null)} onSent={(booked, info) => { setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
+      {step === "choose" && <ProfChooser preview={preview} date={askDate} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} />}
+      {step === "form" && <NewLessonForm preview={preview} prof={prof} date={askDate} price={price} onClose={() => setStep(null)} onSent={(booked, info) => { setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
       {next && <NextCourse l={next} onCancel={cancel} />}
-            {lessons.length > 0 && (
+      {!open && (
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="m-0 font-display text-xl">Mes cours à venir</h3>
+            <div role="group" aria-label="Façon de voir mes cours" className="flex gap-1.5">
+              {([["cal", "📆 Calendrier"], ["liste", "📋 Liste"]] as const).map(([k, l]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)} className={"rounded-full border-2 px-4 py-1.5 text-sm font-extrabold " + (view === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink")}>{l}</button>)}
+            </div>
+          </div>
+          {view === "cal" && <CourseCalendar lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
+        </div>
+      )}
+      {sheet && "lesson" in sheet && <LessonSheet l={sheet.lesson} onClose={() => setSheet(null)} onCancel={cancel} />}
+      {sheet && "day" in sheet && <DaySheet date={sheet.day} preview={preview} onClose={() => setSheet(null)} onReserve={() => { const d = sheet.day; setSheet(null); ask(d); }} />}
+      {view === "liste" && !open && lessons.length > 0 && (
         <div className="grid gap-3">
           <div role="tablist" aria-label="Mes cours" className="flex gap-1 rounded-2xl bg-sand p-1.5">
             {tabs.map((t) => <button key={t.k} role="tab" aria-selected={shownTab.k === t.k} onClick={() => setTab(t.k)} className={"min-h-11 flex-1 rounded-xl px-2 text-sm font-bold transition " + (shownTab.k === t.k ? "bg-ink text-white" : "text-ink hover:bg-white/70")}>{t.title} ({t.list.length}){t.list.some(isNew) && <span aria-label="nouveau" className="ml-1 inline-block h-2 w-2 rounded-full bg-clay align-middle" />}</button>)}
@@ -225,7 +242,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
           <span aria-hidden="true" className="text-5xl">🎾</span>
           <p className="m-0 text-lg font-bold">{c.emptyTitle}</p>
           <p className="m-0 max-w-md text-muted">{c.emptyText}</p>
-          <button className="btn-clay mt-1" onClick={ask}>{c.first}</button>
+          <button className="btn-clay mt-1" onClick={() => ask()}>{c.first}</button>
         </div>
       )}
     </section>
