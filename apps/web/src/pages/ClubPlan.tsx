@@ -278,10 +278,10 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
           const evs = events.filter((e) => covers(e, d) && e.kind !== "BULLE").concat(events.filter((e) => covers(e, d) && e.kind === "BULLE"));
           const out = d.slice(0, 7) !== month;
           const weekend = weekdayOf(d) >= 5;
-          const bg = d === first ? "border-2 border-clay bg-[#ffe0cc] shadow-md" : d === today ? "border-2 border-clay bg-[#fff6ef] shadow-md" : out ? "border border-[#ece4d8] bg-[#f6f2ea] opacity-50" : isVacation(d) ? "border border-[#c5d5ee] bg-[#eaf1fb]" : weekend ? "border border-[#ece4d8] bg-[#fbf7f0]" : "border border-[#ece4d8] bg-white";
+          const bg = d === first ? "border-2 border-clay bg-[#ffd9c2] shadow-md" : d === today ? "border-2 border-clay bg-[#fff1c2] shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#7f9fd0] bg-[#d9e6f8]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
           return (
             <div key={d} onClick={() => click(d)}
-              className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
+              className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
                 {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>)}
@@ -499,7 +499,7 @@ function saveBlob(blob: Blob, name: string) {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
-const POSTER_KINDS = ["TOURNOI", "ANIMATION", "STAGE_ENFANTS", "STAGE_ADULTES", "FETE", "FETE_ECOLE"];
+const POSTER_KINDS = ["TOURNOI", "ANIMATION", "STAGE_ENFANTS", "STAGE_ADULTES", "FETE", "FETE_ECOLE", "JUMELAGE"];
 const hasPoster = (e: ClubEvent) => !!(e.time || e.place || e.signup || e.audience || e.bring || (e.formulas ?? []).length);
 
 // ───────────── Menu d'un jour : on coche ce qui s'y passe (plusieurs choix possibles) ─────────────
@@ -597,9 +597,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   };
   const FAMILIES: { name: string; icon: string; color: string; kinds: string[] }[] = [
     { name: "Compétition", icon: "🏆", color: "#D35400", kinds: ["TOURNOI", "EQUIPES"] },
-    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE"] },
+    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE", "JUMELAGE"] },
     { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
-    { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "TERRE_BATTUE"] },
+    { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE"] },
     { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };

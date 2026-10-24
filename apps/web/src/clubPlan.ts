@@ -1,7 +1,7 @@
 // Planning du club : types d'événements, courts, moments, catégories d'équipes et conflits (copie de apps/api/src/club/club.constants.ts)
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
-export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "BULLE_MONTAGE_TB" | "BULLE_MONTAGE_QUICK" | "BULLE_DEMONTAGE_TB" | "BULLE_DEMONTAGE_QUICK" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "DEBUT_COURS" | "FIN_COURS";
+export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "BULLE_MONTAGE_TB" | "BULLE_MONTAGE_QUICK" | "BULLE_DEMONTAGE_TB" | "BULLE_DEMONTAGE_QUICK" | "MAINT_BULLE_TB" | "MAINT_BULLE_QUICK" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "JUMELAGE" | "DEBUT_COURS" | "FIN_COURS";
 export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean; courts?: number[] }
 // Les choix proposés dans le menu d'une case du jour (rangés par famille)
 export const KINDS: KindInfo[] = [
@@ -14,8 +14,11 @@ export const KINDS: KindInfo[] = [
   { key: "BULLE_DEMONTAGE_TB", label: "Démontage de la bulle · terre battue", color: "#873600", icon: "🎈", group: "Terrains", who: false, courts: [1, 2] },
   { key: "BULLE_MONTAGE_QUICK", label: "Montage de la bulle · quick", color: "#D4AC0D", icon: "🎈", group: "Terrains", who: false, courts: [3, 4] },
   { key: "BULLE_DEMONTAGE_QUICK", label: "Démontage de la bulle · quick", color: "#9A7D0A", icon: "🎈", group: "Terrains", who: false, courts: [3, 4] },
+  { key: "MAINT_BULLE_TB", label: "Maintenance de la bulle · terre battue", color: "#E67E22", icon: "🛠️", group: "Terrains", who: true, courts: [1, 2] },
+  { key: "MAINT_BULLE_QUICK", label: "Maintenance de la bulle · quick", color: "#B7950B", icon: "🛠️", group: "Terrains", who: true, courts: [3, 4] },
   { key: "TERRE_BATTUE", label: "Réfection de la terre battue", color: "#C0392B", icon: "🧱", group: "Terrains", who: false },
   { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085", icon: "📝", group: "Vie du club", who: false },
+  { key: "JUMELAGE", label: "Jumelage", color: "#5B2C83", icon: "🤝", group: "Vie du club", who: true },
   { key: "FETE", label: "Fête du club", color: "#E84393", icon: "🥳", group: "Vie du club", who: true },
   { key: "FETE_ECOLE", label: "Fête de l'école de tennis", color: "#00ACC1", icon: "🎊", group: "Vie du club", who: true },
   { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
