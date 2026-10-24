@@ -1,3 +1,4 @@
+import { COURT_M } from "./CourtLines";
 // Icônes en traits fins pour le thème « ados » (tout est dessiné ici : aucune image extérieure)
 const P: Record<string, string> = {
   "🏠": "M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10",
@@ -40,6 +41,24 @@ export function TeenIcon({ e, size = 20 }: { e: string; size?: number }) {
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
 
+// Court en perspective : les lignes sont CALCULÉES à partir des vraies mesures (23,77 × 10,97 m, couloirs 1,37 m, service à 6,40 m du filet)
+// pour le même contour que le dessin (bord proche : x 70 → 440 à y 300 ; bord lointain : x 170 → 520 à y 40).
+const PERSPECTIVE = (() => {
+  const L = COURT_M.length, W = COURT_M.width, D = 416; // D : recul de l'observateur (m) : perspective douce
+  const f = (v: number) => (1 / D - 1 / (D + v)) / (1 / D - 1 / (D + L)); // 0 = bord proche, 1 = bord lointain
+  const pt = (u: number, v: number): [number, number] => {
+    const t = f(v), cx = 255 + (345 - 255) * t, half = (370 + (350 - 370) * t) / 2;
+    return [Math.round((cx + ((u - W / 2) / W) * 2 * half) * 10) / 10, Math.round((300 - 260 * t) * 10) / 10];
+  };
+  const seg = (u1: number, v1: number, u2: number, v2: number) => { const a = pt(u1, v1), b = pt(u2, v2); return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; };
+  const a = COURT_M.alley, s1 = L / 2 - COURT_M.service, s2 = L / 2 + COURT_M.service;
+  return {
+    lines: [seg(a, 0, a, L), seg(W - a, 0, W - a, L), seg(a, s1, W - a, s1), seg(a, s2, W - a, s2), seg(W / 2, s1, W / 2, s2)],
+    net: seg(-0.6, L / 2, W + 0.6, L / 2),
+  };
+})();
+const PERSPECTIVE_LINES = PERSPECTIVE.lines, PERSPECTIVE_NET = PERSPECTIVE.net;
+
 // Court en perspective avec la trajectoire d'une balle (décor du bandeau d'accueil)
 export function CourtArt({ className = "" }: { className?: string }) {
   return (
@@ -53,8 +72,9 @@ export function CourtArt({ className = "" }: { className?: string }) {
       </defs>
       <g transform="translate(40 30)">
         <path d="M70 300L440 300L520 40L170 40Z" fill="url(#ta-fl)" stroke="#ffffff66" strokeWidth="2" />
-        <g stroke="#ffffff55" strokeWidth="2" fill="none"><path d="M118 170H480" /><path d="M144 105H500" /><path d="M92 235H460" /><path d="M322 105L299 235" /><path d="M170 40L70 300M520 40L440 300" /></g>
-        <path d="M118 170H480" stroke="#c6ff3d" strokeWidth="2.5" fill="none" filter="url(#ta-gw)" opacity=".7" />
+        <g stroke="#ffffff55" strokeWidth="2" fill="none">{PERSPECTIVE_LINES.map((d, i) => <path key={i} d={d} />)}</g>
+        <path d={PERSPECTIVE_NET} stroke="#ffffffcc" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+        <path d={PERSPECTIVE_NET} stroke="#c6ff3d" strokeWidth="2.5" fill="none" filter="url(#ta-gw)" opacity=".7" />
         <path d="M140 270C230 -20 360 -10 440 120" fill="none" stroke="url(#ta-tr)" strokeWidth="3.5" strokeLinecap="round" />
         <path d="M140 270C230 -20 360 -10 440 120" fill="none" stroke="#c6ff3d" strokeWidth="1.2" strokeDasharray="2 10" strokeLinecap="round" opacity=".8" />
         <ellipse cx="442" cy="158" rx="46" ry="12" fill="none" stroke="#c6ff3d" strokeOpacity=".6" /><ellipse cx="442" cy="158" rx="24" ry="6" fill="none" stroke="#c6ff3d" strokeOpacity=".9" />

@@ -5,6 +5,7 @@ import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
+import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
@@ -94,7 +95,7 @@ export function ClubPlan() {
       <div className="grid gap-3">
         <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#d0592b] via-[#a63e1a] to-[#7d2c12] px-5 py-5 text-white shadow-md">
-          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="none" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><rect x="10" y="8" width="380" height="84" /><line x1="200" y1="8" x2="200" y2="92" /><line x1="70" y1="8" x2="70" y2="92" /><line x1="330" y1="8" x2="330" y2="92" /><line x1="70" y1="50" x2="330" y2="50" /></g></svg>
+          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><CourtLines cx={200} y={12} h={76} netWidth={2} /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <ClubLogo className="size-16 text-white drop-shadow" />

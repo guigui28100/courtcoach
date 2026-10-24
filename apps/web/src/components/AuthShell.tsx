@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { CourtLines } from "./CourtLines";
 
 // Habillage des pages de connexion : un panneau « terrain de tennis » à gauche, le formulaire à droite (en haut sur téléphone).
 export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebrow?: string; title: string; subtitle?: ReactNode; children: ReactNode; tour?: boolean }) {
@@ -6,8 +7,8 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
     <>
     <div className="grid lg:min-h-[calc(100dvh-125px)] lg:grid-cols-[1fr_1.1fr]">
       <aside className="relative overflow-hidden bg-gradient-to-br from-clay to-[#7d2d12] px-6 py-8 text-white lg:px-12 lg:py-14" aria-label="Présentation">
-        <svg viewBox="0 0 240 150" className="pointer-events-none absolute -bottom-6 -right-10 w-[22rem] text-white/15 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-          <rect x="10" y="10" width="220" height="130" rx="6" /><path d="M120 10v130M10 75h220M45 28v94M195 28v94M45 75h150" strokeLinecap="round" />
+        <svg viewBox="0 0 260 120" className="pointer-events-none absolute -bottom-6 -right-10 w-[22rem] text-white/15 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+          <CourtLines cx={130} y={6} h={108} netWidth={4} />
         </svg>
         <div className="relative grid max-w-md gap-4">
           <span className="grid h-14 w-14 place-items-center rounded-full bg-ball shadow-lg" aria-hidden="true">

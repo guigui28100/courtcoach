@@ -1,3 +1,4 @@
+import { CourtLines } from "./CourtLines";
 // Petits éléments graphiques de l'univers « galaxie » (tout est dessiné ici : aucune image ni police extérieure).
 export const Stars = () => (<><div className="stars" aria-hidden="true" /><div className="stars stars2" aria-hidden="true" /></>);
 
@@ -24,15 +25,15 @@ export function Planet({ className = "" }: { className?: string }) {
 // Thème « ados » : un court de tennis dessiné en lignes fines, avec une balle (sobre, sans décor d'enfant)
 export function CourtMark({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 220 200" role="img" aria-label="Un court de tennis" className={"w-full " + className}>
-      <g fill="none" stroke="#fff" strokeWidth="2" opacity="0.55" strokeLinejoin="round">
-        <rect x="30" y="26" width="160" height="148" rx="4" />
-        <path d="M30 100 H190" strokeWidth="3" opacity="0.9" />
-        <path d="M58 26 V174 M162 26 V174 M58 63 H162 M58 137 H162 M110 63 V137" />
+    <svg viewBox="0 0 220 140" role="img" aria-label="Un court de tennis" className={"w-full " + className}>
+      <g fill="none" stroke="#fff" strokeWidth="1.6" opacity="0.6" strokeLinejoin="round">
+        <CourtLines cx={110} y={34} h={92} netWidth={3} />
       </g>
-      <circle cx="150" cy="52" r="13" fill="#dcf247" />
-      <path d="M140 44 C 148 50 148 56 140 62" fill="none" stroke="#0b1220" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
-      <path d="M160 44 C 152 50 152 56 160 62" fill="none" stroke="#0b1220" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
+      <g transform="translate(150 24)">
+        <circle r="13" fill="#dcf247" />
+        <path d="M-10 -8 C -2 -2 -2 4 -10 10" fill="none" stroke="#0b1220" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
+        <path d="M10 -8 C 2 -2 2 4 10 10" fill="none" stroke="#0b1220" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
+      </g>
     </svg>
   );
 }

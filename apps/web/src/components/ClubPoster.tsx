@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
+import { CourtLines } from "./CourtLines";
 import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
@@ -63,30 +64,12 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
   <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: color, WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
-// Vrai terrain de tennis aux bonnes proportions (23,77 m × 10,97 m, couloirs de 1,37 m, lignes de service à 6,40 m du filet) : longueur à l'horizontale
-function CourtLines() {
-  const H = 228, k = H / 10.97, L = 23.77 * k, x0 = (794 - L) / 2, y0 = 24;
-  const alley = 1.37 * k, mid = x0 + L / 2, svc = 6.4 * k, yMid = y0 + H / 2;
-  const n = (v: number) => Math.round(v * 10) / 10;
-  return (
-    <>
-      <rect x={n(x0)} y={y0} width={n(L)} height={H} />
-      <line x1={n(x0)} y1={n(y0 + alley)} x2={n(x0 + L)} y2={n(y0 + alley)} />
-      <line x1={n(x0)} y1={n(y0 + H - alley)} x2={n(x0 + L)} y2={n(y0 + H - alley)} />
-      <line x1={n(mid - svc)} y1={n(y0 + alley)} x2={n(mid - svc)} y2={n(y0 + H - alley)} />
-      <line x1={n(mid + svc)} y1={n(y0 + alley)} x2={n(mid + svc)} y2={n(y0 + H - alley)} />
-      <line x1={n(mid - svc)} y1={n(yMid)} x2={n(mid + svc)} y2={n(yMid)} />
-      <line x1={n(mid)} y1={y0 - 6} x2={n(mid)} y2={y0 + H + 6} strokeWidth="6" />
-    </>
-  );
-}
-
 function Header({ m }: { m: string }) {
   const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#d0592b 0%,#a63e1a 55%,#7d2c12 100%)", color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
-        <CourtLines />
+        <CourtLines cx={397} y={24} h={228} netWidth={6} />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
