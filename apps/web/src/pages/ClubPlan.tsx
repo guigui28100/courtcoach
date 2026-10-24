@@ -48,6 +48,7 @@ export function ClubPlan() {
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
   const navLabel = view === "annee" ? `Année ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
   const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
@@ -105,11 +106,8 @@ export function ClubPlan() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {!readOnly && (<>
-              <button type="button" className="rounded-xl bg-[#dff04a] px-4 py-2.5 font-extrabold text-[#1b1863] shadow hover:brightness-95" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
-              <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setPosterOpen(true)}>🖨️ Affiche du mois</button>
-              <button type="button" className="rounded-xl border-2 border-white bg-white px-4 py-2 font-extrabold text-[#1b1863] shadow-md hover:bg-[#fff1c2]" onClick={() => setSettingsOpen(true)}>⚙️ Réglages</button>
-              </>)}
+              {!readOnly && <button type="button" className="rounded-xl bg-white px-4 py-2.5 font-extrabold text-[#b8471f] shadow-md hover:bg-[#fff1c2]" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
+              <button type="button" className="rounded-xl border-2 border-white/60 bg-white/15 px-4 py-2.5 font-extrabold text-white hover:bg-white/25" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "📤 Exporter" : "⋯ Affiche, export, réglages"}</button>
             </div>
           </div>
         </section>
@@ -130,13 +128,24 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-[#16a34a] bg-[#e8f7ee] px-3 py-2">
-          <span className="text-sm font-bold text-[#14532d]">📋 Besoin du planning en dehors du site ? Dossier de saison en PDF ou agenda du téléphone.</span>
-          <button type="button" className="whitespace-nowrap rounded-xl border-2 border-[#166534] bg-[#16a34a] px-4 py-2 font-extrabold text-white shadow hover:bg-[#15803d]" onClick={() => setExportOpen(true)}>📤 Exporter le planning</button>
-        </div>
-        {view === "mois" && !readOnly && <p className="m-0 px-1 text-sm text-muted">💡 Touche un jour pour y placer un événement.</p>}
         {readOnly && <p className="m-0 rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
       </div>
+      {moreOpen && (
+        <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
+          <div className="grid gap-2">
+            {[
+              ...(readOnly ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
+              { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
+              ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
+            ].map((o) => (
+              <button key={o.t} type="button" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 text-left hover:border-ink" onClick={() => { setMoreOpen(false); o.go(); }}>
+                <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#f3efe6] text-2xl">{o.i}</span>
+                <span><b className="block text-ink">{o.t}</b><span className="text-sm text-muted">{o.d}</span></span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={readOnly ? setActionEv : openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
@@ -263,16 +272,16 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-7 gap-1.5 text-center text-sm font-extrabold text-ink">{DAYS.map((d) => <span key={d} className="rounded-lg bg-ink py-1 text-white">{d.slice(0, 3)}</span>)}</div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#8a7f72]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-2.5">
         {rows.map((d) => {
           const evs = events.filter((e) => covers(e, d) && e.kind !== "BULLE").concat(events.filter((e) => covers(e, d) && e.kind === "BULLE"));
           const out = d.slice(0, 7) !== month;
           const weekend = weekdayOf(d) >= 5;
-          const bg = d === first ? "border-4 border-clay bg-[#ffe0cc]" : d === today ? "border-4 border-clay bg-[#fff1c2]" : out ? "border-2 border-[#b6bdcc] bg-[#e4e8ef] opacity-70" : isVacation(d) ? "border-2 border-[#5f7fb0] bg-[#dbe7f8]" : weekend ? "border-2 border-[#5b6680] bg-[#eef1f7]" : "border-2 border-[#5b6680] bg-white";
+          const bg = d === first ? "border-2 border-clay bg-[#ffe0cc] shadow-md" : d === today ? "border-2 border-clay bg-[#fff6ef] shadow-md" : out ? "border border-[#ece4d8] bg-[#f6f2ea] opacity-50" : isVacation(d) ? "border border-[#c5d5ee] bg-[#eaf1fb]" : weekend ? "border border-[#ece4d8] bg-[#fbf7f0]" : "border border-[#ece4d8] bg-white";
           return (
             <div key={d} onClick={() => click(d)}
-              className={`min-h-[104px] cursor-pointer rounded-xl p-1.5 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
+              className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-sm hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
                 {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>)}
