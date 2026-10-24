@@ -26,7 +26,27 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
 const TONE = { ACCEPTED: "bg-[#15803d] text-white", BOOKED: "border-2 border-[#e0b100] bg-[#fff1c2] text-[#7a5a00]", REFUSED: "bg-[#fde8e8] text-[#b42318] line-through" } as const;
 const MARK = { ACCEPTED: "✔", BOOKED: "⏳", REFUSED: "✖" } as const;
 
-export function CourseCalendar({ lessons, onLesson, onDay }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void }) {
+// Nombre de créneaux libres de chaque jour (tous les professeurs ensemble) : affiché dans le calendrier avant de cliquer
+export function useFreeCounts(preview: boolean) {
+  const [data, setData] = useState<{ counts: Map<string, number>; last: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const profs = preview ? EXAMPLE_PROFS : (await get<{ profs: ProfCard[] }>("/profs")).profs;
+        const all = await Promise.all(profs.filter((p) => !p.paused).map(async (p) => { try { return preview ? previewPlanning(p.slots) : (await get<{ days: PlanDay[] }>(`/profs/${p.id}/planning`)).days; } catch { return [] as PlanDay[]; } }));
+        const counts = new Map<string, number>(); let last = "";
+        for (const days of all) for (const d of days) { if (d.date > last) last = d.date; counts.set(d.date, (counts.get(d.date) ?? 0) + d.slots.filter((x) => x.free).length); }
+        if (live && last) setData({ counts, last });
+      } catch { /* sans les nombres, le calendrier garde son ＋ */ }
+    })();
+    return () => { live = false; };
+  }, [preview]);
+  return data;
+}
+
+export function CourseCalendar({ lessons, onLesson, onDay, preview = false }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void; preview?: boolean }) {
+  const avail = useFreeCounts(preview);
   const shown = useMemo(() => lessons.filter((l) => l.finalSlot && (l.status === "ACCEPTED" || l.status === "BOOKED" || l.status === "REFUSED")), [lessons]);
   const first = shown.filter((l) => l.status !== "REFUSED" && l.finalSlot!.date >= todayIso()).sort((a, b) => a.finalSlot!.date.localeCompare(b.finalSlot!.date))[0];
   const [month, setMonth] = useState((first?.finalSlot?.date ?? todayIso()).slice(0, 7));
@@ -49,14 +69,17 @@ export function CourseCalendar({ lessons, onLesson, onDay }: { lessons: Lesson[]
         {cells.map((d, i) => {
           if (!d) return <span key={i} />;
           const here = shown.filter((l) => l.finalSlot!.date === d);
-          const free = here.length === 0 && d > today;
+          const n = avail ? (avail.counts.get(d) ?? 0) : undefined; // créneaux libres ce jour-là (undefined = pas encore connu)
+          const free = here.length === 0 && d > today && (n === undefined || n > 0);
+          const closed = here.length === 0 && d > today && avail !== null && d <= avail.last && n === 0; // dans la période réservable mais plus rien de libre
           const weekend = i % 7 >= 5;
           return (
-            <div key={d} role={free ? "button" : undefined} tabIndex={free ? 0 : undefined} aria-label={free ? `${dayLong(d)} : aucun cours, réserver` : undefined}
+            <div key={d} role={free ? "button" : undefined} tabIndex={free ? 0 : undefined} aria-label={free ? `${dayLong(d)} : ${n === undefined ? "aucun cours, réserver" : `${n} créneau${n > 1 ? "x" : ""} libre${n > 1 ? "s" : ""}, réserver`}` : undefined}
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
               className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : d < today ? "opacity-60" : "")}>
               <b className={"text-sm " + (d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
-              {free && <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span>}
+              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-1 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs">＋ {n} libre{n > 1 ? "s" : ""}</span>)}
+              {closed && <span className="mt-1 block text-center text-[0.65rem] font-bold text-muted sm:text-xs">complet</span>}
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
                   <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-extrabold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
@@ -68,7 +91,7 @@ export function CourseCalendar({ lessons, onLesson, onDay }: { lessons: Lesson[]
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>＋ Jour libre : touche-le pour réserver</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>＋ N libres : nombre de créneaux libres, touche le jour pour réserver</span></p>
     </div>
   );
 }
