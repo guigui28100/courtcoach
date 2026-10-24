@@ -63,12 +63,30 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
   <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: color, WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
+// Vrai terrain de tennis aux bonnes proportions (23,77 m × 10,97 m, couloirs de 1,37 m, lignes de service à 6,40 m du filet) : longueur à l'horizontale
+function CourtLines() {
+  const H = 228, k = H / 10.97, L = 23.77 * k, x0 = (794 - L) / 2, y0 = 24;
+  const alley = 1.37 * k, mid = x0 + L / 2, svc = 6.4 * k, yMid = y0 + H / 2;
+  const n = (v: number) => Math.round(v * 10) / 10;
+  return (
+    <>
+      <rect x={n(x0)} y={y0} width={n(L)} height={H} />
+      <line x1={n(x0)} y1={n(y0 + alley)} x2={n(x0 + L)} y2={n(y0 + alley)} />
+      <line x1={n(x0)} y1={n(y0 + H - alley)} x2={n(x0 + L)} y2={n(y0 + H - alley)} />
+      <line x1={n(mid - svc)} y1={n(y0 + alley)} x2={n(mid - svc)} y2={n(y0 + H - alley)} />
+      <line x1={n(mid + svc)} y1={n(y0 + alley)} x2={n(mid + svc)} y2={n(y0 + H - alley)} />
+      <line x1={n(mid - svc)} y1={n(yMid)} x2={n(mid + svc)} y2={n(yMid)} />
+      <line x1={n(mid)} y1={y0 - 6} x2={n(mid)} y2={y0 + H + 6} strokeWidth="6" />
+    </>
+  );
+}
+
 function Header({ m }: { m: string }) {
   const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#d0592b 0%,#a63e1a 55%,#7d2c12 100%)", color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
-        <rect x="40" y="40" width="714" height="230" /><line x1="397" y1="40" x2="397" y2="270" /><line x1="40" y1="95" x2="754" y2="95" /><line x1="40" y1="215" x2="754" y2="215" /><line x1="215" y1="95" x2="215" y2="215" /><line x1="579" y1="95" x2="579" y2="215" /><line x1="215" y1="155" x2="579" y2="155" />
+        <CourtLines />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
@@ -124,19 +142,19 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période : le carré est coupé en diagonale (bas gauche → haut droite) ; premier jour en haut à gauche, dernier jour en bas à droite
-              <div style={{ position: "relative", width: "31%", flex: "0 0 31%", minHeight: 200, color: "#fff", overflow: "hidden" }}>
+              <div style={{ position: "relative", width: "31%", flex: "0 0 31%", minHeight: 225, color: "#fff", overflow: "hidden" }}>
                 <svg aria-hidden width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0 }}>
                   <polygon points="0,0 100,0 0,100" fill={shade(c, 0.9)} />
                   <polygon points="100,0 100,100 0,100" fill={shade(c, 0.62)} />
                   <line x1="0" y1="100" x2="100" y2="0" stroke="#fff" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
                 </svg>
                 <div style={{ position: "absolute", left: 14, top: 10, textAlign: "left" }}>
-                  <div style={{ ...dayName, fontSize: 17 }}>{DAYS[weekdayOf(e.startDate)]}</div>
+                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.startDate)]}</div>
                   <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
                   <div style={line}>{MOIS[+e.startDate.slice(5, 7) - 1]}</div>
                 </div>
                 <div style={{ position: "absolute", right: 14, bottom: 10, textAlign: "right" }}>
-                  <div style={{ ...dayName, fontSize: 17 }}>{DAYS[weekdayOf(e.endDate)]}</div>
+                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.endDate)]}</div>
                   <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
                   <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
                 </div>
