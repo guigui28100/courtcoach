@@ -39,19 +39,16 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
 
 
 // Carte d'un parcours en étapes : ouverte (on la remplit), faite (résumé + « Modifier ») ou verrouillée (grisée, s'ouvrira après la précédente)
-function StepCard({ n, title, state, summary, onEdit, children }: { n: number; title: string; state: "open" | "done" | "locked"; summary: string; onEdit: () => void; children: ReactNode }) {
+function StepCard({ title, state, children }: { n: number; title: string; state: "open" | "done" | "locked"; summary: string; onEdit: () => void; children: ReactNode }) {
+  if (state !== "open") return <div className="hidden">{children}</div>;
   return (
-    <section aria-label={title} className={"grid gap-3 rounded-3xl border-2 p-4 sm:p-5 " + (state === "open" ? "border-clay bg-white shadow-sm" : state === "done" ? "border-[#bbe5c8] bg-[#f3fbf6]" : "border-line bg-sand/60 opacity-70")}>
-      <div className="flex flex-wrap items-center gap-3">
-        <span aria-hidden="true" className={"grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white " + (state === "done" ? "bg-ok" : state === "open" ? "bg-clay" : "bg-muted")}>{state === "done" ? "✔" : n}</span>
-        <h3 className="m-0 font-display text-lg">{title}</h3>
-        {state === "done" && <><span className="font-bold text-[#166534]">{summary}</span><button type="button" className="btn-outline btn-sm ml-auto" onClick={onEdit}>Modifier</button></>}
-        {state === "locked" && <span className="text-sm text-muted">à remplir ensuite</span>}
-      </div>
-      <div className={state === "open" ? "grid gap-3" : "hidden"}>{children}</div>
+    <section aria-label={title} className="grid gap-4 rounded-3xl border-2 border-clay bg-white p-4 shadow-sm sm:p-6">
+      <h3 className="m-0 font-display text-xl">{title}</h3>
+      <div className="grid gap-3">{children}</div>
     </section>
   );
 }
+
 type Recap = { when: string; prof: string; price: number | null };
 function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack, onSent }: { preview: boolean; prof: ProfCard | null; date?: string; onBack?: () => void; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }, recap?: Recap) => void }) {
   const [err, setErr] = useState("");
@@ -100,8 +97,7 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
     const heureTxt = slot && chosen ? `${fmtPlanSlot(slot.date, chosen.time, chosen.end)}${weekly ? " · 🔁 chaque semaine" : ""}` : "";
     return (
       <form onSubmit={send} className="grid gap-4 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-        <button type="button" className="justify-self-start border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => onBack?.()}>← Changer de professeur</button>
-        <ClayHero labels={DAY_STEPS} title={`Ton cours avec ${profName(prof)}`} text={`${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · cours d'1 heure${price ? ` · ${price} € la séance, à régler directement avec lui` : ""}`} step={openId === "heure" || cur === "heure" ? 2 : 3} />
+        <button type="button" className="justify-self-start border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => (openId === "heure" ? onBack?.() : setForced(openId === "type" ? "heure" : openId === "sujet" ? "type" : "sujet"))}>{openId === "heure" ? "← Changer de professeur" : "← Retour"}</button>
         {plan !== null && !hasPlan && <p className="m-0 rounded-2xl bg-[#fff3cd] p-4 font-bold text-[#7a5a00]">📅 Plus de créneau libre ce jour-là avec ce professeur. Change de professeur ou de jour.</p>}
         {plan === null && <div className="skeleton h-24" role="status" aria-label="Chargement du planning" />}
         <StepCard n={1} title="À quelle heure ?" state={stateOf("heure")} summary={heureTxt} onEdit={() => setForced("heure")}>
@@ -139,11 +135,11 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
         <StepCard n={3} title="Sur quoi veux-tu travailler ?" state={stateOf("sujet")} summary={objSel ?? ""} onEdit={() => setForced("sujet")}>
           <div className="flex flex-wrap gap-2">{GOALS.map((g) => <button key={g} type="button" aria-pressed={objSel === g} onClick={() => pick(setObjSel, g)} className={"min-h-11 rounded-full border-2 px-4 font-semibold transition-colors " + (objSel === g ? "border-clay bg-[#fdf1ea] text-clay" : "border-line bg-white hover:border-clay/50")}>{g}</button>)}</div>
         </StepCard>
-        <div className={cur === "final" && !forced ? "grid gap-4" : "hidden"}>
+        <div className={cur === "final" && !forced ? "grid gap-4 rounded-3xl border-2 border-clay bg-white p-4 shadow-sm sm:p-6" : "hidden"}>
           <Field label={`Un message pour ${prof?.firstName ?? "ton professeur"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>
           <Err msg={err} />
           <p className="m-0 text-sm text-muted">Ton créneau est mis de côté : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} doit le confirmer (sous 48 h, sinon il est libéré). Tu peux annuler depuis « Mes cours ».</p>
-          {slot && chosen && <div className="rounded-2xl bg-ink p-4 text-white"><strong className="text-lg">Ton créneau : {fmtPlanSlot(slot.date, chosen.time, chosen.end)}</strong><br /><span className="text-sm text-white/80">avec {profName(prof)}{price ? ` · ${price} € à régler directement avec lui` : ""}{weekly ? " · 🔁 chaque semaine" : ""}</span></div>}
+          {slot && chosen && <div className="rounded-2xl bg-ink p-4 text-white"><strong className="text-lg">Ton créneau : {fmtPlanSlot(slot.date, chosen.time, chosen.end)}</strong><br /><span className="text-sm text-white/80">avec {profName(prof)} · {typeSel ? TYPE_UI[typeSel]?.[1] : ""} · {objSel}{price ? ` · ${price} € à régler directement avec lui` : ""}{weekly ? " · 🔁 chaque semaine" : ""}</span></div>}
           <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={!doneHeure || !doneType || !doneSujet}>{chosen && slot ? (weekly ? `✅ Réserver : ${everyDay(slot)}` : `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}`) : "Choisis un créneau"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
         </div>
         {!(cur === "final" && !forced) && <><Err msg={err} /><div><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div></>}
@@ -315,7 +311,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
       <Err msg={cancelErr} />
       {step === "choose" && <ProfChooser preview={preview} date={askDate} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} />}
       {step === "form" && <NewLessonForm preview={preview} prof={prof} date={askDate} price={price} onBack={() => setStep("choose")} onClose={() => setStep(null)} onSent={(booked, info, rc) => { setRecap(rc ?? null); setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
-      {next && <NextCourse l={next} onCancel={cancel} />}
+      {next && !open && <NextCourse l={next} onCancel={cancel} />}
       {!open && (
         <div className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
