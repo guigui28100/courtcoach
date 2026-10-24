@@ -1,4 +1,5 @@
 import { YVELINES_CLUBS } from "../yvelinesClubs";
+import { RANKINGS } from "../types";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
@@ -7,14 +8,14 @@ import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { CourtLines } from "../components/CourtLines";
-import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
+import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
-  Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, teamLabel, textOn, titleOf, todayParis,
+  Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, teamLabel, teamCat, textOn, titleOf, todayParis,
   vacationWeeks, VENUE_AWAY, VENUE_HOME, weekdayOf,
 } from "../clubPlan";
 
@@ -535,7 +536,7 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
       <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
         {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
       </div>
-      <ul className={`m-0 grid ${compact ? "max-h-36" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
+      <ul className={`m-0 grid ${compact ? "max-h-28" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
         {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
         {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
       </ul>
@@ -547,6 +548,7 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
 const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
 function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
   const [i, setI] = useState(0);
+  const [ti, setTi] = useState(0); // équipe dont on choisit le club adverse
   const away = c.info.place === VENUE_AWAY;
   const steps = ["teams", "club", "venue", ...(away ? [] : ["courts"]), "hour", "end"] as const;
   const cur = steps[Math.min(i, steps.length - 1)];
@@ -572,11 +574,14 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
   const many = c.teams.length > 1;
   const clubOf = (t: string) => c.clubs?.[t] ?? "";
   if (cur === "club") return card(many ? "Contre quel club ? (un par équipe)" : "Contre quel club ?", many ? <>
-    {c.teams.map((t) => (
-      <div key={t} className="grid gap-1 rounded-xl border-2 border-line bg-white p-2">
-        <b className="text-sm text-ink">🎾 {teamLabel(t)}</b>
-        <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />
-      </div>))}
+    <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Équipe à régler">
+      {c.teams.map((t, n) => (
+        <button key={t} type="button" role="tab" aria-selected={Math.min(ti, c.teams.length - 1) === n} onClick={() => setTi(n)}
+          className={"rounded-xl border-2 px-2.5 py-1.5 text-left text-xs font-extrabold leading-tight " + (Math.min(ti, c.teams.length - 1) === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+          <span className="block">{teamLabel(t)}</span><span className="block font-bold opacity-80">{clubOf(t) ? `✔ ${clubOf(t)}` : "club à choisir"}</span>
+        </button>))}
+    </div>
+    {(() => { const t = c.teams[Math.min(ti, c.teams.length - 1)]; return <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />; })()}
     <button type="button" className="justify-self-start text-sm font-bold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
     <small className="text-muted">Facultatif : laisse vide une équipe dont l'adversaire n'est pas connu.</small><Nav skip /></> : <>
     <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
@@ -610,6 +615,106 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
+}
+
+// Tournoi : des CARTES qui s'ouvrent l'une après l'autre (type → catégorie → classements si TMC → surface → horaires → dernier détail)
+const TOUR_TYPES = [{ key: "TMC", label: "TMC", sub: "Tournoi multi-chances : des matchs garantis, entre joueurs de niveaux proches", icon: "🎯" }, { key: "OPEN", label: "Tournoi open", sub: "Ouvert à tous les niveaux, sans limite de classement", icon: "🏆" }] as const;
+const tourWord = (key: string) => (key === "sen-m" ? "messieurs" : key === "sen-d" ? "dames" : teamCat(key)?.label ?? "");
+// Ce qui est gardé dans « audience » : la grande famille (pour la couleur de l'affiche) puis, si utile, le détail
+const tourAudience = (key: string) => {
+  const base = key.startsWith("gar-") || key.startsWith("fil-") ? "Jeunes" : key.endsWith("-m") ? "Messieurs (adultes)" : "Dames (adultes)";
+  const detail = base === "Jeunes" ? teamCat(key)?.label ?? "" : key.startsWith("vet-") ? `+${key.split("-")[1]} ans` : "";
+  return detail ? `${base} · ${detail}` : base;
+};
+function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; crew: { name: string; role: string }[]; onPeople: () => void }) {
+  const [i, setI] = useState(0);
+  const [type, setType] = useState<"" | "TMC" | "OPEN">("");
+  const [pub, setPub] = useState<"jeunes" | "seniors">("seniors");
+  const [catKey, setCatKey] = useState("");
+  const [bas, setBas] = useState("");
+  const [haut, setHaut] = useState("");
+  const [edited, setEdited] = useState(false);
+  const tmc = type === "TMC";
+  const steps = ["type", "cat", ...(tmc ? ["rank"] : []), "surface", "when", "end"] as const;
+  const cur = steps[Math.min(i, steps.length - 1)];
+  const next = () => setI((x) => Math.min(x + 1, steps.length - 1));
+  const rankOk = !bas || !haut || RANKINGS.indexOf(bas) <= RANKINGS.indexOf(haut);
+  const range = tmc && bas && haut && rankOk ? ` de ${bas} à ${haut}` : "";
+  const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${tourWord(catKey)}${range}` : "";
+  const info = (p: Partial<PosterInfo>) => patch({ info: { ...c.info, ...p } });
+  useEffect(() => { if (!edited && auto && c.title !== auto) patch({ title: auto, info: { ...c.info, audience: tourAudience(catKey) } }); });
+  const Nav = ({ ok = true, skip }: { ok?: boolean; skip?: boolean }) => (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button type="button" className="btn-clay" disabled={!ok} onClick={next}>Continuer →</button>
+      {skip && <button type="button" className="btn-outline" onClick={next}>Passer</button>}
+    </div>
+  );
+  const card = (title: string, body: React.ReactNode) => (
+    <section aria-label={title} className="grid gap-2 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-2">
+        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
+        <small className="font-bold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
+      </div>
+      <h4 className="m-0 font-display text-lg text-ink">{title}</h4>
+      {body}
+    </section>
+  );
+  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink";
+  if (cur === "type") return card("Quel type de tournoi ?", <>
+    <div className="grid gap-2 sm:grid-cols-2">
+      {TOUR_TYPES.map((t) => (
+        <button key={t.key} type="button" aria-pressed={type === t.key} onClick={() => { setType(t.key); if (t.key === "OPEN") { setBas(""); setHaut(""); } setI(1); }}
+          className={`rounded-xl border-2 px-3 py-3 text-left ${type === t.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+          <b className="block text-lg">{t.icon} {t.label}</b><small className="block font-normal opacity-80">{t.sub}</small></button>))}
+    </div></>);
+  if (cur === "cat") {
+    const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Seniors", "Vétérans"];
+    return card("Pour quelle catégorie ?", <>
+      <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
+        {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => setPub(k)} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+      </div>
+      {groups.map((g) => (
+        <div key={g}><b className="text-sm text-muted">{g}</b>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {TEAM_CATS.filter((t) => t.group === g).map((t) => (
+              <Pill key={t.key} on={catKey === t.key} onClick={() => setCatKey(t.key)}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
+          </div></div>))}
+      <Nav ok={!!catKey} /></>);
+  }
+  if (cur === "rank") return card("Entre quels classements ?", <>
+    <p className="m-0 text-sm text-muted">Pour un TMC, on indique le classement le plus bas et le plus haut des joueurs admis (de NC à -30).</p>
+    <div className="grid gap-2 sm:grid-cols-2">
+      <label className="text-sm font-bold text-ink">⬇️ Classement le plus bas
+        <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => setBas(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+      <label className="text-sm font-bold text-ink">⬆️ Classement le plus haut
+        <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => setHaut(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+    </div>
+    {!rankOk && <p role="alert" className="m-0 rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
+    {range && <p className="m-0 rounded-xl bg-[#eef3fb] px-3 py-2 text-sm font-bold text-[#1b1863]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
+    <Nav ok={rankOk} skip /></>);
+  if (cur === "surface") return card("Sur quelle surface ?", <>
+    <ChoiceField label="Surface" options={SURFACES} value={c.info.place} onChange={(v) => info({ place: v })} placeholder="Ex. Terre battue couverte" /><Nav skip /></>);
+  if (cur === "when") return card("Horaires et finale", <>
+    <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
+      <input aria-label="Horaires des matchs" maxLength={80} value={c.info.time} onChange={(e) => info({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+    <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
+      <input aria-label="Finale" maxLength={120} value={c.info.signup} onChange={(e) => info({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+    <Nav skip /></>);
+  return card("Dernier détail : le nom et qui s'en occupe", <>
+    <label className="block text-sm font-bold text-ink">🏷️ Nom du tournoi
+      <input aria-label="Nom du tournoi" maxLength={80} value={c.title ?? ""} onChange={(e) => { setEdited(true); patch({ title: e.target.value }); }} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+    <label className="block text-sm font-bold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
+      <textarea aria-label="Petit message" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Ex. Buvette sur place, remise des prix après la finale…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
+      {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
+        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
+          {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
+      <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
+    </div>
+    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
+    <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
 }
 
 function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number>; onClose: () => void; onDone: () => void }) {
@@ -702,6 +807,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [tourFlow, setTourFlow] = useState(false); // idem pour un tournoi
   const [matchFlow, setMatchFlow] = useState(false); // vrai quand on remplit un match par équipes carte par carte (la carte est alors seule à l'écran)
   const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
   const [multi, setMulti] = useState(endInit !== undefined && endInit !== day);
@@ -759,6 +865,12 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
         onExit={() => { setMatchFlow(false); patch("EQUIPES", { on: false }); }} onSave={save} busy={busy || !!missing || !chosen} err={err || missing} />
     </Modal>
   );
+  if (tourFlow && step === 2 && sel.TOURNOI?.on) return (
+    <Modal bare title="Tournoi" onClose={onClose}>
+      <TournoiCards c={sel.TOURNOI} patch={(p) => patch("TOURNOI", p)} crew={crew} onPeople={onPeople}
+        onExit={() => { setTourFlow(false); patch("TOURNOI", { on: false }); }} onSave={save} busy={busy || !chosen} err={err} />
+    </Modal>
+  );
   return (
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
@@ -797,7 +909,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           <Fold key={g} color={gm.color} icon={gm.icon} title={g} badge={on.length} hint={on.length ? `✔ ${on.map((k) => k.label).join(" · ")}` : `${gk.length} choix`}>
             <div className="grid gap-2 sm:grid-cols-2">
               {gk.map((k) => { const c = sel[k.key] ?? { on: false }; return (
-                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => { if (k.key === "EQUIPES" && !c.on) setMatchFlow(true); patch(k.key, { on: !c.on }); }}
+                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => { if (k.key === "EQUIPES" && !c.on) setMatchFlow(true); if (k.key === "TOURNOI" && !c.on && !c.id) setTourFlow(true); patch(k.key, { on: !c.on }); }}
                   style={c.on ? { borderColor: k.color, background: `${k.color}22` } : undefined}
                   className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-bold text-ink hover:border-ink">
                   <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>

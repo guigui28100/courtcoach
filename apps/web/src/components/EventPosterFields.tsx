@@ -44,7 +44,7 @@ function PriceField({ label, value, onChange, placeholder }: { label: string; va
 }
 
 // Menu déroulant générique + « Autre » pour écrire à la main
-function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…" }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string }) {
+export function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…" }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string }) {
   const [other, setOther] = useState(false);
   const custom = other || (value !== "" && !options.includes(value));
   return (
@@ -196,8 +196,8 @@ export function AnimationForm({ value, onChange, title, onTitle, note, onNote, t
         <div className="text-sm font-bold text-ink">🎨 Catégorie <small className="font-normal text-muted">(change les couleurs de l'affiche)</small>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {["Messieurs (adultes)", "Dames (adultes)", "Jeunes"].map((c) => (
-              <button key={c} type="button" aria-pressed={value.audience === c} onClick={() => set({ audience: value.audience === c ? "" : c })}
-                className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${value.audience === c ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{c === "Messieurs (adultes)" ? "👨 " : c === "Dames (adultes)" ? "👩 " : "🧒 "}{c}</button>))}
+              <button key={c} type="button" aria-pressed={value.audience.split(" · ")[0] === c} onClick={() => set({ audience: value.audience.split(" · ")[0] === c ? "" : c })}
+                className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${value.audience.split(" · ")[0] === c ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{c === "Messieurs (adultes)" ? "👨 " : c === "Dames (adultes)" ? "👩 " : "🧒 "}{c}</button>))}
           </div></div>
         <div className="text-sm font-bold text-ink">🎾 Surface
           <div className="mt-1"><ChoiceField label="Surface" options={SURFACES} value={value.place} onChange={(v) => set({ place: v })} placeholder="Ex. Terre battue couverte" /></div></div>
