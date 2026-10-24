@@ -14,7 +14,8 @@ const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
 
 // Couleur de repère : une par type, et pour un tournoi une par catégorie
 const TOURNOI_COLOR: Record<string, string> = { "Messieurs (adultes)": "#1e3a8a", "Dames (adultes)": "#be185d", "Jeunes": "#15a34a" };
-const accentOf = (e: ClubEvent) => (e.kind === "TOURNOI" ? TOURNOI_COLOR[e.audience ?? ""] : undefined) ?? kindOf(e.kind).color;
+export const tourBase = (a: string) => a.split(" · ")[0];
+const accentOf = (e: ClubEvent) => (e.kind === "TOURNOI" ? TOURNOI_COLOR[tourBase(e.audience ?? "")] : undefined) ?? kindOf(e.kind).color;
 
 const MON3 = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function dateBlock(e: ClubEvent) {
@@ -34,7 +35,7 @@ export function EventPoster({ e, format, showWho }: { e: ClubEvent; format: Post
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
   const rows: Row[] = [];
-  if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[e.audience] ? "Catégorie" : "Pour qui", text: e.audience });
+  if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui", text: e.audience });
   if (e.place && tour) rows.push({ icon: "🎾", title: "Surface", text: e.place });
   if (e.time) rows.push({ icon: "🕒", title: tour ? "Matchs, jour par jour" : "Horaires", text: e.time });
   if (e.signup && tour) rows.push({ icon: "🏆", title: "Finale", text: e.signup });
