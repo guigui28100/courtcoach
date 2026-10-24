@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfAdmin, ProfCard, ProfStatus, profName, WEEKDAYS } from "../types";
+import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfAdmin, ProfCard, ProfStatus, profName, priceOn, WEEKDAYS } from "../types";
 import { Avatar, Empty, Err } from "./ui";
+import { dayLong, useDayAvailability } from "./CourseCalendar";
 
 export const PROF_LEVELS = ADULT_LEVELS.filter((x) => !["Débutant", "Loisir / intermédiaire", "NC"].includes(x));
 
@@ -19,7 +20,8 @@ export const EXAMPLE_PROFS: ProfCard[] = [
 const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-bold uppercase tracking-wider text-clay">{k}</b>{v}</div>;
 
 // Bandeau « terre battue » avec la balle et les étapes de la réservation
-export function ClayHero({ title, text, step }: { title: string; text: string; step: 1 | 2 | 3 }) {
+export const DAY_STEPS = ["Professeur", "Ton cours", "Heure"]; // quand le jour est déjà choisi dans le calendrier
+export function ClayHero({ title, text, step, labels }: { title: string; text: string; step: 1 | 2 | 3; labels?: string[] }) {
   return (
     <header className="relative overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-clay to-clay-dark p-5 text-white sm:p-6">
       <span aria-hidden="true" className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-ball opacity-90" />
@@ -27,7 +29,7 @@ export function ClayHero({ title, text, step }: { title: string; text: string; s
       <h3 className="relative m-0 text-2xl font-black text-white sm:text-3xl">{title}</h3>
       <p className="relative m-0 mt-1 max-w-[80%] text-white/95">{text}</p>
       <ol className="relative m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Étapes de la réservation">
-        {["Professeur", "Objectif", "Créneau"].map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
+        {(labels ?? ["Professeur", "Objectif", "Créneau"]).map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
       </ol>
     </header>
   );
@@ -101,7 +103,7 @@ export function PriceNote({ yourPrice }: { yourPrice?: number | null }) {
 }
 
 // Choix du professeur (adulte) : liste, filtre par jour, tarif
-export function ProfChooser({ preview, onPick, onClose }: { preview: boolean; onPick: (p: ProfCard, price: number) => void; onClose: () => void }) {
+export function ProfChooser({ preview, date, onPick, onClose }: { preview: boolean; date?: string; onPick: (p: ProfCard, price: number) => void; onClose: () => void }) {
   const { me, reload } = useAuth();
   const [profs, setProfs] = useState<ProfCard[] | null>(preview ? withExampleFree(EXAMPLE_PROFS) : null);
   const [yourPrice, setYourPrice] = useState<number>(PRICE_OTHER);
@@ -119,19 +121,33 @@ export function ProfChooser({ preview, onPick, onClose }: { preview: boolean; on
   }
   const dayOf = (iso: string) => (new Date(`${iso}T12:00:00`).getDay() + 6) % 7;
   const shown = (profs ?? []).filter((p) => day === null || p.slots.some((s) => (s.weekday ?? (s.date ? dayOf(s.date) : -1)) === day));
+  const dayRows = useDayAvailability(preview, date); // si un jour est déjà choisi : les créneaux libres de chaque professeur CE jour-là
+  const yp = preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice;
   return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
-      <ClayHero title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)." step={1} />
+      <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? `Réserver un cours · ${dayLong(date)}` : "Réserver un cours particulier"} text={date ? "Choisis ton professeur : on te montre ses créneaux libres ce jour-là. Ton professeur confirme ensuite (sous 48 h)." : "Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)."} step={1} />
       <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
       </label>
       <PriceNote yourPrice={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} />
       <Err msg={err} />
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par jour">
+      {!date && <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par jour">
         {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
-      </div>
-      {profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
+      </div>}
+      {date ? (
+        dayRows === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : dayRows.length === 0 ? <Empty>Aucun professeur n'est visible pour le moment.</Empty> : (
+          <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-3">{dayRows.map((r) => (
+            <article key={r.prof.id} aria-label={`Professeur : ${profName(r.prof)}`} className="mb-4 grid min-w-0 gap-y-3 rounded-3xl border-2 border-line bg-white p-4 shadow-sm" style={{ gridRow: "span 5", gridTemplateRows: "subgrid" }}>
+              <div className="flex items-center gap-3"><Avatar name={profName(r.prof)} /><strong className="font-display text-xl leading-tight">{profName(r.prof)}</strong></div>
+              <small className="text-muted">{r.prof.ranking ? `Classement ${r.prof.ranking} · ` : ""}{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>
+              <p className="m-0 font-display text-3xl font-black">{priceOn(yp, date)} € <small className="text-sm font-bold text-muted">{member ? "ton tarif adhérent" : "la séance"}</small></p>
+              <div className="flex flex-wrap content-start gap-1.5">{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
+              <button className={(r.free.length ? "btn-clay" : "btn-outline") + " self-end"} disabled={!r.free.length} onClick={() => onPick(r.prof, yp)}>{r.free.length ? `Choisir ${r.prof.firstName ?? "ce professeur"} →` : "Complet ce jour-là"}</button>
+            </article>
+          ))}</div>
+        )
+      ) : profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
         <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
     </section>

@@ -364,3 +364,9 @@ export function collapseSeries(list: Lesson[]): Lesson[] {
 }
 export const WEEKDAY_NAMES = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 export const everyDay = (slot: Slot) => `chaque ${WEEKDAY_NAMES[new Date(`${slot.date}T12:00:00`).getDay()]} à ${slot.time.replace(":", " h ").replace(/ h 00$/, " h")}`;
+
+// Au plus 2 réservations à venir en même temps (une série « toute l'année » compte pour une) : même règle que le serveur
+export const MAX_AHEAD = 2;
+export function aheadCount(lessons: Lesson[], today = new Date().toISOString().slice(0, 10)): number {
+  return new Set(lessons.filter((l) => (l.status === "BOOKED" || l.status === "PROPOSED" || l.status === "ACCEPTED") && l.finalSlot && l.finalSlot.date >= today).map((l) => l.seriesId ?? l.id)).size;
+}

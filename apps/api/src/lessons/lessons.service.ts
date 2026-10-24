@@ -10,6 +10,9 @@ import { expireStaleBookings } from "../profs/bookings";
 import { ProfsService } from "../profs/profs.service";
 import { lessonPrice } from "../profs/pricing";
 
+// Réservations à venir en même temps, par adulte (2 ; les tests des autres fonctions montent la limite par MAX_LESSONS_AHEAD)
+export const maxAhead = () => Number(process.env.MAX_LESSONS_AHEAD) || 2;
+
 @Injectable()
 export class LessonsService {
   constructor(private readonly prisma: PrismaService, private readonly profs: ProfsService) {}
@@ -27,7 +30,11 @@ export class LessonsService {
     const prof = { profId: dto.profId, price: lessonPrice(me.clubMember, dto.slot.date), memberDeclared: me.clubMember };
     // Réservation d'un créneau du planning : le créneau est mis de côté et le professeur doit confirmer (48 h) ; un seul cours par professeur et par créneau (garanti par la base)
     await this.profs.assertSlotFree(dto.profId, dto.slot);
-    const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { finalSlot: true } });
+    const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { id: true, seriesId: true, finalSlot: true } });
+    // Au plus 2 réservations à venir en même temps (une série « toute l'année » compte pour une seule) : évite qu'un adulte bloque beaucoup de créneaux
+    const today = new Date().toISOString().slice(0, 10);
+    const ahead = new Set(mine.filter((m) => ((m.finalSlot as { date?: string } | null)?.date ?? "") >= today).map((m) => m.seriesId ?? m.id));
+    if (ahead.size >= maxAhead()) throw new ConflictException(`Tu as déjà ${maxAhead()} cours réservés à venir. Attends qu'un cours ait eu lieu, ou annules-en un, pour en réserver un autre.`);
     if (mine.some((m) => { const s = m.finalSlot as { date?: string; time?: string } | null; return s?.date === dto.slot!.date && !!s.time && overlaps(s.time, dto.slot!.time); })) throw new ConflictException("Tu as déjà un cours à ce moment-là.");
     const wd = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"][(new Date(`${dto.slot.date}T12:00:00Z`).getUTCDay() + 6) % 7];
     const h = Number(dto.slot.time.slice(0, 2));
