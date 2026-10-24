@@ -535,7 +535,7 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
       <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
         {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
       </div>
-      <ul className={`m-0 grid ${compact ? "max-h-36" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
+      <ul className={`m-0 grid ${compact ? "max-h-28" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
         {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
         {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
       </ul>
@@ -547,6 +547,7 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
 const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
 function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
   const [i, setI] = useState(0);
+  const [ti, setTi] = useState(0); // équipe dont on choisit le club adverse
   const away = c.info.place === VENUE_AWAY;
   const steps = ["teams", "club", "venue", ...(away ? [] : ["courts"]), "hour", "end"] as const;
   const cur = steps[Math.min(i, steps.length - 1)];
@@ -572,11 +573,14 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
   const many = c.teams.length > 1;
   const clubOf = (t: string) => c.clubs?.[t] ?? "";
   if (cur === "club") return card(many ? "Contre quel club ? (un par équipe)" : "Contre quel club ?", many ? <>
-    {c.teams.map((t) => (
-      <div key={t} className="grid gap-1 rounded-xl border-2 border-line bg-white p-2">
-        <b className="text-sm text-ink">🎾 {teamLabel(t)}</b>
-        <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />
-      </div>))}
+    <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Équipe à régler">
+      {c.teams.map((t, n) => (
+        <button key={t} type="button" role="tab" aria-selected={Math.min(ti, c.teams.length - 1) === n} onClick={() => setTi(n)}
+          className={"rounded-xl border-2 px-2.5 py-1.5 text-left text-xs font-extrabold leading-tight " + (Math.min(ti, c.teams.length - 1) === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+          <span className="block">{teamLabel(t)}</span><span className="block font-bold opacity-80">{clubOf(t) ? `✔ ${clubOf(t)}` : "club à choisir"}</span>
+        </button>))}
+    </div>
+    {(() => { const t = c.teams[Math.min(ti, c.teams.length - 1)]; return <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />; })()}
     <button type="button" className="justify-self-start text-sm font-bold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
     <small className="text-muted">Facultatif : laisse vide une équipe dont l'adversaire n'est pas connu.</small><Nav skip /></> : <>
     <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
