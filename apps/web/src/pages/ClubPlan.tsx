@@ -318,8 +318,16 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
 }
 
 // ───────────── Fenêtres ─────────────
-function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+function Modal({ title, onClose, children, wide, bare }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; bare?: boolean }) {
   useEffect(() => { const f = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); }, [onClose]);
+  if (bare) return ( // mode « carte seule » : fond uni, rien derrière, seulement la carte
+    <div className="fixed inset-0 z-50 grid content-start justify-items-center overflow-y-auto bg-[#fbf8f2] p-4 sm:content-center">
+      <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-2xl">
+        <div className="mb-2 flex justify-end"><button type="button" className="btn-outline btn-sm" onClick={onClose}>✕ Fermer</button></div>
+        {children}
+      </div>
+    </div>
+  );
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full ${wide ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto rounded-t-3xl bg-[#fbf8f2] p-5 shadow-2xl sm:rounded-3xl`}>
@@ -514,7 +522,7 @@ function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength 
 
 // Match par équipes : des CARTES qui s'ouvrent l'une après l'autre (une seule visible à la fois)
 const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
-function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs }: { c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
+function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
   const [i, setI] = useState(0);
   const away = c.info.place === VENUE_AWAY;
   const steps = ["teams", "club", "venue", ...(away ? [] : ["courts"]), "hour", "end"] as const;
@@ -530,7 +538,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs }: { c: 
   const card = (title: string, body: React.ReactNode) => (
     <section aria-label={title} className="grid gap-2 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3 sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : <span />}
+        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
         <small className="font-bold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
       </div>
       <h4 className="m-0 font-display text-lg text-ink">{title}</h4>
@@ -569,7 +577,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs }: { c: 
     </div>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {c.teams.map(teamLabel).join(" · ") || "—"}{c.info.audience ? ` · contre ${c.info.audience}` : ""}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
-    <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small></>);
+    <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
 function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number>; onClose: () => void; onDone: () => void }) {
@@ -662,6 +670,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [matchFlow, setMatchFlow] = useState(false); // vrai quand on remplit un match par équipes carte par carte (la carte est alors seule à l'écran)
   const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
   const [multi, setMulti] = useState(endInit !== undefined && endInit !== day);
   const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
@@ -708,6 +717,12 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
+  if (matchFlow && step === 2 && sel.EQUIPES?.on) return (
+    <Modal bare title="Match par équipes" onClose={onClose}>
+      <MatchCards c={sel.EQUIPES} patch={(p) => patch("EQUIPES", p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]}
+        onExit={() => { setMatchFlow(false); patch("EQUIPES", { on: false }); }} onSave={save} busy={busy || !!missing || !chosen} err={err || missing} />
+    </Modal>
+  );
   return (
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
@@ -746,7 +761,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           <Fold key={g} color={gm.color} icon={gm.icon} title={g} badge={on.length} hint={on.length ? `✔ ${on.map((k) => k.label).join(" · ")}` : `${gk.length} choix`}>
             <div className="grid gap-2 sm:grid-cols-2">
               {gk.map((k) => { const c = sel[k.key] ?? { on: false }; return (
-                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => patch(k.key, { on: !c.on })}
+                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => { if (k.key === "EQUIPES" && !c.on) setMatchFlow(true); patch(k.key, { on: !c.on }); }}
                   style={c.on ? { borderColor: k.color, background: `${k.color}22` } : undefined}
                   className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-bold text-ink hover:border-ink">
                   <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
