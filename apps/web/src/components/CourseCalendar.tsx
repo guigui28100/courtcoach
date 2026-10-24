@@ -45,7 +45,7 @@ export function useFreeCounts(preview: boolean) {
   return data;
 }
 
-export function CourseCalendar({ lessons, onLesson, onDay, preview = false }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void; preview?: boolean }) {
+export function CourseCalendar({ lessons, onLesson, onDay, preview = false, locked = false }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void; preview?: boolean; locked?: boolean }) {
   const avail = useFreeCounts(preview);
   const shown = useMemo(() => lessons.filter((l) => l.finalSlot && (l.status === "ACCEPTED" || l.status === "BOOKED" || l.status === "REFUSED")), [lessons]);
   const first = shown.filter((l) => l.status !== "REFUSED" && l.finalSlot!.date >= todayIso()).sort((a, b) => a.finalSlot!.date.localeCompare(b.finalSlot!.date))[0];
@@ -70,8 +70,8 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false }: { 
           if (!d) return <span key={i} />;
           const here = shown.filter((l) => l.finalSlot!.date === d);
           const n = avail ? (avail.counts.get(d) ?? 0) : undefined; // créneaux libres ce jour-là (undefined = pas encore connu)
-          const free = here.length === 0 && d > today && (n === undefined || n > 0);
-          const closed = here.length === 0 && d > today && avail !== null && d <= avail.last && n === 0; // dans la période réservable mais plus rien de libre
+          const free = !locked && here.length === 0 && d > today && (n === undefined || n > 0);
+          const closed = !locked && here.length === 0 && d > today && avail !== null && d <= avail.last && n === 0; // dans la période réservable mais plus rien de libre
           const weekend = i % 7 >= 5;
           return (
             <div key={d} role={free ? "button" : undefined} tabIndex={free ? 0 : undefined} aria-label={free ? `${dayLong(d)} : ${n === undefined ? "aucun cours, réserver" : `${n} créneau${n > 1 ? "x" : ""} libre${n > 1 ? "s" : ""}, réserver`}` : undefined}

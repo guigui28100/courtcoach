@@ -2,7 +2,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn, MAX_AHEAD, aheadCount } from "../types";
 import { Avatar, BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
@@ -189,6 +189,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
   const [view, setView] = useState<"cal" | "liste">("cal");
   const [sheet, setSheet] = useState<{ lesson: Lesson } | { day: string } | null>(null);
   const open = step !== null;
+  const full = aheadCount(lessons) >= MAX_AHEAD; // déjà 2 cours réservés à venir : pas de nouvelle réservation
   const [sent, setSent] = useState<false | "request" | "booked">(false);
   const [serieInfo, setSerieInfo] = useState<{ count: number; skipped: { date: string; why: string }[] } | null>(null);
   const [cancelErr, setCancelErr] = useState("");
@@ -222,12 +223,13 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
     <section aria-labelledby="t-cours" className="grid gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
-        {!open && <button className="btn-clay" onClick={() => ask()}>{c.button}</button>}
+        {!open && <button className="btn-clay disabled:cursor-not-allowed disabled:opacity-50" disabled={full} onClick={() => ask()}>{c.button}</button>}
       </div>
       {sent === "booked" && recap && !serieInfo && (
         <div role="status" className="grid gap-2 rounded-3xl border-2 border-ok bg-[#e8f7ee] p-6 text-center"><strong className="font-display text-3xl text-[#166534]">🎉 C'est réservé !</strong><span className="text-lg font-bold">{recap.when} · avec {recap.prof}{recap.price ? ` · ${recap.price} €` : ""}</span><span className="font-bold text-[#14532d]">⏳ Il ne reste qu'à attendre la confirmation du professeur (48 h maximum). Tu la verras dans ton calendrier : l'étiquette passera du jaune au vert.</span><span><button className="btn-outline btn-sm" onClick={() => setSent(false)}>Voir mon calendrier</button></span></div>
       )}
       {sent && !(sent === "booked" && recap && !serieInfo) && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
+      {full && !open && <p role="status" className="m-0 rounded-2xl border-2 border-[#e0b84a] bg-[#fff3cd] p-3 font-bold text-[#7a5a00]">🔒 Tu as déjà {MAX_AHEAD} cours réservés à venir. Pour en réserver un autre, attends qu'un cours ait eu lieu ou annule-en un (touche-le dans le calendrier).</p>}
       <Err msg={cancelErr} />
       {step === "choose" && <ProfChooser preview={preview} date={askDate} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} />}
       {step === "form" && <NewLessonForm preview={preview} prof={prof} date={askDate} price={price} onBack={() => setStep("choose")} onClose={() => setStep(null)} onSent={(booked, info, rc) => { setRecap(rc ?? null); setView("cal"); setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
@@ -240,8 +242,8 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
               {([["cal", "📆 Calendrier"], ["liste", "📋 Liste"]] as const).map(([k, l]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)} className={"rounded-full border-2 px-4 py-1.5 text-sm font-extrabold " + (view === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink")}>{l}</button>)}
             </div>
           </div>
-          {view === "cal" && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>)</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
-          {view === "cal" && <CourseCalendar preview={preview} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
+          {view === "cal" && !full && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>)</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
+          {view === "cal" && <CourseCalendar preview={preview} locked={full} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
           {view === "cal" && <ol className="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-3">{["Choisis ton professeur", "Touche un créneau libre", "Le professeur confirme : c'est réservé"].map((t, i) => <li key={t} className="flex items-center gap-3 rounded-2xl bg-[#eef3fb] p-3 text-sm font-bold"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white">{i + 1}</span>{t}</li>)}</ol>}
         </div>
       )}
