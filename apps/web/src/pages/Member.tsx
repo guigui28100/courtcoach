@@ -64,18 +64,18 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
     try { const res = await post<{ seriesCount?: number; skipped?: { date: string; why: string }[] }>("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot, ...(weekly ? { weekly: true } : {}) } : {}), type: f.get("type"), objective: String(f.get("objective")), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan), res ?? undefined, slot && chosen ? { when: fmtPlanSlot(slot.date, chosen.time, chosen.end), prof: profName(prof), price } : undefined); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
   }
+  const cardCls = date ? "m-0 rounded-3xl border-2 border-line bg-white p-5 [&>legend]:float-left [&>legend]:w-full [&>legend+*]:clear-both" : "m-0 border-0 p-0"; // depuis un jour : une carte par question
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      {(hasPlan || (date && sub === 2 && plan !== null)) && <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? (sub === 2 ? `Ton cours avec ${profName(prof)}` : "Choisis ton heure") : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={date && sub === 2 ? 2 : 3} />}
-      {prof && date ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-clay bg-white p-3"><Avatar name={profName(prof)} /><div className="grid"><strong className="font-display text-lg">{profName(prof)}</strong>{price ? <span className="text-sm text-muted">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}</div>{onBack && <button type="button" className="btn-outline btn-sm ml-auto" onClick={onBack}>Changer de professeur</button>}</div>
-      ) : prof ? (
+      {date && <button type="button" className="justify-self-start border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => (sub === 3 ? setSub(2) : onBack?.())}>{sub === 3 ? "← Changer mon cours" : "← Changer de professeur"}</button>}
+      {(hasPlan || (date && sub === 2 && plan !== null)) && <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? (sub === 2 ? `Ton cours avec ${profName(prof)}` : "Choisis ton heure") : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €${date && sub === 2 ? " la séance, à régler directement avec lui" : ""}` : ""}`} step={date && sub === 2 ? 2 : 3} />}
+      {prof && date ? null : prof ? (
         <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
       ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
       <div className={date && sub === 3 ? "hidden" : "grid gap-6"}>
-      <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
+      <fieldset className={cardCls} onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
             <label key={k} className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 transition-colors hover:border-clay/50 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-ink">
@@ -97,14 +97,13 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
           <small className="text-muted">Ces informations servent seulement à organiser le cours : seuls ton professeur et le coach les voient. Préviens ton partenaire.</small>
         </fieldset>
       )}
-      <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
+      <fieldset className={cardCls}><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
       </div>
       {date && sub === 2 && hasPlan && <div className="flex flex-wrap gap-2"><button type="button" className="btn-clay min-h-12" onClick={next}>Continuer : choisir l'heure →</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>}
-      {date && sub === 3 && <button type="button" className="btn-outline btn-sm justify-self-start" onClick={() => setSub(2)}>← Changer mon cours</button>}
       {step3 && (hasPlan ? (
-        <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>{date ? "Choisis ton heure" : "Choisis ton créneau"} <small className="font-body font-normal text-muted">(1 heure)</small></legend>
+        <fieldset className={"m-0 grid gap-3 border-0 p-0 " + (date ? "mx-auto w-full max-w-[640px]" : "")}><legend className={legend}><span className={num}>3</span>{date ? "Choisis ton heure" : "Choisis ton créneau"} <small className="font-body font-normal text-muted">(1 heure)</small></legend>
           {date ? <DayHours day={plan!.find((d) => d.date === date)} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} /> : <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />}
           {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
             <label className={"grid cursor-pointer gap-2 rounded-2xl border-2 p-4 " + (weekly ? "border-clay bg-[#fdf1ea] shadow-[0_5px_0_var(--color-clay)]" : "border-line bg-white")}>
@@ -241,8 +240,9 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
               {([["cal", "📆 Calendrier"], ["liste", "📋 Liste"]] as const).map(([k, l]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)} className={"rounded-full border-2 px-4 py-1.5 text-sm font-extrabold " + (view === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink")}>{l}</button>)}
             </div>
           </div>
-          {view === "cal" && <p className="m-0 rounded-2xl bg-[#eef2fb] px-4 py-3 text-sm font-bold text-[#1b1863]">👆 Pour réserver : touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>), ou utilise le bouton « {c.button} » en haut.</p>}
+          {view === "cal" && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>)</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
           {view === "cal" && <CourseCalendar lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
+          {view === "cal" && <ol className="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-3">{["Choisis ton professeur", "Touche un créneau libre", "Le professeur confirme : c'est réservé"].map((t, i) => <li key={t} className="flex items-center gap-3 rounded-2xl bg-[#eef3fb] p-3 text-sm font-bold"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white">{i + 1}</span>{t}</li>)}</ol>}
         </div>
       )}
       {sheet && "lesson" in sheet && <LessonSheet l={sheet.lesson} onClose={() => setSheet(null)} onCancel={cancel} />}
