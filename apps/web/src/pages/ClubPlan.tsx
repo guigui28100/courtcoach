@@ -321,10 +321,10 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
 // ───────────── Fenêtres ─────────────
 function Modal({ title, onClose, children, wide, bare }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; bare?: boolean }) {
   useEffect(() => { const f = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); }, [onClose]);
-  if (bare) return ( // mode « carte seule » : fond uni, rien derrière, seulement la carte
-    <div className="fixed inset-0 z-50 grid content-start justify-items-center overflow-y-auto bg-[#fbf8f2] p-4 sm:content-center">
-      <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-2xl">
-        <div className="mb-2 flex justify-end"><button type="button" className="btn-outline btn-sm" onClick={onClose}>✕ Fermer</button></div>
+  if (bare) return ( // mode « carte seule » : le planning reste visible en fond (assombri), mais aucune autre carte autour
+    <div className="fixed inset-0 z-50 grid content-start justify-items-center overflow-y-auto bg-black/50 p-4 sm:content-center" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl">
+        <div className="mb-2 flex justify-end"><button type="button" className="btn-outline btn-sm !bg-white" onClick={onClose}>✕ Fermer</button></div>
         {children}
       </div>
     </div>
