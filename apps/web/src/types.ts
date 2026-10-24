@@ -370,3 +370,6 @@ export const MAX_AHEAD = 2;
 export function aheadCount(lessons: Lesson[], today = new Date().toISOString().slice(0, 10)): number {
   return new Set(lessons.filter((l) => (l.status === "BOOKED" || l.status === "PROPOSED" || l.status === "ACCEPTED") && l.finalSlot && l.finalSlot.date >= today).map((l) => l.seriesId ?? l.id)).size;
 }
+
+// Nom du professeur d'un cours (prénom + nom), jamais « ton professeur » quand on le connaît
+export const lessonProfName = (p?: { firstName?: string | null; lastName?: string | null } | null): string => [p?.firstName, p?.lastName].filter(Boolean).join(" ") || "ton professeur";

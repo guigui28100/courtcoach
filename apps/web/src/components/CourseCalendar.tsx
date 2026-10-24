@@ -1,7 +1,7 @@
 // Calendrier « Mes cours à venir » de l'adulte : on touche un cours pour le voir ou l'annuler, un jour sans cours pour y réserver.
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { get } from "../api";
-import { Lesson, PlanDay, ProfCard, profName, todayIso } from "../types";
+import { Lesson, PlanDay, ProfCard, profName, todayIso, lessonProfName } from "../types";
 import { EXAMPLE_PROFS, previewPlanning } from "./Profs";
 
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -106,7 +106,7 @@ export function LessonSheet({ l, onClose, onCancel }: { l: Lesson; onClose: () =
     <Sheet title={dayLong(slot.date)} onClose={onClose}>
       <p className="m-0 text-muted">Ton cours particulier{serie ? " · 🔁 chaque semaine" : ""}</p>
       <Row i="🕕">{hourOf(slot.time)} – {hourOf(`${String(Number(slot.time.slice(0, 2)) + 1).padStart(2, "0")}:${slot.time.slice(3, 5)}`)}</Row>
-      <Row i="👨‍🏫">avec {l.prof?.firstName ?? "ton professeur"}</Row>
+      <Row i="👨‍🏫">avec {lessonProfName(l.prof)}</Row>
       {l.place && <Row i="🎾">{l.place}</Row>}
       <Row i="🎯">{l.objective}{l.type === "duo" ? " · cours à deux" : ""}</Row>
       {l.price ? <Row i="💶">{l.price} € à régler directement avec le professeur</Row> : null}

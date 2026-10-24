@@ -2,7 +2,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
-import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn, MAX_AHEAD, aheadCount } from "../types";
+import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn, MAX_AHEAD, aheadCount, lessonProfName } from "../types";
 import { Avatar, BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
@@ -141,7 +141,7 @@ function DateBadge({ slot, tone }: { slot: Slot; tone: "green" | "blue" | "amber
 // Une ligne par demande : l'essentiel seulement (sujet, date ou disponibilités, état)
 function LessonLine({ l, isNew, onCancel }: { l: Lesson; isNew: boolean; onCancel?: (l: Lesson, series?: boolean) => void }) {
   const serie = (l.seriesCount ?? 0) > 1 && !!l.finalSlot; // série « toute l'année » : une seule ligne
-  const title = `${serie ? "🔁 " : ""}${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
+  const title = `${serie ? "🔁 " : ""}${l.objective} · ${l.type === "duo" && l.partnerFirstName ? `À deux avec ${l.partnerFirstName}` : TYPE_SHORT[l.type] ?? "Cours"}${l.prof ? ` · avec ${lessonProfName(l.prof)}` : ""}${l.price ? ` · ${l.price} €` : ""}`;
   const state = { PENDING: ["Ancienne demande", "#4b5566"], BOOKED: ["⏳ Le professeur doit confirmer", "#7a5a00"], PROPOSED: ["Ancienne demande", "#4b5566"], ACCEPTED: ["✅ Confirmé", "#1d6b43"], REFUSED: ["❌ Refusée", "#9a2a1f"] }[l.status];
   const sub = serie ? `${everyDay(l.finalSlot!)} · ${l.seriesCount} cours${l.status === "REFUSED" ? " annulés" : " à venir"}${l.status === "BOOKED" ? ` · réponse attendue avant ${fmtDeadline(l.createdAt)}` : l.status === "ACCEPTED" ? ` · prochain : ${fmtSlot(l.finalSlot!)}` : ""}`
     : l.status === "BOOKED" && l.finalSlot ? `${fmtSlot(l.finalSlot)} · réponse attendue avant ${fmtDeadline(l.createdAt)}`
@@ -171,7 +171,7 @@ function NextCourse({ l, onCancel }: { l: Lesson; onCancel?: (l: Lesson, series?
         <small className="font-bold uppercase tracking-wide text-white/80">Ton prochain cours</small>
         <strong className="font-display text-2xl leading-tight">{fmtSlot(l.finalSlot!)}</strong>
         {(l.seriesCount ?? 0) > 1 && <span className="font-bold text-ball">🔁 Série : {everyDay(l.finalSlot!)} · {l.seriesCount} cours à venir</span>}
-        <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.prof ? ` · avec ${l.prof.firstName ?? "ton professeur"}` : ""}{l.place ? ` · ${l.place}` : ""}</span>
+        <span className="text-white/90">{l.objective} · {TYPE_SHORT[l.type] ?? "Cours"}{l.prof ? ` · avec ${lessonProfName(l.prof)}` : ""}{l.place ? ` · ${l.place}` : ""}</span>
       </div>
       {onCancel && <div className="ml-auto grid gap-2"><button className="rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l)}>Annuler ce cours</button>{(l.seriesCount ?? 0) > 1 && <button className="rounded-full border-2 border-white/60 px-4 py-1.5 text-sm font-bold text-white hover:bg-white hover:text-[#1d6b43]" onClick={() => onCancel(l, true)}>Arrêter la série</button>}</div>}
     </div>
@@ -309,7 +309,7 @@ function ProfileCard({ preview }: { preview: boolean }) {
 // Exemples FICTIFS montrés au coach dans « Voir comme un adulte » (aucune vraie demande, aucune donnée de personne)
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 const EXAMPLE_LESSONS: Lesson[] = [
-  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", finalSlot: { date: inDays(4), time: "18:00" }, place: "Court 2", confirmedAt: "2026-10-05T12:00:00Z", coachReply: "Parfait, à mardi !", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: "2026-10-05T12:00:00Z", createdAt: "2026-10-03T09:00:00Z" },
+  { id: "ex1", type: "individuel", objective: "Service", days: ["Mardi", "Jeudi"], moment: "Soirée", message: "", status: "ACCEPTED", finalSlot: { date: inDays(4), time: "18:00" }, place: "Court 2", confirmedAt: "2026-10-05T12:00:00Z", coachReply: "Parfait, à mardi !", answeredAt: "2026-10-05T10:00:00Z", seenByMemberAt: "2026-10-05T12:00:00Z", createdAt: "2026-10-03T09:00:00Z", prof: { id: "ex-p1", firstName: "Guillaume", lastName: "Exemple" } },
   { id: "ex5", type: "individuel", objective: "Volée", days: ["Mercredi"], moment: "Soirée", message: "", status: "BOOKED", finalSlot: { date: inDays(10), time: "19:00" }, price: 40, prof: { id: "ex-1", firstName: "Guillaume", lastName: "Exemple" }, coachReply: "", answeredAt: null, seenByMemberAt: "2026-10-09T09:00:00Z", createdAt: new Date().toISOString() },
   { id: "ex4", type: "duo", objective: "Volée", days: ["Samedi"], moment: "Matin", message: "", status: "REFUSED", coachReply: "Pas de place ce mois-ci, on regarde en novembre.", answeredAt: "2026-10-04T10:00:00Z", seenByMemberAt: "2026-10-04T12:00:00Z", createdAt: "2026-10-02T09:00:00Z" },
 ];
@@ -402,5 +402,6 @@ export function AdultSpace() {
 // Aperçu du coach : exemples inventés, aucun appel au serveur
 export function AdultPreview() {
   const [seen, setSeen] = useState<string[]>([]);
-  return <AdultView preview lessons={EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} />;
+  const [mode, setMode] = useState<"vide" | "deux">("vide"); // adulte sans réservation (pour tester) ou adulte qui a déjà 2 cours
+  return <><div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-[#fff3cd] p-3 text-sm font-bold text-[#7a5a00]" role="group" aria-label="Exemple d'adulte"><span>👀 Exemple d'adulte :</span>{([["vide", "Sans aucune réservation (pour tester)"], ["deux", "Qui a déjà 2 cours (limite atteinte)"]] as const).map(([k, t]) => <button key={k} type="button" aria-pressed={mode === k} className={"rounded-full border-2 px-3 py-1 " + (mode === k ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")} onClick={() => setMode(k)}>{t}</button>)}</div><AdultView preview lessons={mode === "vide" ? [] : EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} /></>;
 }
