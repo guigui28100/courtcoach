@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
-import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
+import { CourtLines } from "./CourtLines";
+import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
 export const POSTER_W = 794;
@@ -26,14 +27,24 @@ function teamsText(e: ClubEvent) {
   return [...by.entries()].map(([c, ns]) => `${teamCat(c)?.label ?? c} (Éq. ${ns.join(", ")})`).join(" · ");
 }
 const BAND_TXT: Record<string, string> = { MATIN: "matin", APRES_MIDI: "après-midi", SOIR: "soirée" };
-function detail(e: ClubEvent, showWho: boolean) {
+function detailParts(e: ClubEvent, showWho: boolean) {
   const parts: string[] = [];
-  if (e.kind === "EQUIPES" && e.teams.length) parts.push(teamsText(e));
+  if (e.kind === "EQUIPES") { if (e.time) parts.push(`🕒 ${e.time}`); if (e.courts.length) parts.push(`🏟️ ${e.courts.length === 1 ? "Court" : "Courts"} ${e.courts.length > 1 ? e.courts.slice(0, -1).join(", ") + " et " + e.courts[e.courts.length - 1] : e.courts[0]}`); }
+  if (e.kind === "EQUIPES" && e.teams.length && e.title) parts.push(teamsText(e)); // sans nom écrit à la main, catégorie et numéro sont déjà dans le titre
   if (e.bands.length) parts.push(e.bands.map((b) => BAND_TXT[b]).join(" + "));
   if (showWho && e.who.length) parts.push(`avec ${e.who.map((w) => w.replace(" (moi)", "")).join(", ")}`);
-  return parts.join(" · ");
+  return parts;
 }
-export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}${venueTag(e) ? ` · ${venueTag(e)}` : ""}` : titleOf(e));
+const detail = (e: ClubEvent, showWho: boolean) => detailParts(e, showWho).join(" · ");
+// Match par équipes sans nom écrit à la main : « Match · Seniors messieurs · Éq. 1 · contre TC Dreux · 🏠 à domicile »
+export const label = (e: ClubEvent) => (e.kind === "EQUIPES" && !e.title ? (e.teams.length ? `Match · ${titleOf(e)}` : `Match par équipes${opponentOf(e) ? ` · contre ${opponentOf(e)}` : ""}${venueTag(e) ? ` · ${venueTag(e)}` : ""}`) : titleOf(e));
+// Un match s'écrit en morceaux qui ne se coupent jamais : « Match · Seniors messieurs · Éq. 1 », « contre TC Dreux », « 🏠 à domicile »
+const labelParts = (e: ClubEvent): string[] => (e.kind !== "EQUIPES" || e.title || !e.teams.length ? [label(e)] : ["Match", e.teams.map(teamLabel).join(" + "), opponentOf(e) ? `contre ${opponentOf(e)}` : "", venueTag(e)].filter(Boolean));
+const isMatch = (e: ClubEvent) => labelParts(e)[0] === "Match" && labelParts(e).length > 1;
+// Affiche les morceaux séparés par « · » ; le retour à la ligne ne peut se faire qu'entre deux morceaux
+function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
+  return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
+}
 const dayNum = (d: string) => +d.slice(8, 10);
 // Date complète : « Samedi 14 novembre » ou « Samedi 14 → dimanche 15 novembre »
 export const fullRange = (e: ClubEvent) => {
@@ -58,7 +69,7 @@ function Header({ m }: { m: string }) {
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#d0592b 0%,#a63e1a 55%,#7d2c12 100%)", color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
-        <rect x="40" y="40" width="714" height="230" /><line x1="397" y1="40" x2="397" y2="270" /><line x1="40" y1="95" x2="754" y2="95" /><line x1="40" y1="215" x2="754" y2="215" /><line x1="215" y1="95" x2="215" y2="215" /><line x1="579" y1="95" x2="579" y2="215" /><line x1="215" y1="155" x2="579" y2="155" />
+        <CourtLines cx={397} y={24} h={228} netWidth={6} />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
@@ -99,6 +110,8 @@ function pickTop(list: ClubEvent[]): ClubEvent[] {
   const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
   return list.some((e) => e.featured) ? starred : auto;
 }
+// Couleur plus foncée (0 = noir, 1 = inchangée)
+const shade = (hex: string, f: number) => { const n = parseInt(hex.slice(1), 16); const ch = (v: number) => Math.round(v * f).toString(16).padStart(2, "0"); return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`; };
 function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   const top = pickTop(list);
   if (top.length === 0) return null;
@@ -108,16 +121,42 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
     <div style={{ padding: "0 40px", textAlign: "left" }}>
       <div className="font-display" style={{ fontWeight: 900, color: "#fff", background: "#a63e1a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
-        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; return (
-          <div key={e.id} style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
-            <div style={{ background: c, color: textOn(c), width: 246, flex: "0 0 246px", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-              <div style={line}>{multi ? `Du ${lc(DAYS[weekdayOf(e.startDate)])}` : DAYS[weekdayOf(e.startDate)]}</div>
-              <div className="font-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}{multi && !same ? <small style={{ fontSize: 18 }}> {MOIS[+e.startDate.slice(5, 7) - 1]}</small> : null}</div>
-              <div style={line}>{multi ? `au ${lc(DAYS[weekdayOf(e.endDate)])} ${dayNum(e.endDate)} ` : ""}{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
+          <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
+            {multi ? (
+              // Période : le carré est coupé en diagonale (bas gauche → haut droite) ; premier jour en haut à gauche, dernier jour en bas à droite
+              <div style={{ position: "relative", width: "31%", flex: "0 0 31%", minHeight: 225, color: "#fff", overflow: "hidden" }}>
+                <svg aria-hidden width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0 }}>
+                  <polygon points="0,0 100,0 0,100" fill={shade(c, 0.9)} />
+                  <polygon points="100,0 100,100 0,100" fill={shade(c, 0.62)} />
+                  <line x1="0" y1="100" x2="100" y2="0" stroke="#fff" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+                </svg>
+                <div style={{ position: "absolute", left: 14, top: 10, textAlign: "left" }}>
+                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.startDate)]}</div>
+                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
+                  <div style={line}>{MOIS[+e.startDate.slice(5, 7) - 1]}</div>
+                </div>
+                <div style={{ position: "absolute", right: 14, bottom: 10, textAlign: "right" }}>
+                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.endDate)]}</div>
+                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
+                  <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+                </div>
+              </div>
+            ) : (
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+              <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
+              <div className="font-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
+              <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
             </div>
+            )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
-              {detail(e, showWho) ? <div style={{ fontSize: 13, fontWeight: 700, color: "#6b6557", marginTop: 3 }}>{detail(e, showWho)}</div> : null}
+              {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
+              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <span data-nw style={{ whiteSpace: "nowrap" }}>{labelParts(e)[1]}</span> : <>{k.icon} {labelParts(e)[0]}</>}</div>
+              {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", marginTop: 8 }}>
+                  {[...(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)), ...detailParts(e, showWho)].map((t, i) => <span key={i} style={{ whiteSpace: "nowrap", background: "#eef1f8", color: "#1b1863", fontWeight: 800, fontSize: 16, borderRadius: 999, padding: "3px 12px" }}>{t}</span>)}
+                </div>
+              ) : null}
               {e.note && <div style={{ fontSize: 14, color: "#2b2a42", marginTop: 5, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={e.note} /></div>}
             </div>
           </div>
@@ -136,13 +175,13 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return two ? (
       <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", marginTop: 5 }} />
-        <span><span style={{ display: "block", fontSize: 12.5, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 14, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{k.icon}&nbsp;{label(e)}</span></span>
+        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}><Parts icon={k.icon} parts={labelParts(e)} /></span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ) : (
       <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "8px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", alignSelf: "center" }} />
-        <span style={{ width: 250, flex: "0 0 250px", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
-        <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.25 }}>{k.icon}&nbsp;{label(e)}</span>
+        <span style={{ width: 250, flex: "0 0 250px", fontSize: 15, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
+        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}><Parts icon={k.icon} parts={labelParts(e)} />{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "#4a4333", marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ); };
     return (
@@ -169,8 +208,8 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
         <div className="font-display" style={{ fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{k.icon} {label(e)}</div>
-        <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}>{fullRange(e)}{detail(e, showWho) ? ` · ${detail(e, showWho)}` : ""}</div>
+        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}><Parts icon={k.icon} parts={isMatch(e) ? labelParts(e).slice(1) : labelParts(e)} /></div>
+        <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}><Parts parts={[fullRange(e), ...detailParts(e, showWho)]} /></div>
         {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3b3a52", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={e.note} /></div>}
       </div>
     </div>
@@ -233,17 +272,31 @@ function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; 
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, gap: 0 });
+  const wrap = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 1, top: 0, gap: 0 });
+  // Le texte est agrandi ou réduit (le contenu se remet en page à la nouvelle taille) jusqu'à remplir la zone libre ; le reste est réparti également (haut, milieu, bas).
   useLayoutEffect(() => {
-    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM;
-    const ha = refA.current?.offsetHeight ?? 0; const hb = refB.current?.offsetHeight ?? 0;
-    const total = ha + hb;
-    if (total > avail) setFit({ scale: avail / total, gap: 0 });
-    else setFit({ scale: 1, gap: cards && ha > 0 ? Math.max(0, (avail - total) / 2) : 0 }); // peu d'événements : la suite est centrée dans la place restante
+    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM - 16; // marge de 16 px au-dessus du bandeau bleu
+    const measure = (s: number) => {
+      if (wrap.current) wrap.current.style.width = `${POSTER_W / s}px`;
+      // un titre qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
+      for (const el of Array.from(wrap.current?.querySelectorAll("[data-nw]") ?? [])) { const card = el.closest("[data-card]"); if (card && el.getBoundingClientRect().right > card.getBoundingClientRect().right - 12 * s) return Infinity; }
+      return ((refA.current?.offsetHeight ?? 0) + (refB.current?.offsetHeight ?? 0)) * s;
+    };
+    const run = () => {
+      let lo = 0.4, hi = cards ? 1.5 : 2;
+      if (measure(hi) <= avail) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (measure(mid) <= avail) lo = mid; else hi = mid; }
+      const used = measure(lo); const left = Math.max(0, avail - used); const hasA = cards && (refA.current?.offsetHeight ?? 0) > 0;
+      setFit({ scale: lo, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 / lo : 0 });
+    };
+    run();
+    const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
+    let live = true; fonts?.ready.then(() => { if (live) run(); });
+    return () => { live = false; };
   }, [list, month, showWho, cards]);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM, overflow: "hidden" }}>
-      <div style={{ transform: `scale(${fit.scale})`, transformOrigin: "top center", width: POSTER_W }}>
+      <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale})`, transformOrigin: "top left", width: POSTER_W / fit.scale }}>
         <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
         <div style={{ height: fit.gap }} />
         <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>

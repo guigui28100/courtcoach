@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
+import { CourtLines } from "../components/CourtLines";
 
 // Terrain de tennis dessiné en SVG (aucune image extérieure)
 const Court = () => (
-  <svg viewBox="0 0 240 150" className="hero-court w-full max-w-sm" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-    <rect x="10" y="10" width="220" height="130" rx="6" /><path d="M120 10v130M10 75h220M45 28v94M195 28v94M45 75h150" strokeLinecap="round" />
-    <circle cx="178" cy="42" r="11" fill="#dcf247" stroke="none" /><path d="M170 36c5 4 5 12 0 16M186 36c-5 4-5 12 0 16" stroke="#10203a" strokeWidth="1.6" strokeLinecap="round" />
+  <svg viewBox="0 0 260 130" className="hero-court w-full max-w-sm" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+    <CourtLines cx={130} y={20} h={100} netWidth={4} />
+    <circle cx="196" cy="12" r="10" fill="#dcf247" stroke="none" /><path d="M189 7c4 3 4 9 0 12M203 7c-4 3-4 9 0 12" stroke="#10203a" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 

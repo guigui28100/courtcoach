@@ -5,6 +5,7 @@ import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
+import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, emptyInfo, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
@@ -94,7 +95,7 @@ export function ClubPlan() {
       <div className="grid gap-3">
         <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#d0592b] via-[#a63e1a] to-[#7d2c12] px-5 py-5 text-white shadow-md">
-          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="none" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><rect x="10" y="8" width="380" height="84" /><line x1="200" y1="8" x2="200" y2="92" /><line x1="70" y1="8" x2="70" y2="92" /><line x1="330" y1="8" x2="330" y2="92" /><line x1="70" y1="50" x2="330" y2="50" /></g></svg>
+          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><CourtLines cx={200} y={12} h={76} netWidth={2} /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <ClubLogo className="size-16 text-white drop-shadow" />
@@ -404,6 +405,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
         </label>)}
       {d.kind === "EQUIPES" && <VenuePick value={d.place ?? ""} onChange={(v) => set({ place: v })} />}
+      {d.kind === "EQUIPES" && <MatchWhere courts={d.courts} onCourts={(c) => set({ courts: c })} time={d.time ?? ""} onTime={(t) => set({ time: t })} />}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
         <p className="mb-0 mt-2 font-bold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
@@ -507,7 +509,7 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 );
 }
 
-interface Sel { title?: string; on: boolean; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+interface Sel { title?: string; on: boolean; courts: number[]; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
 // Match par équipes : deux gros boutons « à domicile » / « en déplacement » (on retouche pour effacer)
 function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -521,6 +523,22 @@ function VenuePick({ value, onChange }: { value: string; onChange: (v: string) =
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Match par équipes : sur quels terrains et à quelle heure (écrits sur l'affiche du mois)
+function MatchWhere({ courts, onCourts, time, onTime }: { courts: number[]; onCourts: (c: number[]) => void; time: string; onTime: (t: string) => void }) {
+  return (
+    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">
+      <span>🏟️ Sur quels terrains ? <span className="font-normal text-muted">(facultatif)</span></span>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Terrains du match">
+        {COURTS.map((c) => <Pill key={c.n} on={courts.includes(c.n)} onClick={() => onCourts(toggle(courts, c.n).sort())}>Court {c.n}</Pill>)}
+        <Pill on={courts.length === COURTS.length} onClick={() => onCourts(courts.length === COURTS.length ? [] : COURTS.map((c) => c.n))}>Tous</Pill>
+      </div>
+      <label className="mt-3 block">🕒 À quelle heure ? <span className="font-normal text-muted">(facultatif)</span>
+        <input aria-label="Heure du match" maxLength={80} value={time} onChange={(e) => onTime(e.target.value)} placeholder="Ex. 14 h, ou 9 h – 17 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+      </label>
     </div>
   );
 }
@@ -539,7 +557,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, courts: e.courts, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -561,8 +579,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
       let created: ClubEvent | undefined;
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
-        else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
+        if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
+        else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone(created);
@@ -639,15 +657,15 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : "de l'animation"} (facultatif)
                       <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
-                  <div className="rounded-xl border-2 border-line bg-white p-3">
-                    <p className="m-0 text-sm font-extrabold text-ink">📅 Dans le planning</p>
-                    <p className="m-0 mb-2 text-sm text-muted">« {k.label} » sera placé dans le calendrier. Tu pourras fabriquer l'affiche juste après.</p>
-                    <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
-                      <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
-                        placeholder="Quelques mots sur cet événement"
-                        className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
-                    </label>
-                  </div>
+                  {!POSTER_KINDS.includes(k.key) && (
+                    <div className="rounded-xl border-2 border-line bg-white p-3">
+                      <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+                        <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
+                          placeholder="Quelques mots sur cet événement"
+                          className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+                      </label>
+                    </div>
+                  )}
                   <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
@@ -659,6 +677,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     <label className="mt-2 block rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
                       <input aria-label="Club rencontré" maxLength={80} value={c.info.audience} onChange={(e) => patch(k.key, { info: { ...c.info, audience: e.target.value } })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
+                  {k.key === "EQUIPES" && <div className="mt-2"><MatchWhere courts={c.courts} onCourts={(v) => patch(k.key, { courts: v })} time={c.info.time} onTime={(t) => patch(k.key, { info: { ...c.info, time: t } })} /></div>}
                   {k.key === "EQUIPES" && <div className="mt-2"><VenuePick value={c.info.place} onChange={(v) => patch(k.key, { info: { ...c.info, place: v } })} /></div>}
                   {k.key === "EQUIPES" && (
                     <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>

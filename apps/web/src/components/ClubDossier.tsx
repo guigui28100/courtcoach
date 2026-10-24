@@ -135,7 +135,7 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
     // Découpe par hauteur estimée : la 1re page porte le calendrier (peu de place), les suivantes sont presque vides
     const est = (e: ClubEvent) => { const sub = details(e, o.withWho); return 28 + (sub ? 16 * Math.ceil(sub.length / 72) : 0) + (e.note ? 16 * Math.ceil(Math.min(e.note.length, 240) / 78) : 0); };
     const first: ClubEvent[] = [], chunks: ClubEvent[][] = []; let used = 0, cap = 300, cur = first;
-    for (const e of prog) { const h = est(e); if (used + h > cap && cur.length) { cur = []; chunks.push(cur); used = 0; cap = 860; } cur.push(e); used += h; }
+    for (const e of prog) { const h = est(e); if (used + h > cap && cur.length) { cur = []; chunks.push(cur); used = 0; cap = 400; } cur.push(e); used += h; }
     pages.push((n, t) => (
       <Frame key={m} n={n} total={t}>
         <Head title={monthLabel(m)} sub={`${evs.length} événement${evs.length > 1 ? "s" : ""}`} />
@@ -151,7 +151,13 @@ export function buildDossier(events: ClubEvent[], o: DossierOpts): ReactNode[] {
     chunks.forEach((c, i) => pages.push((n, t) => (
       <Frame key={`${m}-${i}`} n={n} total={t}>
         <Head title={`${monthLabel(m)} (suite)`} sub="Au programme" />
-        <Body center><Program list={c} withWho={o.withWho} /></Body>
+        <Body>
+          <div style={{ height: 400, display: "flex" }}><BigMonth m={m} list={evs} /></div>
+          <div>
+            <div style={{ marginBottom: 4, fontSize: 15, fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>Au programme (suite)</div>
+            <Program list={c} withWho={o.withWho} />
+          </div>
+        </Body>
       </Frame>)));
   }
   return pages.map((p, i) => p(i + 1, pages.length));
