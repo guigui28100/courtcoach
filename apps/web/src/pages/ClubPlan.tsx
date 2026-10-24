@@ -116,15 +116,15 @@ export function ClubPlan() {
       <Err msg={err} />
       <div className="grid gap-2">
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-[#5b6680] bg-white p-2.5 shadow-sm">
-          <div role="tablist" aria-label="Façon de voir le planning" className="flex rounded-xl bg-[#e9edf5] p-1">
+          <div role="tablist" aria-label="Façon de voir le planning" className="flex w-full rounded-xl sm:w-auto bg-[#e9edf5] p-1">
             {VIEWS.map(([k, l]) => (
               <button key={k} role="tab" aria-selected={view === k} type="button" onClick={() => { setView(k); setMulti(false); }}
-                className={`rounded-lg px-4 py-2 font-extrabold ${view === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
+                className={`flex-1 rounded-lg px-2 py-2 text-sm font-extrabold sm:flex-none sm:px-4 sm:text-base ${view === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
             ))}
           </div>
-          <div className="flex flex-1 items-center justify-center gap-2">
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
             <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Précédent" onClick={() => step(-1)}>‹</button>
-            <b className="min-w-[11rem] text-center text-xl text-ink">{navLabel}</b>
+            <b className="min-w-[8rem] text-center text-xl text-ink sm:min-w-[11rem]">{navLabel}</b>
             <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
@@ -523,7 +523,7 @@ function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength 
 
 // « Contre quel club ? » : on écrit ou on touche une lettre ; la liste (clubs des Yvelines + clubs déjà notés) se réduit
 const plain = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-function ClubPicker({ value, onChange, known }: { value: string; onChange: (v: string) => void; known: string[] }) {
+function ClubPicker({ value, onChange, known, compact, label = "Club rencontré" }: { value: string; onChange: (v: string) => void; known: string[]; compact?: boolean; label?: string }) {
   const all = [...new Set([...known, ...YVELINES_CLUBS])].sort((a, b) => plain(a).localeCompare(plain(b), "fr"));
   const [letter, setLetter] = useState("");
   const letters = [...new Set(all.map((n) => plain(n)[0]?.toUpperCase()).filter(Boolean))] as string[];
@@ -531,11 +531,11 @@ function ClubPicker({ value, onChange, known }: { value: string; onChange: (v: s
   const shown = all.filter((n) => (letter ? plain(n).startsWith(letter.toLowerCase()) : true) && (q ? plain(n).startsWith(q) || plain(n).includes(` ${q}`) || plain(n).includes(`-${q}`) : true));
   return (
     <div className="grid gap-2">
-      <input aria-label="Club rencontré" maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
+      <input aria-label={label} maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
       <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
         {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
       </div>
-      <ul className="m-0 grid max-h-52 list-none gap-1 overflow-y-auto p-0" aria-label="Clubs proposés">
+      <ul className={`m-0 grid ${compact ? "max-h-36" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
         {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
         {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
       </ul>
@@ -569,7 +569,16 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
     </section>
   );
   if (cur === "teams") return card("Quelles équipes jouent ?", <><TeamTabs cats={cats} counts={counts} teams={c.teams} onToggle={(t) => patch({ teams: toggle(c.teams, t) })} /><Nav ok={c.teams.length > 0} /></>);
-  if (cur === "club") return card("Contre quel club ?", <>
+  const many = c.teams.length > 1;
+  const clubOf = (t: string) => c.clubs?.[t] ?? "";
+  if (cur === "club") return card(many ? "Contre quel club ? (un par équipe)" : "Contre quel club ?", many ? <>
+    {c.teams.map((t) => (
+      <div key={t} className="grid gap-1 rounded-xl border-2 border-line bg-white p-2">
+        <b className="text-sm text-ink">🎾 {teamLabel(t)}</b>
+        <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />
+      </div>))}
+    <button type="button" className="justify-self-start text-sm font-bold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
+    <small className="text-muted">Facultatif : laisse vide une équipe dont l'adversaire n'est pas connu.</small><Nav skip /></> : <>
     <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
     <small className="text-muted">Facultatif. Clubs des Yvelines (liste à compléter) et clubs déjà notés ; un club absent s'écrit à la main.</small><Nav skip /></>);
   if (cur === "venue") return card("Où se joue le match ?", <>
@@ -599,7 +608,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {c.teams.map(teamLabel).join(" · ") || "—"}{c.info.audience ? ` · contre ${c.info.audience}` : ""}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
+    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
@@ -653,7 +662,7 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 );
 }
 
-interface Sel { title?: string; on: boolean; courts: number[]; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+interface Sel { clubs?: Record<string, string>; title?: string; on: boolean; courts: number[]; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
 // Match par équipes : deux gros boutons « à domicile » / « en déplacement » (on retouche pour effacer)
 function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -726,7 +735,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
         const c = sel[k.key]; const old = placed(k.key);
         if (c.on && !old && k.key === "EQUIPES" && c.teams.length > 1) {
           // plusieurs équipes le même jour : UNE LIGNE PAR ÉQUIPE (chacune avec sa catégorie), mêmes infos communes ; l'étoile seulement sur la première
-          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, ...cleanInfo(c.info) });
+          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, ...cleanInfo({ ...c.info, audience: c.clubs?.[t] ?? c.info.audience }) });
         }
         else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
         else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });

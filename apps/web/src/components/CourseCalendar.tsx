@@ -78,8 +78,8 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
               className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : d < today ? "opacity-60" : "")}>
               <b className={"text-sm " + (d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
-              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-1 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs">＋ {n} libre{n > 1 ? "s" : ""}</span>)}
-              {closed && <span className="mt-1 block text-center text-[0.65rem] font-bold text-muted sm:text-xs">complet</span>}
+              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs">＋ {n}<span className="max-sm:hidden"> libre{n > 1 ? "s" : ""}</span></span>)}
+              {closed && <span className="mt-1 block text-center text-[0.55rem] font-bold tracking-tight text-muted sm:text-xs"><span aria-hidden="true" className="sm:hidden">✕</span><span className="max-sm:sr-only">complet</span></span>}
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
                   <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-extrabold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
