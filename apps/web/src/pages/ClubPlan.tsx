@@ -1,3 +1,4 @@
+import { YVELINES_CLUBS } from "../yvelinesClubs";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
@@ -13,7 +14,7 @@ import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
   addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
-  Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, textOn, titleOf, todayParis,
+  Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, teamLabel, textOn, titleOf, todayParis,
   vacationWeeks, VENUE_AWAY, VENUE_HOME, weekdayOf,
 } from "../clubPlan";
 
@@ -318,8 +319,16 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
 }
 
 // ───────────── Fenêtres ─────────────
-function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+function Modal({ title, onClose, children, wide, bare }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; bare?: boolean }) {
   useEffect(() => { const f = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); }, [onClose]);
+  if (bare) return ( // mode « carte seule » : le planning reste visible en fond (assombri), mais aucune autre carte autour
+    <div className="fixed inset-0 z-50 grid content-start justify-items-center overflow-y-auto bg-black/50 p-4 sm:content-center" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl">
+        <div className="mb-2 flex justify-end"><button type="button" className="btn-outline btn-sm !bg-white" onClick={onClose}>✕ Fermer</button></div>
+        {children}
+      </div>
+    </div>
+  );
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full ${wide ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto rounded-t-3xl bg-[#fbf8f2] p-5 shadow-2xl sm:rounded-3xl`}>
@@ -398,15 +407,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       </Step>
       {d.kind === "EQUIPES" && (
         <Step n={2} title="Quelles équipes jouent ?">
-          {groups.map((g) => (
-            <div key={g} className="mb-2"><b className="text-sm text-muted">{g}</b>
-              {cats.filter((c) => c.group === g).map((c) => (
-                <div key={c.key} className="mt-1 flex flex-wrap items-center gap-2"><span className="w-48 text-sm font-bold text-ink">{c.label}</span>
-                  {Array.from({ length: counts[c.key] ?? c.def }, (_, i) => `${c.key}#${i + 1}`).map((t, i) => <Pill key={t} on={d.teams.includes(t)} color={c.color} onClick={() => set({ teams: toggle(d.teams, t) })}>Éq. {i + 1}</Pill>)}
-                </div>
-              ))}
-            </div>
-          ))}
+          <TeamTabs cats={cats} counts={counts} teams={d.teams} onToggle={(t) => set({ teams: toggle(d.teams, t) })} />
         </Step>
       )}
       {d.kind === "EQUIPES" && (
@@ -466,6 +467,140 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       </div>
     </Modal>
   );
+}
+
+
+// Choix des équipes d'un match : rangées dans trois ONGLETS (jeunes de 8 à 18 ans · seniors · vétérans +35 / +45 ans), messieurs et dames dans chacun
+const TEAM_TABS: { id: string; label: string; match: (g: string) => boolean }[] = [
+  { id: "jeunes", label: "🧒 Jeunes de 8 à 18 ans", match: (g) => g.startsWith("Jeunes") },
+  { id: "seniors", label: "🎾 Seniors", match: (g) => g.startsWith("Seniors") },
+  { id: "veterans", label: "🏅 Vétérans +35 / +45 ans", match: (g) => g.startsWith("Vétérans") },
+];
+function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; counts: Record<string, number>; teams: string[]; onToggle: (t: string) => void }) {
+  const inTab = (id: string) => cats.filter((c) => TEAM_TABS.find((t) => t.id === id)!.match(c.group));
+  const picked = (id: string) => teams.filter((t) => inTab(id).some((c) => c.key === t.split("#")[0])).length;
+  const [tab, setTab] = useState<string>(() => TEAM_TABS.find((t) => picked(t.id) > 0)?.id ?? TEAM_TABS.find((t) => inTab(t.id).length > 0)?.id ?? "jeunes");
+  const sexOf = (key: string) => (key.startsWith("gar") || key.endsWith("-m") ? "👦 Messieurs / garçons" : "👧 Dames / filles");
+  const list = inTab(tab);
+  return (
+    <div>
+      <div role="tablist" aria-label="Catégories d'équipes" className="mb-2 flex flex-wrap gap-1.5">
+        {TEAM_TABS.filter((t) => inTab(t.id).length > 0).map((t) => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+            className={"min-h-10 rounded-full border-2 px-3 text-sm font-extrabold " + (tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+            {t.label}{picked(t.id) > 0 && <span className="ml-1.5 rounded-full bg-[#facc15] px-1.5 text-xs text-ink">{picked(t.id)}</span>}
+          </button>
+        ))}
+      </div>
+      {list.map((c, i) => (
+        <div key={c.key}>
+          {(i === 0 || sexOf(list[i - 1].key) !== sexOf(c.key)) && <b className="mt-2 block text-xs uppercase tracking-wide text-muted">{sexOf(c.key)}</b>}
+          <div className="mt-1 flex flex-wrap items-center gap-2"><span className="w-44 text-sm font-bold text-ink sm:w-52">{c.label}</span>
+            {Array.from({ length: counts[c.key] ?? c.def }, (_, n) => `${c.key}#${n + 1}`).map((t, n) => <Pill key={t} on={teams.includes(t)} color={c.color} onClick={() => onToggle(t)}>Éq. {n + 1}</Pill>)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+// Liste déroulante + possibilité d'écrire soi-même (valeur gardée dans le parent)
+function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength = 80 }: { label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; maxLength?: number }) {
+  const [other, setOther] = useState(() => !!value && !options.includes(value));
+  return (
+    <div className="grid gap-2">
+      <select aria-label={label} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" value={other ? "__autre" : value}
+        onChange={(e) => { if (e.target.value === "__autre") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
+        <option value="">Choisir dans la liste…</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value="__autre">✏️ Autre : je l'écris moi-même</option>
+      </select>
+      {other && <input aria-label={`${label} : écrit à la main`} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3" />}
+    </div>
+  );
+}
+
+// « Contre quel club ? » : on écrit ou on touche une lettre ; la liste (clubs des Yvelines + clubs déjà notés) se réduit
+const plain = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function ClubPicker({ value, onChange, known }: { value: string; onChange: (v: string) => void; known: string[] }) {
+  const all = [...new Set([...known, ...YVELINES_CLUBS])].sort((a, b) => plain(a).localeCompare(plain(b), "fr"));
+  const [letter, setLetter] = useState("");
+  const letters = [...new Set(all.map((n) => plain(n)[0]?.toUpperCase()).filter(Boolean))] as string[];
+  const q = plain(value.trim());
+  const shown = all.filter((n) => (letter ? plain(n).startsWith(letter.toLowerCase()) : true) && (q ? plain(n).startsWith(q) || plain(n).includes(` ${q}`) || plain(n).includes(`-${q}`) : true));
+  return (
+    <div className="grid gap-2">
+      <input aria-label="Club rencontré" maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
+        {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
+      </div>
+      <ul className="m-0 grid max-h-52 list-none gap-1 overflow-y-auto p-0" aria-label="Clubs proposés">
+        {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
+        {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
+      </ul>
+    </div>
+  );
+}
+
+// Match par équipes : des CARTES qui s'ouvrent l'une après l'autre (une seule visible à la fois)
+const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
+function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
+  const [i, setI] = useState(0);
+  const away = c.info.place === VENUE_AWAY;
+  const steps = ["teams", "club", "venue", ...(away ? [] : ["courts"]), "hour", "end"] as const;
+  const cur = steps[Math.min(i, steps.length - 1)];
+  const next = () => setI((x) => Math.min(x + 1, steps.length - 1));
+  const info = (p: Partial<PosterInfo>) => patch({ info: { ...c.info, ...p } });
+  const Nav = ({ ok = true, skip }: { ok?: boolean; skip?: boolean }) => (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button type="button" className="btn-clay" disabled={!ok} onClick={next}>Continuer →</button>
+      {skip && <button type="button" className="btn-outline" onClick={next}>Passer</button>}
+    </div>
+  );
+  const card = (title: string, body: React.ReactNode) => (
+    <section aria-label={title} className="grid gap-2 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-2">
+        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
+        <small className="font-bold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
+      </div>
+      <h4 className="m-0 font-display text-lg text-ink">{title}</h4>
+      {body}
+    </section>
+  );
+  if (cur === "teams") return card("Quelles équipes jouent ?", <><TeamTabs cats={cats} counts={counts} teams={c.teams} onToggle={(t) => patch({ teams: toggle(c.teams, t) })} /><Nav ok={c.teams.length > 0} /></>);
+  if (cur === "club") return card("Contre quel club ?", <>
+    <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
+    <small className="text-muted">Facultatif. Clubs des Yvelines (liste à compléter) et clubs déjà notés ; un club absent s'écrit à la main.</small><Nav skip /></>);
+  if (cur === "venue") return card("Où se joue le match ?", <>
+    <div className="grid grid-cols-2 gap-2">
+      {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, sub]) => (
+        <button key={v} type="button" aria-pressed={c.info.place === v} onClick={() => { info({ place: v }); setI(i + 1); }}
+          className={`rounded-xl border-2 px-3 py-4 text-left ${c.info.place === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+          <span className="block font-bold">{l}</span><span className="block text-xs font-normal opacity-80">{sub}</span>
+        </button>))}
+    </div><Nav skip /></>);
+  if (cur === "courts") return card("Sur quels terrains ?", <>
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Terrains du match">
+      {COURTS.map((k) => <Pill key={k.n} on={c.courts.includes(k.n)} onClick={() => patch({ courts: toggle(c.courts, k.n).sort() })}>Court {k.n}</Pill>)}
+      <Pill on={c.courts.length === COURTS.length} onClick={() => patch({ courts: c.courts.length === COURTS.length ? [] : COURTS.map((k) => k.n) })}>Tous</Pill>
+    </div><small className="text-muted">Facultatif.</small><Nav skip /></>);
+  if (cur === "hour") return card("À quelle heure ?", <>
+    <ChoiceOrText label="Heure du match" value={c.info.time} onChange={(v) => info({ time: v })} options={MATCH_HOURS} placeholder="Ex. 14 h, ou 9 h – 17 h" />
+    <small className="text-muted">Facultatif.</small><Nav skip /></>);
+  return card("Dernier détail : un mot et qui s'en occupe", <>
+    <label className="block text-sm font-bold text-ink">📝 Un mot sur ce match (facultatif)
+      <textarea aria-label="Description : match par équipes" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Quelques mots sur cet événement" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
+    </label>
+    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
+      {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
+        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
+          {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
+      <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
+    </div>
+    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {c.teams.map(teamLabel).join(" · ") || "—"}{c.info.audience ? ` · contre ${c.info.audience}` : ""}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
+    <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
 function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number>; onClose: () => void; onDone: () => void }) {
@@ -558,6 +693,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [matchFlow, setMatchFlow] = useState(false); // vrai quand on remplit un match par équipes carte par carte (la carte est alors seule à l'écran)
   const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
   const [multi, setMulti] = useState(endInit !== undefined && endInit !== day);
   const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
@@ -588,7 +724,11 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
       let created: ClubEvent | undefined;
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
+        if (c.on && !old && k.key === "EQUIPES" && c.teams.length > 1) {
+          // plusieurs équipes le même jour : UNE LIGNE PAR ÉQUIPE (chacune avec sa catégorie), mêmes infos communes ; l'étoile seulement sur la première
+          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, ...cleanInfo(c.info) });
+        }
+        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
         else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
@@ -604,6 +744,12 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
+  if (matchFlow && step === 2 && sel.EQUIPES?.on) return (
+    <Modal bare title="Match par équipes" onClose={onClose}>
+      <MatchCards c={sel.EQUIPES} patch={(p) => patch("EQUIPES", p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]}
+        onExit={() => { setMatchFlow(false); patch("EQUIPES", { on: false }); }} onSave={save} busy={busy || !!missing || !chosen} err={err || missing} />
+    </Modal>
+  );
   return (
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
@@ -642,7 +788,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           <Fold key={g} color={gm.color} icon={gm.icon} title={g} badge={on.length} hint={on.length ? `✔ ${on.map((k) => k.label).join(" · ")}` : `${gk.length} choix`}>
             <div className="grid gap-2 sm:grid-cols-2">
               {gk.map((k) => { const c = sel[k.key] ?? { on: false }; return (
-                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => patch(k.key, { on: !c.on })}
+                <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => { if (k.key === "EQUIPES" && !c.on) setMatchFlow(true); patch(k.key, { on: !c.on }); }}
                   style={c.on ? { borderColor: k.color, background: `${k.color}22` } : undefined}
                   className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-bold text-ink hover:border-ink">
                   <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
@@ -662,6 +808,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
                   </div>
+                  {k.key === "EQUIPES" ? <MatchCards c={c} patch={(p) => patch(k.key, p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]} /> : (<>
                   {(k.key === "TOURNOI" || k.key === "ANIMATION") && (
                     <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : "de l'animation"} (facultatif)
                       <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
@@ -682,21 +829,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     ); })}
                     <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
-                  {k.key === "EQUIPES" && (
-                    <label className="mt-2 block rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
-                      <input aria-label="Club rencontré" maxLength={80} value={c.info.audience} onChange={(e) => patch(k.key, { info: { ...c.info, audience: e.target.value } })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
-                    </label>)}
-                  {k.key === "EQUIPES" && <div className="mt-2"><MatchWhere courts={c.courts} onCourts={(v) => patch(k.key, { courts: v })} time={c.info.time} onTime={(t) => patch(k.key, { info: { ...c.info, time: t } })} /></div>}
-                  {k.key === "EQUIPES" && <div className="mt-2"><VenuePick value={c.info.place} onChange={(v) => patch(k.key, { info: { ...c.info, place: v } })} /></div>}
-                  {k.key === "EQUIPES" && (
-                    <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
-                      {cats.map((cat) => (
-                        <div key={cat.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-44 text-xs font-bold text-ink">{cat.label}</span>
-                          {Array.from({ length: counts[cat.key] ?? cat.def }, (_, i) => `${cat.key}#${i + 1}`).map((t, i) => <Pill key={t} on={c.teams.includes(t)} color={cat.color} onClick={() => patch(k.key, { teams: toggle(c.teams, t) })}>Éq. {i + 1}</Pill>)}
-                        </div>
-                      ))}
-                    </details>
-                  )}
+                  </>)}
                 </div>
                 </Fragment>
               );
