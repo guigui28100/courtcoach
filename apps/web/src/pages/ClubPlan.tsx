@@ -724,7 +724,11 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
       let created: ClubEvent | undefined;
       for (const k of KINDS) {
         const c = sel[k.key]; const old = placed(k.key);
-        if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
+        if (c.on && !old && k.key === "EQUIPES" && c.teams.length > 1) {
+          // plusieurs équipes le même jour : UNE LIGNE PAR ÉQUIPE (chacune avec sa catégorie), mêmes infos communes ; l'étoile seulement sur la première
+          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, ...cleanInfo(c.info) });
+        }
+        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
         else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
