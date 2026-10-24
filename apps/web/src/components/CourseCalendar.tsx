@@ -56,6 +56,7 @@ export function CourseCalendar({ lessons, onLesson, onDay }: { lessons: Lesson[]
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
               className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : d < today ? "opacity-60" : "")}>
               <b className={"text-sm " + (d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
+              {free && <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span>}
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
                   <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-extrabold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
@@ -67,7 +68,7 @@ export function CourseCalendar({ lessons, onLesson, onDay }: { lessons: Lesson[]
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>👆 Touche un jour libre pour réserver</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>＋ Jour libre : touche-le pour réserver</span></p>
     </div>
   );
 }

@@ -221,6 +221,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
               {([["cal", "📆 Calendrier"], ["liste", "📋 Liste"]] as const).map(([k, l]) => <button key={k} aria-pressed={view === k} onClick={() => setView(k)} className={"rounded-full border-2 px-4 py-1.5 text-sm font-extrabold " + (view === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:border-ink")}>{l}</button>)}
             </div>
           </div>
+          {view === "cal" && <p className="m-0 rounded-2xl bg-[#eef2fb] px-4 py-3 text-sm font-bold text-[#1b1863]">👆 Pour réserver : touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>), ou utilise le bouton « {c.button} » en haut.</p>}
           {view === "cal" && <CourseCalendar lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
         </div>
       )}
