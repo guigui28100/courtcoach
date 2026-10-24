@@ -455,9 +455,12 @@ export function AdultSpace() {
   return <AdultView preview={false} lessons={lessons} seenLocal={[]} onLessonsChanged={load} onSeen={async (l) => { await post(`/lessons/${l.id}/seen`); load(); }} videos={videos} onVideosChanged={refresh} />;
 }
 
+// Aperçu du président : un adulte sans cours, ou avec UN seul cours (jamais plus)
+export const PresidentAdultPreview = () => <AdultPreview maxOne />;
+
 // Aperçu du coach : exemples inventés, aucun appel au serveur
-export function AdultPreview() {
+export function AdultPreview({ maxOne }: { maxOne?: boolean } = {}) {
   const [seen, setSeen] = useState<string[]>([]);
-  const [mode, setMode] = useState<"vide" | "deux">("vide"); // adulte sans réservation (pour tester) ou adulte qui a déjà 2 cours
-  return <><div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-[#fff3cd] p-3 text-sm font-bold text-[#7a5a00]" role="group" aria-label="Exemple d'adulte"><span>👀 Exemple d'adulte :</span>{([["vide", "Sans aucune réservation (pour tester)"], ["deux", "Qui a déjà 2 cours (limite atteinte)"]] as const).map(([k, t]) => <button key={k} type="button" aria-pressed={mode === k} className={"rounded-full border-2 px-3 py-1 " + (mode === k ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")} onClick={() => setMode(k)}>{t}</button>)}</div><AdultView preview lessons={mode === "vide" ? [] : EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} /></>;
+  const [mode, setMode] = useState<"vide" | "un" | "deux">("vide"); // adulte sans réservation (pour tester) ou adulte qui a déjà 2 cours
+  return <><div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-[#fff3cd] p-3 text-sm font-bold text-[#7a5a00]" role="group" aria-label="Exemple d'adulte"><span>👀 Exemple d'adulte :</span>{([["vide", "Sans aucun cours de prévu (pour tester)"], ...(maxOne ? [["un", "Avec un seul cours de prévu"]] : [["deux", "Qui a déjà 2 cours (limite atteinte)"]])] as [typeof mode, string][]).map(([k, t]) => <button key={k} type="button" aria-pressed={mode === k} className={"rounded-full border-2 px-3 py-1 " + (mode === k ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")} onClick={() => setMode(k)}>{t}</button>)}</div><AdultView preview lessons={mode === "vide" ? [] : mode === "un" ? EXAMPLE_LESSONS.filter((l) => l.id === "ex1") : EXAMPLE_LESSONS} seenLocal={seen} onLessonsChanged={() => {}} onSeen={(l) => setSeen((s) => [...s, l.id])} videos={[]} onVideosChanged={() => {}} /></>;
 }
