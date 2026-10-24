@@ -1,3 +1,4 @@
+import { YVELINES_CLUBS } from "../yvelinesClubs";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
@@ -520,6 +521,28 @@ function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength 
   );
 }
 
+// « Contre quel club ? » : on écrit ou on touche une lettre ; la liste (clubs des Yvelines + clubs déjà notés) se réduit
+const plain = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function ClubPicker({ value, onChange, known }: { value: string; onChange: (v: string) => void; known: string[] }) {
+  const all = [...new Set([...known, ...YVELINES_CLUBS])].sort((a, b) => plain(a).localeCompare(plain(b), "fr"));
+  const [letter, setLetter] = useState("");
+  const letters = [...new Set(all.map((n) => plain(n)[0]?.toUpperCase()).filter(Boolean))] as string[];
+  const q = plain(value.trim());
+  const shown = all.filter((n) => (letter ? plain(n).startsWith(letter.toLowerCase()) : true) && (q ? plain(n).startsWith(q) || plain(n).includes(` ${q}`) || plain(n).includes(`-${q}`) : true));
+  return (
+    <div className="grid gap-2">
+      <input aria-label="Club rencontré" maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
+        {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
+      </div>
+      <ul className="m-0 grid max-h-52 list-none gap-1 overflow-y-auto p-0" aria-label="Clubs proposés">
+        {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
+        {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
+      </ul>
+    </div>
+  );
+}
+
 // Match par équipes : des CARTES qui s'ouvrent l'une après l'autre (une seule visible à la fois)
 const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
 function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
@@ -547,8 +570,8 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
   );
   if (cur === "teams") return card("Quelles équipes jouent ?", <><TeamTabs cats={cats} counts={counts} teams={c.teams} onToggle={(t) => patch({ teams: toggle(c.teams, t) })} /><Nav ok={c.teams.length > 0} /></>);
   if (cur === "club") return card("Contre quel club ?", <>
-    <ChoiceOrText label="Club rencontré" value={c.info.audience} onChange={(v) => info({ audience: v })} options={pastClubs} placeholder="Ex. TC Dreux, US Mantes…" />
-    <small className="text-muted">Facultatif. Les clubs déjà notés dans le planning sont proposés dans la liste.</small><Nav skip /></>);
+    <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
+    <small className="text-muted">Facultatif. Clubs des Yvelines (liste à compléter) et clubs déjà notés ; un club absent s'écrit à la main.</small><Nav skip /></>);
   if (cur === "venue") return card("Où se joue le match ?", <>
     <div className="grid grid-cols-2 gap-2">
       {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, sub]) => (
