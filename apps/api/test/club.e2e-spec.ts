@@ -84,9 +84,9 @@ describe("Planning du club (réservé au coach)", () => {
   });
 
   it("personnes à affecter : bénévoles, bureau, professeurs ; noms vérifiés, coach seul", async () => {
-    const r = (await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "  Anne  Dupont ", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }] }).expect(200)).body;
-    expect(r).toEqual([{ name: "Anne Dupont", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }]);
-    expect((await A.coach.get("/api/club/plan").expect(200)).body.people).toHaveLength(2);
+    const r = (await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "Marc Leroy", role: "PRESIDENT" }, { name: "  Anne  Dupont ", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }] }).expect(200)).body;
+    expect(r).toEqual([{ name: "Marc Leroy", role: "PRESIDENT" }, { name: "Anne Dupont", role: "BENEVOLE" }, { name: "Paul Martin", role: "BUREAU" }]);
+    expect((await A.coach.get("/api/club/plan").expect(200)).body.people).toHaveLength(3);
     await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "Anne", role: "BENEVOLE" }, { name: "anne", role: "BUREAU" }] }).expect(400); // doublon
     await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "Zoé", role: "CHEF" }] }).expect(400);
     await A.coach.put("/api/club/people").set(ORIGIN).send({ people: [{ name: "   ", role: "BUREAU" }] }).expect(400);

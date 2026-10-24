@@ -484,7 +484,7 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
   );
 }
 
-const ROLES = [{ key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
+const ROLES = [{ key: "PRESIDENT", label: "Président du club" }, { key: "PROF", label: "Professeurs" }, { key: "BENEVOLE", label: "Bénévoles" }, { key: "BUREAU", label: "Bureau" }];
 
 function saveBlob(blob: Blob, name: string) {
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
