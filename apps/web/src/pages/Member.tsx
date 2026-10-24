@@ -49,6 +49,13 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
   const chosen = slot ? plan?.find((d) => d.date === slot.date)?.slots.find((s) => s.time === slot.time) : null;
   const [weekly, setWeekly] = useState(false); // « toute l'année » : le même créneau chaque semaine jusqu'au 30 juin
   const [duo, setDuo] = useState(false); // cours à deux : on demande qui est le partenaire
+  const [sub, setSub] = useState<2 | 3>(2); // depuis un jour choisi : 2 = « Ton cours », 3 = « Heure » (les champs restent montés, seulement cachés)
+  const step3 = !date || sub === 3;
+  function next() {
+    const f = new FormData(document.querySelector<HTMLFormElement>("form[aria-label='Nouvelle demande de cours']")!);
+    if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
+    setErr(""); setSub(3); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (preview) { setErr(slot ? "Aperçu : rien n'est réservé. Un adulte verrait ici « Réservé ! » et le créneau deviendrait indisponible pour les autres." : "Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
@@ -61,12 +68,13 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      {hasPlan && <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? "Choisis ton heure" : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
+      {(hasPlan || (date && sub === 2 && plan !== null)) && <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? (sub === 2 ? `Ton cours avec ${profName(prof)}` : "Choisis ton heure") : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={date && sub === 2 ? 2 : 3} />}
       {prof && date ? (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-clay bg-white p-3"><Avatar name={profName(prof)} /><div className="grid"><strong className="font-display text-lg">{profName(prof)}</strong>{price ? <span className="text-sm text-muted">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}</div>{onBack && <button type="button" className="btn-outline btn-sm ml-auto" onClick={onBack}>Changer de professeur</button>}</div>
       ) : prof ? (
         <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
       ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
+      <div className={date && sub === 3 ? "hidden" : "grid gap-6"}>
       <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {Object.entries(TYPE_UI).map(([k, [icon, title, sub]], i) => (
@@ -92,7 +100,10 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
       <fieldset className="m-0 border-0 p-0"><legend className={legend}><span className={num}>2</span>Sur quoi veux-tu travailler ?</legend>
         <div className="flex flex-wrap gap-2">{GOALS.map((g, i) => <Chip key={g} type="radio" name="objective" value={g} defaultChecked={i === 0} />)}</div>
       </fieldset>
-      {hasPlan ? (
+      </div>
+      {date && sub === 2 && hasPlan && <div className="flex flex-wrap gap-2"><button type="button" className="btn-clay min-h-12" onClick={next}>Continuer : choisir l'heure →</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>}
+      {date && sub === 3 && <button type="button" className="btn-outline btn-sm justify-self-start" onClick={() => setSub(2)}>← Changer mon cours</button>}
+      {step3 && (hasPlan ? (
         <fieldset className="m-0 grid gap-3 border-0 p-0"><legend className={legend}><span className={num}>3</span>{date ? "Choisis ton heure" : "Choisis ton créneau"} <small className="font-body font-normal text-muted">(1 heure)</small></legend>
           {date ? <DayHours day={plan!.find((d) => d.date === date)} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} /> : <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />}
           {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
@@ -104,12 +115,13 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
         </fieldset>
       ) : plan !== null ? (
         <p className="m-0 rounded-2xl bg-[#fff3cd] p-4 font-bold text-[#7a5a00]">📅 {prof ? profName(prof) : "Ce professeur"} n'a plus de créneau libre pour le moment. Reviens un peu plus tard, ou choisis un autre professeur.</p>
-      ) : <div className="skeleton h-24" role="status" aria-label="Chargement du planning" />}
-      {hasPlan && <Field label={`Un message pour ${prof?.firstName ?? "ton professeur"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>}
+      ) : <div className="skeleton h-24" role="status" aria-label="Chargement du planning" />)}
+      {date && sub === 2 && !hasPlan && plan !== null && <p className="m-0 rounded-2xl bg-[#fff3cd] p-4 font-bold text-[#7a5a00]">📅 Plus de créneau libre ce jour-là avec ce professeur. Change de professeur ou de jour.</p>}
+      {step3 && hasPlan && <Field label={`Un message pour ${prof?.firstName ?? "ton professeur"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>}
       <Err msg={err} />
-      {hasPlan && <p className="m-0 text-sm text-muted">Ton créneau est mis de côté : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} doit le confirmer (sous 48 h, sinon il est libéré). Tu peux annuler depuis « Mes cours ».</p>}
+      {step3 && hasPlan && <p className="m-0 text-sm text-muted">Ton créneau est mis de côté : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} doit le confirmer (sous 48 h, sinon il est libéré). Tu peux annuler depuis « Mes cours ».</p>}
       {date && hasPlan && chosen && slot && <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink p-4 text-white"><div className="grid"><strong className="text-lg">Ton créneau : {fmtPlanSlot(slot.date, chosen.time, chosen.end)}</strong><span className="text-sm text-white/80">avec {profName(prof)}{price ? ` · ${price} € à régler directement avec lui` : ""}{weekly ? " · 🔁 chaque semaine" : ""}</span></div></div>}
-      <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={!hasPlan || !slot}>{chosen && slot ? (weekly ? `✅ Réserver : ${everyDay(slot)}` : `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}`) : "Choisis un créneau ci-dessus"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
+      {step3 && <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={!hasPlan || !slot}>{chosen && slot ? (weekly ? `✅ Réserver : ${everyDay(slot)}` : `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}`) : "Choisis un créneau ci-dessus"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>}
     </form>
   );
 }
