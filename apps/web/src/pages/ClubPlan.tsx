@@ -398,15 +398,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       </Step>
       {d.kind === "EQUIPES" && (
         <Step n={2} title="Quelles équipes jouent ?">
-          {groups.map((g) => (
-            <div key={g} className="mb-2"><b className="text-sm text-muted">{g}</b>
-              {cats.filter((c) => c.group === g).map((c) => (
-                <div key={c.key} className="mt-1 flex flex-wrap items-center gap-2"><span className="w-48 text-sm font-bold text-ink">{c.label}</span>
-                  {Array.from({ length: counts[c.key] ?? c.def }, (_, i) => `${c.key}#${i + 1}`).map((t, i) => <Pill key={t} on={d.teams.includes(t)} color={c.color} onClick={() => set({ teams: toggle(d.teams, t) })}>Éq. {i + 1}</Pill>)}
-                </div>
-              ))}
-            </div>
-          ))}
+          <TeamTabs cats={cats} counts={counts} teams={d.teams} onToggle={(t) => set({ teams: toggle(d.teams, t) })} />
         </Step>
       )}
       {d.kind === "EQUIPES" && (
@@ -465,6 +457,41 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         {d.id && <button type="button" className="btn-outline ml-auto text-[#922b21]" disabled={busy} onClick={() => { if (confirm("Supprimer cet événement ?")) remove(); }}>🗑️ Supprimer</button>}
       </div>
     </Modal>
+  );
+}
+
+
+// Choix des équipes d'un match : rangées dans trois ONGLETS (jeunes de 8 à 18 ans · seniors · vétérans +35 / +45 ans), messieurs et dames dans chacun
+const TEAM_TABS: { id: string; label: string; match: (g: string) => boolean }[] = [
+  { id: "jeunes", label: "🧒 Jeunes de 8 à 18 ans", match: (g) => g.startsWith("Jeunes") },
+  { id: "seniors", label: "🎾 Seniors", match: (g) => g.startsWith("Seniors") },
+  { id: "veterans", label: "🏅 Vétérans +35 / +45 ans", match: (g) => g.startsWith("Vétérans") },
+];
+function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; counts: Record<string, number>; teams: string[]; onToggle: (t: string) => void }) {
+  const inTab = (id: string) => cats.filter((c) => TEAM_TABS.find((t) => t.id === id)!.match(c.group));
+  const picked = (id: string) => teams.filter((t) => inTab(id).some((c) => c.key === t.split("#")[0])).length;
+  const [tab, setTab] = useState<string>(() => TEAM_TABS.find((t) => picked(t.id) > 0)?.id ?? TEAM_TABS.find((t) => inTab(t.id).length > 0)?.id ?? "jeunes");
+  const sexOf = (key: string) => (key.startsWith("gar") || key.endsWith("-m") ? "👦 Messieurs / garçons" : "👧 Dames / filles");
+  const list = inTab(tab);
+  return (
+    <div>
+      <div role="tablist" aria-label="Catégories d'équipes" className="mb-2 flex flex-wrap gap-1.5">
+        {TEAM_TABS.filter((t) => inTab(t.id).length > 0).map((t) => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+            className={"min-h-10 rounded-full border-2 px-3 text-sm font-extrabold " + (tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+            {t.label}{picked(t.id) > 0 && <span className="ml-1.5 rounded-full bg-[#facc15] px-1.5 text-xs text-ink">{picked(t.id)}</span>}
+          </button>
+        ))}
+      </div>
+      {list.map((c, i) => (
+        <div key={c.key}>
+          {(i === 0 || sexOf(list[i - 1].key) !== sexOf(c.key)) && <b className="mt-2 block text-xs uppercase tracking-wide text-muted">{sexOf(c.key)}</b>}
+          <div className="mt-1 flex flex-wrap items-center gap-2"><span className="w-44 text-sm font-bold text-ink sm:w-52">{c.label}</span>
+            {Array.from({ length: counts[c.key] ?? c.def }, (_, n) => `${c.key}#${n + 1}`).map((t, n) => <Pill key={t} on={teams.includes(t)} color={c.color} onClick={() => onToggle(t)}>Éq. {n + 1}</Pill>)}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -690,11 +717,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                   {k.key === "EQUIPES" && <div className="mt-2"><VenuePick value={c.info.place} onChange={(v) => patch(k.key, { info: { ...c.info, place: v } })} /></div>}
                   {k.key === "EQUIPES" && (
                     <details open className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">Quelles équipes ? ({c.teams.length})</summary>
-                      {cats.map((cat) => (
-                        <div key={cat.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-44 text-xs font-bold text-ink">{cat.label}</span>
-                          {Array.from({ length: counts[cat.key] ?? cat.def }, (_, i) => `${cat.key}#${i + 1}`).map((t, i) => <Pill key={t} on={c.teams.includes(t)} color={cat.color} onClick={() => patch(k.key, { teams: toggle(c.teams, t) })}>Éq. {i + 1}</Pill>)}
-                        </div>
-                      ))}
+                      <div className="mt-2"><TeamTabs cats={cats} counts={counts} teams={c.teams} onToggle={(t) => patch(k.key, { teams: toggle(c.teams, t) })} /></div>
                     </details>
                   )}
                 </div>
