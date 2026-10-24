@@ -20,7 +20,7 @@ export const EXAMPLE_PROFS: ProfCard[] = [
 const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-bold uppercase tracking-wider text-clay">{k}</b>{v}</div>;
 
 // Bandeau « terre battue » avec la balle et les étapes de la réservation
-export const DAY_STEPS = ["Professeur", "Ton cours", "Heure"]; // quand le jour est déjà choisi dans le calendrier
+export const DAY_STEPS = ["Professeur", "Heure", "Ton cours"]; // quand le jour est déjà choisi dans le calendrier
 export function ClayHero({ title, text, step, labels }: { title: string; text: string; step: 1 | 2 | 3; labels?: string[] }) {
   return (
     <header className="relative overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-clay to-clay-dark p-5 text-white sm:p-6">

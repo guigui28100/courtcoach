@@ -170,10 +170,10 @@ export function DayHours({ day, value, onChange }: { day: PlanDay | undefined; v
         {day.slots.map((s) => {
           const on = value?.date === day.date && value.time === s.time;
           return (
-            <li key={s.time} className="grid grid-cols-[4.5rem_1fr] items-center gap-3">
-              <span className="text-right font-display text-lg font-bold text-muted">{hourOf(s.time)}</span>
+            <li key={s.time} className="grid grid-cols-[7.5rem_1fr] items-center gap-3 sm:grid-cols-[9rem_1fr]">
+              <span className="whitespace-nowrap text-right font-display text-base font-bold text-muted sm:text-lg">{hourOf(s.time)} – {hourOf(s.end)}</span>
               {s.free ? (
-                <button type="button" aria-pressed={on} aria-label={`${hourOf(s.time)} : libre`} onClick={() => onChange(on ? null : { date: day.date, time: s.time })}
+                <button type="button" aria-pressed={on} aria-label={`${hourOf(s.time)} à ${hourOf(s.end)} : libre`} onClick={() => onChange(on ? null : { date: day.date, time: s.time })}
                   className={"min-h-12 rounded-xl border-2 px-3 font-extrabold " + (on ? "border-[#0f5f2d] bg-[#15803d] text-white shadow-md" : "border-[#bbe5c8] bg-[#e8f7ee] text-[#166534] hover:border-[#15803d]")}>{on ? "✔ Mon choix" : "Libre"}</button>
               ) : (
                 <span className="grid min-h-12 place-items-center rounded-xl border-2 border-[#e3dccd] bg-[repeating-linear-gradient(45deg,#f1ede4,#f1ede4_6px,#e7e0d1_6px,#e7e0d1_12px)] font-extrabold text-muted">Pris</span>
