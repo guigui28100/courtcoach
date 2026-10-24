@@ -18,7 +18,7 @@ export const KINDS: KindInfo[] = [
   { key: "MAINT_BULLE_QUICK", label: "Maintenance de la bulle · quick", color: "#B7950B", icon: "🛠️", group: "Terrains", who: true, courts: [3, 4] },
   { key: "TERRE_BATTUE", label: "Réfection de la terre battue", color: "#C0392B", icon: "🧱", group: "Terrains", who: false },
   { key: "INSCRIPTIONS", label: "Journée d'inscriptions", color: "#16A085", icon: "📝", group: "Vie du club", who: false },
-  { key: "JUMELAGE", label: "Jumelage", color: "#5B2C83", icon: "🤝", group: "Vie du club", who: true },
+  { key: "JUMELAGE", label: "Jumelage", color: "#5B2C83", icon: "🤝", group: "Animations et stages", who: true },
   { key: "FETE", label: "Fête du club", color: "#E84393", icon: "🥳", group: "Vie du club", who: true },
   { key: "FETE_ECOLE", label: "Fête de l'école de tennis", color: "#00ACC1", icon: "🎊", group: "Vie du club", who: true },
   { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
