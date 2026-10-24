@@ -20,7 +20,8 @@ export const EXAMPLE_PROFS: ProfCard[] = [
 const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-bold uppercase tracking-wider text-clay">{k}</b>{v}</div>;
 
 // Bandeau « terre battue » avec la balle et les étapes de la réservation
-export function ClayHero({ title, text, step }: { title: string; text: string; step: 1 | 2 | 3 }) {
+export const DAY_STEPS = ["Professeur", "Ton cours", "Heure"]; // quand le jour est déjà choisi dans le calendrier
+export function ClayHero({ title, text, step, labels }: { title: string; text: string; step: 1 | 2 | 3; labels?: string[] }) {
   return (
     <header className="relative overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-clay to-clay-dark p-5 text-white sm:p-6">
       <span aria-hidden="true" className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-ball opacity-90" />
@@ -28,7 +29,7 @@ export function ClayHero({ title, text, step }: { title: string; text: string; s
       <h3 className="relative m-0 text-2xl font-black text-white sm:text-3xl">{title}</h3>
       <p className="relative m-0 mt-1 max-w-[80%] text-white/95">{text}</p>
       <ol className="relative m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Étapes de la réservation">
-        {["Professeur", "Objectif", "Créneau"].map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
+        {(labels ?? ["Professeur", "Objectif", "Créneau"]).map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
       </ol>
     </header>
   );
@@ -124,7 +125,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
   const yp = preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice;
   return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
-      <ClayHero title={date ? `Réserver un cours · ${dayLong(date)}` : "Réserver un cours particulier"} text={date ? "Choisis ton professeur : on te montre ses créneaux libres ce jour-là. Ton professeur confirme ensuite (sous 48 h)." : "Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)."} step={1} />
+      <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? `Réserver un cours · ${dayLong(date)}` : "Réserver un cours particulier"} text={date ? "Choisis ton professeur : on te montre ses créneaux libres ce jour-là. Ton professeur confirme ensuite (sous 48 h)." : "Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)."} step={1} />
       <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan

@@ -3,10 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { ADULT_LEVELS, PARTNER_LEVELS_EXTRA, PlanDay, ProfCard, profName, fmtProfSlot, fmtSlot, Slot, todayIso, Lesson, VideoRow, fmtDeadline, collapseSeries, everyDay, priceOn } from "../types";
-import { BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
+import { Avatar, BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
-import { ClayHero, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
+import { ClayHero, DAY_STEPS, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
 import { CourseCalendar, DayHours, DaySheet, LessonSheet } from "../components/CourseCalendar";
 
 
@@ -37,7 +37,8 @@ function Chip({ type, name, value, defaultChecked }: { type: "radio" | "checkbox
   );
 }
 
-function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onSent }: { preview: boolean; prof: ProfCard | null; date?: string; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }) => void }) {
+type Recap = { when: string; prof: string; price: number | null };
+function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack, onSent }: { preview: boolean; prof: ProfCard | null; date?: string; onBack?: () => void; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }, recap?: Recap) => void }) {
   const [err, setErr] = useState("");
   const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
   const [slot, setSlot] = useState<{ date: string; time: string } | null>(null);
@@ -54,14 +55,16 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onSent 
     if (hasPlan && !slot) { setErr("Choisis un créneau dans le planning."); return; }
     const f = new FormData(e.currentTarget); setErr("");
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
-    try { const res = await post<{ seriesCount?: number; skipped?: { date: string; why: string }[] }>("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot, ...(weekly ? { weekly: true } : {}) } : {}), type: f.get("type"), objective: String(f.get("objective")), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan), res ?? undefined); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
+    try { const res = await post<{ seriesCount?: number; skipped?: { date: string; why: string }[] }>("/lessons", { ...(prof ? { profId: prof.id } : {}), ...(slot && hasPlan ? { slot, ...(weekly ? { weekly: true } : {}) } : {}), type: f.get("type"), objective: String(f.get("objective")), message: String(f.get("message") || "") || undefined, ...(duo ? { partnerFirstName: String(f.get("pFirst")), partnerLastName: String(f.get("pLast")), partnerAge: Number(f.get("pAge")), partnerLevel: String(f.get("pLevel")) } : {}) }); onClose(); onSent(!!(slot && hasPlan), res ?? undefined, slot && chosen ? { when: fmtPlanSlot(slot.date, chosen.time, chosen.end), prof: profName(prof), price } : undefined); } catch (x) { setErr((x as Error).message); if (slot) { setSlot(null); loadPlan(); } }
   }
   const legend = "mb-2 flex items-center gap-2 font-display text-base font-bold";
   const num = "grid h-7 w-7 place-items-center rounded-full bg-clay text-sm text-white";
   return (
     <form onSubmit={send} className="grid gap-6 rounded-3xl border-2 border-clay bg-white p-5 shadow-sm sm:p-6" noValidate aria-label="Nouvelle demande de cours">
-      {hasPlan && <ClayHero title={date ? "Choisis ton heure" : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
-      {prof ? (
+      {hasPlan && <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? "Choisis ton heure" : "Choisis ton créneau"} text={`${date ? `${new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} · ` : ""}${prof ? `Avec ${profName(prof)}` : "Cours particulier"} · cours d'1 heure${price ? ` · ${price} €` : ""}`} step={3} />}
+      {prof && date ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-clay bg-white p-3"><Avatar name={profName(prof)} /><div className="grid"><strong className="font-display text-lg">{profName(prof)}</strong>{price ? <span className="text-sm text-muted">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}</div>{onBack && <button type="button" className="btn-outline btn-sm ml-auto" onClick={onBack}>Changer de professeur</button>}</div>
+      ) : prof ? (
         <div className="grid gap-1 rounded-2xl bg-sand p-3"><strong>👩‍🏫 Cours avec {profName(prof)}</strong>{price ? <span className="text-sm">💶 {price} € la séance, à régler directement avec {prof.firstName ?? "le professeur"}.</span> : null}{prof.slots.length > 0 && <span className="text-sm text-muted">Ses disponibilités : {prof.slots.map(fmtProfSlot).join(" · ")}</span>}</div>
       ) : <p className="m-0 rounded-2xl bg-sand p-3"><strong>🎾 Demande adressée au coach</strong></p>}
       <fieldset className="m-0 border-0 p-0" onChange={(e) => { const t = e.target as unknown as HTMLInputElement; if (t.name === "type") setDuo(t.value === "duo"); }}><legend className={legend}><span className={num}>1</span>Quel type de cours ?</legend>
@@ -105,6 +108,7 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onSent 
       {hasPlan && <Field label={`Un message pour ${prof?.firstName ?? "ton professeur"} (facultatif)`} id="message"><textarea id="message" name="message" className="input" maxLength={500} placeholder="Ex. : je voudrais fiabiliser mon service avant le tournoi" /></Field>}
       <Err msg={err} />
       {hasPlan && <p className="m-0 text-sm text-muted">Ton créneau est mis de côté : personne d'autre ne peut le prendre. {prof?.firstName ?? "Le professeur"} doit le confirmer (sous 48 h, sinon il est libéré). Tu peux annuler depuis « Mes cours ».</p>}
+      {date && hasPlan && chosen && slot && <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ink p-4 text-white"><div className="grid"><strong className="text-lg">Ton créneau : {fmtPlanSlot(slot.date, chosen.time, chosen.end)}</strong><span className="text-sm text-white/80">avec {profName(prof)}{price ? ` · ${price} € à régler directement avec lui` : ""}{weekly ? " · 🔁 chaque semaine" : ""}</span></div></div>}
       <div className="flex flex-wrap gap-2"><button className="btn-clay !h-auto min-h-12 max-w-full !whitespace-normal py-3 text-left" disabled={!hasPlan || !slot}>{chosen && slot ? (weekly ? `✅ Réserver : ${everyDay(slot)}` : `✅ Réserver : ${fmtPlanSlot(slot.date, chosen.time, chosen.end)}`) : "Choisis un créneau ci-dessus"}</button><button type="button" className="btn-outline" onClick={onClose}>Annuler</button></div>
     </form>
   );
@@ -169,6 +173,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
   const [step, setStep] = useState<null | "choose" | "form">(null); // choix du professeur, puis formulaire
   const [prof, setProf] = useState<ProfCard | null>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [recap, setRecap] = useState<Recap | null>(null);
   const [askDate, setAskDate] = useState<string | undefined>(undefined); // jour choisi dans le calendrier
   const [view, setView] = useState<"cal" | "liste">("cal");
   const [sheet, setSheet] = useState<{ lesson: Lesson } | { day: string } | null>(null);
@@ -208,10 +213,13 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
         <h2 id="t-cours" className="m-0">{c.icon} {c.title}</h2>
         {!open && <button className="btn-clay" onClick={() => ask()}>{c.button}</button>}
       </div>
-      {sent && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
+      {sent === "booked" && recap && !serieInfo && (
+        <div role="status" className="grid gap-2 rounded-3xl border-2 border-ok bg-[#e8f7ee] p-6 text-center"><strong className="font-display text-3xl text-[#166534]">🎉 C'est réservé !</strong><span className="text-lg font-bold">{recap.when} · avec {recap.prof}{recap.price ? ` · ${recap.price} €` : ""}</span><span className="font-bold text-[#14532d]">⏳ Il ne reste qu'à attendre la confirmation du professeur (48 h maximum). Tu la verras dans ton calendrier : l'étiquette passera du jaune au vert.</span><span><button className="btn-outline btn-sm" onClick={() => setSent(false)}>Voir mon calendrier</button></span></div>
+      )}
+      {sent && !(sent === "booked" && recap && !serieInfo) && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
       <Err msg={cancelErr} />
       {step === "choose" && <ProfChooser preview={preview} date={askDate} onClose={() => setStep(null)} onPick={(p, pr) => { setProf(p); setPrice(pr); setStep("form"); }} />}
-      {step === "form" && <NewLessonForm preview={preview} prof={prof} date={askDate} price={price} onClose={() => setStep(null)} onSent={(booked, info) => { setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
+      {step === "form" && <NewLessonForm preview={preview} prof={prof} date={askDate} price={price} onBack={() => setStep("choose")} onClose={() => setStep(null)} onSent={(booked, info, rc) => { setRecap(rc ?? null); setView("cal"); setSent(booked ? "booked" : "request"); setSerieInfo(info?.seriesCount ? { count: info.seriesCount, skipped: info.skipped ?? [] } : null); onSent(); }} />}
       {next && <NextCourse l={next} onCancel={cancel} />}
       {!open && (
         <div className="grid gap-3">
