@@ -657,6 +657,7 @@ model ClubEvent {
   formulas  Json     @default("[]") // formules et prix : [{ label, price, detail? }], 8 au plus
   audience  String   @default("") // pour qui ? ex. « 8 à 12 ans, tous niveaux »
   bring     String   @default("") // à prévoir, ex. « Tenue de sport, bouteille d'eau »
+  position  Int      @default(0) // ordre dans une case du calendrier (glisser-déposer)
   createdAt DateTime @default(now())
 
   @@index([startDate])

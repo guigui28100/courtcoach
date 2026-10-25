@@ -70,7 +70,7 @@ export const textOn = (bg: string) => (LIGHT.has(bg) ? "#10203a" : "#ffffff");
 
 // Une formule de l'affiche : « Adhérent » → « 60 € »
 export interface Formula { label: string; price: string; priceMember?: string; detail?: string; group?: string }
-export interface ClubEvent { id: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
+export interface ClubEvent { id: string; position?: number; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
 export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
 export interface Clash { id: string; title: string; kind: string; why: string }
 

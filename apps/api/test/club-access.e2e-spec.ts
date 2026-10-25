@@ -77,6 +77,7 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
       await A[k].post("/api/club/events").set(ORIGIN).send(ev()).expect(403);
       await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev()).expect(403);
       await A[k].delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(403);
+      await A[k].put("/api/club/events-order").set(ORIGIN).send({ ids: [e.id, "x"] }).expect(403);
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
       await A[k].put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(403);
     }

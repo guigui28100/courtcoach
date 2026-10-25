@@ -46,3 +46,8 @@ export class PersonDto {
 export class PeopleDto {
   @IsArray() @ArrayMaxSize(MAX_PEOPLE) @ValidateNested({ each: true }) @Type(() => PersonDto) people!: PersonDto[];
 }
+
+// Nouvel ordre des événements d'une case du calendrier
+export class ReorderDto {
+  @IsArray() @ArrayMaxSize(60) @IsString({ each: true }) @MaxLength(60, { each: true }) ids!: string[];
+}

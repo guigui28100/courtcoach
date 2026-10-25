@@ -56,6 +56,11 @@ export function ClubPlan() {
   const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
   const goToday = () => { if (view === "annee") setSeason(seasonOf(todayParis())); else setMonth(todayParis().slice(0, 7)); };
 
+  // Glisser-déposer dans une case du mois : on réordonne tout de suite à l'écran, puis on l'enregistre
+  const reorder = async (ids: string[]) => {
+    setEvents((cur) => cur.map((e) => (ids.includes(e.id) ? { ...e, position: ids.indexOf(e.id) } : e)).map((e, i) => [e, i] as const).sort(([a, i], [b, j]) => a.startDate.localeCompare(b.startDate) || (a.position ?? 0) - (b.position ?? 0) || i - j).map(([e]) => e));
+    try { await put("/club/events-order", { ids }); } catch (x) { setErr((x as Error).message); load(); }
+  };
   const load = useCallback(async () => {
     try {
       const r = await get<{ events: ClubEvent[]; teamCounts: Record<string, number>; people: { name: string; role: string }[] }>("/club/plan");
@@ -151,7 +156,7 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={readOnly ? setActionEv : openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { if (readOnly) return; setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { if (readOnly) return; setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { if (readOnly) return; setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { if (readOnly) return; setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -258,7 +263,7 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: boolean; onEvent: (e: ClubEvent) => void; month: string; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }: { multi: boolean; onEvent: (e: ClubEvent) => void; onReorder?: (ids: string[]) => void; month: string; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
   const [first, setFirst] = useState<string | null>(null);
   useEffect(() => { if (!multi) setFirst(null); }, [multi]);
   const click = (d: string) => {
@@ -266,6 +271,17 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
     if (!first) return setFirst(d);
     const [a, b] = d < first ? [d, first] : [first, d];
     setFirst(null); onRange(a, b);
+  };
+  // Glisser-déposer : un événement se place au-dessus ou en dessous d'un autre de la MÊME case
+  const [drag, setDrag] = useState<{ id: string; day: string } | null>(null);
+  const [over, setOver] = useState<{ id: string; after: boolean } | null>(null);
+  const endDrag = () => { setDrag(null); setOver(null); };
+  const drop = (ids: string[], day: string, target: string) => {
+    if (!onReorder || !drag || drag.day !== day || drag.id === target) return endDrag();
+    const rest = ids.filter((x) => x !== drag.id); const at = rest.indexOf(target);
+    if (at < 0) return endDrag();
+    rest.splice(at + (over?.id === target && over.after ? 1 : 0), 0, drag.id);
+    endDrag(); onReorder(rest);
   };
   const first1 = `${month}-01`;
   const gridStart = mondayOf(first1);
@@ -286,13 +302,19 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>)}
+                {evs.slice(0, 3).map((e) => { const ids = evs.filter((x) => x.kind !== "BULLE").map((x) => x.id); const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }}
+                  draggable={movable} onDragStart={movable ? (ev) => { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", e.id); setDrag({ id: e.id, day: d }); } : undefined} onDragEnd={movable ? endDrag : undefined}
+                  onDragOver={movable ? (ev) => { if (!drag || drag.day !== d || drag.id === e.id) return; ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); const after = ev.clientY > r.top + r.height / 2; if (over?.id !== e.id || over.after !== after) setOver({ id: e.id, after }); } : undefined}
+                  onDrop={movable ? (ev) => { ev.preventDefault(); ev.stopPropagation(); drop(ids, d, e.id); } : undefined}
+                  className={"block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab active:cursor-grabbing " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                  style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #1b1863" : "0 -4px 0 0 #1b1863") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </div>
           );
         })}
       </div>
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
