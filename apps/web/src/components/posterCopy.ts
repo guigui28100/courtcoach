@@ -14,13 +14,10 @@ export function glue(raw: string | undefined | null): string {
   s = s.replace(/(\d) (h|€|ans|jours?|min)(?![a-zà-ÿ])/gi, `$1${NB}$2`).replace(/\bh (\d{2})\b/g, `h${NB}$1`);
   s = s.replace(/(^|[\s(])(à|a|de|du|des|le|la|les|un|une|et|ou|au|aux|en|sur|par|pour|avec|dans|ce|cet|cette|ne|se|y|d'|l'|qu')\s+(?=\S)/gi, (_m, p, w) => `${p}${w}${NB}`);
   s = s.replace(/\b(équipe|éq\.|court|courts|terrain|n°) (\d{1,2})\b/gi, `$1${NB}$2`); // « équipe 1 », « court 2 »
+  s = s.replace(/ ([:;!?»])/g, `${NB}$1`).replace(/(«) /g, `$1${NB}`); // ponctuation française : jamais en début de ligne
   s = s.replace(/(\p{L}{2,})-(?=\p{L}{2,})/gu, `$1\u2011`); // « pique-nique » ne se coupe pas au tiret
-  s = s.replace(/ ([^\s]{1,12})$/, `${NB}$1`); // les deux derniers mots ensemble
   return s;
 }
-
-// Seulement les deux derniers mots ensemble (pour une date longue : jamais « novembre » seul à la ligne)
-export const glueEnd = (raw: string) => (raw ?? "").replace(/ ([^\s]{1,12})$/, `${NB}$1`);
 
 // Nettoyage typographique : espaces, « 14h30 » → « 14 h 30 », « 10h-16h » → « de 10 h à 16 h », majuscule au début
 export function tidy(raw: string | undefined | null): string {

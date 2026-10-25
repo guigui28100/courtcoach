@@ -3,7 +3,7 @@ import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
-import { courtsText, glue, glueEnd, ledeOf, priceText, signupText, tidy } from "./posterCopy";
+import { courtsText, glue, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -67,7 +67,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       const avail = el.clientHeight; let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
-        if (hh <= 0) break; const next = Math.max(0.55, Math.min(2.2, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
@@ -96,7 +96,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff" }}>{glueEnd(fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>
+      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
@@ -104,7 +104,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       {rows.map((r) => (
         <div key={r.title} style={card}>
           <span aria-hidden style={{ flex: `0 0 ${pi(44)}`, width: pi(44), height: pi(44), borderRadius: 12, background: acc, display: "grid", placeItems: "center", fontSize: pi(23) }}>{r.icon}</span>
-          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word" }}><NoBreak text={r.text} /></div></div>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word", textWrap: "balance" as any }}><NoBreak text={r.text} /></div></div>
         </div>))}
     </div>
   );
@@ -126,8 +126,8 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
-  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const titleEl = <div><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
