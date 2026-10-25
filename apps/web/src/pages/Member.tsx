@@ -7,7 +7,7 @@ import { Avatar, BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBa
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
 import { ClayHero, DAY_STEPS, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
-import { CourseCalendar, DayHours, DaySheet, LessonSheet } from "../components/CourseCalendar";
+import { CourseCalendar, DayHours, LessonSheet } from "../components/CourseCalendar";
 
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
@@ -316,13 +316,12 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="m-0 font-display text-xl">Mes cours à venir</h3>
           </div>
-          {!full && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>)</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
-          {<CourseCalendar preview={preview} locked={full} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
+          {!full && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour du calendrier qui a des créneaux libres</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
+          {<CourseCalendar preview={preview} locked={full} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => ask(d)} />}
           {<ol className="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-3">{["Choisis ton professeur", "Touche un créneau libre", "Le professeur confirme : c'est réservé"].map((t, i) => <li key={t} className="flex items-center gap-3 rounded-2xl bg-[#eef3fb] p-3 text-sm font-bold"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white">{i + 1}</span>{t}</li>)}</ol>}
         </div>
       )}
       {sheet && "lesson" in sheet && <LessonSheet l={sheet.lesson} onClose={() => setSheet(null)} onCancel={cancel} />}
-      {sheet && "day" in sheet && <DaySheet date={sheet.day} preview={preview} onClose={() => setSheet(null)} onReserve={() => { const d = sheet.day; setSheet(null); ask(d); }} />}
     </section>
   );
 }
