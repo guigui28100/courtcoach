@@ -229,12 +229,12 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
   );
 }
 
-function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; showWho: boolean }) {
+function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubEvent[]; showWho: boolean; extra?: number }) {
   const days = monthDays(m);
   const rows = days.length / 7;
   const noted = list.filter((e) => e.note).slice(0, 5);
   const notesH = noted.length ? 22 + noted.length * 40 : 0;
-  const cellH = Math.floor((750 - 30 - 14 - rows * 5 - 10 - notesH) / rows);
+  const cellH = Math.floor((750 - extra - 30 - 14 - rows * 5 - 10 - notesH) / rows);
   return (
     <div style={{ padding: "0 36px", marginTop: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
@@ -267,8 +267,8 @@ function CalendarModel({ m, list, showWho }: { m: string; list: ClubEvent[]; sho
 }
 
 // Zone libre entre l'en-tête et le bandeau bleu du bas (modèle « liste »).
-const BODY_TOP = 296, BODY_BOTTOM = 112;
-function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; showWho: boolean }) {
+const BODY_TOP = 296, BODY_BOTTOM = 112, PARTNER_H = 78;
+function ListBody({ list, month, showWho, extra = 0 }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number }) {
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
@@ -276,7 +276,7 @@ function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; 
   const [fit, setFit] = useState({ scale: 1, top: 0, gap: 0 });
   // Le texte est agrandi ou réduit (le contenu se remet en page à la nouvelle taille) jusqu'à remplir la zone libre ; le reste est réparti également (haut, milieu, bas).
   useLayoutEffect(() => {
-    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM - 16; // marge de 16 px au-dessus du bandeau bleu
+    const avail = POSTER_H - BODY_TOP - BODY_BOTTOM - extra - 16; // marge de 16 px au-dessus du bandeau bleu
     const measure = (s: number) => {
       if (wrap.current) wrap.current.style.width = `${POSTER_W / s}px`;
       // un titre qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
@@ -293,9 +293,9 @@ function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; 
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
     let live = true; fonts?.ready.then(() => { if (live) run(); });
     return () => { live = false; };
-  }, [list, month, showWho, cards]);
+  }, [list, month, showWho, cards, extra]);
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM, overflow: "hidden" }}>
+    <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM - extra, overflow: "hidden" }}>
       <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale})`, transformOrigin: "top left", width: POSTER_W / fit.scale }}>
         <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
         <div style={{ height: fit.gap }} />
@@ -305,14 +305,23 @@ function ListBody({ list, month, showWho }: { list: ClubEvent[]; month: string; 
   );
 }
 
-export function ClubPoster({ events, month, model, showWho }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean }) {
+export function ClubPoster({ events, month, model, showWho, partners }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[] }) {
   const list = monthEvents(events, month);
+  const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <Header m={month} />
       <div style={{ marginTop: 6 }}>
-        {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} /> : <CalendarModel m={month} list={list} showWho={showWho} />}
+        {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}
       </div>
+      {logos.length > 0 && (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 96, height: PARTNER_H, background: "#fff", borderTop: "3px solid #b8471f", display: "flex", alignItems: "center", gap: 16, padding: "0 40px" }}>
+          <div style={{ flex: "0 0 auto", fontSize: 12, fontWeight: 900, letterSpacing: "0.2em", color: "#b8471f", lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 12, height: PARTNER_H - 24 }}>
+            {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 150, height: "100%", objectFit: "contain" }} />)}
+          </div>
+        </div>
+      )}
       <Footer events={list} />
     </div>
   );

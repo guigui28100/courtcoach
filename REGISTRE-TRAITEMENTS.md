@@ -39,3 +39,8 @@
 - Finalité : préparer le planning prévisionnel de l'année (tournois, animations, matchs par équipes, stages, bulle, réfection des terrains) et l'affiche du mois.
 - Données : types d'événements, dates, terrains, équipes (catégories, jamais de noms d'enfants), et les NOMS de professeurs, bénévoles et membres du bureau affectés (adultes du club). Aucune donnée d'élève.
 - Accès : coach seul. Les noms n'apparaissent sur l'affiche imprimée que si le coach coche « Montrer les professeurs ». Suppression possible à tout moment par le coach.
+
+## Partenaires (sponsors) du club (coach et président)
+- Finalité : suivre les entreprises qui soutiennent le club (contrat, contreparties), mettre leur logo sur les affiches et préparer un dossier de présentation.
+- Données : nom de l'entreprise, personne à contacter (nom, téléphone, e-mail professionnels, facultatifs), montant, dates du contrat, logo, note. Aucune donnée d'élève.
+- Accès : coach et président seulement (le bureau, les entraîneurs, les adultes et les familles n'y ont aucun accès). Le logo n'est envoyé nulle part ailleurs : il reste dans la base du club. Suppression possible à tout moment.
