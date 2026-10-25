@@ -25,8 +25,10 @@ function dateBlock(e: ClubEvent) {
   // La date n'est écrite qu'UNE fois : un seul jour = « DIMANCHE 22 » ; une période = « 16 → 20 » + « Du lundi au vendredi » (les jours de la semaine)
   const low = (s: string) => s.toLowerCase();
   if (a === b) return { big: `${DAYS[weekdayOf(a)].toUpperCase()} ${d(a)}`, month: month.toUpperCase(), side: "" };
-  const days = Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
-  return { big: a.slice(0, 7) === b.slice(0, 7) ? `${d(a)} → ${d(b)}` : `${d(a)} ${MON3[m(a)]} → ${d(b)} ${MON3[m(b)]}`, month: month.toUpperCase(), side: days > 7 ? `Sur ${days} jours` : `Du ${low(DAYS[weekdayOf(a)])} au ${low(DAYS[weekdayOf(b)])}` };
+  // Une période s'écrit « Du lundi 7 au vendredi 10 » (avec le mois sous le texte) ; si elle change de mois : « Du lundi 28 oct. au vendredi 1 nov. »
+  const same = a.slice(0, 7) === b.slice(0, 7);
+  const part = (x: string) => `${low(DAYS[weekdayOf(x)])} ${d(x)}${same ? "" : ` ${MON3[m(x)]}`}`;
+  return { big: `Du ${part(a)} au ${part(b)}`, month: month.toUpperCase(), side: "" };
 }
 
 type Row = { icon: string; title: string; text: string };
@@ -96,7 +98,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const dateEl = (
     <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", border: `2px solid ${acc}`, maxWidth: "100%" }}>
       <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
-        <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
+        <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
       {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{dt.side}</div>}
