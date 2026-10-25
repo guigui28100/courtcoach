@@ -15,7 +15,7 @@ const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
 // Couleur de repère : une par type, et pour un tournoi une par catégorie
 const TOURNOI_COLOR: Record<string, string> = { "Messieurs (adultes)": "#1e3a8a", "Dames (adultes)": "#be185d", "Jeunes": "#15a34a" };
 export const tourBase = (a: string) => a.split(" · ")[0];
-const accentOf = (e: ClubEvent) => (e.kind === "TOURNOI" ? TOURNOI_COLOR[tourBase(e.audience ?? "")] : undefined) ?? kindOf(e.kind).color;
+export const accentOf = (e: ClubEvent) => (e.kind === "TOURNOI" ? TOURNOI_COLOR[tourBase(e.audience ?? "")] : undefined) ?? kindOf(e.kind).color;
 
 const MON3 = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 function dateBlock(e: ClubEvent) {

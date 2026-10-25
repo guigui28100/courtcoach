@@ -123,7 +123,7 @@ describe("Planning du club (réservé au coach)", () => {
   });
 
   it("ordre des événements d'une case : le coach les glisse au-dessus ou en dessous d'un autre", async () => {
-    await clean();
+    await prisma.clubEvent.deleteMany(); // sans effacer les comptes (le coach reste connecté)
     const a = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "A", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
     const b = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "B", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
     const c = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "C", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
