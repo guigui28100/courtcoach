@@ -26,7 +26,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 py-14 sm:py-20 md:grid-cols-[1.4fr_1fr]">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-white/80">Tennis Club Houdan</p>
-            <h1 className="mb-4 max-w-3xl !text-white">Ton coach analyse ton geste, tu progresses.</h1>
+            <h1 className="mb-4 max-w-3xl !text-white">Cours, vidéos, suivi et vie du club : tout au même endroit.</h1>
             <p className="mb-6 max-w-2xl text-lg text-white/90">Envoie une vidéo, reçois des conseils personnalisés et demande un cours. Pour les jeunes compétiteurs : objectifs de l'année, évaluations et bulletins trimestriels.</p>
             <div className="flex flex-wrap gap-3">
               {me ? (

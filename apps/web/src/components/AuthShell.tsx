@@ -16,7 +16,7 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
           </span>
           <div>
             <p className="m-0 text-xs font-bold uppercase tracking-[0.16em] text-white/80">Tennis Club Houdan</p>
-            <p className="m-0 mt-1 font-display text-3xl font-black leading-tight lg:text-4xl" style={{ fontStretch: "85%" }}>Ton coach analyse ton geste, tu progresses.</p>
+            <p className="m-0 mt-1 font-display text-3xl font-black leading-tight lg:text-4xl" style={{ fontStretch: "85%" }}>Cours, vidéos, suivi et vie du club : tout au même endroit.</p>
           </div>
           <ul className="m-0 grid list-none gap-2.5 p-0 text-white/90 max-lg:hidden">
             {["Tes vidéos et les conseils de ton coach, au même endroit", "Objectifs et bulletins de l'année pour les jeunes du Centre", "Données protégées : aucune publicité, aucun suivi"].map((t) => (
