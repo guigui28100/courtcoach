@@ -3,7 +3,7 @@ import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
-import { courtsText, glue, ledeOf, priceText, signupText, tidy } from "./posterCopy";
+import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -22,8 +22,13 @@ const MON3 = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août"
 function dateBlock(e: ClubEvent) {
   const [a, b] = [e.startDate, e.endDate]; const d = (x: string) => +x.slice(8, 10); const m = (x: string) => +x.slice(5, 7) - 1;
   const month = a.slice(0, 7) === b.slice(0, 7) ? `${MONTHS[m(a)]} ${a.slice(0, 4)}` : `${MONTHS[m(a)]} → ${MONTHS[m(b)]} ${b.slice(0, 4)}`;
-  if (a === b) return { big: `${DAYS[weekdayOf(a)].slice(0, 3).toUpperCase()}. ${d(a)}`, month: month.toUpperCase() };
-  return { big: a.slice(0, 7) === b.slice(0, 7) ? `${d(a)} → ${d(b)}` : `${d(a)} ${MON3[m(a)]} → ${d(b)} ${MON3[m(b)]}`, month: month.toUpperCase() };
+  // La date n'est écrite qu'UNE fois : un seul jour = « DIMANCHE 22 » ; une période = « 16 → 20 » + « Du lundi au vendredi » (les jours de la semaine)
+  const low = (s: string) => s.toLowerCase();
+  if (a === b) return { big: `${DAYS[weekdayOf(a)].toUpperCase()} ${d(a)}`, month: month.toUpperCase(), side: "" };
+  // Une période s'écrit « Du lundi 7 au vendredi 10 » (avec le mois sous le texte) ; si elle change de mois : « Du lundi 28 oct. au vendredi 1 nov. »
+  const same = a.slice(0, 7) === b.slice(0, 7);
+  const part = (x: string) => `${low(DAYS[weekdayOf(x)])} ${d(x)}${same ? "" : ` ${MON3[m(x)]}`}`;
+  return { big: `Du ${part(a)} au ${part(b)}`, month: month.toUpperCase(), side: "" };
 }
 
 type Row = { icon: string; title: string; text: string };
@@ -93,10 +98,10 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const dateEl = (
     <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", border: `2px solid ${acc}`, maxWidth: "100%" }}>
       <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
-        <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
+        <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+      {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{dt.side}</div>}
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
@@ -127,7 +132,16 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
     </div>
   );
   const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
-  const titleEl = <div><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
+    <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
+      {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
+        <div key={t}>
+          <div style={{ whiteSpace: "nowrap", fontWeight: 900, lineHeight: 1.05, color: NAVY, fontSize: `min(${pt(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)` }}>{cat}</div>
+          <div style={{ fontWeight: 800, lineHeight: 1.1, color: acc, fontSize: pt(sq ? 28 : 32), marginTop: pt(2) }}>{num}</div>
+        </div>); })}
+    </div>
+  );
+  const titleEl = <div><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
