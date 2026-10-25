@@ -3,6 +3,7 @@ import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
+import { courtsText, glue, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -35,21 +36,25 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
-  const name = (tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${tiName.who}`.trim() : e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase(); // tournoi : le type et le public en titre, les classements dans leur carte
+  const name = (tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${tiName.who}`.trim() : e.kind === "EQUIPES" && !e.title ? "Match par équipes" : titleOf(e)).toUpperCase(); // tournoi : le type et le public en titre, les classements dans leur carte
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
+  // Le texte est REFORMULÉ (posterCopy) : une phrase d'accroche sous le titre, puis seulement les cartes qui apportent une information de plus
+  const lede = ledeOf(e);
   const rows: Row[] = [];
   const ti = tourInfo(e);
-  if (ti) { rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" }); if (ti.bas && ti.haut) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` }); }
-  if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui", text: e.audience });
-  if (e.place && tour) rows.push({ icon: "🎾", title: "Surface", text: e.place });
-  if (e.time) rows.push({ icon: "🕒", title: tour ? "Matchs, jour par jour" : "Horaires", text: e.time });
-  if (e.signup && tour) rows.push({ icon: "🏆", title: "Finale", text: e.signup });
-  if (e.place && !tour) rows.push({ icon: "📍", title: "Lieu", text: e.place });
-  if (e.bring) rows.push({ icon: "🎒", title: "À prévoir", text: e.bring });
+  if (ti && !lede.covers.type) rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" });
+  if (ti?.bas && ti?.haut && !lede.text.replace(/\u00a0/g, " ").includes(`${ti.bas} à ${ti.haut}`)) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` });
+  if (e.audience && e.kind !== "EQUIPES" && !lede.covers.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui ?", text: tidy(e.audience.replace(" · ", " – ")) });
+  if (e.place && tour && !lede.covers.surface) rows.push({ icon: "🎾", title: "Surface", text: tidy(e.place) });
+  if (e.time) rows.push({ icon: "🕒", title: tour ? "Les matchs" : "Horaires", text: tidy(e.time) });
+  if (e.signup && tour) rows.push({ icon: "🏆", title: "La finale", text: tidy(e.signup) });
+  if (e.kind === "EQUIPES" && e.courts?.length) rows.push({ icon: "🏟️", title: "Terrains", text: courtsText(e.courts) });
+  if (e.place && !tour && e.kind !== "EQUIPES") rows.push({ icon: "📍", title: "Où ?", text: tidy(e.place) });
+  if (e.bring) rows.push({ icon: "🎒", title: "À prévoir", text: tidy(e.bring) });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "Avec", text: e.who.join(", ") });
-  const inscription = !tour && e.signup ? e.signup : "";
+  const inscription = !tour && e.signup ? signupText(e.signup) : "";
   const dt = dateBlock(e);
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
@@ -62,7 +67,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       const avail = el.clientHeight; let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
-        if (hh <= 0) break; const next = Math.max(0.55, Math.min(2.2, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
@@ -91,7 +96,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff" }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
@@ -99,7 +104,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       {rows.map((r) => (
         <div key={r.title} style={card}>
           <span aria-hidden style={{ flex: `0 0 ${pi(44)}`, width: pi(44), height: pi(44), borderRadius: 12, background: acc, display: "grid", placeItems: "center", fontSize: pi(23) }}>{r.icon}</span>
-          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word" }}><NoBreak text={r.text} /></div></div>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word", textWrap: "balance" as any }}><NoBreak text={r.text} /></div></div>
         </div>))}
     </div>
   );
@@ -111,18 +116,18 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       </div>
       {formulas.map((f, i) => (
         <div key={i}>
-          {f.group && f.group !== (formulas[i - 1]?.group ?? "") ? <div style={{ background: `${acc}22`, color: NAVY, fontSize: pf(14), fontWeight: 900, padding: `${pf(6)} ${pf(18)}`, borderTop: i ? `1.5px solid ${LINE}` : "none" }}>{f.group}</div> : null}
+          {f.group && f.group !== (formulas[i - 1]?.group ?? "") ? <div style={{ background: `${acc}22`, color: NAVY, fontSize: pf(14), fontWeight: 900, padding: `${pf(6)} ${pf(18)}`, borderTop: i ? `1.5px solid ${LINE}` : "none" }}>{tidy(f.group)}</div> : null}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: `${pf(9)} ${pf(18)}`, borderTop: `1.5px solid ${LINE}` }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: pf(19), fontWeight: wt("tarifs", 800), lineHeight: 1.2, color: NAVY }}>{f.label || "Participation"}{f.detail ? <small style={{ display: "block", fontSize: pf(13), fontWeight: 500, color: MUTED }}>{f.detail}</small> : null}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: pf(19), fontWeight: wt("tarifs", 800), lineHeight: 1.2, color: NAVY }}>{tidy(f.label) || "Participation"}{f.detail ? <small style={{ display: "block", fontSize: pf(13), fontWeight: 500, color: MUTED }}>{tidy(f.detail)}</small> : null}</span>
             {twoPrices
-              ? <><b style={{ width: pf(112), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{f.priceMember || "—"}</b><b style={{ width: pf(130), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{f.price || "—"}</b></>
-              : <b style={{ fontSize: pf(f.price.length > 8 ? 26 : 34), fontWeight: 900, color: acc, whiteSpace: "nowrap" }}>{f.price || f.priceMember}</b>}
+              ? <><b style={{ width: pf(112), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{priceText(f.priceMember) || "—"}</b><b style={{ width: pf(130), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{priceText(f.price) || "—"}</b></>
+              : <b style={{ fontSize: pf(priceText(f.price).length > 8 ? 26 : 34), fontWeight: 900, color: acc, whiteSpace: "nowrap" }}>{priceText(f.price) || priceText(f.priceMember)}</b>}
           </div>
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", ...deco("texte") }}><NoBreak text={e.note} /></p>;
-  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} /></div>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const titleEl = <div><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
