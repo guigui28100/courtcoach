@@ -106,10 +106,8 @@ function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; typ
       const home = /domicile/i.test(e.place ?? "");
       const away = /d[ée]placement/i.test(e.place ?? "");
       const club = tidy(e.audience);
-      const teams = e.teams.map(teamPlain).join(" et ");
-      const who = teams || "Nos joueurs";
       const where = home ? `À domicile${club ? ` face à ${club}` : ""}. Venez nous encourager !` : away ? `En déplacement${club ? ` chez ${club}` : ""}. Un petit mot d'encouragement ?` : `${club ? `Face à ${club}. ` : ""}Venez nous encourager !`;
-      return { text: `${who}\n${where}`, covers: { ...covers, audience: true } };
+      return { text: where, covers: { ...covers, audience: true } };
     }
     case "STAGE_ENFANTS":
     case "STAGE_ADULTES": {
@@ -143,6 +141,8 @@ const CAT_TEXT = (key: string): string => {
 };
 export const teamPlain = (t: string) => `${CAT_TEXT(t.split("#")[0])}, équipe ${t.split("#")[1] ?? "1"}`;
 export const catPlain = (key: string) => CAT_TEXT(key);
+// Une équipe en deux lignes : la catégorie (« Vétérans +45 ans dames »), puis le numéro (« Équipe 1 »)
+export const teamParts = (t: string): [string, string] => [CAT_TEXT(t.split("#")[0]), `Équipe ${t.split("#")[1] ?? "1"}`];
 
 // Terrains écrits comme on le dirait : « Court 1 », « Courts 1 et 2 », « Les 4 courts »
 export function courtsText(c: number[] | undefined): string {
