@@ -22,8 +22,11 @@ const MON3 = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août"
 function dateBlock(e: ClubEvent) {
   const [a, b] = [e.startDate, e.endDate]; const d = (x: string) => +x.slice(8, 10); const m = (x: string) => +x.slice(5, 7) - 1;
   const month = a.slice(0, 7) === b.slice(0, 7) ? `${MONTHS[m(a)]} ${a.slice(0, 4)}` : `${MONTHS[m(a)]} → ${MONTHS[m(b)]} ${b.slice(0, 4)}`;
-  if (a === b) return { big: `${DAYS[weekdayOf(a)].slice(0, 3).toUpperCase()}. ${d(a)}`, month: month.toUpperCase() };
-  return { big: a.slice(0, 7) === b.slice(0, 7) ? `${d(a)} → ${d(b)}` : `${d(a)} ${MON3[m(a)]} → ${d(b)} ${MON3[m(b)]}`, month: month.toUpperCase() };
+  // La date n'est écrite qu'UNE fois : un seul jour = « DIMANCHE 22 » ; une période = « 16 → 20 » + « Du lundi au vendredi » (les jours de la semaine)
+  const low = (s: string) => s.toLowerCase();
+  if (a === b) return { big: `${DAYS[weekdayOf(a)].toUpperCase()} ${d(a)}`, month: month.toUpperCase(), side: "" };
+  const days = Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
+  return { big: a.slice(0, 7) === b.slice(0, 7) ? `${d(a)} → ${d(b)}` : `${d(a)} ${MON3[m(a)]} → ${d(b)} ${MON3[m(b)]}`, month: month.toUpperCase(), side: days > 7 ? `Sur ${days} jours` : `Du ${low(DAYS[weekdayOf(a)])} au ${low(DAYS[weekdayOf(b)])}` };
 }
 
 type Row = { icon: string; title: string; text: string };
@@ -96,7 +99,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+      {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{dt.side}</div>}
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
