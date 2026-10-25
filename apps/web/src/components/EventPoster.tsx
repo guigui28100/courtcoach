@@ -70,7 +70,7 @@ export function EventPoster({ e, format, showWho, fmt }: { e: ClubEvent; format:
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const F = (k: BlockKey): BlockFmt => fmt?.[k] ?? {};
-  const pk = (k: BlockKey) => { const f = 1 + (F(k).size ?? 0) * 0.12; return (n: number) => `calc(${n}px * var(--k) * ${f})`; };
+  const pk = (k: BlockKey) => { const f = 1 + (F(k).size ?? 0) * 0.08; return (n: number) => `calc(${n}px * var(--k) * ${f})`; };
   const [pt, pd, pi, pf, pn] = [pk("titre"), pk("date"), pk("infos"), pk("tarifs"), pk("texte")];
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const wt = (k: BlockKey, d: number) => (F(k).bold === undefined ? d : F(k).bold ? 900 : 400);

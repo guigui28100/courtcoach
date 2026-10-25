@@ -1018,24 +1018,24 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
   const set = (patch: Partial<BlockFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
   const size = cur.size ?? 0;
   const tog = (label: string, on: boolean | undefined, f: () => void, st?: React.CSSProperties) => (
-    <button type="button" aria-pressed={!!on} onClick={f} style={st} className={`min-h-10 min-w-10 rounded-lg border-2 px-3 text-base ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
+    <button type="button" aria-pressed={!!on} onClick={f} style={st} className={`min-h-8 min-w-8 rounded-md border px-2 text-sm ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
   );
   return (
-    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-      <summary className="cursor-pointer text-sm font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
-      <p className="mb-2 mt-2 text-xs text-muted">Choisis la partie de l'affiche, puis règle-la. L'aperçu change tout de suite. Ces réglages restent dans ce navigateur.</p>
-      <div className="mb-2 flex flex-wrap gap-2">{FMT_BLOCKS.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-10 min-w-10 rounded-lg border-2 border-line bg-white text-lg font-extrabold text-ink">A−</button>
+    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-lg border border-line bg-white p-2">
+      <summary className="cursor-pointer text-xs font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
+      <p className="mb-1 mt-1 text-xs text-muted">Choisis une partie, puis règle-la (réglages gardés dans ce navigateur).</p>
+      <div className="mb-1 flex flex-wrap gap-1">{FMT_BLOCKS.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
+      <div className="flex flex-wrap items-center gap-1">
+        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A−</button>
         <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
-        <button type="button" aria-label="Plus grand" disabled={size >= 6} onClick={() => set({ size: size + 1 })} className="min-h-10 min-w-10 rounded-lg border-2 border-line bg-white text-lg font-extrabold text-ink">A+</button>
+        <button type="button" aria-label="Plus grand" disabled={size >= 6} onClick={() => set({ size: size + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A+</button>
         {tog("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), { fontWeight: 900 })}
         {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" })}
         {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" })}
         {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a })))}
-        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-10 rounded-lg border-2 border-line bg-white px-3 text-sm font-bold text-ink">↺ Rétablir</button>
+        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir</button>
       </div>
-      <p className="mb-0 mt-2 text-xs text-muted">G = gras (un 2ᵉ toucher le retire) · I = italique · S = souligné · ⬅ ↔ ➡ = à gauche, centré, à droite. La taille s'ajuste toujours pour que tout tienne sur l'affiche.</p>
+      
     </details>
   );
 }
