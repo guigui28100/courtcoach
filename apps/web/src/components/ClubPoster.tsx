@@ -1,4 +1,4 @@
-import { glue } from "./posterCopy";
+import { glue, teamParts } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
 import { CourtLines } from "./CourtLines";
@@ -45,6 +45,15 @@ const isMatch = (e: ClubEvent) => labelParts(e)[0] === "Match" && labelParts(e).
 // Affiche les morceaux séparés par « · » ; le retour à la ligne ne peut se faire qu'entre deux morceaux
 function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
   return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
+}
+// Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
+function MatchLines({ e, icon, rest }: { e: ClubEvent; icon?: string; rest?: boolean }) {
+  const more = labelParts(e).slice(2);
+  return <>{e.teams.map((t, i) => { const [cat, num] = teamParts(t); return (
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
+      <span data-nw style={{ display: "block", whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
+      <span style={{ display: "block", fontWeight: 800, color: "#6b6557", fontSize: "0.82em", lineHeight: 1.2 }}>{num}</span>
+    </span>); })}{rest !== false && more.length > 0 ? <span style={{ display: "block", fontWeight: 700, fontSize: "0.9em", marginTop: 2 }}><Parts parts={more} /></span> : null}</>;
 }
 const dayNum = (d: string) => +d.slice(8, 10);
 // Date complète : « Samedi 14 novembre » ou « Samedi 14 → dimanche 15 novembre »
@@ -152,7 +161,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
-              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <span data-nw style={{ whiteSpace: "nowrap" }}>{labelParts(e)[1]}</span> : <>{k.icon} {labelParts(e)[0]}</>}</div>
+              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", marginTop: 8 }}>
                   {[...(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)), ...detailParts(e, showWho)].map((t, i) => <span key={i} style={{ whiteSpace: "nowrap", background: "#eef1f8", color: "#1b1863", fontWeight: 800, fontSize: 16, borderRadius: 999, padding: "3px 12px" }}>{t}</span>)}
@@ -176,13 +185,13 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return two ? (
       <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", marginTop: 5 }} />
-        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}><Parts icon={k.icon} parts={labelParts(e)} /></span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
+        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ) : (
       <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "8px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", alignSelf: "center" }} />
         <span style={{ width: 250, flex: "0 0 250px", fontSize: 15, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
-        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}><Parts icon={k.icon} parts={labelParts(e)} />{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "#4a4333", marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
+        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "#4a4333", marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ); };
     return (
@@ -209,7 +218,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
         <div className="font-display" style={{ fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}><Parts icon={k.icon} parts={isMatch(e) ? labelParts(e).slice(1) : labelParts(e)} /></div>
+        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
         <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}><Parts parts={[fullRange(e), ...detailParts(e, showWho)]} /></div>
         {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3b3a52", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
       </div>
