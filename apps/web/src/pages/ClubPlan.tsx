@@ -279,16 +279,43 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
     const [a, b] = d < first ? [d, first] : [first, d];
     setFirst(null); onRange(a, b);
   };
-  // Glisser-déposer : un événement se place au-dessus ou en dessous d'un autre de la MÊME case
+  // Glisser-déposer (souris, stylet ou doigt en appui long) : un événement se place au-dessus ou en dessous d'un autre de la MÊME case.
+  // Fait avec les « pointer events » (et non le glisser natif du navigateur, qui ne marche pas sur un bouton dans Firefox ni au doigt).
   const [drag, setDrag] = useState<{ id: string; day: string } | null>(null);
   const [over, setOver] = useState<{ id: string; after: boolean } | null>(null);
-  const endDrag = () => { setDrag(null); setOver(null); };
-  const drop = (ids: string[], day: string, target: string) => {
-    if (!onReorder || !drag || drag.day !== day || drag.id === target) return endDrag();
-    const rest = ids.filter((x) => x !== drag.id); const at = rest.indexOf(target);
-    if (at < 0) return endDrag();
-    rest.splice(at + (over?.id === target && over.after ? 1 : 0), 0, drag.id);
-    endDrag(); onReorder(rest);
+  const [ghost, setGhost] = useState<{ x: number; y: number; text: string } | null>(null);
+  const justDragged = useRef(false);
+  const press = (ev: React.PointerEvent<HTMLElement>, id: string, day: string, text: string) => {
+    if (!onReorder || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+    const st = { id, day, sx: ev.clientX, sy: ev.clientY, active: false, touch: ev.pointerType !== "mouse", timer: 0, over: null as { id: string; after: boolean } | null };
+    const begin = () => { st.active = true; setDrag({ id, day }); };
+    if (st.touch) st.timer = window.setTimeout(begin, 380);
+    const stop = () => { window.clearTimeout(st.timer); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", cancel); window.removeEventListener("touchmove", noScroll); setDrag(null); setOver(null); setGhost(null); };
+    const noScroll = (e: TouchEvent) => { if (st.active) e.preventDefault(); };
+    const mv = (e: PointerEvent) => {
+      if (!st.active) { if (Math.hypot(e.clientX - st.sx, e.clientY - st.sy) <= 6) return; if (st.touch) return stop(); begin(); }
+      setGhost({ x: e.clientX, y: e.clientY, text });
+      const cell = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest<HTMLElement>("[data-cell]");
+      const tags = cell && cell.dataset.cell === day ? [...cell.querySelectorAll<HTMLElement>("[data-ev]")].filter((b) => b.dataset.ev !== id) : [];
+      if (!tags.length) { st.over = null; setOver(null); return; }
+      let target = tags[0], after = false; // au-dessus du premier : avant lui
+      for (const b of tags) { const r = b.getBoundingClientRect(); if (e.clientY >= r.top) { target = b; after = e.clientY > r.top + r.height / 2; } }
+      st.over = { id: target.dataset.ev!, after }; setOver(st.over);
+    };
+    const up = () => {
+      const was = st.active; const o = st.over; stop();
+      if (!was) return;
+      justDragged.current = true; window.setTimeout(() => { justDragged.current = false; }, 80);
+      const cell = document.querySelector<HTMLElement>(`[data-cell="${day}"]`);
+      if (!o || !cell) return;
+      const ids = [...cell.querySelectorAll<HTMLElement>("[data-ev]")].map((b) => b.dataset.ev!).filter((x) => x !== id);
+      const at = ids.indexOf(o.id); if (at < 0) return;
+      ids.splice(at + (o.after ? 1 : 0), 0, id);
+      onReorder(ids);
+    };
+    const cancel = () => stop();
+    window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", cancel);
+    window.addEventListener("touchmove", noScroll, { passive: false });
   };
   const first1 = `${month}-01`;
   const gridStart = mondayOf(first1);
@@ -305,15 +332,13 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
           const weekend = weekdayOf(d) >= 5;
           const bg = d === first ? "border-2 border-clay bg-[#ffd9c2] shadow-md" : d === today ? "border-2 border-clay bg-[#fff1c2] shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#7f9fd0] bg-[#d9e6f8]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
           return (
-            <div key={d} onClick={() => click(d)}
+            <div key={d} data-cell={d} onClick={() => click(d)}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => { const ids = evs.filter((x) => x.kind !== "BULLE").map((x) => x.id); const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }}
-                  draggable={movable} onDragStart={movable ? (ev) => { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", e.id); setDrag({ id: e.id, day: d }); } : undefined} onDragEnd={movable ? endDrag : undefined}
-                  onDragOver={movable ? (ev) => { if (!drag || drag.day !== d || drag.id === e.id) return; ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); const after = ev.clientY > r.top + r.height / 2; if (over?.id !== e.id || over.after !== after) setOver({ id: e.id, after }); } : undefined}
-                  onDrop={movable ? (ev) => { ev.preventDefault(); ev.stopPropagation(); drop(ids, d, e.id); } : undefined}
-                  className={"block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab active:cursor-grabbing " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                {evs.slice(0, 3).map((e) => { const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
+                  {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
+                  className={"block w-full select-none rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
                   style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #1b1863" : "0 -4px 0 0 #1b1863") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
@@ -321,7 +346,8 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
           );
         })}
       </div>
-      {onReorder && <p className="m-0 hidden rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris).</p>}
+      {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-extrabold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>↕ {ghost.text}</div>}
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
