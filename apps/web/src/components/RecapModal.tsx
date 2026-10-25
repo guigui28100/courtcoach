@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { ClubEvent, titleOf } from "../clubPlan";
+import { addDays, ClubEvent, mondayOf, opponentOf, TEAM_CATS, titleOf } from "../clubPlan";
 import { usePartnerLogos } from "../sponsors";
 import { posterToPdf, posterToPng } from "./exportPoster";
-import { emptyRecap, photoFromFile, RECAP_SIZES, RecapData, RecapFormat, RecapPoster } from "./RecapPoster";
+import { emptyRecap, matchSentence, photoFromFile, RECAP_SIZES, RecapData, RecapFormat, RecapMatch, RecapPoster, catPlain, teamPlain } from "./RecapPoster";
 
 const field = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal";
 const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -13,9 +13,21 @@ const MAX_PHOTOS = 6, MAX_RESULTS = 10;
 const QUICK = [["🥇 Vainqueur", ""], ["🥈 Finaliste", ""], ["Demi-finalistes", ""], ["Match par équipes", "Victoire 4 – 2"]];
 
 // Fenêtre de l'affiche de bilan : on choisit des photos, on écrit les résultats et le déroulement ; RIEN n'est enregistré ni envoyé.
-export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }) {
+// Matchs par équipes du même week-end (lundi au dimanche de l'événement) : une rencontre par équipe, le club adverse déjà noté est repris
+function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
+  if (e.kind !== "EQUIPES") return [];
+  const mon = mondayOf(e.startDate), sun = addDays(mon, 6);
+  const list = events.filter((x) => x.kind === "EQUIPES" && x.startDate >= mon && x.startDate <= sun && (x.id === e.id || true));
+  list.sort((a, b) => (a.id === e.id ? -1 : b.id === e.id ? 1 : a.startDate.localeCompare(b.startDate) || (a.position ?? 0) - (b.position ?? 0)));
+  const out: RecapMatch[] = [];
+  for (const x of list) for (const t of x.teams.length ? x.teams : [""]) out.push({ team: t, opponent: opponentOf(x), us: "", them: "" });
+  return out.slice(0, 8);
+}
+
+export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubEvent[]; onClose: () => void }) {
   const [format, setFormat] = useState<RecapFormat>("CARRE");
-  const [d, setD] = useState<RecapData>(emptyRecap());
+  const [d, setD] = useState<RecapData>(() => ({ ...emptyRecap(), matches: weekendMatches(e, events) }));
+  const teamsMode = e.kind === "EQUIPES";
   const logos = usePartnerLogos(); const [withPartners, setWithPartners] = useState(true);
   const [scale, setScale] = useState(0.4); const [msg, setMsg] = useState("");
   const holder = useRef<HTMLDivElement>(null);
@@ -68,6 +80,41 @@ export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }
                 {d.photos.length < MAX_PHOTOS && <label className="btn-outline cursor-pointer">＋ Ajouter des photos<input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} /></label>}
               </div>
             </div>
+            {teamsMode ? (
+              <div className="rounded-2xl border-2 border-line bg-white p-3">
+                <p className="m-0 mb-1 text-sm font-bold text-ink">🏆 Les rencontres du week-end</p>
+                <p className="m-0 mb-2 text-xs text-muted">Une ligne par équipe qui a joué. Écris les scores : « TC Houdan bat… », « perd contre… » ou « fait match nul contre… » s'écrit tout seul.</p>
+                <div className="grid gap-3">
+                  {d.matches.map((m, i) => {
+                    const [cat, num] = (m.team || "#1").split("#");
+                    const upd = (p: Partial<RecapMatch>) => set({ matches: d.matches.map((o, j) => (j === i ? { ...o, ...p } : o)) });
+                    return (
+                      <div key={i} className="grid gap-2 rounded-xl border border-line bg-[#fbf8f2] p-2">
+                        <div className="flex flex-wrap gap-2">
+                          <select aria-label={`Rencontre ${i + 1} : catégorie`} className={`${field} !w-auto min-w-0 flex-1`} value={cat} onChange={(x) => upd({ team: x.target.value ? `${x.target.value}#${num || "1"}` : "" })}>
+                            <option value="">Choisir l'équipe…</option>
+                            {TEAM_CATS.map((c) => <option key={c.key} value={c.key}>{catPlain(c.key)}</option>)}
+                          </select>
+                          <select aria-label={`Rencontre ${i + 1} : numéro de l'équipe`} className={`${field} !w-auto`} value={num || "1"} disabled={!cat} onChange={(x) => upd({ team: `${cat}#${x.target.value}` })}>
+                            {[1, 2, 3, 4].map((n) => <option key={n} value={n}>équipe {n}</option>)}
+                          </select>
+                          <button type="button" className="btn-outline" aria-label={`Retirer la rencontre ${i + 1}`} onClick={() => set({ matches: d.matches.filter((_, j) => j !== i) })}>🗑️</button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input aria-label={`Rencontre ${i + 1} : club adverse`} className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Club adverse (ex. TC Guyancourt)" value={m.opponent} onChange={(x) => upd({ opponent: x.target.value })} />
+                          <span className="text-sm font-bold text-ink">Houdan</span>
+                          <input aria-label={`Rencontre ${i + 1} : points de Houdan`} inputMode="numeric" className={`${field} !w-16 text-center`} maxLength={2} value={m.us} onChange={(x) => upd({ us: x.target.value.replace(/\D/g, "") })} />
+                          <span className="font-bold text-ink">/</span>
+                          <input aria-label={`Rencontre ${i + 1} : points de l'adversaire`} inputMode="numeric" className={`${field} !w-16 text-center`} maxLength={2} value={m.them} onChange={(x) => upd({ them: x.target.value.replace(/\D/g, "") })} />
+                          <span className="text-sm font-bold text-ink">adversaire</span>
+                        </div>
+                        <p className="m-0 text-sm font-bold text-ink">→ {matchSentence(m)}{m.us && m.them ? ` ${m.us}/${m.them}` : ""}</p>
+                      </div>);
+                  })}
+                  {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
+                </div>
+              </div>
+            ) : (
             <div className="rounded-2xl border-2 border-line bg-white p-3">
               <p className="m-0 mb-2 text-sm font-bold text-ink">🏆 Résultats <span className="font-normal text-muted">(tournoi, match par équipes…)</span></p>
               <div className="grid gap-2">
@@ -81,6 +128,7 @@ export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }
                   <div className="flex flex-wrap gap-2">{QUICK.map(([a, b]) => <button key={a} type="button" className="btn-outline" onClick={() => set({ results: [...d.results, { what: a, result: b }] })}>＋ {a}</button>)}<button type="button" className="btn-outline" onClick={() => set({ results: [...d.results, { what: "", result: "" }] })}>＋ Une ligne libre</button></div>)}
               </div>
             </div>
+            )}
             <label className="text-sm font-bold text-ink">Un mot de remerciement <span className="font-normal text-muted">(facultatif)</span>
               <textarea aria-label="Mot de remerciement" rows={2} maxLength={200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
           </div>
