@@ -9,7 +9,7 @@ import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
-import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
+import { EventPoster, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1007,6 +1007,39 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
   );
 }
 
+// ───────────── Mise en forme du texte de l'affiche : taille, gras, italique, souligné, alignement, bloc par bloc ─────────────
+const FMT_BLOCKS: { key: BlockKey; label: string }[] = [
+  { key: "titre", label: "Titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
+];
+function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFmt) => void }) {
+  const [open, setOpen] = useState(false);
+  const [key, setKey] = useState<BlockKey>("titre");
+  const cur: BlockFmt = fmt[key] ?? {};
+  const set = (patch: Partial<BlockFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
+  const size = cur.size ?? 0;
+  const tog = (label: string, on: boolean | undefined, f: () => void, st?: React.CSSProperties) => (
+    <button type="button" aria-pressed={!!on} onClick={f} style={st} className={`min-h-10 min-w-10 rounded-lg border-2 px-3 text-base ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
+  );
+  return (
+    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-3 rounded-xl border-2 border-line bg-white p-3">
+      <summary className="cursor-pointer text-sm font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
+      <p className="mb-2 mt-2 text-xs text-muted">Choisis la partie de l'affiche, puis règle-la. L'aperçu change tout de suite. Ces réglages restent dans ce navigateur.</p>
+      <div className="mb-2 flex flex-wrap gap-2">{FMT_BLOCKS.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-10 min-w-10 rounded-lg border-2 border-line bg-white text-lg font-extrabold text-ink">A−</button>
+        <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
+        <button type="button" aria-label="Plus grand" disabled={size >= 6} onClick={() => set({ size: size + 1 })} className="min-h-10 min-w-10 rounded-lg border-2 border-line bg-white text-lg font-extrabold text-ink">A+</button>
+        {tog("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), { fontWeight: 900 })}
+        {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" })}
+        {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" })}
+        {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a })))}
+        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-10 rounded-lg border-2 border-line bg-white px-3 text-sm font-bold text-ink">↺ Rétablir</button>
+      </div>
+      <p className="mb-0 mt-2 text-xs text-muted">G = gras (un 2ᵉ toucher le retire) · I = italique · S = souligné · ⬅ ↔ ➡ = à gauche, centré, à droite. La taille s'ajuste toujours pour que tout tienne sur l'affiche.</p>
+    </details>
+  );
+}
+
 // ───────────── Affiche d'un événement : on remplit les infos à gauche, l'aperçu se met à jour à droite ─────────────
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
@@ -1018,6 +1051,9 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [note, setNote] = useState(e.note ?? "");
   const [info, setInfo] = useState<PosterInfo>(infoOf(e));
   const holder = useRef<HTMLDivElement>(null);
+  const fmtKey = `cc-affiche-mise-en-forme-${e.id}`;
+  const [fmt, setFmtState] = useState<PosterFmt>(() => { try { return JSON.parse(localStorage.getItem(fmtKey) || "{}"); } catch { return {}; } });
+  const setFmt = (v: PosterFmt) => { setFmtState(v); try { localStorage.setItem(fmtKey, JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const { w, h } = SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
   const draft: ClubEvent = { ...e, title, note, ...cleanInfo(info) };
@@ -1059,6 +1095,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>📱 Carré (WhatsApp, Facebook)</Pill>
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
           </div>
+          <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
               ? <AnimationForm tournoi={isTournoi(e.kind)} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
@@ -1069,7 +1106,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} /></div>
+            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1082,7 +1119,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} /></div>, document.body)}
     </Modal>
   );
 }
