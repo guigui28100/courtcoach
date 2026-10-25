@@ -7,7 +7,7 @@ import { Avatar, BackLink, Empty, Err, Field, Page, PageHead, SideLayout, TabsBa
 import { useVideos, VideoList, VideoUpload } from "../components/Videos";
 import { seriesDates } from "../series";
 import { ClayHero, DAY_STEPS, fmtPlanSlot, PlanningPicker, previewPlanning, ProfChooser } from "../components/Profs";
-import { CourseCalendar, DayHours, DaySheet, LessonSheet } from "../components/CourseCalendar";
+import { CourseCalendar, DayHours, LessonSheet } from "../components/CourseCalendar";
 
 
 // Vidéos de l'adhérent adulte : il envoie, le coach analyse, ils discutent.
@@ -49,7 +49,7 @@ function StepCard({ title, state, children }: { n: number; title: string; state:
   );
 }
 
-type Recap = { when: string; prof: string; price: number | null };
+type Recap = { when: string; prof: string; price: number | null; preview?: boolean };
 function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack, onSent }: { preview: boolean; prof: ProfCard | null; date?: string; onBack?: () => void; price: number | null; onClose: () => void; onSent: (booked?: boolean, info?: { seriesCount?: number; skipped?: { date: string; why: string }[] }, recap?: Recap) => void }) {
   const [err, setErr] = useState("");
   const [plan, setPlan] = useState<PlanDay[] | null>(prof ? null : []); // planning du professeur (créneaux d'une heure)
@@ -77,7 +77,12 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
   }
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (preview) { setErr(slot ? "Aperçu : rien n'est réservé. Un adulte verrait ici « Réservé ! » et le créneau deviendrait indisponible pour les autres." : "Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
+    if (preview) {
+      if (!(slot && chosen)) { setErr("Aperçu : rien n'est envoyé. Un adulte verrait ici que sa demande est partie."); return; }
+      if (duo && !checkPartner()) return;
+      // Aperçu : on montre la carte finale « C'est réservé ! » pour de faux (rien n'est enregistré)
+      onClose(); onSent(true, undefined, { when: `${fmtPlanSlot(slot.date, chosen.time, chosen.end)}${weekly ? " · 🔁 chaque semaine jusqu'au 30 juin" : ""}`, prof: profName(prof), price, preview: true }); return;
+    }
     if (hasPlan && !slot) { setErr("Choisis un créneau dans le planning."); return; }
     const f = new FormData(e.currentTarget); setErr("");
     if (duo && (!String(f.get("pFirst") || "").trim() || !String(f.get("pLast") || "").trim() || !Number(f.get("pAge")) || !f.get("pLevel"))) { setErr("Pour un cours à deux, indique le prénom, le nom, l'âge et le classement (ou le niveau) de ton partenaire."); return; }
@@ -103,7 +108,7 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
             <DayHours day={plan?.find((d) => d.date === date)} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); else setForced("heure"); }} />
             {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
               <label className={"grid cursor-pointer gap-2 rounded-2xl border-2 p-4 " + (weekly ? "border-clay bg-[#fdf1ea]" : "border-line bg-white")}>
-                <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je prends ce créneau toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
+                <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je souhaite prendre ce cours toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
                 {weekly && <span className="text-sm">👉 Jusqu'à <strong>{kept} cours</strong>{vac > 0 ? ` (${vac} semaine${vac > 1 ? "s" : ""} de vacances ou de jour férié sautée${vac > 1 ? "s" : ""})` : ""}{price ? ` · ${price} € le cours, réglé directement au professeur` : ""}. {prof?.firstName ?? "Le professeur"} confirme <strong>une seule fois</strong>.</span>}
               </label>
             ); })()}
@@ -184,7 +189,7 @@ function NewLessonForm({ preview, prof, date, price: basePrice, onClose, onBack,
           {date ? <DayHours day={plan!.find((d) => d.date === date)} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} /> : <PlanningPicker days={plan!} value={slot} onChange={(v) => { setSlot(v); if (!v) setWeekly(false); }} />}
           {slot && (() => { const all = seriesDates(slot.date); const kept = all.filter((d) => !d.skip).length; const vac = all.length - kept; return (
             <label className={"grid cursor-pointer gap-2 rounded-2xl border-2 p-4 " + (weekly ? "border-clay bg-[#fdf1ea] shadow-[0_5px_0_var(--color-clay)]" : "border-line bg-white")}>
-              <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je prends ce créneau toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
+              <span className="flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} /><span className="grid"><strong className="font-display text-lg">🔁 Je souhaite prendre ce cours toute l'année</strong><span className="text-sm text-muted">{everyDay(slot)}, jusqu'à la fin de la saison (30 juin).</span></span></span>
               {weekly && <span className="grid gap-1 text-sm"><span>👉 Jusqu'à <strong>{kept} cours</strong>{vac > 0 ? ` (${vac} semaine${vac > 1 ? "s" : ""} de vacances ou de jour férié sautée${vac > 1 ? "s" : ""})` : ""}{price ? ` · ${price} € le cours, réglé directement au professeur` : ""}.</span><span className="text-muted">Les dates où {prof?.firstName ?? "le professeur"} n'est pas disponible ou déjà pris sont sautées. Il confirme <strong>une seule fois</strong> pour toute la série. Tu pourras annuler un cours, ou toute la série, quand tu veux.</span></span>}
             </label>
           ); })()}
@@ -303,7 +308,7 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
         {!open && <button className="btn-clay disabled:cursor-not-allowed disabled:opacity-50" disabled={full} onClick={() => ask()}>{c.button}</button>}
       </div>
       {sent === "booked" && recap && !serieInfo && (
-        <div role="status" className="grid gap-2 rounded-3xl border-2 border-ok bg-[#e8f7ee] p-6 text-center"><strong className="font-display text-3xl text-[#166534]">🎉 C'est réservé !</strong><span className="text-lg font-bold">{recap.when} · avec {recap.prof}{recap.price ? ` · ${recap.price} €` : ""}</span><span className="font-bold text-[#14532d]">⏳ Il ne reste qu'à attendre la confirmation du professeur (48 h maximum). Tu la verras dans ton calendrier : l'étiquette passera du jaune au vert.</span><span><button className="btn-outline btn-sm" onClick={() => setSent(false)}>Voir mon calendrier</button></span></div>
+        <div role="status" className="grid gap-2 rounded-3xl border-2 border-ok bg-[#e8f7ee] p-6 text-center"><strong className="font-display text-3xl text-[#166534]">🎉 C'est réservé !</strong><span className="text-lg font-bold">{recap.when} · avec {recap.prof}{recap.price ? ` · ${recap.price} €` : ""}</span><span className="font-bold text-[#14532d]">⏳ Il ne reste qu'à attendre la confirmation du professeur (48 h maximum). Tu la verras dans ton calendrier : l'étiquette passera du jaune au vert.</span>{recap.preview && <span className="mx-auto rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">👀 Aperçu : c'est un exemple, rien n'est enregistré ni envoyé.</span>}<span><button className="btn-outline btn-sm" onClick={() => setSent(false)}>Voir mon calendrier</button></span></div>
       )}
       {sent && !(sent === "booked" && recap && !serieInfo) && <p role="status" className="m-0 rounded-2xl border-2 border-ok bg-[#eef8f1] p-3 font-bold text-ok">{sent === "booked" && serieInfo ? <>✅ Série réservée : {serieInfo.count} cours ! Ton professeur doit la confirmer une seule fois (sous 48 h). Tu la vois dans « En attente ».{serieInfo.skipped.length > 0 && <details className="mt-1 font-normal"><summary className="cursor-pointer font-bold">{serieInfo.skipped.length} date{serieInfo.skipped.length > 1 ? "s" : ""} sautée{serieInfo.skipped.length > 1 ? "s" : ""} (vacances, jours fériés…)</summary><ul className="m-0 mt-1 grid list-none gap-0.5 p-0 text-sm">{serieInfo.skipped.map((s) => <li key={s.date}>{new Date(`${s.date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} : {s.why}</li>)}</ul></details>}</> : sent === "booked" ? "✅ Créneau réservé ! Il est mis de côté pour toi : ton professeur doit le confirmer (sous 48 h). Tu le vois dans « En attente »." : c.ok}</p>}
       {full && !open && <p role="status" className="m-0 rounded-2xl border-2 border-[#e0b84a] bg-[#fff3cd] p-3 font-bold text-[#7a5a00]">🔒 Tu as déjà {MAX_AHEAD} cours réservés à venir. Pour en réserver un autre, attends qu'un cours ait eu lieu ou annule-en un (touche-le dans le calendrier).</p>}
@@ -316,13 +321,12 @@ function LessonsSection({ lessons, preview, seenLocal, onSent, onSeen }: { lesso
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="m-0 font-display text-xl">Mes cours à venir</h3>
           </div>
-          {!full && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour libre du calendrier (marqué <span aria-hidden="true">＋</span>)</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
-          {<CourseCalendar preview={preview} locked={full} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => setSheet({ day: d })} />}
+          {!full && <div className="grid gap-2 rounded-2xl bg-[#eef2fb] p-3 text-[#1b1863] sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center sm:gap-3" role="note" aria-label="Deux façons de réserver"><strong className="text-sm">Deux façons de réserver :</strong><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">① 📆 </span>Touche un jour du calendrier qui a des créneaux libres</span><span aria-hidden="true" className="text-center text-sm font-bold">ou</span><span className="rounded-xl bg-white px-3 py-2 text-sm font-bold"><span aria-hidden="true">② 🔘 </span>Utilise le bouton « {c.button} » en haut</span></div>}
+          {<CourseCalendar preview={preview} locked={full} lessons={lessons} onLesson={(l) => setSheet({ lesson: l })} onDay={(d) => ask(d)} />}
           {<ol className="m-0 mt-3 grid list-none gap-2 p-0 sm:grid-cols-3">{["Choisis ton professeur", "Touche un créneau libre", "Le professeur confirme : c'est réservé"].map((t, i) => <li key={t} className="flex items-center gap-3 rounded-2xl bg-[#eef3fb] p-3 text-sm font-bold"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white">{i + 1}</span>{t}</li>)}</ol>}
         </div>
       )}
       {sheet && "lesson" in sheet && <LessonSheet l={sheet.lesson} onClose={() => setSheet(null)} onCancel={cancel} />}
-      {sheet && "day" in sheet && <DaySheet date={sheet.day} preview={preview} onClose={() => setSheet(null)} onReserve={() => { const d = sheet.day; setSheet(null); ask(d); }} />}
     </section>
   );
 }

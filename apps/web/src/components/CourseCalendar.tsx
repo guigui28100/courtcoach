@@ -78,7 +78,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
               className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : d < today ? "opacity-60" : "")}>
               <b className={"text-sm " + (d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
-              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs">＋ {n}<span className="max-sm:hidden"> libre{n > 1 ? "s" : ""}</span></span>)}
+              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs"><span className="sm:hidden">＋ {n}</span><span className="max-sm:hidden">{n > 1 ? "Créneaux" : "Créneau"} : {n}</span></span>)}
               {closed && <span className="mt-1 block text-center text-[0.55rem] font-bold tracking-tight text-muted sm:text-xs"><span aria-hidden="true" className="sm:hidden">✕</span><span className="max-sm:sr-only">complet</span></span>}
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
@@ -91,7 +91,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>＋ N libres : nombre de créneaux libres, touche le jour pour réserver</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span></p>
     </div>
   );
 }
