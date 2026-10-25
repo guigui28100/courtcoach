@@ -1,4 +1,4 @@
-import { catPlain, glue, teamPlain } from "./posterCopy";
+import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ClubEvent, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
@@ -113,7 +113,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
               {matches.map((m, i) => (
                 <div key={i} style={{ ...card, display: "block", borderLeft: `10px solid ${outcomeColor(m)}` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: p(12), marginBottom: p(6) }}>
-                    <div style={{ fontSize: p(matches.length === 1 ? 26 : 22), fontWeight: 800, color: MUTED }}>{m.team ? teamPlain(m.team) : "Rencontre"}</div>
+                    <div style={{ fontWeight: 800, color: MUTED, lineHeight: 1.15 }}>{m.team ? (() => { const [c, n] = teamParts(m.team); return <><div style={{ fontSize: p(matches.length === 1 ? 28 : 24), whiteSpace: "nowrap", color: NAVY, fontWeight: 900 }}>{c}</div><div style={{ fontSize: p(matches.length === 1 ? 22 : 19) }}>{n}</div></>; })() : <div style={{ fontSize: p(22) }}>Rencontre</div>}</div>
                     {outcomeWord(m) && <div style={{ flex: "0 0 auto", background: outcomeColor(m), color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(16), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{outcomeWord(m)}</div>}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: p(16) }}>
