@@ -9,8 +9,8 @@ import { fullRange, label } from "./ClubPoster";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
-export interface RecapData { headline: string; photos: string[]; results: { what: string; result: string }[]; steps: { time: string; text: string }[]; message: string }
-export const emptyRecap = (): RecapData => ({ headline: "MERCI À TOUS !", photos: [], results: [], steps: [], message: "" });
+export interface RecapData { photos: string[]; results: { what: string; result: string }[]; message: string }
+export const emptyRecap = (): RecapData => ({ photos: [], results: [], message: "" });
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
 const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
@@ -33,12 +33,11 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
   const results = data.results.filter((r) => r.what.trim() || r.result.trim());
-  const steps = data.steps.filter((s) => s.time.trim() || s.text.trim());
   const photos = data.photos.slice(0, 6); const logos = partners ?? [];
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([e, format, data.headline, data.message, results, steps, photos.length, logos.length]);
+  const sig = JSON.stringify([e, format, data.message, results, photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -84,7 +83,6 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
-            {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
             <div role="heading" aria-level={1} style={title}>{name}</div>
             <div style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>
@@ -97,18 +95,6 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
                   <div key={i} style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: i ? `1.5px solid ${LINE}` : "none", paddingTop: i ? p(6) : 0 }}>
                     <span style={{ flex: "0 0 36%", fontSize: p(20), fontWeight: 800, color: MUTED }}>{r.what}</span>
                     <b style={{ flex: 1, fontSize: p(24), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
-                  </div>))}
-              </div>
-            </div>
-          )}
-          {steps.length > 0 && (
-            <div style={card}>
-              {head("📋 AU PROGRAMME")}
-              <div style={{ display: "grid", gap: p(6), gridTemplateColumns: steps.length > 4 ? "1fr 1fr" : "1fr", columnGap: p(24) }}>
-                {steps.map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: p(12), alignItems: "baseline" }}>
-                    <b style={{ flex: "0 0 auto", minWidth: p(70), fontSize: p(20), fontWeight: 900, color: acc }}>{s.time}</b>
-                    <span style={{ fontSize: p(20), fontWeight: 700, lineHeight: 1.2 }}>{s.text}</span>
                   </div>))}
               </div>
             </div>

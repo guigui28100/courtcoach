@@ -9,7 +9,7 @@ const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   <button type="button" aria-pressed={on} onClick={onClick} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
 );
 const slug = (e: ClubEvent) => titleOf(e).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const MAX_PHOTOS = 6, MAX_RESULTS = 10, MAX_STEPS = 8;
+const MAX_PHOTOS = 6, MAX_RESULTS = 10;
 const QUICK = [["🥇 Vainqueur", ""], ["🥈 Finaliste", ""], ["Demi-finalistes", ""], ["Match par équipes", "Victoire 4 – 2"]];
 
 // Fenêtre de l'affiche de bilan : on choisit des photos, on écrit les résultats et le déroulement ; RIEN n'est enregistré ni envoyé.
@@ -57,8 +57,6 @@ export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }
               <Pill on={format === "PORTRAIT"} onClick={() => setFormat("PORTRAIT")}>📱 Portrait 4:5</Pill>
               {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
             </div>
-            <label className="text-sm font-bold text-ink">Petit titre en haut
-              <input aria-label="Petit titre" className={`${field} mt-1`} maxLength={40} value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
             <div className="rounded-2xl border-2 border-line bg-white p-3">
               <p className="m-0 mb-2 text-sm font-bold text-ink">📷 Photos <span className="font-normal text-muted">({d.photos.length} sur {MAX_PHOTOS})</span></p>
               <div className="flex flex-wrap items-center gap-2">
@@ -79,18 +77,6 @@ export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }
                   </div>))}
                 {d.results.length < MAX_RESULTS && (
                   <div className="flex flex-wrap gap-2">{QUICK.map(([a, b]) => <button key={a} type="button" className="btn-outline" onClick={() => set({ results: [...d.results, { what: a, result: b }] })}>＋ {a}</button>)}<button type="button" className="btn-outline" onClick={() => set({ results: [...d.results, { what: "", result: "" }] })}>＋ Une ligne libre</button></div>)}
-              </div>
-            </div>
-            <div className="rounded-2xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-bold text-ink">📋 Déroulement <span className="font-normal text-muted">(pour une animation, un stage…)</span></p>
-              <div className="grid gap-2">
-                {d.steps.map((s, i) => (
-                  <div key={i} className="flex gap-2">
-                    <input aria-label={`Étape ${i + 1} : heure`} className={`${field} !w-28 shrink-0`} maxLength={14} placeholder="9 h 30" value={s.time} onChange={(x) => set({ steps: d.steps.map((o, j) => (j === i ? { ...o, time: x.target.value } : o)) })} />
-                    <input aria-label={`Étape ${i + 1} : ce qui s'est passé`} className={field} maxLength={50} placeholder="Ce qui s'est passé" value={s.text} onChange={(x) => set({ steps: d.steps.map((o, j) => (j === i ? { ...o, text: x.target.value } : o)) })} />
-                    <button type="button" className="btn-outline" aria-label={`Retirer l'étape ${i + 1}`} onClick={() => set({ steps: d.steps.filter((_, j) => j !== i) })}>🗑️</button>
-                  </div>))}
-                {d.steps.length < MAX_STEPS && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ steps: [...d.steps, { time: "", text: "" }] })}>＋ Ajouter une étape</button>}
               </div>
             </div>
             <label className="text-sm font-bold text-ink">Un mot de remerciement <span className="font-normal text-muted">(facultatif)</span>
