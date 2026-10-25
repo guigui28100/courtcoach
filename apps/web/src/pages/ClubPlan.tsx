@@ -332,9 +332,9 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
           const weekend = weekdayOf(d) >= 5;
           const bg = d === first ? "border-2 border-clay bg-[#ffd9c2] shadow-md" : d === today ? "border-2 border-clay bg-[#fff1c2] shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#7f9fd0] bg-[#d9e6f8]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
           return (
-            <div key={d} data-cell={d} onClick={() => click(d)}
+            <div key={d} data-cell={d} onClick={() => { if (justDragged.current) return; click(d); }}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
-              <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
+              <button type="button" onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
                 {evs.slice(0, 3).map((e) => { const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                   {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}

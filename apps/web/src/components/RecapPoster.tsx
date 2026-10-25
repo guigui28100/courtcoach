@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ClubEvent, kindOf, teamCat, titleOf } from "../clubPlan";
+import { ClubEvent, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
 import { accentOf } from "./EventPoster";
 import { NoBreak } from "./NoBreak";
 import { fullRange } from "./ClubPoster";
@@ -54,7 +54,10 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
-  const name = (teamsMode ? "Match par équipes" : titleOf(e)).toUpperCase();
+  const ti = tourInfo(e);
+  // Tournoi : le grand titre dit le type et le public (« TMC MESSIEURS », « TOURNOI OPEN DAMES »), la ligne dessous donne les classements du TMC
+  const name = (teamsMode ? "Match par équipes" : ti ? `${ti.type === "TMC" ? "TMC" : "Tournoi open"} ${ti.who}`.trim() : titleOf(e)).toUpperCase();
+  const rankLine = ti && ti.bas && ti.haut ? `Classements de ${ti.bas} à ${ti.haut}` : "";
   const matches = data.matches.filter((m) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim());
   const results = data.results.filter((r) => r.what.trim() || r.result.trim());
   const photos = data.photos.slice(0, 6); const logos = partners ?? [];
@@ -109,6 +112,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
           <div>
             {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
             <div role="heading" aria-level={1} style={title}>{name}</div>
+            {rankLine && <div style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
             <div style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>
           {grid}
