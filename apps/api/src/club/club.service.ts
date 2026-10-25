@@ -37,8 +37,18 @@ export class ClubService {
   }
 
   async plan() {
-    const events = await this.prisma.clubEvent.findMany({ orderBy: [{ startDate: "asc" }, { createdAt: "asc" }] });
+    const events = await this.prisma.clubEvent.findMany({ orderBy: [{ startDate: "asc" }, { position: "asc" }, { createdAt: "asc" }] });
     return { events, teamCounts: await this.counts(), people: await this.people() };
+  }
+
+  // Ordre d'une case du calendrier : la liste des identifiants dans le nouvel ordre (glisser-déposer)
+  async reorder(ids: string[]) {
+    const list = [...new Set(ids)];
+    if (list.length < 2) throw new BadRequestException("Il faut au moins deux événements pour changer l'ordre.");
+    const found = await this.prisma.clubEvent.count({ where: { id: { in: list } } });
+    if (found !== list.length) throw new NotFoundException("Un événement n'existe plus : recharge la page.");
+    await this.prisma.$transaction(list.map((id, i) => this.prisma.clubEvent.update({ where: { id }, data: { position: i } })));
+    return { ok: true };
   }
 
   async setTeams(counts: Record<string, number>) {

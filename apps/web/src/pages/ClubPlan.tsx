@@ -2,6 +2,7 @@ import { YVELINES_CLUBS } from "../yvelinesClubs";
 import { RANKINGS } from "../types";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
@@ -9,7 +10,9 @@ import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
-import { EventPoster, PosterFormat, SIZES } from "../components/EventPoster";
+import { usePartnerLogos } from "../sponsors";
+import { RecapModal } from "../components/RecapModal";
+import { EventPoster, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -50,12 +53,18 @@ export function ClubPlan() {
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const nav = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
   const shiftMonth = (m: string, n: number) => addDays(`${m}-01`, n < 0 ? -1 : 32).slice(0, 7);
   const navLabel = view === "annee" ? `Année ${season} / ${season + 1}` : `${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`;
   const step = (n: number) => { if (view === "annee") setSeason(season + n); else setMonth(shiftMonth(month, n)); };
   const goToday = () => { if (view === "annee") setSeason(seasonOf(todayParis())); else setMonth(todayParis().slice(0, 7)); };
 
+  // Glisser-déposer dans une case du mois : on réordonne tout de suite à l'écran, puis on l'enregistre
+  const reorder = async (ids: string[]) => {
+    setEvents((cur) => cur.map((e) => (ids.includes(e.id) ? { ...e, position: ids.indexOf(e.id) } : e)).map((e, i) => [e, i] as const).sort(([a, i], [b, j]) => a.startDate.localeCompare(b.startDate) || (a.position ?? 0) - (b.position ?? 0) || i - j).map(([e]) => e));
+    try { await put("/club/events-order", { ids }); } catch (x) { setErr((x as Error).message); load(); }
+  };
   const load = useCallback(async () => {
     try {
       const r = await get<{ events: ClubEvent[]; teamCounts: Record<string, number>; people: { name: string; role: string }[] }>("/club/plan");
@@ -85,6 +94,7 @@ export function ClubPlan() {
 
   const [actionEv, setActionEv] = useState<ClubEvent | null>(null);
   const [posterEv, setPosterEv] = useState<ClubEvent | null>(null);
+  const [recapEv, setRecapEv] = useState<ClubEvent | null>(null);
   const [placed, setPlaced] = useState<ClubEvent | null>(null); // juste après l'enregistrement : proposer l'affiche
   const [settingsOpen, setSettingsOpen] = useState(false);
   const toggleStar = async (e: ClubEvent) => {
@@ -138,6 +148,7 @@ export function ClubPlan() {
             {[
               ...(readOnly ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
+              ...(readOnly ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
               ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
             ].map((o) => (
               <button key={o.t} type="button" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 text-left hover:border-ink" onClick={() => { setMoreOpen(false); o.go(); }}>
@@ -151,7 +162,7 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={readOnly ? setActionEv : openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { if (readOnly) return; setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { if (readOnly) return; setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { if (readOnly) return; setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { if (readOnly) return; setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -164,7 +175,8 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
+      {recapEv && <RecapModal e={recapEv} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
       {exportOpen && <ExportModal events={events} season={season} month={month} onClose={() => setExportOpen(false)} />}
@@ -258,7 +270,7 @@ function Legend() {
 }
 
 // ───────────── Mois ─────────────
-function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: boolean; onEvent: (e: ClubEvent) => void; month: string; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
+function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }: { multi: boolean; onEvent: (e: ClubEvent) => void; onReorder?: (ids: string[]) => void; month: string; events: ClubEvent[]; onDay: (d: string) => void; onRange: (a: string, b: string) => void }) {
   const [first, setFirst] = useState<string | null>(null);
   useEffect(() => { if (!multi) setFirst(null); }, [multi]);
   const click = (d: string) => {
@@ -266,6 +278,17 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
     if (!first) return setFirst(d);
     const [a, b] = d < first ? [d, first] : [first, d];
     setFirst(null); onRange(a, b);
+  };
+  // Glisser-déposer : un événement se place au-dessus ou en dessous d'un autre de la MÊME case
+  const [drag, setDrag] = useState<{ id: string; day: string } | null>(null);
+  const [over, setOver] = useState<{ id: string; after: boolean } | null>(null);
+  const endDrag = () => { setDrag(null); setOver(null); };
+  const drop = (ids: string[], day: string, target: string) => {
+    if (!onReorder || !drag || drag.day !== day || drag.id === target) return endDrag();
+    const rest = ids.filter((x) => x !== drag.id); const at = rest.indexOf(target);
+    if (at < 0) return endDrag();
+    rest.splice(at + (over?.id === target && over.after ? 1 : 0), 0, drag.id);
+    endDrag(); onReorder(rest);
   };
   const first1 = `${month}-01`;
   const gridStart = mondayOf(first1);
@@ -286,13 +309,19 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }} className="block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere]" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>)}
+                {evs.slice(0, 3).map((e) => { const ids = evs.filter((x) => x.kind !== "BULLE").map((x) => x.id); const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); onEvent(e); }}
+                  draggable={movable} onDragStart={movable ? (ev) => { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", e.id); setDrag({ id: e.id, day: d }); } : undefined} onDragEnd={movable ? endDrag : undefined}
+                  onDragOver={movable ? (ev) => { if (!drag || drag.day !== d || drag.id === e.id) return; ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); const after = ev.clientY > r.top + r.height / 2; if (over?.id !== e.id || over.after !== after) setOver({ id: e.id, after }); } : undefined}
+                  onDrop={movable ? (ev) => { ev.preventDefault(); ev.stopPropagation(); drop(ids, d, e.id); } : undefined}
+                  className={"block w-full rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab active:cursor-grabbing " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                  style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #1b1863" : "0 -4px 0 0 #1b1863") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </div>
           );
         })}
       </div>
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
@@ -320,7 +349,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent }: { multi: b
 }
 
 // ───────────── Fenêtres ─────────────
-function Modal({ title, onClose, children, wide, bare }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; bare?: boolean }) {
+export function Modal({ title, onClose, children, wide, bare }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean; bare?: boolean }) {
   useEffect(() => { const f = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); }, [onClose]);
   if (bare) return ( // mode « carte seule » : le planning reste visible en fond (assombri), mais aucune autre carte autour
     <div className="fixed inset-0 z-50 grid content-start justify-items-center overflow-y-auto bg-black/50 p-4 sm:content-center" onClick={onClose}>
@@ -985,10 +1014,45 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
   );
 }
 
+// ───────────── Mise en forme du texte de l'affiche : taille, gras, italique, souligné, alignement, bloc par bloc ─────────────
+const FMT_BLOCKS: { key: BlockKey; label: string }[] = [
+  { key: "titre", label: "Titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
+];
+function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFmt) => void }) {
+  const [open, setOpen] = useState(false);
+  const [key, setKey] = useState<BlockKey>("titre");
+  const cur: BlockFmt = fmt[key] ?? {};
+  const set = (patch: Partial<BlockFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
+  const size = cur.size ?? 0;
+  const tog = (label: string, on: boolean | undefined, f: () => void, st?: React.CSSProperties) => (
+    <button type="button" aria-pressed={!!on} onClick={f} style={st} className={`min-h-8 min-w-8 rounded-md border px-2 text-sm ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
+  );
+  return (
+    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-lg border border-line bg-white p-2">
+      <summary className="cursor-pointer text-xs font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
+      <p className="mb-1 mt-1 text-xs text-muted">Choisis une partie, puis règle-la (réglages gardés dans ce navigateur).</p>
+      <div className="mb-1 flex flex-wrap gap-1">{FMT_BLOCKS.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
+      <div className="flex flex-wrap items-center gap-1">
+        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A−</button>
+        <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
+        <button type="button" aria-label="Plus grand" disabled={size >= 6} onClick={() => set({ size: size + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A+</button>
+        {tog("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), { fontWeight: 900 })}
+        {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" })}
+        {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" })}
+        {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a })))}
+        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir</button>
+      </div>
+      
+    </details>
+  );
+}
+
 // ───────────── Affiche d'un événement : on remplit les infos à gauche, l'aperçu se met à jour à droite ─────────────
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
+  const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
+  const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -996,6 +1060,9 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [note, setNote] = useState(e.note ?? "");
   const [info, setInfo] = useState<PosterInfo>(infoOf(e));
   const holder = useRef<HTMLDivElement>(null);
+  const fmtKey = `cc-affiche-mise-en-forme-${e.id}`;
+  const [fmt, setFmtState] = useState<PosterFmt>(() => { try { return JSON.parse(localStorage.getItem(fmtKey) || "{}"); } catch { return {}; } });
+  const setFmt = (v: PosterFmt) => { setFmtState(v); try { localStorage.setItem(fmtKey, JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const { w, h } = SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
   const draft: ClubEvent = { ...e, title, note, ...cleanInfo(info) };
@@ -1036,7 +1103,9 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             <Pill on={format === "A4"} onClick={() => setFormat("A4")}>📄 A4 à imprimer</Pill>
             <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>📱 Carré (WhatsApp, Facebook)</Pill>
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
+            {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
+          <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
               ? <AnimationForm tournoi={isTournoi(e.kind)} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
@@ -1047,7 +1116,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} /></div>
+            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1060,13 +1129,13 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>, document.body)}
     </Modal>
   );
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, readOnly = false }: { readOnly?: boolean; onPoster: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false }: { readOnly?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
@@ -1076,6 +1145,7 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, readOnly
       {!readOnly && <div className="mt-3 grid gap-2">
         <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>
         <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
         <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
         <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
       </div>}
@@ -1141,6 +1211,8 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [month, setMonth] = useState(initialMonth);
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
+  const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
+  const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
   const [msg, setMsg] = useState("");
   const holder = useRef<HTMLDivElement>(null);
@@ -1176,9 +1248,10 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         <Pill on={model === "liste"} onClick={() => setModel("liste")}>📋 Modèle liste</Pill>
         <Pill on={model === "calendrier"} onClick={() => setModel("calendrier")}>🗓️ Modèle calendrier</Pill>
         <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
+        {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
       </div>
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>
+        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
@@ -1187,7 +1260,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>, document.body)}
     </Modal>
   );
 }

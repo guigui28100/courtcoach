@@ -657,6 +657,7 @@ model ClubEvent {
   formulas  Json     @default("[]") // formules et prix : [{ label, price, detail? }], 8 au plus
   audience  String   @default("") // pour qui ? ex. « 8 à 12 ans, tous niveaux »
   bring     String   @default("") // à prévoir, ex. « Tenue de sport, bouteille d'eau »
+  position  Int      @default(0) // ordre dans une case du calendrier (glisser-déposer)
   createdAt DateTime @default(now())
 
   @@index([startDate])
@@ -666,4 +667,22 @@ model ClubEvent {
 model ClubSetting {
   key   String @id
   value Json
+}
+
+// Partenaires (sponsors) du club : entreprises seulement, aucune donnée d'élève. Réservé au coach et au président.
+model Sponsor {
+  id          String   @id @default(cuid())
+  name        String
+  contactName String   @default("")
+  phone       String   @default("")
+  email       String   @default("")
+  amount      String   @default("") // texte libre, ex. « 500 € par an »
+  startDate   String   @default("") // AAAA-MM-JJ, facultatif
+  endDate     String   @default("")
+  status      String   @default("A_CONTACTER") // A_CONTACTER, RELANCE, SIGNE, FACTURE, PAYE, TERMINE
+  perks       String[] // contreparties promises (identifiants de la liste fixe)
+  pack        String   @default("") // grade choisi (nom d'une formule de l'offre du club) ; vide = sur mesure
+  logo        String   @default("") // image PNG ou JPEG en base64 (data:image/…), 90 000 caractères au plus
+  note        String   @default("")
+  createdAt   DateTime @default(now())
 }

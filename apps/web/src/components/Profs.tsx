@@ -41,54 +41,48 @@ const shortSlot = (x: { date: string; time: string }) => {
   const d = new Date(`${x.date}T12:00:00`); const w = d.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", "");
   return `${w.charAt(0).toUpperCase()}${w.slice(1)} ${d.getDate()} · ${hour(x.time)}`;
 };
-const ROWS = 8; // la carte a 8 « lignes » partagées avec ses voisines (sous-grille) : les textes sont donc à la MÊME hauteur d'une carte à l'autre
+const ROWS = 6; // la carte a 6 « lignes » partagées avec ses voisines (sous-grille) : les textes sont donc à la MÊME hauteur d'une carte à l'autre
 
 // Carte d'un professeur (version « carte de joueur ») : bandeau terre battue, classements, jours disponibles en toutes lettres, prochains créneaux libres, tarif, bouton pour choisir.
-// À mettre dans une grille `.prof-grid` : chaque carte occupe 8 lignes de la grille, alignées entre les cartes.
+// À mettre dans une grille `.prof-grid` : chaque carte occupe 6 lignes de la grille, alignées entre les cartes.
 export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfCard; onPick?: (p: ProfCard) => void; preview?: boolean; price?: number; selected?: boolean }) {
   const name = profName(p);
   const weekly = [...new Set(p.slots.flatMap((s) => (s.weekday !== null ? [s.weekday] : [])))].sort((a, b) => a - b); // seulement les jours disponibles, en toutes lettres
   const allWeek = weekly.length === 7; // tous les jours : Lun Mar Mer Jeu Ven Sam Dim
   const dates = [...new Set(p.slots.flatMap((s) => (s.date ? [s.date] : [])))].sort();
-  const pad = "px-4";
-  const label = "m-0 text-[0.7rem] font-black uppercase tracking-[0.12em] text-muted";
+  const pad = "px-3";
+  const label = "m-0 text-[0.65rem] font-black uppercase tracking-[0.12em] text-muted";
+  const free = p.freeThisWeek ?? 0;
+  const facts = [p.age !== null ? `${p.age} ans` : "", p.ranking ? `classement ${p.ranking}` : "", p.bestRanking ? `meilleur ${p.bestRanking}` : ""].filter(Boolean).join(" · ");
   return (
-    <article className={"prof-card mb-4 grid min-w-0 gap-y-0 overflow-hidden rounded-[1.4rem] border-2 bg-white " + (selected ? "border-clay shadow-[0_6px_0_var(--color-clay)]" : "border-line")} style={{ gridRow: `span ${ROWS}`, gridTemplateRows: "subgrid" }} aria-label={`Professeur : ${name}`}>
-      {/* 1 · bandeau + avatar + nom + prix */}
+    <article className={"prof-card mb-3 grid min-w-0 gap-y-0 overflow-hidden rounded-2xl border-2 bg-white " + (selected ? "border-clay shadow-[0_5px_0_var(--color-clay)]" : "border-line")} style={{ gridRow: `span ${ROWS}`, gridTemplateRows: "subgrid" }} aria-label={`Professeur : ${name}`}>
+      {/* 1 · petit bandeau + avatar + prix */}
       <div className="relative">
-        <div className="relative h-20 overflow-hidden bg-gradient-to-br from-clay to-clay-dark" aria-hidden="true">
-          <span className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 46px),repeating-linear-gradient(0deg,#fff 0 2px,transparent 2px 46px)" }} />
-          <span className="absolute right-4 top-3 h-10 w-10 rounded-full bg-ball shadow-[0_4px_0_#a9bd1c]" />
+        <div className="relative h-12 overflow-hidden bg-gradient-to-br from-clay to-clay-dark" aria-hidden="true">
+          <span className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 40px),repeating-linear-gradient(0deg,#fff 0 2px,transparent 2px 40px)" }} />
+          <span className="absolute right-3 top-2 h-6 w-6 rounded-full bg-ball shadow-[0_3px_0_#a9bd1c]" />
         </div>
-        <div className={"flex items-end justify-between gap-3 " + pad}>
-          <span className="relative z-10 -mt-10 rounded-full ring-[3px] ring-ball"><span className="block rounded-full ring-4 ring-white"><Avatar name={name} size={80} /></span></span>
-          {price ? <div className="pb-1 text-right leading-tight"><b className="font-display text-3xl font-black text-clay">{price} €</b><small className="block text-xs text-muted">la séance</small></div> : null}
+        <div className={"flex items-end justify-between gap-2 " + pad}>
+          <span className="relative z-10 -mt-6 rounded-full ring-2 ring-ball"><span className="block rounded-full ring-2 ring-white"><Avatar name={name} size={48} /></span></span>
+          {price ? <div className="pb-0.5 text-right leading-tight"><b className="font-display text-2xl font-black text-clay">{price} €</b><small className="ml-1 text-xs text-muted">la séance</small></div> : null}
         </div>
       </div>
-      {/* 2 · nom et âge */}
-      <div className={pad + " pt-2"}><h3 className="m-0 text-xl leading-tight [overflow-wrap:anywhere]">{name}</h3><small className="text-muted">{p.age !== null ? `${p.age} ans` : "Âge non précisé"}</small></div>
+      {/* 2 · nom, âge et classements sur deux lignes */}
+      <div className={pad + " pt-1.5"}><h3 className="m-0 text-lg leading-tight">{name}</h3><small className="block text-muted">{facts || "Professeur du club"}</small></div>
       {/* 3 · état */}
-      <div className={pad + " pt-2"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-3 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : (p.freeThisWeek ?? 0) > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-3 py-0.5 text-xs font-bold text-[#1c6b42]">● {p.freeThisWeek} créneau{(p.freeThisWeek ?? 0) > 1 ? "x" : ""} libre{(p.freeThisWeek ?? 0) > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-3 py-0.5 text-xs font-bold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
-      {/* 4 · classements */}
-      <div className={pad + " grid grid-cols-2 gap-2 pt-3"}>
-        <div className="rounded-xl bg-sand px-2 py-1.5 text-center"><b className="block font-display text-xl">{p.ranking ?? "—"}</b><small className="text-xs text-muted">classement</small></div>
-        <div className="rounded-xl bg-sand px-2 py-1.5 text-center"><b className="block font-display text-xl">{p.bestRanking ?? "—"}</b><small className="text-xs text-muted">meilleur classement</small></div>
-      </div>
-      {/* 5 · présentation (3 lignes au plus : la hauteur ne dépend plus du texte) */}
-      <div className={pad + " pt-3"}>{p.bio && <p className="m-0 line-clamp-3 text-sm italic">« {p.bio} »</p>}</div>
-      {/* 6 · jours disponibles */}
-      <div className={pad + " pt-3"}>
+      <div className={pad + " pt-1.5"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-2.5 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : free > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-2.5 py-0.5 text-xs font-bold text-[#1c6b42]">● {free} créneau{free > 1 ? "x" : ""} libre{free > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
+      {/* 4 · présentation (2 lignes au plus) */}
+      <div className={pad + " pt-1.5"}>{p.bio && <p className="m-0 line-clamp-2 text-sm italic">« {p.bio} »</p>}</div>
+      {/* 5 · jours disponibles + prochains créneaux libres */}
+      <div className={pad + " pt-2"}>
         <p className={label}>Disponible le</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Jours où il est disponible">{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-3 py-1 text-sm font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-3 py-0.5 text-sm font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}{weekly.length + dates.length === 0 && <span className="text-sm text-muted">Aucune pour le moment</span>}</div>
+        <div className="mt-1 flex flex-wrap gap-1" aria-label="Jours où il est disponible">{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-2 py-0.5 text-xs font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-2 py-0 text-xs font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}{weekly.length + dates.length === 0 && <span className="text-xs text-muted">Aucune pour le moment</span>}</div>
+        <p className={label + " mt-2"}>Prochains créneaux libres</p>
+        <div className="mt-1 flex flex-wrap gap-1">{(p.nextFree ?? []).map((x) => <span key={x.date + x.time} className="rounded-lg border-2 border-[#b7dfc8] bg-[#e3f4ea] px-2 py-0 text-xs font-bold text-[#1c6b42]">{shortSlot(x)}</span>)}{(p.nextFree ?? []).length === 0 && <span className="text-xs text-muted">—</span>}</div>
       </div>
-      {/* 7 · prochains créneaux libres */}
-      <div className={pad + " pt-3"}>
-        <p className={label}>Prochains créneaux libres</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">{(p.nextFree ?? []).map((x) => <span key={x.date + x.time} className="rounded-[0.65rem] border-2 border-[#b7dfc8] bg-[#e3f4ea] px-2.5 py-0.5 text-sm font-bold text-[#1c6b42]">{shortSlot(x)}</span>)}{(p.nextFree ?? []).length === 0 && <span className="text-sm text-muted">—</span>}</div>
-      </div>
-      {/* 8 · bouton */}
-      <div className={pad + " pb-4 pt-4"}>
-        {onPick ? <button className={"btn w-full !h-auto min-h-12 text-base shadow-[0_4px_0_rgba(0,0,0,0.18)] " + (p.paused ? "bg-[#e5e0d8] text-[#6b6358] shadow-none" : selected ? "bg-ok text-white hover:bg-[#25794c]" : "bg-clay text-white hover:bg-clay-dark")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"} →`}</button> : null}
+      {/* 6 · bouton */}
+      <div className={pad + " pb-3 pt-3"}>
+        {onPick ? <button className={"btn w-full !h-auto min-h-10 text-sm shadow-[0_3px_0_rgba(0,0,0,0.18)] " + (p.paused ? "bg-[#e5e0d8] text-[#6b6358] shadow-none" : selected ? "bg-ok text-white hover:bg-[#25794c]" : "bg-clay text-white hover:bg-clay-dark")} disabled={p.paused} onClick={() => onPick(p)}>{p.paused ? "Indisponible" : selected ? "✔ Choisi" : `Choisir ${p.firstName ?? "ce professeur"} →`}</button> : null}
         {preview && onPick && <small className="hint mt-1 block text-center">(aperçu)</small>}
       </div>
     </article>
@@ -165,7 +159,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
           ))}</div>
         )
       ) : profs === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : shown.length === 0 ? <Empty>{profs.length === 0 ? "Aucun professeur n'est visible pour le moment." : "Aucun professeur n'est disponible ce jour-là."}</Empty> : (
-        <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-2">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
+        <div className="prof-grid grid gap-x-3 gap-y-0 sm:grid-cols-2 lg:grid-cols-3">{shown.map((p) => <ProfCardView key={p.id} p={p} preview={preview} price={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} onPick={(x) => onPick(x, preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice)} />)}</div>
       )}
     </section>
   );

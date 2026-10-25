@@ -34,6 +34,7 @@ describe("Planning du club (réservé au coach)", () => {
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
       await A[k].put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(403);
       await A[k].delete("/api/club/events/x").set(ORIGIN).expect(403);
+      await A[k].put("/api/club/events-order").set(ORIGIN).send({ ids: ["a", "b"] }).expect(403);
     }
     await request(app.getHttpServer()).get("/api/club/plan").expect(401);
     const r = (await A.coach.get("/api/club/plan").expect(200)).body;
@@ -119,5 +120,19 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "TERRE_BATTUE", startDate: "2027-06-10", endDate: "2027-06-12", courts: [3] }).expect(400); // courts en dur : pas de réfection
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2026-11-14", endDate: "2026-11-14", title: "Fête du club" }).expect(201); // sans court
     for (const kind of ["BULLE_MONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_TB", "BULLE_DEMONTAGE_QUICK", "BULLE_MONTAGE", "BULLE_DEMONTAGE", "INSCRIPTIONS", "FETE", "FETE_ECOLE", "JUMELAGE", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "DEBUT_COURS", "FIN_COURS"]) await A.coach.post("/api/club/events").set(ORIGIN).send({ kind, startDate: "2026-09-05", endDate: "2026-09-05" }).expect(201);
+  });
+
+  it("ordre des événements d'une case : le coach les glisse au-dessus ou en dessous d'un autre", async () => {
+    await prisma.clubEvent.deleteMany(); // sans effacer les comptes (le coach reste connecté)
+    const a = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "A", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
+    const b = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "B", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
+    const c = (await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", title: "C", startDate: "2026-12-05", endDate: "2026-12-05" }).expect(201)).body;
+    const titles = async () => (await A.coach.get("/api/club/plan").expect(200)).body.events.map((x: { title: string }) => x.title);
+    expect(await titles()).toEqual(["A", "B", "C"]);
+    await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: [c.id, a.id, b.id] }).expect(200);
+    expect(await titles()).toEqual(["C", "A", "B"]);
+    await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: [c.id] }).expect(400); // un seul événement : rien à ordonner
+    await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: [c.id, "inconnu"] }).expect(404);
+    await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: "x" }).expect(400);
   });
 });

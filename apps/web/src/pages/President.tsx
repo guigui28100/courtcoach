@@ -40,6 +40,7 @@ export default function PresidentPage() {
     <>
       <CoachHero eyebrow="Espace du président" title={`Bonjour ${me?.firstName ?? ""}`.trim()} subtitle="Toute l'activité des cours particuliers : ce que donne chaque professeur, les demandes des adhérents et la validation des professeurs. Le planning du club est dans le menu « Club »."  actions={<><Link to="/president/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adhérent</Link><Link to="/president/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un professeur</Link></>} />
       <Page>
+        <Link to="/coach/club/partenaires" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 no-underline hover:border-ink"><span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#f3efe6] text-2xl" aria-hidden>🤝</span><span><b className="block text-ink">Partenaires du club</b><span className="text-sm text-muted">Suivi des sponsors, logos pour les affiches et dossier de présentation à leur envoyer.</span></span></Link>
         <TabsBar side={false} label="Cours particuliers" active={tab} onChange={(k) => setParams(k === "activite" ? {} : { onglet: k })}
           tabs={[["activite", "📊 Activité des professeurs", toConfirm.length], ["demandes", "📨 Demandes de cours", old.length], ["profs", "👩‍🏫 Professeurs"]]} />
         {err && <p role="alert" className="m-0 rounded-xl bg-[#fde8e8] p-3 font-bold text-[#8a1c1c]">{err}</p>}
