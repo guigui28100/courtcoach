@@ -28,6 +28,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const [format, setFormat] = useState<RecapFormat>("CARRE");
   const [d, setD] = useState<RecapData>(() => ({ ...emptyRecap(), matches: weekendMatches(e, events) }));
   const teamsMode = e.kind === "EQUIPES";
+  const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement des photos et du texte
   const logos = usePartnerLogos(); const [withPartners, setWithPartners] = useState(true);
   const [scale, setScale] = useState(0.4); const [msg, setMsg] = useState("");
   const holder = useRef<HTMLDivElement>(null);
@@ -114,9 +115,9 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                   {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
                 </div>
               </div>
-            ) : (
+            ) : e.kind !== "TOURNOI" ? null : (
             <div className="rounded-2xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-bold text-ink">🏆 Résultats <span className="font-normal text-muted">(tournoi, match par équipes…)</span></p>
+              <p className="m-0 mb-2 text-sm font-bold text-ink">🏆 Résultats du tournoi</p>
               <div className="grid gap-2">
                 {d.results.map((r, i) => (
                   <div key={i} className="flex gap-2">
@@ -129,8 +130,8 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
               </div>
             </div>
             )}
-            <label className="text-sm font-bold text-ink">Un mot de remerciement <span className="font-normal text-muted">(facultatif)</span>
-              <textarea aria-label="Mot de remerciement" rows={2} maxLength={200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
+            <label className="text-sm font-bold text-ink">{lite ? "Texte de l'affiche" : "Un mot de remerciement"} <span className="font-normal text-muted">({lite ? "déroulement, remerciements…" : "facultatif"})</span>
+              <textarea aria-label="Mot de remerciement" rows={lite ? 5 : 2} maxLength={lite ? 500 : 200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
           </div>
           <div className="min-w-0 md:sticky md:top-0 md:self-start">
             <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>

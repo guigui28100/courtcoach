@@ -136,3 +136,12 @@ export const isVacation = (d: string) => HOLIDAYS_ZONE_C.some((h) => d >= h.from
 export const vacationWeeks = (y: number) => { const s = seasonStart(y); const n = seasonWeeks(y); const out: boolean[] = []; for (let i = 0; i < n; i++) { const mon = addDays(s, 7 * i); out.push(HOLIDAYS_ZONE_C.some((h) => mon <= h.to && addDays(mon, 6) >= h.from)); } return out; };
 // Une suite de courts consécutifs (ex. [1,2,4] → [[1,2],[4]]) : une barre par suite sur la frise
 export function courtRuns(courts: number[]) { const s = [...courts].sort(); const out: number[][] = []; for (const c of s) { const l = out[out.length - 1]; if (l && l[l.length - 1] === c - 1) l.push(c); else out.push([c]); } return out; }
+
+// Un tournoi créé « en cartes » garde son type et ses classements dans son nom : « TMC messieurs de 15/1 à 4/6 », « Tournoi open dames »
+export function tourInfo(e: { kind: string; title: string }): { type: "TMC" | "OPEN"; who: string; bas: string; haut: string } | null {
+  if (e.kind !== "TOURNOI") return null;
+  const m = /^(TMC|Tournoi open)\s*(.*?)(?:\s+de\s+(\S+)\s+à\s+(\S+))?\s*$/i.exec((e.title ?? "").trim());
+  if (!m) return null;
+  const type = m[1].toUpperCase() === "TMC" ? "TMC" : "OPEN";
+  return { type, who: m[2].trim(), bas: type === "TMC" ? m[3] ?? "" : "", haut: type === "TMC" ? m[4] ?? "" : "" };
+}

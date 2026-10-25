@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
-import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, weekdayOf } from "../clubPlan";
+import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
@@ -34,11 +34,14 @@ export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[] }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
-  const name = (e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase();
+  const tiName = tourInfo(e);
+  const name = (tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${tiName.who}`.trim() : e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase(); // tournoi : le type et le public en titre, les classements dans leur carte
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
   const rows: Row[] = [];
+  const ti = tourInfo(e);
+  if (ti) { rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" }); if (ti.bas && ti.haut) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` }); }
   if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui", text: e.audience });
   if (e.place && tour) rows.push({ icon: "🎾", title: "Surface", text: e.place });
   if (e.time) rows.push({ icon: "🕒", title: tour ? "Matchs, jour par jour" : "Horaires", text: e.time });

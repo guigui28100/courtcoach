@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ClubEvent, kindOf, teamCat, titleOf } from "../clubPlan";
+import { ClubEvent, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
 import { accentOf } from "./EventPoster";
 import { NoBreak } from "./NoBreak";
 import { fullRange } from "./ClubPoster";
@@ -54,9 +54,13 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
-  const name = (teamsMode ? "Match par équipes" : titleOf(e)).toUpperCase();
+  const ti = tourInfo(e);
+  // Tournoi : le grand titre dit le type et le public (« TMC MESSIEURS », « TOURNOI OPEN DAMES »), la ligne dessous donne les classements du TMC
+  const name = (teamsMode ? "Match par équipes" : ti ? `${ti.type === "TMC" ? "TMC" : "Tournoi open"} ${ti.who}`.trim() : titleOf(e)).toUpperCase();
+  const rankLine = ti && ti.bas && ti.haut ? `Classements de ${ti.bas} à ${ti.haut}` : "";
   const matches = data.matches.filter((m) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim());
-  const results = data.results.filter((r) => r.what.trim() || r.result.trim());
+  const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement photos et texte
+  const results = lite ? [] : data.results.filter((r) => r.what.trim() || r.result.trim());
   const photos = data.photos.slice(0, 6); const logos = partners ?? [];
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
@@ -90,7 +94,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
   const cols = photos.length <= 1 ? 1 : photos.length === 2 || photos.length === 4 ? 2 : 3;
   const rows = Math.ceil(photos.length / cols);
   const grid = photos.length > 0 && (
-    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, ${p((sq ? 330 : 420) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden" }}>
+    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden" }}>
       {photos.map((src, i) => <img key={i} src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", gridColumn: photos.length === 3 && i === 0 ? "1 / span 3" : undefined }} />)}
     </div>
   );
@@ -109,6 +113,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
           <div>
             {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
             <div role="heading" aria-level={1} style={title}>{name}</div>
+            {rankLine && <div style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
             <div style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>
           {grid}
@@ -139,7 +144,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
               </div>
             </div>
           )}
-          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(24), lineHeight: 1.35, fontStyle: "italic", color: "#3a4256", overflowWrap: "break-word" }}><NoBreak text={data.message.trim()} /></p>}
+          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a4256", overflowWrap: "break-word" }}><NoBreak text={data.message.trim()} /></p>}
         </div>
       </div>
       {logos.length > 0 && (
