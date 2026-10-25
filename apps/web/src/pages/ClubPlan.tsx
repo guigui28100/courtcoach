@@ -176,7 +176,7 @@ export function ClubPlan() {
         </Modal>
       )}
       {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
-      {recapEv && <RecapModal e={recapEv} onClose={() => setRecapEv(null)} />}
+      {recapEv && <RecapModal e={recapEv} events={events} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
       {exportOpen && <ExportModal events={events} season={season} month={month} onClose={() => setExportOpen(false)} />}
