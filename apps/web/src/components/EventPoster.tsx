@@ -3,6 +3,7 @@ import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
+import { ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -39,17 +40,20 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
+  // Le texte est REFORMULÉ (posterCopy) : une phrase d'accroche sous le titre, puis seulement les cartes qui apportent une information de plus
+  const lede = ledeOf(e);
   const rows: Row[] = [];
   const ti = tourInfo(e);
-  if (ti) { rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" }); if (ti.bas && ti.haut) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` }); }
-  if (e.audience) rows.push(e.kind === "EQUIPES" ? { icon: "🏟️", title: "Club rencontré", text: e.audience } : { icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui", text: e.audience });
-  if (e.place && tour) rows.push({ icon: "🎾", title: "Surface", text: e.place });
-  if (e.time) rows.push({ icon: "🕒", title: tour ? "Matchs, jour par jour" : "Horaires", text: e.time });
-  if (e.signup && tour) rows.push({ icon: "🏆", title: "Finale", text: e.signup });
-  if (e.place && !tour) rows.push({ icon: "📍", title: "Lieu", text: e.place });
-  if (e.bring) rows.push({ icon: "🎒", title: "À prévoir", text: e.bring });
+  if (ti && !lede.covers.type) rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" });
+  if (ti?.bas && ti?.haut && !lede.text.includes(`${ti.bas} à ${ti.haut}`)) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` });
+  if (e.audience && e.kind !== "EQUIPES" && !lede.covers.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui ?", text: tidy(e.audience.replace(" · ", " – ")) });
+  if (e.place && tour && !lede.covers.surface) rows.push({ icon: "🎾", title: "Surface", text: tidy(e.place) });
+  if (e.time) rows.push({ icon: "🕒", title: tour ? "Les matchs" : "Horaires", text: tidy(e.time) });
+  if (e.signup && tour) rows.push({ icon: "🏆", title: "La finale", text: tidy(e.signup) });
+  if (e.place && !tour) rows.push({ icon: e.kind === "EQUIPES" ? "🏠" : "📍", title: e.kind === "EQUIPES" ? "Le match" : "Où ?", text: tidy(e.place) });
+  if (e.bring) rows.push({ icon: "🎒", title: "À prévoir", text: tidy(e.bring) });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "Avec", text: e.who.join(", ") });
-  const inscription = !tour && e.signup ? e.signup : "";
+  const inscription = !tour && e.signup ? signupText(e.signup) : "";
   const dt = dateBlock(e);
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
@@ -111,18 +115,18 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
       </div>
       {formulas.map((f, i) => (
         <div key={i}>
-          {f.group && f.group !== (formulas[i - 1]?.group ?? "") ? <div style={{ background: `${acc}22`, color: NAVY, fontSize: pf(14), fontWeight: 900, padding: `${pf(6)} ${pf(18)}`, borderTop: i ? `1.5px solid ${LINE}` : "none" }}>{f.group}</div> : null}
+          {f.group && f.group !== (formulas[i - 1]?.group ?? "") ? <div style={{ background: `${acc}22`, color: NAVY, fontSize: pf(14), fontWeight: 900, padding: `${pf(6)} ${pf(18)}`, borderTop: i ? `1.5px solid ${LINE}` : "none" }}>{tidy(f.group)}</div> : null}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: `${pf(9)} ${pf(18)}`, borderTop: `1.5px solid ${LINE}` }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: pf(19), fontWeight: wt("tarifs", 800), lineHeight: 1.2, color: NAVY }}>{f.label || "Participation"}{f.detail ? <small style={{ display: "block", fontSize: pf(13), fontWeight: 500, color: MUTED }}>{f.detail}</small> : null}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: pf(19), fontWeight: wt("tarifs", 800), lineHeight: 1.2, color: NAVY }}>{tidy(f.label) || "Participation"}{f.detail ? <small style={{ display: "block", fontSize: pf(13), fontWeight: 500, color: MUTED }}>{tidy(f.detail)}</small> : null}</span>
             {twoPrices
-              ? <><b style={{ width: pf(112), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{f.priceMember || "—"}</b><b style={{ width: pf(130), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{f.price || "—"}</b></>
-              : <b style={{ fontSize: pf(f.price.length > 8 ? 26 : 34), fontWeight: 900, color: acc, whiteSpace: "nowrap" }}>{f.price || f.priceMember}</b>}
+              ? <><b style={{ width: pf(112), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{priceText(f.priceMember) || "—"}</b><b style={{ width: pf(130), textAlign: "right", fontSize: pf(24), fontWeight: 900, color: acc }}>{priceText(f.price) || "—"}</b></>
+              : <b style={{ fontSize: pf(priceText(f.price).length > 8 ? 26 : 34), fontWeight: 900, color: acc, whiteSpace: "nowrap" }}>{priceText(f.price) || priceText(f.priceMember)}</b>}
           </div>
         </div>))}
     </div>
   );
   const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", ...deco("texte") }}><NoBreak text={e.note} /></p>;
-  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} /></div>;
+  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", ...deco("titre") }}>{lede.text}</p>}</div>;
 
   const gap = p(16);
   return (
