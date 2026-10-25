@@ -3,7 +3,7 @@ import { NoBreak, longestLink } from "./NoBreak";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
-import { ledeOf, priceText, signupText, tidy } from "./posterCopy";
+import { courtsText, glue, glueEnd, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -36,7 +36,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
-  const name = (tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${tiName.who}`.trim() : e.kind === "EQUIPES" && !e.title ? label(e) : titleOf(e)).toUpperCase(); // tournoi : le type et le public en titre, les classements dans leur carte
+  const name = (tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${tiName.who}`.trim() : e.kind === "EQUIPES" && !e.title ? "Match par équipes" : titleOf(e)).toUpperCase(); // tournoi : le type et le public en titre, les classements dans leur carte
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
@@ -45,12 +45,13 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const rows: Row[] = [];
   const ti = tourInfo(e);
   if (ti && !lede.covers.type) rows.push({ icon: ti.type === "TMC" ? "🎯" : "🏆", title: "Type de tournoi", text: ti.type === "TMC" ? "TMC (tournoi multi-chances)" : "Tournoi open" });
-  if (ti?.bas && ti?.haut && !lede.text.includes(`${ti.bas} à ${ti.haut}`)) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` });
+  if (ti?.bas && ti?.haut && !lede.text.replace(/\u00a0/g, " ").includes(`${ti.bas} à ${ti.haut}`)) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` });
   if (e.audience && e.kind !== "EQUIPES" && !lede.covers.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui ?", text: tidy(e.audience.replace(" · ", " – ")) });
   if (e.place && tour && !lede.covers.surface) rows.push({ icon: "🎾", title: "Surface", text: tidy(e.place) });
   if (e.time) rows.push({ icon: "🕒", title: tour ? "Les matchs" : "Horaires", text: tidy(e.time) });
   if (e.signup && tour) rows.push({ icon: "🏆", title: "La finale", text: tidy(e.signup) });
-  if (e.place && !tour) rows.push({ icon: e.kind === "EQUIPES" ? "🏠" : "📍", title: e.kind === "EQUIPES" ? "Le match" : "Où ?", text: tidy(e.place) });
+  if (e.kind === "EQUIPES" && e.courts?.length) rows.push({ icon: "🏟️", title: "Terrains", text: courtsText(e.courts) });
+  if (e.place && !tour && e.kind !== "EQUIPES") rows.push({ icon: "📍", title: "Où ?", text: tidy(e.place) });
   if (e.bring) rows.push({ icon: "🎒", title: "À prévoir", text: tidy(e.bring) });
   if (showWho && e.who.length) rows.push({ icon: "👤", title: "Avec", text: e.who.join(", ") });
   const inscription = !tour && e.signup ? signupText(e.signup) : "";
@@ -95,7 +96,7 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         <div style={{ fontSize: pd(sq ? 46 : 56), fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff" }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+      <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff" }}>{glueEnd(fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
@@ -125,8 +126,8 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", ...deco("texte") }}><NoBreak text={e.note} /></p>;
-  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", ...deco("titre") }}>{lede.text}</p>}</div>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const titleEl = <div><h1 style={title}>{name}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (

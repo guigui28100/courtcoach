@@ -1,10 +1,26 @@
-import { ClubEvent, tourInfo } from "../clubPlan";
+import { ClubEvent, teamCat, tourInfo } from "../clubPlan";
 
 // Texte des affiches d'événement : on REFORMULE ce que le coach a rempli (au lieu de recopier les champs tels quels).
 // Tout est calculé ici, sans service extérieur ni intelligence artificielle : des règles simples d'écriture en français.
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const low = (s: string) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+
+// Pas de lettre ou de petit mot seul en bout de ligne : les petits mots (à, de, le, et…), les nombres et leur « h » ou « € », et les deux derniers mots restent collés (espaces insécables)
+const NB = "\u00a0";
+export function glue(raw: string | undefined | null): string {
+  let s = raw ?? "";
+  if (!s) return "";
+  s = s.replace(/(\d) (h|€|ans|jours?|min)(?![a-zà-ÿ])/gi, `$1${NB}$2`).replace(/\bh (\d{2})\b/g, `h${NB}$1`);
+  s = s.replace(/(^|[\s(])(à|a|de|du|des|le|la|les|un|une|et|ou|au|aux|en|sur|par|pour|avec|dans|ce|cet|cette|ne|se|y|d'|l'|qu')\s+(?=\S)/gi, (_m, p, w) => `${p}${w}${NB}`);
+  s = s.replace(/\b(équipe|éq\.|court|courts|terrain|n°) (\d{1,2})\b/gi, `$1${NB}$2`); // « équipe 1 », « court 2 »
+  s = s.replace(/(\p{L}{2,})-(?=\p{L}{2,})/gu, `$1\u2011`); // « pique-nique » ne se coupe pas au tiret
+  s = s.replace(/ ([^\s]{1,12})$/, `${NB}$1`); // les deux derniers mots ensemble
+  return s;
+}
+
+// Seulement les deux derniers mots ensemble (pour une date longue : jamais « novembre » seul à la ligne)
+export const glueEnd = (raw: string) => (raw ?? "").replace(/ ([^\s]{1,12})$/, `${NB}$1`);
 
 // Nettoyage typographique : espaces, « 14h30 » → « 14 h 30 », « 10h-16h » → « de 10 h à 16 h », majuscule au début
 export function tidy(raw: string | undefined | null): string {
@@ -18,7 +34,7 @@ export function tidy(raw: string | undefined | null): string {
     return `de ${a} à ${b}`;
   });
   s = s.replace(/\s+([,.;!?])/g, "$1").replace(/([,;])(?=\S)/g, "$1 ").replace(/\.{2,}$/, "").replace(/[ ;,]+$/, "");
-  return cap(s);
+  return glue(cap(s));
 }
 
 // Prix : « 50 » → « 50 € », « 50euros » → « 50 € », « gratuit » → « Gratuit »
@@ -68,7 +84,11 @@ export function tournoiPublic(audience: string): { text: string; fem: boolean } 
 const dayCount = (e: ClubEvent) => Math.round((Date.parse(e.endDate) - Date.parse(e.startDate)) / 86400000) + 1;
 
 // La phrase d'accroche sous le titre. Si elle dit déjà « pour qui », « quel type » ou « quelle surface », ces cartes ne sont pas répétées (voir `covers`).
-export function ledeOf(e: ClubEvent): { text: string; covers: { audience: boolean; type: boolean; surface: boolean } } {
+export function ledeOf(e: ClubEvent) {
+  const r = ledeRaw(e);
+  return { ...r, text: glue(r.text) };
+}
+function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; type: boolean; surface: boolean } } {
   const covers = { audience: false, type: false, surface: false };
   const ti = tourInfo(e);
   const aud = tidy(e.audience);
@@ -89,7 +109,10 @@ export function ledeOf(e: ClubEvent): { text: string; covers: { audience: boolea
       const home = /domicile/i.test(e.place ?? "");
       const away = /d[ée]placement/i.test(e.place ?? "");
       const club = tidy(e.audience);
-      return { text: home ? `Venez encourager nos joueurs à domicile${club ? `, face à ${club}` : ""} !` : away ? `Nos joueurs se déplacent${club ? ` chez ${club}` : ""} : un petit mot d'encouragement ?` : `Nos joueurs sont sur les courts${club ? ` face à ${club}` : ""} !`, covers };
+      const teams = e.teams.map(teamPlain).join(" et ");
+      const who = teams || "Nos joueurs";
+      const where = home ? `À domicile${club ? ` face à ${club}` : ""}. Venez nous encourager !` : away ? `En déplacement${club ? ` chez ${club}` : ""}. Un petit mot d'encouragement ?` : `${club ? `Face à ${club}. ` : ""}Venez nous encourager !`;
+      return { text: `${who}\n${where}`, covers: { ...covers, audience: true } };
     }
     case "STAGE_ENFANTS":
     case "STAGE_ADULTES": {
@@ -110,4 +133,25 @@ export function ledeOf(e: ClubEvent): { text: string; covers: { audience: boolea
     case "FIN_COURS": return { text: "Dernière séance de la saison : merci à tous !", covers };
     default: return { text: "", covers };
   }
+}
+
+// Nom d'équipe écrit comme on le dirait : « Seniors messieurs, équipe 1 », « Filles 13/14 ans, équipe 2 », « Vétérans +45 ans messieurs, équipe 1 » (sans point ni émoticône)
+const CAT_TEXT = (key: string): string => {
+  const c = teamCat(`${key}#1`); if (!c) return key;
+  const l = c.label.replace(/\s*·\s*/g, " ");
+  const m = /^(.+?) (garçons|filles)$/.exec(l);
+  if (m) return `${m[2] === "filles" ? "Filles" : "Garçons"} ${m[1]}`; // « 13/14 ans filles » → « Filles 13/14 ans »
+  if (/^\+\d+ ans/.test(l)) return `Vétérans ${l}`;
+  return l; // « Seniors messieurs »
+};
+export const teamPlain = (t: string) => `${CAT_TEXT(t.split("#")[0])}, équipe ${t.split("#")[1] ?? "1"}`;
+export const catPlain = (key: string) => CAT_TEXT(key);
+
+// Terrains écrits comme on le dirait : « Court 1 », « Courts 1 et 2 », « Les 4 courts »
+export function courtsText(c: number[] | undefined): string {
+  const l = [...(c ?? [])].sort();
+  if (!l.length) return "";
+  if (l.length === 4) return "Les 4 courts";
+  if (l.length === 1) return `Court ${l[0]}`;
+  return `Courts ${l.slice(0, -1).join(", ")} et ${l[l.length - 1]}`;
 }

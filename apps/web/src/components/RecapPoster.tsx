@@ -1,3 +1,4 @@
+import { catPlain, glue, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { ClubEvent, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
@@ -12,17 +13,7 @@ export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARR
 export interface RecapMatch { team: string; opponent: string; us: string; them: string } // team = « sen-m#1 » (catégorie + numéro d'équipe)
 export interface RecapData { headline: string; photos: string[]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
-// Nom d'équipe écrit comme on le dirait : « Seniors messieurs, équipe 1 », « Filles 13/14 ans, équipe 2 », « Vétérans +45 ans messieurs, équipe 1 » (sans point ni émoticône)
-const CAT_TEXT = (key: string): string => {
-  const c = teamCat(`${key}#1`); if (!c) return key;
-  const l = c.label.replace(/\s*·\s*/g, " ");
-  const m = /^(.+?) (garçons|filles)$/.exec(l);
-  if (m) return `${m[2] === "filles" ? "Filles" : "Garçons"} ${m[1]}`; // « 13/14 ans filles » → « Filles 13/14 ans »
-  if (/^\+\d+ ans/.test(l)) return `Vétérans ${l}`;
-  return l; // « Seniors messieurs »
-};
-export const teamPlain = (t: string) => `${CAT_TEXT(t.split("#")[0])}, équipe ${t.split("#")[1] ?? "1"}`;
-export const catPlain = (key: string) => CAT_TEXT(key);
+export { teamPlain, catPlain };
 // « TC Houdan bat TC Guyancourt » / « TC Houdan perd contre TC Guyancourt » / « TC Houdan fait match nul contre TC Guyancourt »
 export function matchParts(m: RecapMatch): [string, string, string] { // [sujet, verbe, adversaire] : le nom d'un club ne se coupe jamais
   const a = Number(m.us), b = Number(m.them); const op = m.opponent.trim() || "leurs adversaires";
@@ -144,7 +135,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
               </div>
             </div>
           )}
-          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a4256", overflowWrap: "break-word" }}><NoBreak text={data.message.trim()} /></p>}
+          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a4256", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
         </div>
       </div>
       {logos.length > 0 && (
