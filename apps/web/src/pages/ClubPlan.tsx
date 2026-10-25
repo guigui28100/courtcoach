@@ -306,9 +306,8 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
       const was = st.active; const o = st.over; stop();
       if (!was) return;
       justDragged.current = true; window.setTimeout(() => { justDragged.current = false; }, 80);
-      const cell = document.querySelector<HTMLElement>(`[data-cell="${day}"]`);
-      if (!o || !cell) return;
-      const ids = [...cell.querySelectorAll<HTMLElement>("[data-ev]")].map((b) => b.dataset.ev!).filter((x) => x !== id);
+      if (!o) return;
+      const ids = cellEvents(day).filter((x) => x.kind !== "BULLE").map((x) => x.id).filter((x) => x !== id);
       const at = ids.indexOf(o.id); if (at < 0) return;
       ids.splice(at + (o.after ? 1 : 0), 0, id);
       onReorder(ids);
@@ -316,6 +315,12 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
     const cancel = () => stop();
     window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", cancel);
     window.addEventListener("touchmove", noScroll, { passive: false });
+  };
+  // Ordre d'une case : la place choisie par glisser (position) d'abord, puis l'ordre habituel ; les repères de bulle restent en bas
+  const cellEvents = (d: string) => {
+    const here = events.filter((e) => covers(e, d)).map((e, i) => [e, i] as const);
+    const main = here.filter(([e]) => e.kind !== "BULLE").sort(([a, i], [b, j]) => (a.position ?? 0) - (b.position ?? 0) || i - j).map(([e]) => e);
+    return main.concat(here.filter(([e]) => e.kind === "BULLE").map(([e]) => e));
   };
   const first1 = `${month}-01`;
   const gridStart = mondayOf(first1);
@@ -327,7 +332,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
       <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#8a7f72]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
       <div className="grid grid-cols-7 gap-2.5">
         {rows.map((d) => {
-          const evs = events.filter((e) => covers(e, d) && e.kind !== "BULLE").concat(events.filter((e) => covers(e, d) && e.kind === "BULLE"));
+          const evs = cellEvents(d);
           const out = d.slice(0, 7) !== month;
           const weekend = weekdayOf(d) >= 5;
           const bg = d === first ? "border-2 border-clay bg-[#ffd9c2] shadow-md" : d === today ? "border-2 border-clay bg-[#fff1c2] shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#7f9fd0] bg-[#d9e6f8]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
