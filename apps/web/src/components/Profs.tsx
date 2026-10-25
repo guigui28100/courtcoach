@@ -110,6 +110,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
   const [pvMember, setPvMember] = useState(false); // aperçu : on peut cocher / décocher pour voir le tarif changer (rien n'est enregistré)
   const [day, setDay] = useState<number | null>(null);
   const [err, setErr] = useState("");
+  const [asked, setAsked] = useState(false); // depuis un jour : 1re carte « adhérent ou non ? » avant le choix du professeur
   const load = useCallback(() => { if (preview) return; get<{ profs: ProfCard[]; yourPrice: number | null }>("/profs").then((r) => { setProfs(r.profs); if (r.yourPrice) setYourPrice(r.yourPrice); }).catch((e) => { setProfs([]); setErr((e as Error).message); }); }, [preview]);
   useEffect(load, [load]);
   const member = preview ? pvMember : !!me?.clubMember;
@@ -123,14 +124,29 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
   const shown = (profs ?? []).filter((p) => day === null || p.slots.some((s) => (s.weekday ?? (s.date ? dayOf(s.date) : -1)) === day));
   const dayRows = useDayAvailability(preview, date); // si un jour est déjà choisi : les créneaux libres de chaque professeur CE jour-là
   const yp = preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice;
+  async function answerMember(v: boolean) { if (!preview && !!me?.clubMember === v) { setAsked(true); return; } await toggleMember(v); setAsked(true); }
+  if (date && !asked) return (
+    <section className="grid gap-4 rounded-3xl border-2 border-clay bg-white p-4 shadow-sm sm:p-6" aria-label="Es-tu adhérent du TC Houdan ?">
+      <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onClose}>← Retour au calendrier</button><small className="font-bold text-muted">Étape 1 sur 4 · {dayLong(date)}</small></div>
+      <h3 className="m-0 font-display text-xl">Es-tu adhérent du TC Houdan ?</h3>
+      <p className="m-0 text-sm text-muted">Cela change le tarif de la séance : {PRICE_MEMBER} € pour un adhérent, {PRICE_OTHER} € pour les autres (+ {SUNDAY_EXTRA} € le dimanche). Tu règles directement au professeur.</p>
+      <Err msg={err} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {([[true, "✅ Oui, je suis adhérent", `${priceOn(PRICE_MEMBER, date)} € la séance`], [false, "🙋 Non, pas adhérent", `${priceOn(PRICE_OTHER, date)} € la séance`]] as const).map(([v, t, sub]) => (
+          <button key={String(v)} type="button" onClick={() => answerMember(v)} aria-pressed={member === v} className={"grid gap-1 rounded-2xl border-2 p-4 text-left transition-colors " + (member === v ? "border-clay bg-[#fdf1ea]" : "border-line bg-white hover:border-clay/60")}><strong className="font-display text-lg">{t}</strong><small className="text-muted">{sub}</small></button>))}
+      </div>
+    </section>
+  );
   return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
-      <ClayHero labels={date ? DAY_STEPS : undefined} title={date ? `Réserver un cours · ${dayLong(date)}` : "Réserver un cours particulier"} text={date ? "Choisis ton professeur : on te montre ses créneaux libres ce jour-là. Ton professeur confirme ensuite (sous 48 h)." : "Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)."} step={1} />
+      {date ? <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setAsked(false)}>← Retour</button><small className="font-bold text-muted">Étape 2 sur 4 · {dayLong(date)}</small></div> : null}
+      {date ? <h3 className="m-0 font-display text-xl">Quel professeur ?</h3> : <ClayHero labels={undefined} title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)." step={1} />}
+      {date ? <p className="m-0 text-sm text-muted">{member ? "Tarif adhérent." : "Tarif non adhérent."} Tu vois pour chacun son niveau, sa présentation et ses heures libres ce jour-là. Ton professeur confirme ensuite (sous 48 h).</p> : <>
       <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="h-5 w-5 accent-clay" checked={member} onChange={(e) => toggleMember(e.target.checked)} />Je suis adhérent du TC Houdan
       </label>
-      <PriceNote yourPrice={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} />
+      <PriceNote yourPrice={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} /></>}
       <Err msg={err} />
       {!date && <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par jour">
         {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
@@ -138,11 +154,12 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
       {date ? (
         dayRows === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : dayRows.length === 0 ? <Empty>Aucun professeur n'est visible pour le moment.</Empty> : (
           <div className="prof-grid grid gap-x-4 gap-y-0 md:grid-cols-3">{dayRows.map((r) => (
-            <article key={r.prof.id} aria-label={`Professeur : ${profName(r.prof)}`} className="mb-4 grid min-w-0 gap-y-3 rounded-3xl border-2 border-line bg-white p-4 shadow-sm" style={{ gridRow: "span 5", gridTemplateRows: "subgrid" }}>
+            <article key={r.prof.id} aria-label={`Professeur : ${profName(r.prof)}`} className="mb-4 grid min-w-0 gap-y-3 rounded-3xl border-2 border-line bg-white p-4 shadow-sm" style={{ gridRow: "span 6", gridTemplateRows: "subgrid" }}>
               <div className="flex items-center gap-3"><Avatar name={profName(r.prof)} /><strong className="font-display text-xl leading-tight">{profName(r.prof)}</strong></div>
-              <small className="text-muted">{r.prof.ranking ? `Classement ${r.prof.ranking} · ` : ""}{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>
+              <small className="text-muted">{[r.prof.age ? `${r.prof.age} ans` : "", r.prof.ranking ? `classement ${r.prof.ranking}` : "", r.prof.bestRanking ? `meilleur classement ${r.prof.bestRanking}` : ""].filter(Boolean).join(" · ") || "Professeur du club"}</small>
+              <p className="m-0 line-clamp-4 text-sm">{r.prof.bio || <span className="text-muted">Pas de présentation écrite.</span>}</p>
               <p className="m-0 font-display text-3xl font-black">{priceOn(yp, date)} € <small className="text-sm font-bold text-muted">{member ? "ton tarif adhérent" : "la séance"}</small></p>
-              <div className="flex flex-wrap content-start gap-1.5">{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
+              <div className="flex flex-wrap content-start items-start gap-1.5"><small className="w-full font-bold text-muted">{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
               <button className={(r.free.length ? "btn-clay" : "btn-outline") + " self-end"} disabled={!r.free.length} onClick={() => onPick(r.prof, yp)}>{r.free.length ? `Choisir ${r.prof.firstName ?? "ce professeur"} →` : "Complet ce jour-là"}</button>
             </article>
           ))}</div>

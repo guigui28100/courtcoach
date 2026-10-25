@@ -17,6 +17,7 @@ const AdultsPage = named(() => import("./pages/Coach"), "AdultsPage");
 const Centre = named(() => import("./pages/Coach"), "Centre");
 const AdultSpace = named(() => import("./pages/Member"), "AdultSpace");
 const AdultPreview = named(() => import("./pages/Member"), "AdultPreview");
+const PresidentAdultPreview = named(() => import("./pages/Member"), "PresidentAdultPreview");
 const ClubPlan = named(() => import("./pages/ClubPlan"), "ClubPlan");
 const ProfSpace = named(() => import("./pages/Prof"), "ProfSpace");
 const Privacy = named(() => import("./pages/Static"), "Privacy");
@@ -63,7 +64,7 @@ export default function App() {
         <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
         <Route path="/coach/club" element={<Guard roles={["COACH", "PRESIDENT", "BUREAU"]}><ClubPlan /></Guard>} />
         <Route path="/president" element={<Guard roles={["PRESIDENT"]}><PresidentPage /></Guard>} />
-        <Route path="/president/apercu" element={<Guard roles={["PRESIDENT"]}><AdultPreview /></Guard>} />
+        <Route path="/president/apercu" element={<Guard roles={["PRESIDENT"]}><PresidentAdultPreview /></Guard>} />
         <Route path="/president/apercu-prof" element={<Guard roles={["PRESIDENT"]}><ProfSpace preview /></Guard>} />
         <Route path="/coach/prof" element={<Guard roles={["COACH"]}><ProfSpace /></Guard>} />
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
