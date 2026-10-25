@@ -38,27 +38,25 @@ describe("Partenaires du club : coach et président seulement", () => {
   });
 
   it("le coach et le président créent, modifient et suppriment un partenaire", async () => {
-    const c = await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Boulangerie Dupont", amount: "300 € par an", status: "SIGNE", perks: ["AFFICHE_MOIS", "BACHE"], onPosters: true, logo: PNG }).expect(201);
-    expect(c.body).toMatchObject({ name: "Boulangerie Dupont", status: "SIGNE", onPosters: true });
+    const c = await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Boulangerie Dupont", amount: "300 € par an", status: "SIGNE", perks: ["AFFICHE_MOIS", "BACHE"], pack: "Partenaire or", logo: PNG }).expect(201);
+    expect(c.body).toMatchObject({ name: "Boulangerie Dupont", status: "SIGNE", pack: "Partenaire or" });
     const list = (await A.president.get("/api/sponsors").expect(200)).body;
     expect(list.sponsors).toHaveLength(1); expect(list.offer.packs.length).toBeGreaterThan(0);
     // le logo n'est pas touché quand on ne l'envoie pas ; une chaîne vide le retire
-    await A.president.put(`/api/sponsors/${c.body.id}`).set(ORIGIN).send({ name: "Boulangerie Dupont", status: "PAYE", onPosters: true }).expect(200);
+    await A.president.put(`/api/sponsors/${c.body.id}`).set(ORIGIN).send({ name: "Boulangerie Dupont", status: "PAYE", pack: "Partenaire or" }).expect(200);
     expect((await prisma.sponsor.findUnique({ where: { id: c.body.id } }))!.logo).toBe(PNG);
-    await A.coach.put(`/api/sponsors/${c.body.id}`).set(ORIGIN).send({ name: "Boulangerie Dupont", onPosters: true, logo: "" }).expect(400); // sur les affiches sans logo : refusé
     await A.coach.put(`/api/sponsors/${c.body.id}`).set(ORIGIN).send({ name: "Boulangerie Dupont", logo: "" }).expect(200);
     expect((await prisma.sponsor.findUnique({ where: { id: c.body.id } }))!.logo).toBe("");
     await A.coach.delete(`/api/sponsors/${c.body.id}`).set(ORIGIN).expect(200);
     await A.coach.delete(`/api/sponsors/${c.body.id}`).set(ORIGIN).expect(404);
   });
 
-  it("refuse un faux logo, une mauvaise date, une contrepartie inconnue et un logo manquant sur les affiches", async () => {
+  it("refuse un faux logo, une mauvaise date, une contrepartie inconnue ", async () => {
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", logo: "data:image/png;base64,AAAAAAAAAAAAAAAAAAAA" }).expect(400); // pas une vraie image
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", logo: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=" }).expect(400);
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", startDate: "2026-02-31" }).expect(400);
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", startDate: "2026-05-01", endDate: "2026-04-01" }).expect(400);
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", perks: ["N_IMPORTE_QUOI"] }).expect(400);
-    await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", onPosters: true }).expect(400);
     await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "A", unChampInconnu: 1 }).expect(400);
   });
 

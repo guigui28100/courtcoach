@@ -58,6 +58,7 @@ export default function SponsorsPage() {
                     <div className="min-w-0 flex-1">
                       <b className="block text-lg text-ink [overflow-wrap:anywhere]">{s.name}</b>
                       <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-extrabold text-white" style={{ background: st.color }}>{st.label}</span>
+                      {s.pack && <span className="ml-1.5 inline-block rounded-full bg-[#f4c20d] px-2.5 py-0.5 text-xs font-extrabold text-ink">🏅 {s.pack}</span>}
                       {s.amount && <span className="ml-2 text-sm font-bold text-ink">{s.amount}</span>}
                     </div>
                     <button type="button" className="btn-outline btn-sm" onClick={() => setEdit(s)}>✏️ Modifier</button>
@@ -65,7 +66,7 @@ export default function SponsorsPage() {
                   {(s.contactName || s.phone || s.email) && <p className="m-0 text-sm text-muted">👤 {[s.contactName, s.phone, s.email].filter(Boolean).join(" · ")}</p>}
                   {(s.startDate || s.endDate) && <p className="m-0 text-sm text-muted">📅 {s.startDate ? `du ${fmtDay(s.startDate)}` : ""} {s.endDate ? `au ${fmtDay(s.endDate)}` : ""}{left !== null && s.status !== "TERMINE" && left >= 0 && left <= 60 ? <b className="text-[#b45309]"> · fin dans {left} jour{left > 1 ? "s" : ""}</b> : null}{left !== null && left < 0 && s.status !== "TERMINE" ? <b className="text-[#b91c1c]"> · contrat dépassé</b> : null}</p>}
                   {s.perks.length > 0 && <div className="flex flex-wrap gap-1.5">{s.perks.map((k) => <span key={k} className="rounded-full bg-[#f3efe6] px-2 py-0.5 text-xs font-bold text-ink">{perkOf(k)?.icon} {perkOf(k)?.label ?? k}</span>)}</div>}
-                  <p className="m-0 text-sm font-bold" style={{ color: s.onPosters ? "#15803d" : "#64748b" }}>{s.onPosters ? "🪧 Son logo est sur les affiches" : "🪧 Pas sur les affiches"}</p>
+                  {(s.perks.includes("AFFICHE_MOIS") || s.perks.includes("AFFICHE_EVENT")) && <p className="m-0 text-sm font-bold" style={{ color: s.logo && s.status !== "TERMINE" && s.status !== "A_CONTACTER" ? "#15803d" : "#b45309" }}>{!s.logo ? "🪧 Logo à ajouter pour les affiches" : s.status === "TERMINE" || s.status === "A_CONTACTER" ? "🪧 Pas encore sur les affiches (partenariat pas en cours)" : `🪧 Logo sur : ${[s.perks.includes("AFFICHE_MOIS") ? "affiche du mois" : "", s.perks.includes("AFFICHE_EVENT") ? "affiches d'événements" : ""].filter(Boolean).join(" et ")}`}</p>}
                 </li>);
             })}
           </ul>
@@ -73,14 +74,14 @@ export default function SponsorsPage() {
       )}
       {data && tab === "offre" && <OfferEditor offer={data.offer} onSaved={(o) => setData({ ...data, offer: o })} />}
       {data && tab === "dossier" && <Dossier offer={data.offer} sponsors={data.sponsors} />}
-      {edit && <SponsorForm key={edit === "new" ? "new" : edit.id} initial={edit === "new" ? null : edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load(); }} />}
+      {edit && <SponsorForm key={edit === "new" ? "new" : edit.id} offer={data!.offer} initial={edit === "new" ? null : edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load(); }} />}
     </Page>
   );
 }
 
 // ───────────── Fiche d'un partenaire ─────────────
-function SponsorForm({ initial, onClose, onDone }: { initial: Sponsor | null; onClose: () => void; onDone: () => void }) {
-  const [v, setV] = useState<Sponsor>(initial ?? { id: "", name: "", contactName: "", phone: "", email: "", amount: "", startDate: "", endDate: "", status: "A_CONTACTER", perks: [], onPosters: false, logo: "", note: "" });
+function SponsorForm({ initial, offer, onClose, onDone }: { initial: Sponsor | null; offer: Offer; onClose: () => void; onDone: () => void }) {
+  const [v, setV] = useState<Sponsor>(initial ?? { id: "", name: "", contactName: "", phone: "", email: "", amount: "", startDate: "", endDate: "", status: "A_CONTACTER", perks: [], pack: "", logo: "", note: "" });
   const [logoChanged, setLogoChanged] = useState(false);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const set = (p: Partial<Sponsor>) => setV((o) => ({ ...o, ...p }));
@@ -88,7 +89,7 @@ function SponsorForm({ initial, onClose, onDone }: { initial: Sponsor | null; on
   const save = async () => {
     setBusy(true); setErr("");
     try {
-      const body = { name: v.name, contactName: v.contactName, phone: v.phone, email: v.email, amount: v.amount, startDate: v.startDate, endDate: v.endDate, status: v.status, perks: v.perks, onPosters: v.onPosters && !!v.logo, note: v.note, ...(logoChanged || !initial ? { logo: v.logo } : {}) };
+      const body = { name: v.name, contactName: v.contactName, phone: v.phone, email: v.email, amount: v.amount, startDate: v.startDate, endDate: v.endDate, status: v.status, perks: v.perks, pack: v.pack, note: v.note, ...(logoChanged || !initial ? { logo: v.logo } : {}) };
       if (initial) await put(`/sponsors/${initial.id}`, body); else await post("/sponsors", body);
       onDone();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -117,21 +118,26 @@ function SponsorForm({ initial, onClose, onDone }: { initial: Sponsor | null; on
           <label className="text-sm font-bold text-ink">Fin du contrat
             <input aria-label="Fin du contrat" className={field} type="date" value={v.endDate} onChange={(e) => set({ endDate: e.target.value })} /></label>
         </div>
-        <div>
-          <p className="m-0 mb-1 text-sm font-bold text-ink">Ce que le club lui offre en échange</p>
+        <div className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
+          <p className="m-0 text-sm font-bold text-ink">🏅 Grade (formule de partenariat)</p>
+          <div className="flex flex-wrap gap-2">
+            <Pill on={!v.pack} onClick={() => set({ pack: "" })}>✂️ Sur mesure</Pill>
+            {offer.packs.map((p) => <Pill key={p.name} on={v.pack === p.name} color="#b8471f" onClick={() => set({ pack: p.name, perks: [...p.perks], amount: v.amount || p.price })}>{p.name}{p.price ? ` · ${p.price}` : ""}</Pill>)}
+          </div>
+          <p className="m-0 mt-1 text-sm font-bold text-ink">Ce que le club lui offre en échange</p>
+          <p className="m-0 text-xs text-muted">{v.pack ? `Les contreparties de « ${v.pack} » sont déjà cochées : tu peux en ajouter ou en retirer (le grade reste, la liste devient personnalisée).` : "Choisis un grade pour cocher d'un coup ses contreparties, ou coche à la main."}</p>
           <div className="flex flex-wrap gap-2">{PERKS.map((p) => <Pill key={p.key} on={v.perks.includes(p.key)} onClick={() => set({ perks: toggle(v.perks, p.key) })}>{p.icon} {p.label}</Pill>)}</div>
+          {offer.packs.length === 0 && <p className="m-0 text-xs text-muted">Pour avoir des grades, crée d'abord tes formules dans l'onglet « Ce que nous proposons ».</p>}
         </div>
         <div className="rounded-2xl border-2 border-line bg-white p-3">
           <p className="m-0 mb-2 text-sm font-bold text-ink">🖼️ Logo</p>
           <div className="flex flex-wrap items-center gap-3">
             <span className="grid size-20 place-items-center overflow-hidden rounded-xl border border-line bg-white">{v.logo ? <img src={v.logo} alt="Logo du partenaire" className="max-h-[4.5rem] max-w-[4.5rem] object-contain" /> : <span aria-hidden className="text-3xl">🏢</span>}</span>
             <label className="btn-outline cursor-pointer">Choisir un logo (PNG ou JPEG)<input aria-label="Choisir un logo" type="file" accept="image/png,image/jpeg" className="sr-only" onChange={(e) => { void pickLogo(e.target.files?.[0]); e.target.value = ""; }} /></label>
-            {v.logo && <button type="button" className="btn-outline" onClick={() => { set({ logo: "", onPosters: false }); setLogoChanged(true); }}>Retirer</button>}
+            {v.logo && <button type="button" className="btn-outline" onClick={() => { set({ logo: "" }); setLogoChanged(true); }}>Retirer</button>}
           </div>
-          <label className={`mt-3 flex items-center gap-2 text-sm font-bold ${v.logo ? "text-ink" : "text-muted"}`}>
-            <input type="checkbox" disabled={!v.logo} checked={v.onPosters && !!v.logo} onChange={(e) => set({ onPosters: e.target.checked })} /> 🪧 Mettre son logo sur les affiches (mois et événements)
-          </label>
-          {!v.logo && <p className="m-0 mt-1 text-xs text-muted">Ajoute d'abord son logo. Le logo est réduit automatiquement ; il reste dans l'application du club, rien n'est envoyé ailleurs.</p>}
+          <p className="m-0 mt-2 text-xs text-muted">{v.perks.includes("AFFICHE_MOIS") || v.perks.includes("AFFICHE_EVENT") ? "🪧 Son logo apparaîtra sur : " + [v.perks.includes("AFFICHE_MOIS") ? "l'affiche du mois" : "", v.perks.includes("AFFICHE_EVENT") ? "les affiches d'événements" : ""].filter(Boolean).join(" et ") + " (selon les contreparties cochées, quand le partenariat est en cours)." : "Son logo ne sera sur aucune affiche (coche « Logo sur l'affiche… » pour l'y mettre)."}</p>
+          {!v.logo && <p className="m-0 mt-1 text-xs text-muted">Le logo est réduit automatiquement ; il reste dans l'application du club, rien n'est envoyé ailleurs.</p>}
         </div>
         <label className="text-sm font-bold text-ink">Note <span className="font-normal text-muted">(facultatif, visible du coach et du président seulement)</span>
           <textarea aria-label="Note" rows={2} className={field} maxLength={400} value={v.note} onChange={(e) => set({ note: e.target.value })} /></label>

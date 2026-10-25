@@ -10,7 +10,7 @@ CREATE TABLE "Sponsor" (
     "endDate" TEXT NOT NULL DEFAULT '',
     "status" TEXT NOT NULL DEFAULT 'A_CONTACTER',
     "perks" TEXT[],
-    "onPosters" BOOLEAN NOT NULL DEFAULT false,
+    "pack" TEXT NOT NULL DEFAULT '',
     "logo" TEXT NOT NULL DEFAULT '',
     "note" TEXT NOT NULL DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

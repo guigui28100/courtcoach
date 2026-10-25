@@ -1051,7 +1051,7 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
-  const logos = usePartnerLogos(); const [withPartners, setWithPartners] = useState(true);
+  const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
   const [msg, setMsg] = useState("");
@@ -1211,7 +1211,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [month, setMonth] = useState(initialMonth);
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
-  const logos = usePartnerLogos(); const [withPartners, setWithPartners] = useState(true);
+  const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
   const [msg, setMsg] = useState("");

@@ -47,7 +47,7 @@ export class SponsorsService {
     const d: Record<string, unknown> = {
       name: dto.name.trim(), contactName: dto.contactName ?? "", phone: dto.phone ?? "", email: dto.email ?? "", amount: dto.amount ?? "",
       startDate: dto.startDate ?? "", endDate: dto.endDate ?? "", status: dto.status ?? "A_CONTACTER", perks: [...new Set(dto.perks ?? [])],
-      onPosters: dto.onPosters === true, note: dto.note ?? "",
+      pack: dto.pack ?? "", note: dto.note ?? "",
     };
     if (dto.logo !== undefined) d.logo = dto.logo;
     return d;
@@ -56,16 +56,12 @@ export class SponsorsService {
   async create(dto: SponsorDto) {
     if ((await this.prisma.sponsor.count()) >= MAX_SPONSORS) throw new BadRequestException(`Tu as déjà ${MAX_SPONSORS} partenaires : supprime-en avant d'en ajouter.`);
     const data = this.data(dto);
-    if (data.onPosters && !dto.logo) throw new BadRequestException("Pour mettre un partenaire sur les affiches, ajoute d'abord son logo.");
     return this.prisma.sponsor.create({ data: data as never });
   }
 
   async update(id: string, dto: SponsorDto) {
-    const old = await this.prisma.sponsor.findUnique({ where: { id } });
-    if (!old) throw new NotFoundException("Partenaire introuvable");
+    if (!(await this.prisma.sponsor.findUnique({ where: { id } }))) throw new NotFoundException("Partenaire introuvable");
     const data = this.data(dto);
-    const logo = dto.logo !== undefined ? dto.logo : old.logo;
-    if (data.onPosters && !logo) throw new BadRequestException("Pour mettre un partenaire sur les affiches, ajoute d'abord son logo.");
     return this.prisma.sponsor.update({ where: { id }, data: data as never });
   }
 

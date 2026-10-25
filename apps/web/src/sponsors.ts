@@ -27,7 +27,7 @@ export const statusOf = (k: string) => STATUSES.find((s) => s.key === k) ?? STAT
 
 export interface Sponsor {
   id: string; name: string; contactName: string; phone: string; email: string; amount: string; startDate: string; endDate: string;
-  status: SponsorStatus; perks: string[]; onPosters: boolean; logo: string; note: string;
+  status: SponsorStatus; perks: string[]; pack: string; logo: string; note: string;
 }
 export interface Pack { name: string; price: string; perks: string[] }
 export interface Offer { intro: string; facts: string[]; packs: Pack[] }
@@ -53,14 +53,16 @@ export async function logoFromFile(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-// Logos à mettre sur les affiches (partenaires cochés « sur les affiches » qui ont un logo). Seuls le coach et le président peuvent faire une affiche.
-export function usePartnerLogos(): string[] {
+// Logos à mettre sur les affiches : chaque partenaire apparaît là où sa contrepartie le prévoit (affiche du mois : « Logo sur l'affiche du mois » ; affiches d'événements : « Logo sur les affiches des événements »). Il faut un logo et un partenariat en cours (ni « à contacter » ni « terminé »).
+// Seuls le coach et le président peuvent faire une affiche.
+export function usePartnerLogos(where: "mois" | "event" = "event"): string[] {
   const [logos, setLogos] = useState<string[]>([]);
   useEffect(() => {
     let live = true;
-    get<{ sponsors: Sponsor[] }>("/sponsors").then((r) => { if (live) setLogos(r.sponsors.filter((s) => s.onPosters && s.logo && s.status !== "TERMINE").map((s) => s.logo).slice(0, 8)); }).catch(() => {});
+    const perk = where === "mois" ? "AFFICHE_MOIS" : "AFFICHE_EVENT";
+    get<{ sponsors: Sponsor[] }>("/sponsors").then((r) => { if (live) setLogos(r.sponsors.filter((s) => s.logo && s.perks.includes(perk) && s.status !== "TERMINE" && s.status !== "A_CONTACTER").map((s) => s.logo).slice(0, 8)); }).catch(() => {});
     return () => { live = false; };
-  }, []);
+  }, [where]);
   return logos;
 }
 

@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, Matches, MaxLength, ValidateNested } from "class-validator";
 import { MAX_FACTS, MAX_LOGO, MAX_PACKS, PERKS, STATUSES } from "./sponsors.constants";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
@@ -15,7 +15,7 @@ export class SponsorDto {
   @IsOptional() @Matches(DATE_OR_EMPTY, { message: "Date de fin invalide." }) endDate?: string;
   @IsOptional() @IsIn([...STATUSES]) status?: string;
   @IsOptional() @IsArray() @ArrayMaxSize(PERKS.length) @IsIn([...PERKS], { each: true }) perks?: string[];
-  @IsOptional() @IsBoolean() onPosters?: boolean;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(40) pack?: string; // grade (formule) choisi ; vide = sur mesure
   @IsOptional() @IsString() @MaxLength(MAX_LOGO) logo?: string; // « » = retirer le logo ; absent = garder
   @IsOptional() @Transform(trim) @IsString() @MaxLength(400) note?: string;
 }

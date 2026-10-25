@@ -9,8 +9,8 @@ import { fullRange, label } from "./ClubPoster";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
-export interface RecapData { photos: string[]; results: { what: string; result: string }[]; message: string }
-export const emptyRecap = (): RecapData => ({ photos: [], results: [], message: "" });
+export interface RecapData { headline: string; photos: string[]; results: { what: string; result: string }[]; message: string }
+export const emptyRecap = (): RecapData => ({ headline: "", photos: [], results: [], message: "" });
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
 const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
@@ -37,7 +37,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([e, format, data.message, results, photos.length, logos.length]);
+  const sig = JSON.stringify([e, format, data.headline, data.message, results, photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -83,6 +83,7 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
+            {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
             <div role="heading" aria-level={1} style={title}>{name}</div>
             <div style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>

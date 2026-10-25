@@ -57,6 +57,8 @@ export function RecapModal({ e, onClose }: { e: ClubEvent; onClose: () => void }
               <Pill on={format === "PORTRAIT"} onClick={() => setFormat("PORTRAIT")}>📱 Portrait 4:5</Pill>
               {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
             </div>
+            <label className="text-sm font-bold text-ink">Titre en haut <span className="font-normal text-muted">(facultatif, ex. « Résultats du tournoi »)</span>
+              <input aria-label="Titre en haut" className={`${field} mt-1`} maxLength={40} placeholder="Résultats du tournoi" value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
             <div className="rounded-2xl border-2 border-line bg-white p-3">
               <p className="m-0 mb-2 text-sm font-bold text-ink">📷 Photos <span className="font-normal text-muted">({d.photos.length} sur {MAX_PHOTOS})</span></p>
               <div className="flex flex-wrap items-center gap-2">

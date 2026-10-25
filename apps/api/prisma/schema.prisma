@@ -681,7 +681,7 @@ model Sponsor {
   endDate     String   @default("")
   status      String   @default("A_CONTACTER") // A_CONTACTER, RELANCE, SIGNE, FACTURE, PAYE, TERMINE
   perks       String[] // contreparties promises (identifiants de la liste fixe)
-  onPosters   Boolean  @default(false) // logo sur les affiches
+  pack        String   @default("") // grade choisi (nom d'une formule de l'offre du club) ; vide = sur mesure
   logo        String   @default("") // image PNG ou JPEG en base64 (data:image/…), 90 000 caractères au plus
   note        String   @default("")
   createdAt   DateTime @default(now())
