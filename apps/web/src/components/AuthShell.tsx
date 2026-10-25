@@ -23,6 +23,13 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
               <li key={t} className="flex items-start gap-2.5"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20 text-sm font-bold" aria-hidden="true">✓</span>{t}</li>
             ))}
           </ul>
+          {tour && (
+            <button type="button" onClick={() => document.getElementById("tour")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
+              className="mt-1 flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left text-sm font-extrabold text-clay shadow-lg hover:bg-ball hover:text-ink">
+              <span>À quoi sert CourtCoach ? Découvre le site</span>
+              <span aria-hidden="true" className="text-xl leading-none motion-safe:animate-bounce">⌄</span>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -53,7 +60,7 @@ const TOUR: { icon: string; title: string; who: string; items: string[] }[] = [
 // Présentation de tout ce que fait le site, sous le formulaire de connexion (rien de personnel, aucun appel extérieur).
 function SiteTour() {
   return (
-    <section className="bg-sand/60 px-4 py-10 sm:px-8 lg:px-12" aria-labelledby="tour-title">
+    <section id="tour" className="scroll-mt-20 bg-sand/60 px-4 py-10 sm:px-8 lg:px-12" aria-labelledby="tour-title">
       <div className="mx-auto grid max-w-6xl gap-6">
         <header className="max-w-2xl">
           <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-clay">À quoi sert CourtCoach ?</p>
