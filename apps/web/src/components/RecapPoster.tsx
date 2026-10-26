@@ -62,7 +62,7 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
     const el = body.current; if (!el) return;
     const run = () => {
       const inner = el.firstElementChild as HTMLElement; if (!inner) return;
-      const avail = el.clientHeight; let kk = 1; inner.style.height = "auto";
+      const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight; if (hh <= 0) break;
         const next = Math.max(0.5, Math.min(1.6, kk * (avail * 0.95) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
