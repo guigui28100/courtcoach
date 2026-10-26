@@ -37,7 +37,26 @@ export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte";
 export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right" };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
-export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[] }) {
+export type PosterBg = "" | "bulle" | "photo";
+export const PHOTO_URL = "/fond-bulle.jpg"; // la photo du club, si elle est déposée dans apps/web/public
+// Fond « sous la bulle » dessiné (bulle blanche à arceaux, mur vert, terre battue et lignes du court)
+function BulleBg({ w, h }: { w: number; h: number }) {
+  return (
+    <svg aria-hidden width={w} height={h} viewBox="0 0 794 1123" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0 }}>
+      <defs>
+        <linearGradient id="bb-d" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f7f8fb" /><stop offset="1" stopColor="#cfd3df" /></linearGradient>
+        <linearGradient id="bb-c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d2602f" /><stop offset="1" stopColor="#a8431c" /></linearGradient>
+      </defs>
+      <rect width="794" height="1123" fill="url(#bb-d)" />
+      <g fill="none" stroke="#b9bfd0" strokeWidth="3"><path d="M-40 430 Q300 -40 520 -20" /><path d="M60 560 Q420 60 700 20" /><path d="M200 640 Q560 140 800 60" /><path d="M380 700 Q700 260 840 160" /></g>
+      <path d="M0 360 Q120 300 260 330 L260 520 L0 520Z" fill="#1d5f52" />
+      <path d="M0 560 L794 440 L794 1123 L0 1123Z" fill="url(#bb-c)" />
+      <g stroke="#fff" strokeWidth="7" fill="none" opacity=".95"><path d="M-20 700 L560 760 L794 640" /><path d="M60 620 L794 560" /><path d="M0 900 L794 800" /></g>
+    </svg>
+  );
+}
+
+export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
@@ -146,6 +165,9 @@ export function EventPoster({ e, format, showWho, fmt, partners }: { e: ClubEven
   const gap = p(16);
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      {bg === "bulle" && <BulleBg w={w} h={h} />}
+      {bg === "photo" && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${PHOTO_URL})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
+      {bg !== "" && <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.82) 100%)" }} />}
       <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.045, background: `repeating-linear-gradient(90deg,transparent 0 ${w / 6.6 - 2}px,${NAVY} ${w / 6.6 - 2}px ${w / 6.6}px)` }} />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH - 40, fontSize: sq ? 420 : 520, lineHeight: 1, opacity: 0.07, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>

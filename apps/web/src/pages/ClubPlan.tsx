@@ -12,7 +12,7 @@ import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
-import { EventPoster, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
+import { EventPoster, PosterBg, PHOTO_URL, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1102,6 +1102,9 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
+  const [bg, setBg] = useState<PosterBg>("");
+  const [hasPhoto, setHasPhoto] = useState(false); // la photo du club n'est proposée que si elle est déposée dans le site
+  useEffect(() => { fetch(PHOTO_URL, { method: "HEAD" }).then((r) => setHasPhoto(r.ok && (r.headers.get("content-type") ?? "").startsWith("image/"))).catch(() => {}); }, []);
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1156,6 +1159,11 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
+          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Fond de l'affiche"><span className="text-sm font-bold text-ink">🖼️ Fond :</span>
+            <Pill on={bg === ""} onClick={() => setBg("")}>Classique</Pill>
+            <Pill on={bg === "bulle"} onClick={() => setBg("bulle")}>🎈 Sous la bulle</Pill>
+            {hasPhoto && <Pill on={bg === "photo"} onClick={() => setBg("photo")}>📷 Photo du club</Pill>}
+          </div>
           <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
@@ -1167,7 +1175,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>
+            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1180,7 +1188,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} /></div>, document.body)}
     </Modal>
   );
 }
