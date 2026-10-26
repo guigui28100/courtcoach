@@ -69,9 +69,11 @@ export function tournoiPublic(audience: string): { text: string; fem: boolean } 
   if (/^Messieurs/i.test(base)) return { text: `aux joueurs${years}`, fem: false };
   if (/^Dames/i.test(base)) return { text: `aux joueuses${years}`, fem: true };
   if (/^Jeunes/i.test(base)) {
-    const sex = /filles/i.test(detail) ? "filles" : /gar[cç]ons/i.test(detail) ? "garçons" : "";
-    const ages = detail.match(/(\d+\/\d+)/)?.[1];
-    const ball = detail.match(/\b(orange|vert)\b/i)?.[1]?.toLowerCase();
+    const f = /filles/i.test(detail), g = /gar[cç]ons/i.test(detail);
+    const sex = f && g ? "" : f ? "filles" : g ? "garçons" : "";
+    const ageList = [...new Set([...detail.matchAll(/(\d+\/\d+)/g)].map((m) => m[1]))];
+    const ages = ageList.length > 1 ? `${ageList.slice(0, -1).join(", ")} et ${ageList[ageList.length - 1]}` : ageList[0];
+    const ball = ageList.length > 1 ? undefined : detail.match(/\b(orange|vert)\b/i)?.[1]?.toLowerCase();
     if (!sex && !ages) return { text: "aux jeunes", fem: false };
     return { text: `aux ${sex || "jeunes"}${ages ? ` de ${ages} ans` : ""}${ball ? ` (balle ${ball})` : ""}`, fem: sex === "filles" };
   }
