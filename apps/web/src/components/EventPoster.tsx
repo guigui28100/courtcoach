@@ -98,7 +98,9 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par son mot le plus long
   const title: CSSProperties = { margin: 0, fontSize: `min(${pt(sq ? 70 : 84)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 900), letterSpacing: "-0.02em", color: NAVY, ...deco("titre") };
-  const card: CSSProperties = { border: `2px solid ${LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: "#fff", padding: `${pi(12)} ${pi(16)}`, display: "flex", alignItems: "center", gap: pi(14), minWidth: 0 };
+  const onPhoto = bg !== ""; // sur une photo : cartes transparentes, texte entouré d'un halo blanc pour rester lisible
+  const HALO: CSSProperties = onPhoto ? { textShadow: "0 0 6px rgba(255,255,255,1), 0 0 14px rgba(255,255,255,.95), 0 0 26px rgba(255,255,255,.8)" } : {};
+  const card: CSSProperties = { border: `2px solid ${onPhoto ? "rgba(255,255,255,.55)" : LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, padding: `${pi(12)} ${pi(16)}`, display: "flex", alignItems: "center", gap: pi(14), minWidth: 0 };
 
   const dateEl = (
     <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", border: `2px solid ${acc}`, maxWidth: "100%" }}>
@@ -106,7 +108,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
       </div>
-      {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: "#fff", textWrap: "pretty" as any }}>{dt.side}</div>}
+      {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, textWrap: "pretty" as any }}>{dt.side}</div>}
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
@@ -119,7 +121,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const tarifEl = formulas.length > 0 && (
-    <div style={{ border: `2px solid ${NAVY}`, borderRadius: 16, overflow: "hidden", background: "#fff", ...deco("tarifs") }}>
+    <div style={{ border: `2px solid ${NAVY}`, borderRadius: 16, overflow: "hidden", background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, ...deco("tarifs") }}>
       <div style={{ background: NAVY, color: "#fff", display: "flex", alignItems: "center", padding: `${pf(9)} ${pf(18)}`, fontSize: pf(13), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", gap: 10 }}>
         <span style={{ flex: 1 }}>{formulas.length > 1 ? "Formules et tarifs" : "Tarif"}</span>
         {twoPrices && <><span style={{ width: pf(112), textAlign: "right" }}>Adhérent</span><span style={{ width: pf(130), textAlign: "right", whiteSpace: "nowrap" }}>Non adhérent</span></>}
@@ -136,7 +138,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...(bg !== "" ? { background: "rgba(255,255,255,.92)", borderRadius: 14, padding: `${pn(12)} ${pn(16)}`, boxShadow: "0 4px 18px rgba(27,24,99,.18)" } : {}), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
