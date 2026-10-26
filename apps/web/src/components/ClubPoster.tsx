@@ -1,3 +1,4 @@
+import { Backdrop } from "./PosterBackdrop";
 import { glue, teamParts } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
@@ -315,11 +316,12 @@ function ListBody({ list, month, showWho, extra = 0 }: { list: ClubEvent[]; mont
   );
 }
 
-export function ClubPoster({ events, month, model, showWho, partners }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[] }) {
+export function ClubPoster({ events, month, model, showWho, partners, bg = "" }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string }) {
   const list = monthEvents(events, month);
   const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
       <Header m={month} />
       <div style={{ marginTop: 6 }}>
         {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}

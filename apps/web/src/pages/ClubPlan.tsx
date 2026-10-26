@@ -12,7 +12,8 @@ import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
-import { EventPoster, PosterBg, PHOTOS, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
+import { BgPicker } from "../components/PosterBackdrop";
+import { EventPoster, PosterBg, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1104,8 +1105,6 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState<PosterBg>("");
   const [light, setLight] = useState(false); // cartes réduites pour mieux voir le fond
-  const [photos, setPhotos] = useState<{ url: string; label: string }[]>([]); // les photos du club ne sont proposées que si elles sont déposées dans le site
-  useEffect(() => { PHOTOS.forEach((ph) => fetch(ph.url, { method: "HEAD" }).then((r) => { if (r.ok && (r.headers.get("content-type") ?? "").startsWith("image/")) setPhotos((l) => (l.some((x) => x.url === ph.url) ? l : [...l, ph])); }).catch(() => {})); }, []);
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1160,12 +1159,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
-          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Fond de l'affiche"><span className="text-sm font-bold text-ink">🖼️ Fond :</span>
-            <Pill on={bg === ""} onClick={() => setBg("")}>Classique</Pill>
-            <Pill on={bg === "bulle"} onClick={() => setBg("bulle")}>🎈 Sous la bulle</Pill>
-            {PHOTOS.filter((ph) => photos.some((x) => x.url === ph.url)).map((ph) => <Pill key={ph.url} on={bg === ph.url} onClick={() => setBg(ph.url)}>📷 {ph.label}</Pill>)}
-            {bg !== "" && <Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>}
-          </div>
+          <BgPicker bg={bg} onChange={setBg} extra={<Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>} />
           <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
@@ -1272,6 +1266,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [month, setMonth] = useState(initialMonth);
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
+  const [bg, setBg] = useState("");
   const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1311,8 +1306,9 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
         {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
       </div>
+      <BgPicker bg={bg} onChange={setBg} />
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>
+        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
@@ -1321,7 +1317,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} /></div>, document.body)}
     </Modal>
   );
 }

@@ -1,3 +1,4 @@
+import { Backdrop } from "./PosterBackdrop";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -41,7 +42,7 @@ export async function photoFromFile(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[] }) {
+export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string }) {
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
@@ -92,10 +93,11 @@ export function RecapPoster({ e, format, data, partners }: { e: ClubEvent; forma
 
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <Backdrop bg={bg} w={w} h={h} veil="strong" />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH + partH - 40, fontSize: 420, lineHeight: 1, opacity: 0.06, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 36, height: hdH - 36, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div><div style={{ fontSize: 14, opacity: 0.8, marginTop: 3 }}>Houdan · 4 courts couverts</div></div>
+        <div style={{ whiteSpace: "nowrap" }}><div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
         <div style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>BILAN</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
