@@ -17,7 +17,7 @@ const Pill = ({ on, onClick, children, color }: { on: boolean; onClick: () => vo
 );
 const toggle = <T,>(l: T[], v: T) => (l.includes(v) ? l.filter((x) => x !== v) : [...l, v]);
 // Contreparties : les 7 cases habituelles, et en bas un « ＋ Ajouter » pour écrire une ligne en plus (pour ce partenaire)
-function PerkPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+function PerkPicker({ value, onChange, list = false }: { value: string[]; onChange: (v: string[]) => void; list?: boolean }) {
   const [open, setOpen] = useState(false); const [txt, setTxt] = useState(""); const [msg, setMsg] = useState("");
   const customs = value.filter(isCustom);
   const add = () => {
@@ -27,10 +27,16 @@ function PerkPicker({ value, onChange }: { value: string[]; onChange: (v: string
     onChange(value.includes(CUSTOM + t) ? value : [...value, CUSTOM + t]); setTxt(""); setMsg(""); setOpen(false);
   };
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap gap-2">
-        {PERKS.map((p) => <Pill key={p.key} on={value.includes(p.key)} onClick={() => onChange(toggle(value, p.key))}>{p.icon} {p.label}</Pill>)}
-        {customs.map((k) => <Pill key={k} on onClick={() => onChange(value.filter((x) => x !== k))}>{perkOf(k)?.icon} {perkOf(k)?.label} ✕</Pill>)}
+    <div className="grid content-start gap-2">
+      <div className={list ? "grid content-start gap-1.5" : "flex flex-wrap gap-2"}>
+        {list ? [...PERKS.map((p) => p.key), ...customs].map((k) => { const on = value.includes(k); const c = isCustom(k); return (
+          <button key={k} type="button" role="checkbox" aria-checked={on} onClick={() => onChange(toggle(value, k))}
+            className={`flex w-full items-center gap-2 rounded-xl border-2 px-2.5 py-1.5 text-left text-sm font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+            <span aria-hidden className="grid size-4 shrink-0 place-items-center rounded border-2 text-[10px]" style={{ borderColor: on ? "#fff" : "#aaa" }}>{on ? "✔" : ""}</span>
+            <span className="min-w-0 flex-1">{perkOf(k)?.icon} {perkOf(k)?.label}</span>{c && <span aria-hidden>✕</span>}
+          </button>); }) : null}
+        {!list && PERKS.map((p) => <Pill key={p.key} on={value.includes(p.key)} onClick={() => onChange(toggle(value, p.key))}>{p.icon} {p.label}</Pill>)}
+        {!list && customs.map((k) => <Pill key={k} on onClick={() => onChange(value.filter((x) => x !== k))}>{perkOf(k)?.icon} {perkOf(k)?.label} ✕</Pill>)}
         {!open && <button type="button" className="rounded-xl border-2 border-dashed border-ink px-3 py-2 text-sm font-bold text-ink hover:bg-ink hover:text-white" onClick={() => setOpen(true)}>＋ Ajouter</button>}
       </div>
       {open && (
@@ -203,13 +209,13 @@ function OfferEditor({ offer, onSaved }: { offer: Offer; onSaved: (o: Offer) => 
       </div>
       <div>
         <p className="m-0 mb-1 text-sm font-bold text-ink">Les formules proposées <span className="font-normal text-muted">(4 au plus, le prix s'écrit librement ; vide = « à définir ensemble »)</span></p>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-x-3 md:grid-cols-2">{/* cartes de même taille : nom, prix, contreparties et bouton sont alignés d'une carte à l'autre (grille partagée « subgrid ») */}
           {o.packs.map((p, i) => (
-            <div key={i} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
+            <div key={i} style={{ gridRow: "span 4", gridTemplateRows: "subgrid" }} className="mb-3 grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
               <input aria-label={`Nom de la formule ${i + 1}`} className="w-full rounded-xl border-2 border-line px-3 py-2 text-sm font-bold" maxLength={40} placeholder="Nom (ex. Partenaire or)" value={p.name} onChange={(e) => setPack(i, { name: e.target.value })} />
               <input aria-label={`Prix de la formule ${i + 1}`} className="w-full rounded-xl border-2 border-line px-3 py-2 text-sm" maxLength={40} placeholder="Prix (ex. 500 € par an)" value={p.price} onChange={(e) => setPack(i, { price: e.target.value })} />
-              <PerkPicker value={p.perks} onChange={(v) => setPack(i, { perks: v })} />
-              <button type="button" className="btn-outline justify-self-start" onClick={() => setO({ ...o, packs: o.packs.filter((_, j) => j !== i) })}>🗑️ Retirer cette formule</button>
+              <PerkPicker list value={p.perks} onChange={(v) => setPack(i, { perks: v })} />
+              <button type="button" className="btn-outline self-end justify-self-start" onClick={() => setO({ ...o, packs: o.packs.filter((_, j) => j !== i) })}>🗑️ Retirer cette formule</button>
             </div>))}
         </div>
         {o.packs.length < 4 && <button type="button" className="btn-outline mt-2" onClick={() => setO({ ...o, packs: [...o.packs, { name: "", price: "", perks: [] }] })}>＋ Ajouter une formule</button>}

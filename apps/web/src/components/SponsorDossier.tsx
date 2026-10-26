@@ -23,7 +23,7 @@ const Foot = ({ n }: { n: number }) => (
 export function buildSponsorDossier(offer: Offer, sponsors: Sponsor[]): ReactNode[] {
   const logos = sponsors.filter((s) => s.logo && s.status !== "TERMINE" && s.status !== "A_CONTACTER").slice(0, 10);
   const packs = offer.packs.filter((p) => p.name);
-  const cols = packs.length >= 3 ? 3 : Math.max(1, packs.length);
+  const cols = packs.length === 4 ? 2 : packs.length >= 3 ? 3 : Math.max(1, packs.length); // 4 formules : 2 × 2, toutes de même taille
   return [
     // Page 1 : couverture et présentation du club
     <Page key="p1">
@@ -73,14 +73,14 @@ export function buildSponsorDossier(offer: Offer, sponsors: Sponsor[]): ReactNod
             </div>))}
         </div>
         {packs.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, columnGap: 14, rowGap: 0 }}>
             {packs.map((p, i) => (
-              <div key={p.name} style={{ border: `3px solid ${i === packs.length - 1 && packs.length > 1 ? GOLD : LINE}`, borderRadius: 18, overflow: "hidden", background: "#fff", display: "flex", flexDirection: "column" }}>
-                <div style={{ background: i === packs.length - 1 && packs.length > 1 ? GOLD : NAVY, color: i === packs.length - 1 && packs.length > 1 ? NAVY : "#fff", padding: "12px 14px" }}>
+              <div key={p.name} style={{ border: `3px solid ${i === packs.length - 1 && packs.length > 1 ? GOLD : LINE}`, borderRadius: 18, overflow: "hidden", background: "#fff", display: "grid", gridRow: "span 2", gridTemplateRows: "subgrid", marginBottom: 14 }}>
+                <div style={{ background: i === packs.length - 1 && packs.length > 1 ? GOLD : NAVY, color: i === packs.length - 1 && packs.length > 1 ? NAVY : "#fff", padding: "12px 14px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                   <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.1 }}>{p.name}</div>
                   <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>{p.price || "Tarif à définir ensemble"}</div>
                 </div>
-                <ul style={{ margin: 0, padding: "12px 14px", listStyle: "none", display: "grid", gap: 7, fontSize: 14, lineHeight: 1.25 }}>
+                <ul style={{ margin: 0, padding: "12px 14px", listStyle: "none", display: "grid", gap: 7, fontSize: 14, lineHeight: 1.25, alignContent: "start" }}>
                   {p.perks.map((k) => <li key={k} style={{ display: "flex", gap: 8 }}><b style={{ color: "#15803d" }}>✓</b><span>{perkOf(k)?.label ?? k}</span></li>)}
                   {!p.perks.length && <li style={{ color: MUTED }}>Au choix, selon vos envies</li>}
                 </ul>
