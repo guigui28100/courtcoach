@@ -68,15 +68,15 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light]);
+  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
       const inner = el.firstElementChild as HTMLElement; if (!inner) return;
-      const avail = el.clientHeight; let kk = 1; inner.style.height = "auto";
+      const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
-        if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.9) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
       if (light) kk = Math.max(0.5, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
@@ -162,7 +162,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k }}>
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{titleEl}{dateEl}{rowsEl}{tarifEl}{noteEl || null}</div>
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{c}</div> : null))}</div>
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>
