@@ -39,7 +39,7 @@ export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
 export type PosterBg = string; // "" (classique), "bulle" (dessiné) ou l'adresse d'une photo du club (ex. "/fond-bulle.jpg")
 // Les photos du club, déposées dans apps/web/public (une photo absente n'est simplement pas proposée)
-export const PHOTOS = [{ url: "/fond-bulle.jpg", label: "Sous la bulle" }, { url: "/fond-terres.jpg", label: "Les 4 courts" }, { url: "/fond-nuit.jpg", label: "La bulle de nuit" }];
+export const PHOTOS = [{ url: "/fond-bulle.jpg", label: "Sous la bulle" }, { url: "/fond-terres.jpg", label: "Les 4 courts" }, { url: "/fond-nuit.jpg", label: "La bulle de nuit" }, { url: "/fond-neige.jpg", label: "Sous la neige" }];
 // Fond « sous la bulle » dessiné (bulle blanche à arceaux, mur vert, terre battue et lignes du court)
 function BulleBg({ w, h }: { w: number; h: number }) {
   return (
