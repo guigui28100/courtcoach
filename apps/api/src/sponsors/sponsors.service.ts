@@ -15,6 +15,9 @@ function checkLogo(logo: string) {
   if (!want.every((b, i) => head[i] === b)) throw new BadRequestException("Ce fichier n'est pas une vraie image PNG ou JPEG.");
 }
 
+// Les lignes libres (« X:texte ») sont nettoyées : espaces retirés, lignes vides ignorées, pas de doublon
+const cleanPerks = (list: string[] = []) => [...new Set(list.map((k) => (k.startsWith("X:") ? `X:${k.slice(2).trim().replace(/\s+/g, " ")}` : k)).filter((k) => k !== "X:"))];
+
 export const DEFAULT_OFFER = {
   intro: "Le Tennis Club Houdan réunit des joueurs de tous âges autour de 4 courts couverts. Devenir partenaire, c'est soutenir le sport local et faire connaître votre entreprise auprès des familles du club.",
   facts: ["4 courts couverts, terre battue et dur", "Des stages, des tournois et des animations toute l'année"],
@@ -46,7 +49,7 @@ export class SponsorsService {
     if (dto.logo) checkLogo(dto.logo);
     const d: Record<string, unknown> = {
       name: dto.name.trim(), contactName: dto.contactName ?? "", phone: dto.phone ?? "", email: dto.email ?? "", amount: dto.amount ?? "",
-      startDate: dto.startDate ?? "", endDate: dto.endDate ?? "", status: dto.status ?? "A_CONTACTER", perks: [...new Set(dto.perks ?? [])],
+      startDate: dto.startDate ?? "", endDate: dto.endDate ?? "", status: dto.status ?? "A_CONTACTER", perks: cleanPerks(dto.perks),
       pack: dto.pack ?? "", note: dto.note ?? "",
     };
     if (dto.logo !== undefined) d.logo = dto.logo;
@@ -74,7 +77,7 @@ export class SponsorsService {
   async setOffer(dto: OfferDto) {
     const value = {
       intro: dto.intro, facts: dto.facts.map((f) => f.trim()).filter(Boolean),
-      packs: dto.packs.map((p) => ({ name: p.name.trim(), price: p.price.trim(), perks: [...new Set(p.perks)] })).filter((p) => p.name),
+      packs: dto.packs.map((p) => ({ name: p.name.trim(), price: p.price.trim(), perks: cleanPerks(p.perks) })).filter((p) => p.name),
     };
     await this.prisma.clubSetting.upsert({ where: { key: "sponsorOffer" }, update: { value }, create: { key: "sponsorOffer", value } });
     return value;

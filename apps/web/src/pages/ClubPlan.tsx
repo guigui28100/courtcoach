@@ -12,7 +12,8 @@ import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
-import { EventPoster, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
+import { BgPicker } from "../components/PosterBackdrop";
+import { EventPoster, PosterBg, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -681,7 +682,17 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
 const TOUR_TYPES = [{ key: "TMC", label: "TMC", sub: "Tournoi multi-chances : des matchs garantis, entre joueurs de niveaux proches", icon: "🎯" }, { key: "OPEN", label: "Tournoi open", sub: "Ouvert à tous les niveaux, sans limite de classement", icon: "🏆" }] as const;
 const tourWord = (key: string) => (key === "sen-m" ? "messieurs" : key === "sen-d" ? "dames" : teamCat(key)?.label ?? "");
 // Ce qui est gardé dans « audience » : la grande famille (pour la couleur de l'affiche) puis, si utile, le détail
-const tourAudience = (key: string) => {
+const tourAudience = (keys: string[]) => {
+  if (keys.length > 1) {
+    const d = keys.map((k) => teamCat(k)?.label ?? "").join(", ");
+    if (keys.every((k) => k.startsWith("vet-"))) { // plusieurs catégories de vétérans
+      const ages = keys.map((k) => `+${k.split("-")[1]} ans`).filter((a, i, l) => l.indexOf(a) === i).join(", ");
+      const allM = keys.every((k) => k.endsWith("-m")), allD = keys.every((k) => k.endsWith("-d"));
+      return `${allM ? "Messieurs (adultes)" : allD ? "Dames (adultes)" : "Vétérans"} · ${ages}`;
+    }
+    return `Jeunes · ${d.length > 100 ? `${keys.length} catégories d'âge` : d}`;
+  }
+  const key = keys[0] ?? "";
   const base = key.startsWith("gar-") || key.startsWith("fil-") ? "Jeunes" : key.endsWith("-m") ? "Messieurs (adultes)" : "Dames (adultes)";
   const detail = base === "Jeunes" ? teamCat(key)?.label ?? "" : key.startsWith("vet-") ? `+${key.split("-")[1]} ans` : "";
   return detail ? `${base} · ${detail}` : base;
@@ -690,19 +701,25 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
   const [i, setI] = useState(0);
   const [type, setType] = useState<"" | "TMC" | "OPEN">("");
   const [pub, setPub] = useState<"jeunes" | "seniors">("seniors");
-  const [catKey, setCatKey] = useState("");
+  const [catKeys, setCatKeys] = useState<string[]>([]); // plusieurs catégories d'âge possibles pour un tournoi de jeunes
+  const catKey = catKeys[0] ?? "";
   const [bas, setBas] = useState("");
   const [haut, setHaut] = useState("");
   const [edited, setEdited] = useState(false);
   const tmc = type === "TMC";
+  const isJ = (k: string) => k.startsWith("gar-") || k.startsWith("fil-"), isV = (k: string) => k.startsWith("vet-");
+  const multiOk = (k: string) => (isJ(k) && catKeys.every(isJ)) || (isV(k) && catKeys.every(isV)); // plusieurs jeunes, ou plusieurs vétérans (pas de mélange)
   const steps = ["type", "cat", ...(tmc ? ["rank"] : []), "surface", "when", "end"] as const;
   const cur = steps[Math.min(i, steps.length - 1)];
   const next = () => setI((x) => Math.min(x + 1, steps.length - 1));
   const rankOk = !bas || !haut || RANKINGS.indexOf(bas) <= RANKINGS.indexOf(haut);
   const range = tmc && bas && haut && rankOk ? ` de ${bas} à ${haut}` : "";
-  const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${tourWord(catKey)}${range}` : "";
+    // Plusieurs catégories : le nom reste COURT (« Tournoi open jeunes », « Tournoi open vétérans ») ; le détail est sur l'affiche
+  const vets = catKeys.length > 1 && catKeys.every((k) => k.startsWith("vet-"));
+  const words = catKeys.length > 1 ? (vets ? `vétérans${catKeys.every((k) => k.endsWith("-m")) ? " messieurs" : catKeys.every((k) => k.endsWith("-d")) ? " dames" : ""}` : "jeunes") : tourWord(catKey);
+  const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${words}${range}` : "";
   const info = (p: Partial<PosterInfo>) => patch({ info: { ...c.info, ...p } });
-  useEffect(() => { if (!edited && auto && c.title !== auto) patch({ title: auto, info: { ...c.info, audience: tourAudience(catKey) } }); });
+  useEffect(() => { if (!edited && auto && c.title !== auto) patch({ title: auto, info: { ...c.info, audience: tourAudience(catKeys) } }); });
   const Nav = ({ ok = true, skip }: { ok?: boolean; skip?: boolean }) => (
     <div className="mt-3 flex flex-wrap gap-2">
       <button type="button" className="btn-clay" disabled={!ok} onClick={next}>Continuer →</button>
@@ -732,14 +749,15 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
     return card("Pour quelle catégorie ?", <>
       <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
         {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => setPub(k)} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
         <div key={g}><b className="text-sm text-muted">{g}</b>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {TEAM_CATS.filter((t) => t.group === g).map((t) => (
-              <Pill key={t.key} on={catKey === t.key} onClick={() => setCatKey(t.key)}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
+              <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => setCatKeys(multiOk(t.key) ? toggle(catKeys, t.key) : [t.key])}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
           </div></div>))}
+      <p className="m-0 text-sm text-muted">{pub === "jeunes" ? "Tu peux toucher plusieurs catégories d'âge (garçons et filles)" : "Pour les vétérans, tu peux toucher plusieurs catégories (+35, +45, messieurs et dames)"} : touche une seconde fois pour en retirer une.{catKeys.length > 1 ? ` ✔ ${catKeys.length} catégories choisies.` : ""}</p>
       <Nav ok={!!catKey} /></>);
   }
   if (cur === "rank") return card("Entre quels classements ?", <>
@@ -885,6 +903,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
+  const noName = sel.AUTRE?.on && !(sel.AUTRE.title ?? "").trim() ? "Écris le nom de ton événement (ex. Repas des bénévoles)." : "";
   const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
   // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
   const pickLast = (x: string) => { setChosen(true); setPickEnd(false); setEnd(x < start ? start : x); }; // fiche d'un jour : on choisit seulement le dernier jour
@@ -916,6 +935,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
     { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE"] },
     { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
+    { name: "Vie associative", icon: "🏛️", color: "#1F618D", kinds: ["AG", "AGE"] },
+    { name: "＋ Ajouter un autre événement", icon: "📌", color: "#566573", kinds: ["AUTRE"] },
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
@@ -990,9 +1011,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     </button>
                   </div>
                   {k.key === "EQUIPES" ? <MatchCards c={c} patch={(p) => patch(k.key, p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]} /> : (<>
-                  {(k.key === "TOURNOI" || k.key === "ANIMATION") && (
-                    <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : "de l'animation"} (facultatif)
-                      <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+                  {(k.key === "TOURNOI" || k.key === "ANIMATION" || k.key === "AUTRE") && (
+                    <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
+                      <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : k.key === "AUTRE" ? "Ex. Repas des bénévoles" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
                   {!POSTER_KINDS.includes(k.key) && (
                     <div className="rounded-xl border-2 border-line bg-white p-3">
@@ -1018,8 +1039,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           </Fold>
         );
       })}
-      <Err msg={err || missing} />
-      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
+      <Err msg={err || missing || noName} />
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!noName || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
       </>)}
     </Modal>
   );
@@ -1082,6 +1103,8 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
+  const [bg, setBg] = useState<PosterBg>("");
+  const [light, setLight] = useState(false); // cartes réduites pour mieux voir le fond
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1136,6 +1159,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
+          <BgPicker bg={bg} onChange={setBg} extra={<Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>} />
           <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
@@ -1147,7 +1171,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>
+            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1160,7 +1184,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>, document.body)}
     </Modal>
   );
 }
@@ -1242,6 +1266,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [month, setMonth] = useState(initialMonth);
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
+  const [bg, setBg] = useState("");
   const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1281,8 +1306,9 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
         {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
       </div>
+      <BgPicker bg={bg} onChange={setBg} />
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>
+        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
@@ -1291,7 +1317,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} /></div>, document.body)}
     </Modal>
   );
 }

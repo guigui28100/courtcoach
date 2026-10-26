@@ -66,12 +66,17 @@ export function tournoiPublic(audience: string): { text: string; fem: boolean } 
   const detail = rest.join(" · ");
   const vet = detail.match(/\+(\d{2}) ans/);
   const years = vet ? ` de plus de ${vet[1]} ans` : "";
+  const vets = [...detail.matchAll(/\+(\d{2}) ans/g)].map((m) => `+${m[1]} ans`);
+  if (vets.length > 1) return { text: `aux vétérans (${vets.join(", ")})`, fem: /^Dames/i.test(base) };
+  if (/^Vétérans/i.test(base)) return { text: "aux vétérans", fem: false };
   if (/^Messieurs/i.test(base)) return { text: `aux joueurs${years}`, fem: false };
   if (/^Dames/i.test(base)) return { text: `aux joueuses${years}`, fem: true };
   if (/^Jeunes/i.test(base)) {
-    const sex = /filles/i.test(detail) ? "filles" : /gar[cç]ons/i.test(detail) ? "garçons" : "";
-    const ages = detail.match(/(\d+\/\d+)/)?.[1];
-    const ball = detail.match(/\b(orange|vert)\b/i)?.[1]?.toLowerCase();
+    const f = /filles/i.test(detail), g = /gar[cç]ons/i.test(detail);
+    const sex = f && g ? "" : f ? "filles" : g ? "garçons" : "";
+    const ageList = [...new Set([...detail.matchAll(/(\d+\/\d+)/g)].map((m) => m[1]))];
+    const ages = ageList.length > 1 ? `${ageList.slice(0, -1).join(", ")} et ${ageList[ageList.length - 1]}` : ageList[0];
+    const ball = ageList.length > 1 ? undefined : detail.match(/\b(orange|vert)\b/i)?.[1]?.toLowerCase();
     if (!sex && !ages) return { text: "aux jeunes", fem: false };
     return { text: `aux ${sex || "jeunes"}${ages ? ` de ${ages} ans` : ""}${ball ? ` (balle ${ball})` : ""}`, fem: sex === "filles" };
   }
@@ -125,6 +130,8 @@ function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; typ
     case "FETE_ECOLE": return { text: "Les enfants de l'école de tennis, leurs parents et leurs entraîneurs se retrouvent pour la fête.", covers };
     case "INSCRIPTIONS": return { text: "Venez rencontrer les entraîneurs et vous inscrire pour la nouvelle saison.", covers };
     case "DEBUT_COURS": return { text: "C'est la reprise : les cours recommencent !", covers };
+    case "AG": return { text: "Tous les adhérents sont invités à l'assemblée générale du club.", covers };
+    case "AGE": return { text: "Tous les adhérents sont invités à une assemblée générale extraordinaire.", covers };
     case "FIN_COURS": return { text: "Dernière séance de la saison : merci à tous !", covers };
     default: return { text: "", covers };
   }

@@ -1,7 +1,7 @@
 // Planning du club : types d'événements, courts, moments, catégories d'équipes et conflits (copie de apps/api/src/club/club.constants.ts)
 import { HOLIDAYS_ZONE_C } from "./schoolDays";
 
-export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "BULLE_MONTAGE_TB" | "BULLE_MONTAGE_QUICK" | "BULLE_DEMONTAGE_TB" | "BULLE_DEMONTAGE_QUICK" | "MAINT_BULLE_TB" | "MAINT_BULLE_QUICK" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "JUMELAGE" | "DEBUT_COURS" | "FIN_COURS";
+export type Kind = "TOURNOI" | "ANIMATION" | "EQUIPES" | "BULLE" | "BULLE_MONTAGE" | "BULLE_DEMONTAGE" | "BULLE_MONTAGE_TB" | "BULLE_MONTAGE_QUICK" | "BULLE_DEMONTAGE_TB" | "BULLE_DEMONTAGE_QUICK" | "MAINT_BULLE_TB" | "MAINT_BULLE_QUICK" | "TERRE_BATTUE" | "STAGE_ENFANTS" | "STAGE_ADULTES" | "INSCRIPTIONS" | "FETE" | "FETE_ECOLE" | "JUMELAGE" | "DEBUT_COURS" | "FIN_COURS" | "AG" | "AGE" | "AUTRE";
 export interface KindInfo { key: Kind; label: string; color: string; icon: string; group: string; who: boolean; courts?: number[] }
 // Les choix proposés dans le menu d'une case du jour (rangés par famille)
 export const KINDS: KindInfo[] = [
@@ -23,6 +23,9 @@ export const KINDS: KindInfo[] = [
   { key: "FETE_ECOLE", label: "Fête de l'école de tennis", color: "#00ACC1", icon: "🎊", group: "Vie du club", who: true },
   { key: "DEBUT_COURS", label: "Début des cours", color: "#2C3E50", icon: "🚀", group: "Vie du club", who: false },
   { key: "FIN_COURS", label: "Fin des cours", color: "#7F8C8D", icon: "🏁", group: "Vie du club", who: false },
+  { key: "AG", label: "Assemblée générale", color: "#1F618D", icon: "🏛️", group: "Vie du club", who: true },
+  { key: "AGE", label: "Assemblée générale extraordinaire", color: "#922B21", icon: "⚖️", group: "Vie du club", who: true },
+  { key: "AUTRE", label: "Autre événement", color: "#566573", icon: "📌", group: "Vie du club", who: true },
 ];
 // Anciens types « Bulle », « Montage / Démontage de la bulle » (encore lisibles, plus proposés)
 const LEGACY: KindInfo[] = [
