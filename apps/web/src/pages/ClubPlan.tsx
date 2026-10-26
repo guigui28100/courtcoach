@@ -682,7 +682,15 @@ const TOUR_TYPES = [{ key: "TMC", label: "TMC", sub: "Tournoi multi-chances : de
 const tourWord = (key: string) => (key === "sen-m" ? "messieurs" : key === "sen-d" ? "dames" : teamCat(key)?.label ?? "");
 // Ce qui est gardé dans « audience » : la grande famille (pour la couleur de l'affiche) puis, si utile, le détail
 const tourAudience = (keys: string[]) => {
-  if (keys.length > 1) { const d = keys.map((k) => teamCat(k)?.label ?? "").join(", "); return `Jeunes · ${d.length > 100 ? `${keys.length} catégories d'âge` : d}`; }
+  if (keys.length > 1) {
+    const d = keys.map((k) => teamCat(k)?.label ?? "").join(", ");
+    if (keys.every((k) => k.startsWith("vet-"))) { // plusieurs catégories de vétérans
+      const ages = keys.map((k) => `+${k.split("-")[1]} ans`).filter((a, i, l) => l.indexOf(a) === i).join(", ");
+      const allM = keys.every((k) => k.endsWith("-m")), allD = keys.every((k) => k.endsWith("-d"));
+      return `${allM ? "Messieurs (adultes)" : allD ? "Dames (adultes)" : "Vétérans"} · ${ages}`;
+    }
+    return `Jeunes · ${d.length > 100 ? `${keys.length} catégories d'âge` : d}`;
+  }
   const key = keys[0] ?? "";
   const base = key.startsWith("gar-") || key.startsWith("fil-") ? "Jeunes" : key.endsWith("-m") ? "Messieurs (adultes)" : "Dames (adultes)";
   const detail = base === "Jeunes" ? teamCat(key)?.label ?? "" : key.startsWith("vet-") ? `+${key.split("-")[1]} ans` : "";
@@ -698,13 +706,17 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
   const [haut, setHaut] = useState("");
   const [edited, setEdited] = useState(false);
   const tmc = type === "TMC";
+  const isJ = (k: string) => k.startsWith("gar-") || k.startsWith("fil-"), isV = (k: string) => k.startsWith("vet-");
+  const multiOk = (k: string) => (isJ(k) && catKeys.every(isJ)) || (isV(k) && catKeys.every(isV)); // plusieurs jeunes, ou plusieurs vétérans (pas de mélange)
   const steps = ["type", "cat", ...(tmc ? ["rank"] : []), "surface", "when", "end"] as const;
   const cur = steps[Math.min(i, steps.length - 1)];
   const next = () => setI((x) => Math.min(x + 1, steps.length - 1));
   const rankOk = !bas || !haut || RANKINGS.indexOf(bas) <= RANKINGS.indexOf(haut);
   const range = tmc && bas && haut && rankOk ? ` de ${bas} à ${haut}` : "";
-  const words = catKeys.length > 1 ? catKeys.map(tourWord).join(", ") : tourWord(catKey);
-  const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${`${words}${range}`.length > 70 ? `jeunes (${catKeys.length} catégories)` : words}${range}` : "";
+    // Plusieurs catégories : le nom reste COURT (« Tournoi open jeunes », « Tournoi open vétérans ») ; le détail est sur l'affiche
+  const vets = catKeys.length > 1 && catKeys.every((k) => k.startsWith("vet-"));
+  const words = catKeys.length > 1 ? (vets ? `vétérans${catKeys.every((k) => k.endsWith("-m")) ? " messieurs" : catKeys.every((k) => k.endsWith("-d")) ? " dames" : ""}` : "jeunes") : tourWord(catKey);
+  const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${words}${range}` : "";
   const info = (p: Partial<PosterInfo>) => patch({ info: { ...c.info, ...p } });
   useEffect(() => { if (!edited && auto && c.title !== auto) patch({ title: auto, info: { ...c.info, audience: tourAudience(catKeys) } }); });
   const Nav = ({ ok = true, skip }: { ok?: boolean; skip?: boolean }) => (
@@ -742,9 +754,9 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
         <div key={g}><b className="text-sm text-muted">{g}</b>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {TEAM_CATS.filter((t) => t.group === g).map((t) => (
-              <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => setCatKeys(pub === "jeunes" ? (catKeys.some((k) => !k.startsWith("gar-") && !k.startsWith("fil-")) ? [t.key] : toggle(catKeys, t.key)) : [t.key])}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
+              <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => setCatKeys(multiOk(t.key) ? toggle(catKeys, t.key) : [t.key])}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
           </div></div>))}
-      {pub === "jeunes" && <p className="m-0 text-sm text-muted">Tu peux toucher <b>plusieurs catégories d'âge</b> (garçons et filles) : touche une seconde fois pour en retirer une.{catKeys.length > 1 ? ` ✔ ${catKeys.length} catégories choisies.` : ""}</p>}
+      <p className="m-0 text-sm text-muted">{pub === "jeunes" ? "Tu peux toucher plusieurs catégories d'âge (garçons et filles)" : "Pour les vétérans, tu peux toucher plusieurs catégories (+35, +45, messieurs et dames)"} : touche une seconde fois pour en retirer une.{catKeys.length > 1 ? ` ✔ ${catKeys.length} catégories choisies.` : ""}</p>
       <Nav ok={!!catKey} /></>);
   }
   if (cur === "rank") return card("Entre quels classements ?", <>

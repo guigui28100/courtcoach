@@ -66,6 +66,9 @@ export function tournoiPublic(audience: string): { text: string; fem: boolean } 
   const detail = rest.join(" · ");
   const vet = detail.match(/\+(\d{2}) ans/);
   const years = vet ? ` de plus de ${vet[1]} ans` : "";
+  const vets = [...detail.matchAll(/\+(\d{2}) ans/g)].map((m) => `+${m[1]} ans`);
+  if (vets.length > 1) return { text: `aux vétérans (${vets.join(", ")})`, fem: /^Dames/i.test(base) };
+  if (/^Vétérans/i.test(base)) return { text: "aux vétérans", fem: false };
   if (/^Messieurs/i.test(base)) return { text: `aux joueurs${years}`, fem: false };
   if (/^Dames/i.test(base)) return { text: `aux joueuses${years}`, fem: true };
   if (/^Jeunes/i.test(base)) {
