@@ -57,7 +57,7 @@ function BulleBg({ w, h }: { w: number; h: number }) {
   );
 }
 
-export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg }) {
+export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light = false }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
@@ -84,7 +84,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e:
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length]);
+  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -94,6 +94,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e:
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
         if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
+      if (light) kk = Math.max(0.5, kk * 0.78); // « cartes réduites » : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
       inner.style.height = "100%"; setK(kk);
@@ -168,7 +169,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e:
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       {bg === "bulle" && <BulleBg w={w} h={h} />}
       {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
-      {bg !== "" && <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.82) 100%)" }} />}
+      {bg !== "" && <div aria-hidden style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,${light ? "rgba(255,255,255,.12) 0%,rgba(255,255,255,.28) 50%,rgba(255,255,255,.6) 100%" : "rgba(255,255,255,.35) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.82) 100%"})` }} />}
       <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.045, background: `repeating-linear-gradient(90deg,transparent 0 ${w / 6.6 - 2}px,${NAVY} ${w / 6.6 - 2}px ${w / 6.6}px)` }} />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH - 40, fontSize: sq ? 420 : 520, lineHeight: 1, opacity: 0.07, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>

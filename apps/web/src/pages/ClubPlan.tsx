@@ -1103,6 +1103,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState<PosterBg>("");
+  const [light, setLight] = useState(false); // cartes réduites pour mieux voir le fond
   const [photos, setPhotos] = useState<{ url: string; label: string }[]>([]); // les photos du club ne sont proposées que si elles sont déposées dans le site
   useEffect(() => { PHOTOS.forEach((ph) => fetch(ph.url, { method: "HEAD" }).then((r) => { if (r.ok && (r.headers.get("content-type") ?? "").startsWith("image/")) setPhotos((l) => (l.some((x) => x.url === ph.url) ? l : [...l, ph])); }).catch(() => {})); }, []);
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
@@ -1163,6 +1164,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             <Pill on={bg === ""} onClick={() => setBg("")}>Classique</Pill>
             <Pill on={bg === "bulle"} onClick={() => setBg("bulle")}>🎈 Sous la bulle</Pill>
             {PHOTOS.filter((ph) => photos.some((x) => x.url === ph.url)).map((ph) => <Pill key={ph.url} on={bg === ph.url} onClick={() => setBg(ph.url)}>📷 {ph.label}</Pill>)}
+            {bg !== "" && <Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>}
           </div>
           <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
@@ -1175,7 +1177,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} /></div>
+            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1188,7 +1190,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>, document.body)}
     </Modal>
   );
 }
