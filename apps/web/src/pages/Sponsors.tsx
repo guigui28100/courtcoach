@@ -208,7 +208,7 @@ function OfferEditor({ offer, onSaved }: { offer: Offer; onSaved: (o: Offer) => 
             <div key={i} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
               <input aria-label={`Nom de la formule ${i + 1}`} className="w-full rounded-xl border-2 border-line px-3 py-2 text-sm font-bold" maxLength={40} placeholder="Nom (ex. Partenaire or)" value={p.name} onChange={(e) => setPack(i, { name: e.target.value })} />
               <input aria-label={`Prix de la formule ${i + 1}`} className="w-full rounded-xl border-2 border-line px-3 py-2 text-sm" maxLength={40} placeholder="Prix (ex. 500 € par an)" value={p.price} onChange={(e) => setPack(i, { price: e.target.value })} />
-              <div className="flex flex-wrap gap-1.5">{PERKS.map((k) => <Pill key={k.key} on={p.perks.includes(k.key)} onClick={() => setPack(i, { perks: toggle(p.perks, k.key) })}>{k.icon} {k.label}</Pill>)}</div>
+              <PerkPicker value={p.perks} onChange={(v) => setPack(i, { perks: v })} />
               <button type="button" className="btn-outline justify-self-start" onClick={() => setO({ ...o, packs: o.packs.filter((_, j) => j !== i) })}>🗑️ Retirer cette formule</button>
             </div>))}
         </div>
