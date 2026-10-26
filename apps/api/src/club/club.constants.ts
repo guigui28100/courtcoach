@@ -1,5 +1,5 @@
 // Planning du club : types d'événements, moments de la journée, courts et catégories d'équipes (copie côté site : apps/web/src/clubPlan.ts)
-export const KINDS = ["TOURNOI", "ANIMATION", "EQUIPES", "BULLE", "BULLE_MONTAGE", "BULLE_DEMONTAGE", "BULLE_MONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_TB", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE", "STAGE_ENFANTS", "STAGE_ADULTES", "INSCRIPTIONS", "FETE", "FETE_ECOLE", "JUMELAGE", "DEBUT_COURS", "FIN_COURS"] as const;
+export const KINDS = ["TOURNOI", "ANIMATION", "EQUIPES", "BULLE", "BULLE_MONTAGE", "BULLE_DEMONTAGE", "BULLE_MONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_TB", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE", "STAGE_ENFANTS", "STAGE_ADULTES", "INSCRIPTIONS", "FETE", "FETE_ECOLE", "JUMELAGE", "DEBUT_COURS", "FIN_COURS", "AG", "AGE", "AUTRE"] as const;
 export type Kind = (typeof KINDS)[number];
 export const BANDS = ["MATIN", "APRES_MIDI", "SOIR"] as const;
 export const COURTS = [1, 2, 3, 4]; // 1 et 2 : terre battue couverte ; 3 et 4 : dur couvert

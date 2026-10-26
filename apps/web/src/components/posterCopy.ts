@@ -125,6 +125,8 @@ function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; typ
     case "FETE_ECOLE": return { text: "Les enfants de l'école de tennis, leurs parents et leurs entraîneurs se retrouvent pour la fête.", covers };
     case "INSCRIPTIONS": return { text: "Venez rencontrer les entraîneurs et vous inscrire pour la nouvelle saison.", covers };
     case "DEBUT_COURS": return { text: "C'est la reprise : les cours recommencent !", covers };
+    case "AG": return { text: "Tous les adhérents sont invités à l'assemblée générale du club.", covers };
+    case "AGE": return { text: "Tous les adhérents sont invités à une assemblée générale extraordinaire.", covers };
     case "FIN_COURS": return { text: "Dernière séance de la saison : merci à tous !", covers };
     default: return { text: "", covers };
   }

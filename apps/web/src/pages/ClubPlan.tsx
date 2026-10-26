@@ -885,6 +885,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
+  const noName = sel.AUTRE?.on && !(sel.AUTRE.title ?? "").trim() ? "Écris le nom de ton événement (ex. Repas des bénévoles)." : "";
   const nothing = !Object.values(sel).some((c) => c.on || c.id) ? "Coche au moins un choix." : "";
   // 1er toucher = premier jour, 2e toucher = dernier jour (dans n'importe quel ordre)
   const pickLast = (x: string) => { setChosen(true); setPickEnd(false); setEnd(x < start ? start : x); }; // fiche d'un jour : on choisit seulement le dernier jour
@@ -916,6 +917,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
     { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE"] },
     { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
+    { name: "Vie associative", icon: "🏛️", color: "#1F618D", kinds: ["AG", "AGE"] },
+    { name: "＋ Ajouter un autre événement", icon: "📌", color: "#566573", kinds: ["AUTRE"] },
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
@@ -990,9 +993,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                     </button>
                   </div>
                   {k.key === "EQUIPES" ? <MatchCards c={c} patch={(p) => patch(k.key, p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]} /> : (<>
-                  {(k.key === "TOURNOI" || k.key === "ANIMATION") && (
-                    <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : "de l'animation"} (facultatif)
-                      <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
+                  {(k.key === "TOURNOI" || k.key === "ANIMATION" || k.key === "AUTRE") && (
+                    <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
+                      <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : k.key === "AUTRE" ? "Ex. Repas des bénévoles" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
                   {!POSTER_KINDS.includes(k.key) && (
                     <div className="rounded-xl border-2 border-line bg-white p-3">
@@ -1018,8 +1021,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           </Fold>
         );
       })}
-      <Err msg={err || missing} />
-      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
+      <Err msg={err || missing || noName} />
+      <button type="button" className="btn-clay mt-2" disabled={busy || !!missing || !!noName || !!nothing || !chosen} onClick={save}>✔ Enregistrer</button>
       </>)}
     </Modal>
   );
