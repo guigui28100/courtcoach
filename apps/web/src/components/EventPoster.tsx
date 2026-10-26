@@ -37,8 +37,9 @@ export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte";
 export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right" };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
-export type PosterBg = "" | "bulle" | "photo";
-export const PHOTO_URL = "/fond-bulle.jpg"; // la photo du club, si elle est déposée dans apps/web/public
+export type PosterBg = string; // "" (classique), "bulle" (dessiné) ou l'adresse d'une photo du club (ex. "/fond-bulle.jpg")
+// Les photos du club, déposées dans apps/web/public (une photo absente n'est simplement pas proposée)
+export const PHOTOS = [{ url: "/fond-bulle.jpg", label: "Sous la bulle" }, { url: "/fond-terres.jpg", label: "Les 4 courts" }, { url: "/fond-nuit.jpg", label: "La bulle de nuit" }];
 // Fond « sous la bulle » dessiné (bulle blanche à arceaux, mur vert, terre battue et lignes du court)
 function BulleBg({ w, h }: { w: number; h: number }) {
   return (
@@ -166,7 +167,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "" }: { e:
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       {bg === "bulle" && <BulleBg w={w} h={h} />}
-      {bg === "photo" && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${PHOTO_URL})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
+      {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
       {bg !== "" && <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(255,255,255,.35) 0%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.82) 100%)" }} />}
       <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.045, background: `repeating-linear-gradient(90deg,transparent 0 ${w / 6.6 - 2}px,${NAVY} ${w / 6.6 - 2}px ${w / 6.6}px)` }} />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH - 40, fontSize: sq ? 420 : 520, lineHeight: 1, opacity: 0.07, filter: "grayscale(1)" }}>{kd.icon}</div>

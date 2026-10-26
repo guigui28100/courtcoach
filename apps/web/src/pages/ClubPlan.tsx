@@ -12,7 +12,7 @@ import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
-import { EventPoster, PosterBg, PHOTO_URL, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
+import { EventPoster, PosterBg, PHOTOS, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1103,8 +1103,8 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState<PosterBg>("");
-  const [hasPhoto, setHasPhoto] = useState(false); // la photo du club n'est proposée que si elle est déposée dans le site
-  useEffect(() => { fetch(PHOTO_URL, { method: "HEAD" }).then((r) => setHasPhoto(r.ok && (r.headers.get("content-type") ?? "").startsWith("image/"))).catch(() => {}); }, []);
+  const [photos, setPhotos] = useState<{ url: string; label: string }[]>([]); // les photos du club ne sont proposées que si elles sont déposées dans le site
+  useEffect(() => { PHOTOS.forEach((ph) => fetch(ph.url, { method: "HEAD" }).then((r) => { if (r.ok && (r.headers.get("content-type") ?? "").startsWith("image/")) setPhotos((l) => (l.some((x) => x.url === ph.url) ? l : [...l, ph])); }).catch(() => {})); }, []);
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1162,7 +1162,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
           <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Fond de l'affiche"><span className="text-sm font-bold text-ink">🖼️ Fond :</span>
             <Pill on={bg === ""} onClick={() => setBg("")}>Classique</Pill>
             <Pill on={bg === "bulle"} onClick={() => setBg("bulle")}>🎈 Sous la bulle</Pill>
-            {hasPhoto && <Pill on={bg === "photo"} onClick={() => setBg("photo")}>📷 Photo du club</Pill>}
+            {PHOTOS.filter((ph) => photos.some((x) => x.url === ph.url)).map((ph) => <Pill key={ph.url} on={bg === ph.url} onClick={() => setBg(ph.url)}>📷 {ph.label}</Pill>)}
           </div>
           <FormatPanel fmt={fmt} onChange={setFmt} />
           <div className="rounded-xl border-2 border-line bg-white p-3">

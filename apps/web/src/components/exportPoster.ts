@@ -8,7 +8,7 @@ const toDataUrl = async (url: string, mime: string) => {
 async function posterToCanvas(node: HTMLElement, w: number, h: number, scale: number): Promise<HTMLCanvasElement> {
   const [logo, font] = await Promise.all([toDataUrl("/logo-tch.png", "image/png"), toDataUrl("/fonts/archivo-latin-400-900.woff2", "font/woff2")]);
   let xhtml = new XMLSerializer().serializeToString(node).split("/logo-tch.png").join(logo);
-  if (xhtml.includes("/fond-bulle.jpg")) xhtml = xhtml.split("/fond-bulle.jpg").join(await toDataUrl("/fond-bulle.jpg", "image/jpeg"));
+  for (const f of new Set(xhtml.match(/\/fond-[a-z0-9-]+\.jpg/g) ?? [])) xhtml = xhtml.split(f).join(await toDataUrl(f, "image/jpeg")); // la photo choisie est intégrée à l'image
   const style = `<style>@font-face{font-family:'ArchivoPoster';font-weight:100 900;src:url(${font}) format('woff2');}</style>`;
   xhtml = xhtml.replace(/^(<div[^>]*>)/, `$1${style}`);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}" viewBox="0 0 ${w} ${h}"><foreignObject width="${w}" height="${h}">${xhtml}</foreignObject></svg>`;
