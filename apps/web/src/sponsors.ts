@@ -12,7 +12,11 @@ export const PERKS: { key: PerkKey; icon: string; label: string; hint: string }[
   { key: "SITE", icon: "🌐", label: "Présence sur le site internet du club", hint: "Votre logo et un lien sur le site internet du club." },
   { key: "SOIREE", icon: "🥳", label: "Invitation à la fête du club", hint: "Vous êtes invités à la fête du club et aux temps forts de la saison." },
 ];
-export const perkOf = (k: string) => PERKS.find((p) => p.key === k);
+// Lignes libres : le coach écrit lui-même une contrepartie (« Logo sur les maillots »…) ; elle est gardée sous la forme « X:texte » (60 caractères au plus)
+export const CUSTOM = "X:";
+export const MAX_CUSTOM = 15;
+export const isCustom = (k: string) => k.startsWith(CUSTOM);
+export const perkOf = (k: string): { key: string; icon: string; label: string; hint: string } | undefined => PERKS.find((p) => p.key === k) ?? (isCustom(k) ? { key: k, icon: "✨", label: k.slice(CUSTOM.length), hint: "" } : undefined);
 
 export type SponsorStatus = "A_CONTACTER" | "RELANCE" | "SIGNE" | "FACTURE" | "PAYE" | "TERMINE";
 export const STATUSES: { key: SponsorStatus; label: string; color: string }[] = [

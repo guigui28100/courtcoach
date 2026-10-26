@@ -66,4 +66,19 @@ describe("Partenaires du club : coach et président seulement", () => {
     expect((await A.president.get("/api/sponsors").expect(200)).body.offer).toMatchObject(offer);
     await A.coach.put("/api/sponsors/offer").set(ORIGIN).send({ ...offer, packs: [{ name: "Or", price: "", perks: ["INCONNU"] }] }).expect(400);
   });
+
+  it("le coach ajoute ses propres lignes de contreparties (bâche, maillots…) : acceptées, nettoyées, limitées", async () => {
+    const r = await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Garage Martin", perks: ["BACHE", "X:  Logo sur les   maillots ", "X:Logo sur les maillots", "X:   "] }).expect(201);
+    expect(r.body.perks).toEqual(["BACHE", "X:Logo sur les maillots"]);
+    await A.president.put(`/api/sponsors/${r.body.id}`).set(ORIGIN).send({ name: "Garage Martin", perks: ["SITE", "X:Photo sur la page d'accueil"] }).expect(200);
+    // une ligne trop longue, une clé inconnue ou trop de lignes sont refusées
+    await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Trop long", perks: ["X:" + "a".repeat(61)] }).expect(400);
+    await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Inconnue", perks: ["N_IMPORTE_QUOI"] }).expect(400);
+    await A.coach.post("/api/sponsors").set(ORIGIN).send({ name: "Trop de lignes", perks: Array.from({ length: 23 }, (_, n) => `X:ligne ${n}`) }).expect(400);
+    // les formules de partenariat acceptent aussi les lignes libres
+    const o = await A.coach.put("/api/sponsors/offer").set(ORIGIN).send({ intro: "Bonjour", facts: [], packs: [{ name: "Or", price: "", perks: ["BACHE", "X:Un tournoi à votre nom ", "X:Un tournoi à votre nom"] }] }).expect(200);
+    expect(o.body.packs[0].perks).toEqual(["BACHE", "X:Un tournoi à votre nom"]);
+    // le bureau n'a toujours aucun accès
+    await A.bureau.post("/api/sponsors").set(ORIGIN).send({ name: "X", perks: ["X:test"] }).expect(403);
+  });
 });

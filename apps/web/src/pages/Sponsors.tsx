@@ -6,7 +6,7 @@ import { homeFor } from "../components/Guard";
 import { buildSponsorDossier, SPONSOR_H, SPONSOR_W } from "../components/SponsorDossier";
 import { BackLink, Err, Page } from "../components/ui";
 import { todayParis, fmtDay } from "../clubPlan";
-import { daysLeft, logoFromFile, Offer, perkOf, PERKS, Sponsor, STATUSES, statusOf } from "../sponsors";
+import { CUSTOM, daysLeft, isCustom, logoFromFile, MAX_CUSTOM, Offer, perkOf, PERKS, Sponsor, STATUSES, statusOf } from "../sponsors";
 import { Modal } from "./ClubPlan";
 
 type Tab = "partenaires" | "offre" | "dossier";
@@ -16,6 +16,35 @@ const Pill = ({ on, onClick, children, color }: { on: boolean; onClick: () => vo
     className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${on ? (color ? "" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
 );
 const toggle = <T,>(l: T[], v: T) => (l.includes(v) ? l.filter((x) => x !== v) : [...l, v]);
+// Contreparties : les 7 cases habituelles, et en bas un « ＋ Ajouter » pour écrire une ligne en plus (pour ce partenaire)
+function PerkPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false); const [txt, setTxt] = useState(""); const [msg, setMsg] = useState("");
+  const customs = value.filter(isCustom);
+  const add = () => {
+    const t = txt.trim().replace(/\s+/g, " ");
+    if (!t) return;
+    if (customs.length >= MAX_CUSTOM && !value.includes(CUSTOM + t)) { setMsg(`${MAX_CUSTOM} lignes en plus au plus.`); return; }
+    onChange(value.includes(CUSTOM + t) ? value : [...value, CUSTOM + t]); setTxt(""); setMsg(""); setOpen(false);
+  };
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap gap-2">
+        {PERKS.map((p) => <Pill key={p.key} on={value.includes(p.key)} onClick={() => onChange(toggle(value, p.key))}>{p.icon} {p.label}</Pill>)}
+        {customs.map((k) => <Pill key={k} on onClick={() => onChange(value.filter((x) => x !== k))}>{perkOf(k)?.icon} {perkOf(k)?.label} ✕</Pill>)}
+        {!open && <button type="button" className="rounded-xl border-2 border-dashed border-ink px-3 py-2 text-sm font-bold text-ink hover:bg-ink hover:text-white" onClick={() => setOpen(true)}>＋ Ajouter</button>}
+      </div>
+      {open && (
+        <div className="flex flex-wrap items-center gap-2">
+          <input aria-label="Ajouter une ligne de contrepartie" autoFocus className="min-w-0 flex-1 rounded-xl border-2 border-line bg-white px-3 py-2 text-sm" maxLength={60} placeholder="Ma ligne (ex. Logo sur les maillots)" value={txt}
+            onChange={(e) => setTxt(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+          <button type="button" className="btn-clay" disabled={!txt.trim()} onClick={add}>✔ Ajouter</button>
+          <button type="button" className="btn-outline" onClick={() => { setOpen(false); setTxt(""); setMsg(""); }}>Annuler</button>
+        </div>
+      )}
+      {msg && <p role="status" className="m-0 text-xs font-bold text-[#b45309]">{msg}</p>}
+    </div>
+  );
+}
 const field = "mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal";
 
 // Partenaires (sponsors) du club : coach et président. Entreprises seulement, aucune donnée d'élève.
@@ -126,7 +155,7 @@ function SponsorForm({ initial, offer, onClose, onDone }: { initial: Sponsor | n
           </div>
           <p className="m-0 mt-1 text-sm font-bold text-ink">Ce que le club lui offre en échange</p>
           <p className="m-0 text-xs text-muted">{v.pack ? `Les contreparties de « ${v.pack} » sont déjà cochées : tu peux en ajouter ou en retirer (le grade reste, la liste devient personnalisée).` : "Choisis un grade pour cocher d'un coup ses contreparties, ou coche à la main."}</p>
-          <div className="flex flex-wrap gap-2">{PERKS.map((p) => <Pill key={p.key} on={v.perks.includes(p.key)} onClick={() => set({ perks: toggle(v.perks, p.key) })}>{p.icon} {p.label}</Pill>)}</div>
+          <PerkPicker value={v.perks} onChange={(perks) => set({ perks })} />
           {offer.packs.length === 0 && <p className="m-0 text-xs text-muted">Pour avoir des grades, crée d'abord tes formules dans l'onglet « Ce que nous proposons ».</p>}
         </div>
         <div className="rounded-2xl border-2 border-line bg-white p-3">
