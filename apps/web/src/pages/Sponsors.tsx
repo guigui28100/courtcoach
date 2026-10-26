@@ -4,13 +4,14 @@ import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { buildSponsorDossier, SPONSOR_H, SPONSOR_W } from "../components/SponsorDossier";
+import { buildContract, CONTRACT_H, CONTRACT_W } from "../components/SponsorContract";
 import { BackLink, Err, Page } from "../components/ui";
 import { todayParis, fmtDay } from "../clubPlan";
 import { CUSTOM, daysLeft, isCustom, logoFromFile, MAX_CUSTOM, Offer, perkOf, PERKS, Sponsor, STATUSES, statusOf } from "../sponsors";
 import { Modal } from "./ClubPlan";
 
-type Tab = "partenaires" | "offre" | "dossier";
-const TABS: [Tab, string][] = [["partenaires", "🤝 Mes partenaires"], ["offre", "🎁 Ce que nous proposons"], ["dossier", "📄 Dossier de présentation"]];
+type Tab = "partenaires" | "offre" | "dossier" | "contrat";
+const TABS: [Tab, string][] = [["partenaires", "🤝 Mes partenaires"], ["offre", "🎁 Ce que nous proposons"], ["dossier", "📄 Dossier de présentation"], ["contrat", "📝 Contrat à remplir"]];
 const Pill = ({ on, onClick, children, color }: { on: boolean; onClick: () => void; children: React.ReactNode; color?: string }) => (
   <button type="button" aria-pressed={on} onClick={onClick} style={on && color ? { background: color, borderColor: color, color: "#fff" } : undefined}
     className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${on ? (color ? "" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
@@ -109,6 +110,7 @@ export default function SponsorsPage() {
       )}
       {data && tab === "offre" && <OfferEditor offer={data.offer} onSaved={(o) => setData({ ...data, offer: o })} />}
       {data && tab === "dossier" && <Dossier offer={data.offer} sponsors={data.sponsors} />}
+      {data && tab === "contrat" && <Contract offer={data.offer} sponsors={data.sponsors} />}
       {edit && <SponsorForm key={edit === "new" ? "new" : edit.id} offer={data!.offer} initial={edit === "new" ? null : edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load(); }} />}
     </Page>
   );
@@ -250,6 +252,53 @@ function Dossier({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
       </div>
       <button type="button" className="btn-clay w-full sm:w-auto sm:justify-self-center" onClick={print}>📄 Imprimer ou enregistrer en PDF</button>
       <p className="m-0 text-center text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF », format A4, marges : aucune. Tu l'envoies ensuite toi-même par e-mail.</p>
+      {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
+    </section>
+  );
+}
+
+// Contrat de partenariat (parrainage) à imprimer : prérempli avec le partenaire et son grade, le reste est à remplir au stylo
+function Contract({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
+  const [who, setWho] = useState("");
+  const [gradeName, setGradeName] = useState("");
+  const sponsor = sponsors.find((s) => s.id === who) ?? null;
+  const pack = !sponsor ? offer.packs.find((p) => p.name === gradeName) ?? null : null;
+  const pages = useMemo(() => buildContract({ sponsor, pack }), [sponsor, pack]);
+  const [n, setN] = useState(0); const [scale, setScale] = useState(0.5);
+  useEffect(() => { const f = () => setScale(Math.min(0.9, (Math.min(window.innerWidth, 900) - 40) / CONTRACT_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const print = () => {
+    const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:0}";
+    document.head.appendChild(st); document.body.classList.add("printing-affiche");
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); window.print();
+  };
+  return (
+    <section className="grid gap-3">
+      <p className="m-0 text-sm text-muted">Une convention de partenariat (parrainage) de 3 pages, à imprimer et faire signer. Choisis le partenaire : son nom, son grade, ses contreparties, son montant et ses dates sont écrits tout seuls ; ce qui manque (adresse, SIRET, IBAN, signatures…) reste en pointillés à remplir au stylo. Sans partenaire, choisis seulement un grade.</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="grid gap-1 text-sm font-bold">Partenaire
+          <select className="rounded-xl border-2 border-line bg-white p-2" value={who} onChange={(e) => { setWho(e.target.value); setN(0); }}>
+            <option value="">— Contrat vierge —</option>
+            {sponsors.map((s) => <option key={s.id} value={s.id}>{s.name}{s.pack ? ` (${s.pack})` : ""}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-bold">Grade (formule) {sponsor && <span className="font-normal text-muted">: celui du partenaire</span>}
+          <select className="rounded-xl border-2 border-line bg-white p-2 disabled:opacity-50" disabled={!!sponsor} value={sponsor ? sponsor.pack : gradeName} onChange={(e) => setGradeName(e.target.value)}>
+            <option value="">— Aucun —</option>
+            {offer.packs.filter((p) => p.name).map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: CONTRACT_W * scale, height: CONTRACT_H * scale }}>
+        <div style={{ width: CONTRACT_W, height: CONTRACT_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>{pages[n]}</div>
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <button type="button" className="btn-outline" aria-label="Page précédente" disabled={n === 0} onClick={() => setN(n - 1)}>‹</button>
+        <b className="text-ink">Page {n + 1} / {pages.length}</b>
+        <button type="button" className="btn-outline" aria-label="Page suivante" disabled={n >= pages.length - 1} onClick={() => setN(n + 1)}>›</button>
+      </div>
+      <button type="button" className="btn-clay w-full sm:w-auto sm:justify-self-center" onClick={print}>📄 Imprimer ou enregistrer en PDF</button>
+      <p className="m-0 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">⚠️ C'est un <b>modèle de départ</b>, pas un conseil juridique. Avant de le faire signer, fais-le relire par la fédération, la mairie (service des associations) ou un juriste, surtout pour la TVA (un parrainage est en général facturé avec TVA, mais le régime dépend de la situation du club) et pour l'adresse, le SIRET et le pouvoir du président. Il faut aussi vérifier que les statuts du club autorisent ce type de partenariat.</p>
       {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
     </section>
   );
