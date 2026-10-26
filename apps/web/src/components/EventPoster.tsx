@@ -94,7 +94,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
         if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.94) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
-      if (light) kk = Math.max(0.5, kk * 0.78); // « cartes réduites » : le contenu rétrécit et laisse voir le fond
+      if (light) kk = Math.max(0.5, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
       inner.style.height = "100%"; setK(kk);
@@ -152,7 +152,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...(bg !== "" ? { background: "rgba(255,255,255,.92)", borderRadius: 14, padding: `${pn(12)} ${pn(16)}`, boxShadow: "0 4px 18px rgba(27,24,99,.18)" } : {}), fontSize: pn(19), lineHeight: 1.4, color: "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
@@ -162,7 +162,8 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>); })}
     </div>
   );
-  const titleEl = <div><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const panel: CSSProperties = bg !== "" ? { background: "rgba(255,255,255,.92)", borderRadius: 18, padding: `${pt(16)} ${pt(22)}`, boxShadow: "0 4px 18px rgba(27,24,99,.18)" } : {}; // texte hors carte sur un fond : posé sur une plaque claire pour rester bien lisible
+  const titleEl = <div style={panel}><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
@@ -179,7 +180,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k }}>
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap }}>{titleEl}{dateEl}{rowsEl}{tarifEl}{noteEl || null}</div>
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{titleEl}{dateEl}{rowsEl}{tarifEl}{noteEl || null}</div>
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>
