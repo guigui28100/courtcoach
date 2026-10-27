@@ -340,27 +340,30 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 [data-gal="teen"] .gal-tabs button[aria-selected="true"] { background: linear-gradient(180deg, #c9ad77, #c9ad77); color: #090807; font-weight: 800; box-shadow: 0 8px 24px rgba(201, 173, 119, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 [data-gal="teen"] .gal-tabs button > span.absolute { background: #c9ad77; border-color: #0d0c0a; box-shadow: 0 0 12px #c9ad77; }
 /* Bandeau d'accueil */
-.teen-hero { position: relative; overflow: hidden; display: grid; min-height: 22rem; padding: 0; border-radius: 0.375rem; }
-.teen-hero-text { position: relative; z-index: 2; display: grid; align-content: center; gap: 0.75rem; max-width: 50%; padding: 2.4rem 2.4rem 2.4rem; }
-.teen-hero:has(.teen-strip) .teen-hero-text { padding-bottom: 8rem; }
-.teen-art { position: absolute; right: 0; top: 0; width: 66%; height: 100%; }
-.teen-hero:has(.teen-strip) .teen-art { height: calc(100% - 6rem); }
+.teen-hero { position: relative; overflow: hidden; display: grid; gap: 1.6rem; padding: 2.4rem 2.6rem; border-radius: 0.375rem; }
+.teen-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.6rem; }
+.teen-hero-text { display: grid; gap: 0.75rem; max-width: 36rem; }
+.teen-rank { text-align: right; display: grid; gap: 0.1rem; }
+.teen-rank small { color: #cfc5b0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.teen-rank b { font-family: var(--font-serif); font-size: 4.6rem; font-weight: 600; line-height: 1; color: #c9ad77; }
+.teen-rank span { color: #cfc5b0; font-size: 1.25rem; }
+.teen-track { position: relative; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
+.teen-track i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: #c9ad77; }
+.teen-track u { position: absolute; top: -6px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #c9ad77; border: 3px solid #1a1610; }
+.teen-ends { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; color: #cfc5b0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.teen-chips { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.teen-chips li { border: 1px solid rgba(201, 173, 119, 0.4); border-radius: 0.25rem; padding: 0.5rem 1rem; color: #f3ede0; }
+.teen-chips b { margin-right: 0.4rem; color: #c9ad77; font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; }
 .teen-kicker { margin: 0; display: flex; align-items: center; gap: 0.75rem; color: #c9ad77; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; }
 .teen-kicker::before { content: ""; width: 2.1rem; height: 2px; background: linear-gradient(90deg, transparent, #c9ad77); }
 .teen-title { margin: 0; color: #fff; font-size: clamp(2.3rem, 4.4vw, 4rem); line-height: 0.95; overflow-wrap: normal; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-transform: uppercase; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
 .teen-title span { color: transparent; -webkit-text-stroke: 2px #c9ad77; filter: drop-shadow(0 0 18px rgba(201, 173, 119, 0.4)); }
 .teen-sub { margin: 0; max-width: 22rem; color: #dcd6cb; font-size: 1.1rem; }
-.teen-strip { position: absolute; left: 0.9rem; right: 0.9rem; bottom: 0.9rem; z-index: 3; display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; border-radius: 0.375rem; overflow: hidden; background: rgba(23, 20, 15, 0.85); border: 1px solid rgba(255, 255, 255, 0.11); backdrop-filter: blur(16px); }
-.teen-strip li { flex: 1 1 8rem; display: grid; gap: 0.1rem; padding: 0.85rem 1.1rem; border-right: 1px solid rgba(255, 255, 255, 0.11); }
-.teen-strip li:last-child { border-right: 0; }
-.teen-strip small { color: #b9ad95; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
-.teen-strip b { display: flex; align-items: baseline; gap: 0.4rem; font-size: 2.1rem; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.teen-strip em { font-style: normal; color: #c9ad77; font-size: 0.95rem; font-weight: 800; }
 @media (max-width: 767px) {
-  .teen-hero-text { max-width: 100%; padding: 1.6rem 1.3rem 1.2rem !important; }
-  .teen-art { opacity: 0.28; width: 100%; height: 100% !important; }
-  .teen-strip { position: relative; left: auto; right: auto; bottom: auto; margin: 0 0.8rem 0.8rem; }
-}
+  .teen-hero { padding: 1.5rem 1.2rem; }
+  .teen-rank { text-align: left; }
+  .teen-rank b { font-size: 3.4rem; }
+  }
 /* Étapes */
 [data-gal="teen"] .step-card { position: relative; overflow: hidden; border-radius: 0.375rem; border: 1px solid rgba(255, 255, 255, 0.11); background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)); backdrop-filter: blur(18px); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09); }
 [data-gal="teen"] .step-ico { position: static; width: 2.9rem; height: 2.9rem; border-radius: 0.375rem; color: #c9ad77; background: linear-gradient(160deg, rgba(201, 173, 119, 0.12), rgba(201, 173, 119, 0.03)); border: 1px solid rgba(201, 173, 119, 0.28); }
@@ -618,9 +621,7 @@ h1, h2, h3, .font-display { font-variant-numeric: lining-nums; }
 :root:root:root .teen-kicker::before { background: linear-gradient(90deg, transparent, #c9ad77); }
 :root:root:root .teen-title { font-family: var(--font-serif); font-style: normal; font-weight: 600; letter-spacing: -0.01em; line-height: 1; color: #fffdf8; }
 :root:root:root .teen-title span { color: #c9ad77; -webkit-text-stroke: 0; filter: none; font-style: italic; }
-:root:root:root .teen-strip em { color: #c9ad77; }
-:root:root:root .teen-strip b { font-family: var(--font-serif); font-style: normal; font-weight: 600; }
-:root:root:root .teen-hero { border-radius: 0.375rem; }
+:root:root:root :root:root:root :root:root:root .teen-hero { border-radius: 0.375rem; }
 :root:root:root .teen-seg i.on, :root:root:root .mcard .teen-seg i.on { background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), var(--c) 45%, var(--c)); box-shadow: none; }
 :root:root:root .teen-seg i { border-radius: 2px; transform: skewX(-12deg); }
 /* Cartes de mission */
@@ -648,8 +649,7 @@ h1, h2, h3, .font-display { font-variant-numeric: lining-nums; }
 :root:root:root .bul-court::before { background: radial-gradient(circle at 90% 8%, rgba(201, 173, 119, 0.22), transparent 32%); }
 :root:root:root .bul-word { background: #efe5cd; color: #17140f; border: 1px solid #c9ad77; box-shadow: none; }
 :root:root:root .bul-card { border-radius: 0.375rem; border: 1px solid #ddd3c0; box-shadow: 0 1px 2px rgba(23, 20, 15, 0.06); }
-:root:root:root .mcard-num b, :root:root:root .teen-strip b, :root:root:root .mcard-num span { font-variant-numeric: lining-nums; font-feature-settings: "lnum"; }
-/* Bulletin : le bandeau et le panneau « Image du joueur » restent des plaques encre, même en mode clair */
+:root:root:root .mcard-num b, :root:root:root /* Bulletin : le bandeau et le panneau « Image du joueur » restent des plaques encre, même en mode clair */
 :root:root:root .bulletin-hero .gal-chip, :root:root:root[data-mode="light"] .bulletin-hero .gal-chip { background: rgba(201, 173, 119, 0.12); border: 1px solid rgba(201, 173, 119, 0.4); color: #f3ede0 !important; }
 :root:root:root .bul-court h2, :root:root:root .bul-court h3, :root:root:root[data-mode="light"] .galaxy-sky .bul-court h2, :root:root:root[data-mode="light"] .bul-court h2 { color: #fffdf8; }
 :root:root:root .bulletin-hero h1, :root:root:root .bulletin-hero h2 { color: #fffdf8; }
@@ -660,9 +660,7 @@ h1, h2, h3, .font-display { font-variant-numeric: lining-nums; }
 :root:root:root[data-mode="light"] .teen-hero .teen-title { color: #fffdf8; }
 :root:root:root[data-mode="light"] .teen-hero .teen-kicker, :root:root:root[data-mode="light"] .teen-hero .teen-title span { color: #c9ad77; }
 :root:root:root[data-mode="light"] .teen-hero .teen-sub { color: #dcd6cb; }
-:root:root:root[data-mode="light"] .teen-hero .teen-strip b, :root:root:root[data-mode="light"] .teen-hero .teen-strip small { color: #f3ede0; }
-:root:root:root[data-mode="light"] .teen-hero .teen-strip em { color: #c9ad77; }
-:root:root:root[data-mode="light"] .theme-pick button { color: #17140f; }
+:root:root:root[data-mode="light"] .teen-hero :root:root:root[data-mode="light"] .teen-hero :root:root:root[data-mode="light"] .theme-pick button { color: #17140f; }
 :root:root:root[data-mode="light"] .theme-pick button[aria-checked="true"] { color: #17140f; }
 :root:root:root .theme-pick button { color: #e9dfc8; }
 :root:root:root .theme-pick button[aria-checked="true"] { color: #17140f; }
