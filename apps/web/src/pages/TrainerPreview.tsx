@@ -4,13 +4,13 @@ import { get } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, CoachHero, Page } from "../components/ui";
 import { ReportForm, ReportItem } from "../components/TournamentReports";
-import { currentSeason, Goal, TournamentReport } from "../types";
+import { currentSeason, todayIso, Goal, TournamentReport } from "../types";
 
 // « 👀 Voir comme un entraîneur de comité » (coach seulement) : exemples INVENTÉS, aucun vrai jeune n'est lu, rien n'est envoyé ni enregistré.
 const SEASON = currentSeason();
 const goal = (id: string, title: string, axis: string) => ({ id, playerId: "demo", season: SEASON, title, axis, targetStars: 10, trimesters: [1, 2, 3], progress: 0, checkpoints: [], status: "TO_WORK" }) as unknown as Goal;
 const GOALS: Goal[] = [goal("g1", "Service : lancer de balle", "TECHNIQUE"), goal("g2", "Montées au filet : monter après le service", "TACTIQUE"), goal("g3", "Combativité : ne rien lâcher", "MENTAL")];
-const day = new Date().toISOString().slice(0, 10);
+const day = todayIso();
 const EXAMPLE: TournamentReport = {
   id: "demo-r", playerId: "demo", name: "Tournoi jeunes de Dreux (exemple)", dateFrom: day, dateTo: day, feeling: 3,
   matches: [{ day, round: "Finale", result: "Victoire", score: "6-4 3-6 7-5", opponentRanking: "30/2" }, { day, round: "", result: "Défaite", score: "4-6 2-6", opponentRanking: "30/1" }],

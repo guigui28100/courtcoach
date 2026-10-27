@@ -112,7 +112,7 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
 
 const QUICK = [{ n: -1, emoji: "⬇️", label: "Recul −1", color: "#8b1e3f" }, { n: 0, emoji: "😕", label: "Pas encore", color: "#c0392b" }, { n: 1, emoji: "🙂", label: "Ça progresse", color: "#e8920c" }, { n: 2, emoji: "😃", label: "Réussi", color: "#2c9a5b" }];
 const DOMAIN_COLOR: Record<string, string> = { technique: "#8a5a1a", tactique: "#4a6d8f", physique: "#3f7a56", mental: "#6f5588" };
-function QuickButtons({ value, onPick, who, name }: { value: number; onPick: (n: number) => void; who: string; name: string }) {
+function QuickButtons({ value, onPick, who, name }: { value: number | null; onPick: (n: number) => void; who: string; name: string }) {
   return (
     <div className="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label={`${name} pour ${who}`}>
       {QUICK.map((q) => (
@@ -159,7 +159,7 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
       <div key={g.id} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3" style={{ borderLeftWidth: 7, borderLeftColor: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }}>
         <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
         {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-bold text-muted" aria-live="polite">{got} sur {target} ⭐{day && n !== 0 && <span className={n > 0 ? " text-ok" : " text-bad"}> ({n > 0 ? "+" : "−"}{Math.abs(n)} ce cours)</span>}</small></div>}
-        <QuickButtons who={who} name={g.title} value={n} onPick={(k) => set({ stars: k })} />
+        <QuickButtons who={who} name={g.title} value={l ? n : null} onPick={(k) => set({ stars: k })} />
         {n !== 0 && !QUICK.some((q) => q.n === n) && <small className="font-bold text-muted">Actuellement : {n} ⭐ (choisis un bouton pour changer)</small>}
         {noteField(n, l, set)}
       </div>

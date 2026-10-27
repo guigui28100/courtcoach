@@ -89,7 +89,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-champagne-soft border-b border-champagne px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
       <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(23, 20, 15, 0.45)]" : "border-line bg-chalk/95 shadow-[0_1px_0_rgba(201,173,119,0.45)]")}>
-        <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex min-h-[72px] max-w-[2400px] items-center justify-between gap-4 px-4 lg:px-10 2xl:px-14">
           <span className="shrink-0 whitespace-nowrap"><Brand light={galaxy} /></span>
           <nav aria-label="Menu principal" className="hidden items-center gap-5 md:flex xl:gap-7">
             {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><span className="hidden lg:inline-flex"><Icon name={i.icon} /></span>{i.short && i.short !== i.label ? <><span className="2xl:hidden">{i.short}</span><span className="hidden 2xl:inline">{i.label}</span></> : i.label}</NavLink>)}
@@ -116,8 +116,8 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
       )}
 
-      <footer className="print:hidden border-t-2 border-champagne bg-ink px-4 py-8 text-sm text-chalk/85">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-3">
+      <footer className="print:hidden border-t-2 border-champagne bg-ink px-4 py-8 lg:px-10 2xl:px-14 text-sm text-chalk/85">
+        <div className="mx-auto flex max-w-[2400px] flex-wrap items-center gap-x-8 gap-y-3">
           <p className="m-0 whitespace-nowrap font-serif text-xl font-semibold uppercase tracking-[0.18em] text-champagne">CourtCoach</p>
           <p className="m-0 whitespace-nowrap"><strong className="font-semibold text-chalk">Tennis Club Houdan</strong></p>
           <p className="m-0">

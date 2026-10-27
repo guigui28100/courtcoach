@@ -1,3 +1,4 @@
+import { HOLIDAYS_WARN_DAYS, holidaysDaysLeft, holidaysLastDay } from "../schoolDays";
 import { PendingReports } from "../components/TournamentReports";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -8,7 +9,7 @@ import { ProfsAdmin } from "../components/Profs";
 import { TournamentsTab } from "../components/Tournaments";
 import { Avatar, ClubLogo, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { MarkBadge, useVideos } from "../components/Videos";
-import { adultFacts, adultName, collapseSeries, everyDay, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
+import { adultFacts, adultName, collapseSeries, everyDay, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtDay, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
 
 const TYPES: Record<string, string> = { individuel: "Cours individuel", duo: "Cours à deux", video: "Cours particulier" }; // « video » : anciennes demandes, affichées comme un cours
 
@@ -203,6 +204,7 @@ export function CoachHome() {
     ...(d.reports.length ? [{ space: "Jeunes" as const, text: `🏆 ${d.reports.length} bilan${d.reports.length > 1 ? "s" : ""} de tournoi à valider`, to: "/coach/centre?onglet=bilans", cta: "Valider" }] : []),
     ...d.selfEvals.map((x) => ({ space: "Jeunes" as const, text: `${x.player.firstName} a envoyé son bulletin du trimestre ${x.ev.trimester}`, to: `/coach/centre/${x.player.id}?onglet=evaluations`, cta: "Lire" })),
     ...(d.inactive.length ? [{ space: "Jeunes" as const, text: `${d.inactive.length} dossier${d.inactive.length > 1 ? "s" : ""} inactif${d.inactive.length > 1 ? "s" : ""} depuis plus de 12 mois`, to: "/coach/centre?onglet=dossiers", cta: "Voir" }] : []),
+    ...(holidaysDaysLeft(todayIso()) < HOLIDAYS_WARN_DAYS ? [{ space: "Compte" as const, text: `Les dates de vacances scolaires s'arrêtent le ${fmtDay(holidaysLastDay())} : ajoute la nouvelle année pour que les cours ne soient pas proposés pendant les vacances`, to: "/coach/securite", cta: "Voir" }] : []),
     ...(!me?.twoFactor ? [{ space: "Compte" as const, text: "Active la double authentification (2 minutes) avant d'enregistrer de vrais jeunes", to: "/coach/securite", cta: "Activer" }] : []),
     ...(d.storage && d.storage.usedBytes / d.storage.quotaBytes > 0.8 ? [{ space: "Compte" as const, text: "L'espace de stockage des vidéos est presque plein", to: "/coach/securite", cta: "Voir" }] : []),
   ];
@@ -229,7 +231,7 @@ export function CoachHome() {
   const stat = (n: number, label: string, color: string) => <div className="rounded border border-[#4a4234] bg-[#26211a] px-4 py-3"><div className="text-sm text-[#cfc5b0]">{label}</div><b className={"block font-display text-4xl font-semibold leading-tight " + color}>{n}</b></div>;
   return (
     <div className="bg-[#1f1a12] text-white print:bg-white print:text-ink">
-      <div className="mx-auto flex max-w-7xl gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
+      <div className="mx-auto flex max-w-[2400px] gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
         <aside aria-label="Raccourcis" className="min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden">
           <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a89c82] lg:block">Menu</p>
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 lg:grid lg:gap-1.5 lg:overflow-visible">

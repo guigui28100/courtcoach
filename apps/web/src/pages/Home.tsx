@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <>
       <section className="relative overflow-hidden bg-ink text-chalk" style={{ background: "radial-gradient(900px 420px at 85% 0%, rgba(201,173,119,0.22), transparent 62%), linear-gradient(135deg, #17140f 0%, #241f16 100%)" }}>
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-24 md:grid-cols-[1.35fr_1fr]">
+        <div className="mx-auto grid max-w-[2400px] items-center gap-10 px-4 lg:px-10 2xl:px-14 py-16 sm:py-24 md:grid-cols-[1.35fr_1fr]">
           <div>
             <p className="eyebrow mb-5 !text-champagne">Tennis Club Houdan</p>
             <h1 className="mb-6 max-w-3xl !text-chalk" style={{ fontSize: "clamp(2.6rem, 5.4vw, 4.4rem)" }}>Cours, vidéos, suivi et vie du club : <em className="font-medium italic text-champagne">tout au même endroit.</em></h1>
@@ -43,7 +43,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pt-16" aria-label="Pour qui">
+      <section className="mx-auto max-w-[2400px] px-4 lg:px-10 2xl:px-14 pt-16" aria-label="Pour qui">
         <p className="eyebrow mb-2">Pour qui</p>
         <h2 className="mb-10 max-w-2xl">Un même lieu, trois façons d'en profiter.</h2>
         <div className="grid divide-line md:grid-cols-3 md:divide-x">
@@ -57,7 +57,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16" aria-labelledby="home-steps">
+      <section className="mx-auto max-w-[2400px] px-4 lg:px-10 2xl:px-14 py-16" aria-labelledby="home-steps">
         <p className="eyebrow mb-2">En quatre temps</p>
         <h2 id="home-steps" className="mb-8">Comment ça marche</h2>
         <ol className="m-0 grid list-none gap-0 border-y border-line p-0 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-line">

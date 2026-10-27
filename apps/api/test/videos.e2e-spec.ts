@@ -362,6 +362,22 @@ describe("Vidéos et analyses", () => {
     const r = await http.get("/api/cron/purge").set("Authorization", `Bearer ${process.env.CRON_SECRET}`).expect(200);
     expect(r.body).toMatchObject({ expired: 1, incomplete: 1 });
     expect(await prisma.video.count({ where: { id: { in: [old.id, stale.id] } } })).toBe(0);
+    // invitations périmées ou utilisées depuis plus de 30 jours : effacées (elles gardent une adresse e-mail) ; une invitation encore valable reste
+    const coach = await prisma.user.findFirstOrThrow({ where: { role: "COACH" } }), day = 24 * 3600 * 1000;
+    const mk = (tokenHash: string, expiresAt: Date, usedAt: Date | null) => prisma.invitation.create({ data: { tokenHash, email: `${tokenHash}@exemple.fr`, role: "PRESIDENT", invitedById: coach.id, expiresAt, usedAt } });
+    const [expired, usedLong, usedRecent, valid] = [await mk("p-exp", new Date(Date.now() - day), null), await mk("p-old", new Date(Date.now() + day), new Date(Date.now() - 40 * day)), await mk("p-new", new Date(Date.now() + day), new Date(Date.now() - 2 * day)), await mk("p-ok", new Date(Date.now() + 5 * day), null)];
+    const r2 = await http.get("/api/cron/purge").set("Authorization", `Bearer ${process.env.CRON_SECRET}`).expect(200);
+    expect(r2.body.invitations).toBe(2);
+    expect((await prisma.invitation.findMany({ where: { id: { in: [expired.id, usedLong.id, usedRecent.id, valid.id] } }, select: { id: true } })).map((i) => i.id).sort()).toEqual([usedRecent.id, valid.id].sort());
+    await prisma.invitation.deleteMany({ where: { id: { in: [usedRecent.id, valid.id] } } });
+    // demandes de cours : effacées 12 mois après le cours ; une demande récente ou un cours à venir reste
+    const adult = await prisma.user.findFirstOrThrow({ where: { role: "ADULT" } }), ago = (d: number) => new Date(Date.now() - d * day), iso = (d: Date) => d.toISOString().slice(0, 10);
+    const lesson = (createdAt: Date, date: string | null, tag: string) => prisma.lessonRequest.create({ data: { memberId: adult.id, type: "duo", objective: "Service", createdAt, partnerFirstName: tag, partnerLastName: "Test", partnerAge: 40, partnerLevel: "30", status: "ACCEPTED", ...(date ? { finalSlot: { date, time: "18:00" } } : {}) } });
+    const [oldL, oldNoDate, recent, oldButFuture] = [await lesson(ago(400), iso(ago(380)), "vieux"), await lesson(ago(400), null, "sansdate"), await lesson(ago(20), iso(ago(10)), "récent"), await lesson(ago(400), iso(new Date(Date.now() + 3 * day)), "avenir")];
+    const r3 = await http.get("/api/cron/purge").set("Authorization", `Bearer ${process.env.CRON_SECRET}`).expect(200);
+    expect(r3.body.cours).toBe(2);
+    expect((await prisma.lessonRequest.findMany({ where: { id: { in: [oldL.id, oldNoDate.id, recent.id, oldButFuture.id] } }, select: { id: true } })).map((l) => l.id).sort()).toEqual([recent.id, oldButFuture.id].sort());
+    await prisma.lessonRequest.deleteMany({ where: { id: { in: [recent.id, oldButFuture.id] } } });
     delete process.env.CRON_SECRET;
     await http.get("/api/cron/purge").set("Authorization", "Bearer ").expect(401); // sans clé configurée : toujours fermé
   });

@@ -13,7 +13,7 @@ import { addDays as addDaysIso, buildPlanning, coversSlot, nowParis, overlaps, P
 const PROF_ROLES: Role[] = [Role.TRAINER, Role.COACH];
 const MAX_DOC_BYTES = 3 * 1024 * 1024;
 const cleanName = (n: string) => n.replace(/[\\/\0-\x1f"]/g, "_").trim().slice(0, 120) || "document";
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => nowParis().date; // date du club (Paris)
 
 export type ProfStatus = "visible" | "paused" | "waiting" | "missing" | "expired";
 

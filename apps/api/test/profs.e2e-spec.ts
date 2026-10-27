@@ -245,6 +245,30 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.prof.put("/api/profs/me").set(ORIGIN).send({ paused: false }).expect(200);
   });
 
+  it("au plus 2 cours réservés à venir en même temps par adulte (une série compte pour un) ; annuler en libère un", async () => {
+    const me = (await A.adulte.get("/api/auth/me").expect(200)).body.id as string;
+    await prisma.lessonRequest.deleteMany({ where: { memberId: me } });
+    const before = process.env.MAX_LESSONS_AHEAD; process.env.MAX_LESSONS_AHEAD = "2";
+    try {
+      const free = ((await A.adulte.get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string; slots: { time: string; free: boolean }[] }[]).flatMap((d) => d.slots.filter((x) => x.free).map((x) => ({ date: d.date, time: x.time })));
+      const dates = [...new Set(free.map((x) => x.date))]; expect(dates.length).toBeGreaterThan(3);
+      const book = (i: number) => A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId, slot: free.find((x) => x.date === dates[i])! });
+      const a = (await book(0).expect(201)).body; await book(1).expect(201);
+      await book(2).expect(409); // une 3e réservation à venir est refusée
+      await A.adulte.post(`/api/lessons/${a.id}/cancel`).set(ORIGIN).send({}).expect(200);
+      await book(2).expect(201); // le cours annulé a libéré une place
+    } finally { if (before === undefined) delete process.env.MAX_LESSONS_AHEAD; else process.env.MAX_LESSONS_AHEAD = before; }
+  });
+  it("un cours réservé que personne n'a confirmé et dont l'heure est passée est annulé tout seul (le délai de 48 h peut dépasser l'heure du cours)", async () => {
+    const me = (await A.adulte.get("/api/auth/me").expect(200)).body.id as string;
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10), nextWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const mk = (date: string) => prisma.lessonRequest.create({ data: { memberId: me, type: "individuel", objective: "Service", profId, status: "BOOKED", finalSlot: { date, time: "09:00" }, slotKey: `${date}T09:00-audit` } });
+    const [past, next] = [await mk(yesterday), await mk(nextWeek)];
+    await A.adulte.get("/api/lessons").expect(200); // la lecture de la liste fait le ménage
+    expect(await prisma.lessonRequest.findUnique({ where: { id: past.id } })).toMatchObject({ status: "REFUSED", slotKey: null });
+    expect(await prisma.lessonRequest.findUnique({ where: { id: next.id } })).toMatchObject({ status: "BOOKED" }); // un cours à venir reste à confirmer
+    await prisma.lessonRequest.deleteMany({ where: { id: { in: [past.id, next.id] } } });
+  });
   it("séries : les vacances scolaires et les jours fériés sont sautés, jusqu'au 30 juin", async () => {
     const { seriesDates, seasonEnd } = await import("../src/profs/series");
     expect(seasonEnd("2026-10-21")).toBe("2027-06-30"); expect(seasonEnd("2027-03-01")).toBe("2027-06-30"); expect(seasonEnd("2027-09-15")).toBe("2028-06-30");
@@ -299,20 +323,6 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     expect(await prisma.profProfile.count({ where: { userId: profId } })).toBe(0);
     expect(await prisma.lessonRequest.count({ where: { profId } })).toBe(0);
     expect(adultId).toBeTruthy();
-  });
-  it("au plus 2 cours réservés à venir en même temps par adulte (une série compte pour un) ; annuler en libère un", async () => {
-    const me = (await A.adulte.get("/api/auth/me").expect(200)).body.id as string;
-    await prisma.lessonRequest.deleteMany({ where: { memberId: me } });
-    const before = process.env.MAX_LESSONS_AHEAD; process.env.MAX_LESSONS_AHEAD = "2";
-    try {
-      const free = ((await A.adulte.get(`/api/profs/${profId}/planning`).expect(200)).body.days as { date: string; slots: { time: string; free: boolean }[] }[]).flatMap((d) => d.slots.filter((x) => x.free).map((x) => ({ date: d.date, time: x.time })));
-      const dates = [...new Set(free.map((x) => x.date))]; expect(dates.length).toBeGreaterThan(3);
-      const book = (i: number) => A.adulte.post("/api/lessons").set(ORIGIN).send({ type: "individuel", objective: "Service", profId, slot: free.find((x) => x.date === dates[i])! });
-      const a = (await book(0).expect(201)).body; await book(1).expect(201);
-      await book(2).expect(409); // une 3e réservation à venir est refusée
-      await A.adulte.post(`/api/lessons/${a.id}/cancel`).set(ORIGIN).send({}).expect(200);
-      await book(2).expect(201); // le cours annulé a libéré une place
-    } finally { if (before === undefined) delete process.env.MAX_LESSONS_AHEAD; else process.env.MAX_LESSONS_AHEAD = before; }
   });
 });
 

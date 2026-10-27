@@ -6,7 +6,7 @@ import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { ProfAgenda } from "../components/ProfAgenda";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
-import { collapseSeries, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
+import { collapseSeries, todayIso, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
 import { BackLink } from "../components/ui";
 
@@ -40,7 +40,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const setP = (x: ProfMe) => setResp({ ...x, optedIn: true });
   async function optIn() { if (preview) { setResp({ ...EXAMPLE_ME, optedIn: true }); setLessons(EXAMPLE_LESSONS); setParams({ onglet: "presentation" }); return; } setErr(""); try { setResp(await post<ProfMeResp>("/profs/me/optin")); loadLessons(); setParams({ onglet: "presentation" }); } catch (x) { setErr((x as Error).message); } }
   async function optOut() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
     const n = (lessons ?? []).filter((l) => ["BOOKED", "PROPOSED", "ACCEPTED"].includes(l.status) && (!l.finalSlot || l.finalSlot.date >= today)).length;
     if (!confirm(`Arrêter les cours particuliers ?\n\n• ${n > 0 ? `Tes ${n} cours à venir (séries comprises) seront ANNULÉS, les créneaux libérés et les adultes prévenus.` : "Tu n'as aucun cours à venir."}\n• Ta présentation, tes disponibilités et tes documents seront effacés : si tu recommences, il faudra tout ressaisir et le coach devra te revalider.\n\nPour une simple coupure, utilise plutôt la « Pause » (dans « Mes disponibilités »).`)) return;
     if (preview) { setResp({ optedIn: false, prices: { member: PRICE_MEMBER, other: PRICE_OTHER } }); setLessons(null); return; }
@@ -54,7 +54,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
     <>
       {preview && (
         <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="mx-auto flex max-w-[2400px] flex-wrap items-center justify-between gap-3">
             <p className="m-0"><strong>👀 Aperçu : voici ce que voit un entraîneur qui donne des cours particuliers.</strong> Fiche, demandes et documents sont des exemples inventés, rien n'est enregistré. Essaie le bouton « Je souhaite donner des cours » puis « Arrêter ».</p>
             <BackLink fallback={me?.role === "PRESIDENT" ? "/president" : "/coach/adultes"} className="btn-ink btn-sm no-underline">← Retour</BackLink>
           </div>
@@ -96,7 +96,7 @@ function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: 
   const [view, setView] = useState<"agenda" | "liste">("agenda");
   if (!lessons) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const byDate = (a: Lesson, b: Lesson) => ((a.finalSlot?.date ?? "9") + (a.finalSlot?.time ?? "")).localeCompare((b.finalSlot?.date ?? "9") + (b.finalSlot?.time ?? ""));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   const booked = collapseSeries(lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today))).sort(byDate);
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
@@ -156,7 +156,7 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
         <div className="grid gap-3 sm:grid-cols-3">
           {mode === "week"
             ? <Field label="Jour" id="av-day"><select id="av-day" className="input" value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>{WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></Field>
-            : <Field label="Date" id="av-date"><input id="av-date" type="date" className="input" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} /></Field>}
+            : <Field label="Date" id="av-date"><input id="av-date" type="date" className="input" min={todayIso()} value={date} onChange={(e) => setDate(e.target.value)} /></Field>}
           <Field label="De" id="av-from"><select id="av-from" className="input" value={start} onChange={(e) => setStart(e.target.value)}>{HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}</select></Field>
           <Field label="À" id="av-to"><select id="av-to" className="input" value={end} onChange={(e) => setEnd(e.target.value)}>{HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}</select></Field>
         </div>
@@ -235,7 +235,7 @@ function Documents({ p, id, onChanged }: { p: ProfMe; id: string; onChanged: (p:
           <li key={k.kind} className={"card grid gap-3 " + (d && !expired ? "" : "!border-2 !border-dashed !border-bad")}>
             <div className="grid gap-0.5"><strong className="text-lg">{k.icon} {k.label} {d && !expired ? <span className="text-ok">✓</span> : null}</strong><small className="hint">{k.help}</small></div>
             {d && <p className="m-0 text-sm">Déposé le {fmtDate(d.uploadedAt)} · {d.fileName}{d.validUntil && <> · <span className={expired ? "font-bold text-bad" : ""}>valable jusqu'au {fmtDate(d.validUntil)}{expired ? " (expirée)" : ""}</span></>}</p>}
-            {k.kind === "CARTE_PRO" && <Field label="Date de fin de validité de la carte" id="doc-valid"><input id="doc-valid" type="date" className="input max-w-xs" min={new Date().toISOString().slice(0, 10)} value={valid} onChange={(e) => setValid(e.target.value)} /></Field>}
+            {k.kind === "CARTE_PRO" && <Field label="Date de fin de validité de la carte" id="doc-valid"><input id="doc-valid" type="date" className="input max-w-xs" min={todayIso()} value={valid} onChange={(e) => setValid(e.target.value)} /></Field>}
             <div className="flex flex-wrap items-center gap-2">
               <label className="btn-clay btn-sm cursor-pointer">{d ? "Remplacer" : "Déposer"}<input type="file" accept="application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => upload(k.kind, e)} /></label>
               {d && <a className="btn-outline btn-sm no-underline" href={`/api/profs/${id}/documents/${k.kind}`} target="_blank" rel="noopener noreferrer">Ouvrir ↗</a>}

@@ -13,6 +13,13 @@ export const HOLIDAYS_ZONE_C: { name: string; from: string; to: string }[] = [
   { name: "printemps", from: "2027-04-03", to: "2027-04-18" },
   { name: "été", from: "2027-07-03", to: "2027-09-01" },
 ];
+// Combien de jours les dates de vacances connues couvrent-elles encore ? (sert à prévenir le coach quand il faut ajouter la nouvelle année)
+export const HOLIDAYS_WARN_DAYS = 60;
+export function holidaysDaysLeft(today: string): number {
+  const last = HOLIDAYS_ZONE_C.reduce((m, h) => (h.to > m ? h.to : m), "0000-00-00");
+  return Math.round((Date.UTC(+last.slice(0, 4), +last.slice(5, 7) - 1, +last.slice(8, 10)) - Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10))) / 86_400_000);
+}
+export const holidaysLastDay = () => HOLIDAYS_ZONE_C.reduce((m, h) => (h.to > m ? h.to : m), "0000-00-00");
 // Renvoie une phrase si le jour choisi n'est pas un jour de cours habituel ou tombe pendant les vacances, sinon null
 export function offDayReason(day: string, courseDays?: string | null): string | null {
   const h = HOLIDAYS_ZONE_C.find((x) => day >= x.from && day <= x.to);
