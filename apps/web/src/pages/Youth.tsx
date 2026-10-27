@@ -39,7 +39,7 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
         <div className="teen-hero-row">
           <div className="teen-hero-text">
             <p className="teen-kicker">Mon espace joueur</p>
-            <h1 id="gal-titre" className="teen-title">Bonjour<br /><span>{p.firstName} !</span></h1>
+            <h1 id="gal-titre" className="teen-title">Bonjour <span>{p.firstName} !</span></h1>
             <p className="teen-sub">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
           </div>
           {p.ranking && (
