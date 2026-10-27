@@ -224,7 +224,8 @@ export function starsByDomain(list: Pick<CourseStar, "day" | "stars" | "domain">
   for (const k of Object.keys(out)) out[k] = Math.max(0, out[k]); // un domaine ne descend jamais sous zéro
   return out;
 }
-export const todayIso = () => new Date().toISOString().slice(0, 10);
+// Date d'aujourd'hui à Paris (et non celle du méridien de Greenwich : entre minuit et 2 h du matin, le jour serait faux)
+export const todayIso = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" });
 export const fmtDay = (day: string) => new Date(day + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
 // ----- Matchs déclarés par le jeune (choix proposés, jamais de nom d'adversaire) -----
@@ -353,7 +354,7 @@ export function collapseSeries(list: Lesson[]): Lesson[] {
   const seen = new Map<string, Lesson[]>();
   for (const l of list) if (l.seriesId) seen.set(l.seriesId, [...(seen.get(l.seriesId) ?? []), l]);
   const stamp = (l: Lesson) => (l.finalSlot ? l.finalSlot.date + l.finalSlot.time : "9");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   return list.flatMap((l) => {
     if (!l.seriesId) return [l];
     const rows = seen.get(l.seriesId)!;
@@ -367,7 +368,7 @@ export const everyDay = (slot: Slot) => `chaque ${WEEKDAY_NAMES[new Date(`${slot
 
 // Au plus 2 réservations à venir en même temps (une série « toute l'année » compte pour une) : même règle que le serveur
 export const MAX_AHEAD = 2;
-export function aheadCount(lessons: Lesson[], today = new Date().toISOString().slice(0, 10)): number {
+export function aheadCount(lessons: Lesson[], today = todayIso()): number {
   return new Set(lessons.filter((l) => (l.status === "BOOKED" || l.status === "PROPOSED" || l.status === "ACCEPTED") && l.finalSlot && l.finalSlot.date >= today).map((l) => l.seriesId ?? l.id)).size;
 }
 

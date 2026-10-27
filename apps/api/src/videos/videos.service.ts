@@ -508,6 +508,9 @@ export class VideosService {
     const b = await this.prisma.video.deleteMany({ where: { complete: false, recordedAt: { lt: new Date(now.getTime() - STALE_UPLOAD_MS) } } });
     const d = await this.prisma.tournamentDoc.deleteMany({ where: { deleteAfter: { lt: now } } }); // programmations de tournoi : 12 mois aussi
     const c = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } } }); // le journal est gardé 12 mois
-    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count };
+    // Jetons de connexion périmés et invitations périmées (ou utilisées depuis plus de 30 jours) : elles contiennent une adresse e-mail et ne servent plus à rien
+    const e = await this.prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } });
+    const f = await this.prisma.invitation.deleteMany({ where: { OR: [{ expiresAt: { lt: now } }, { usedAt: { lt: new Date(now.getTime() - 30 * 24 * 3600 * 1000) } }] } });
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count };
   }
 }

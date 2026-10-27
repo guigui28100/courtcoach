@@ -73,6 +73,12 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
         <strong className="min-w-[11rem] text-center font-display text-xl capitalize">{MONTHS[m - 1]} {y}</strong>
         <button className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black hover:border-ink" aria-label="Mois suivant" onClick={() => step(1)}>›</button>
       </div>
+      {!locked && avail && !cells.some((d) => d && d > today && (avail.counts.get(d) ?? 0) > 0) && (() => {
+        const next = [...avail.counts.entries()].filter(([d, n]) => d > today && n > 0).map(([d]) => d).sort()[0];
+        return next
+          ? <p role="status" className="m-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-bold">Aucun créneau libre ce mois-ci. <button type="button" className="font-extrabold text-ink underline" onClick={() => setMonth(next.slice(0, 7))}>Prochain créneau libre : {dayLong(next)} ›</button></p>
+          : <p role="status" className="m-0 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-bold">Aucun créneau libre pour le moment : reviens plus tard, les professeurs ajoutent leurs disponibilités.</p>;
+      })()}
       <div className="grid grid-cols-7 gap-1.5 text-center text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-muted sm:gap-2 sm:text-xs">{DAYS.map((d) => <span key={d}>{d}</span>)}</div>
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {cells.map((d, i) => {
@@ -101,7 +107,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre (on réserve jusqu'à 28 jours à l'avance, au plus tard la veille)</span></p>
     </div>
   );
 }

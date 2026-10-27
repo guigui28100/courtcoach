@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { LessonStatus, Prisma, Role } from "@prisma/client";
-import { coversSlot, overlaps } from "../profs/planning";
+import { coversSlot, nowParis, overlaps } from "../profs/planning";
 import { seriesDates } from "../profs/series";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
@@ -32,7 +32,7 @@ export class LessonsService {
     await this.profs.assertSlotFree(dto.profId, dto.slot);
     const mine = await this.prisma.lessonRequest.findMany({ where: { memberId: user.id, status: { in: [LessonStatus.BOOKED, LessonStatus.PROPOSED, LessonStatus.ACCEPTED] } }, select: { id: true, seriesId: true, finalSlot: true } });
     // Au plus 2 réservations à venir en même temps (une série « toute l'année » compte pour une seule) : évite qu'un adulte bloque beaucoup de créneaux
-    const today = new Date().toISOString().slice(0, 10);
+    const today = nowParis().date; // date du club (Paris), pas celle du serveur (UTC)
     const ahead = new Set(mine.filter((m) => ((m.finalSlot as { date?: string } | null)?.date ?? "") >= today).map((m) => m.seriesId ?? m.id));
     if (ahead.size >= maxAhead()) throw new ConflictException(`Tu as déjà ${maxAhead()} cours réservés à venir. Attends qu'un cours ait eu lieu, ou annules-en un, pour en réserver un autre.`);
     if (mine.some((m) => { const s = m.finalSlot as { date?: string; time?: string } | null; return s?.date === dto.slot!.date && !!s.time && overlaps(s.time, dto.slot!.time); })) throw new ConflictException("Tu as déjà un cours à ce moment-là.");
@@ -127,7 +127,7 @@ export class LessonsService {
 
   // Annule tous les cours à venir d'une série (créneaux libérés, l'adulte est prévenu)
   private async endSeries(seriesId: string, reply: string, opts: { memberId?: string; onlyProf?: string } = {}) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = nowParis().date; // date du club (Paris), pas celle du serveur (UTC)
     const rows = await this.prisma.lessonRequest.findMany({ where: { seriesId, status: { not: LessonStatus.REFUSED }, ...(opts.memberId ? { memberId: opts.memberId } : {}), ...(opts.onlyProf ? { profId: opts.onlyProf } : {}) }, select: { id: true, finalSlot: true } });
     const ids = rows.filter((r) => { const f = r.finalSlot as { date?: string } | null; return !f?.date || f.date >= today; }).map((r) => r.id);
     if (ids.length) await this.prisma.lessonRequest.updateMany({ where: { id: { in: ids } }, data: { status: LessonStatus.REFUSED, slotKey: null, coachReply: reply, answeredAt: new Date(), seenByMemberAt: null } });
@@ -140,7 +140,7 @@ export class LessonsService {
     const l = await this.prisma.lessonRequest.findFirst({ where: { id, memberId: user.id, status: { not: LessonStatus.REFUSED } } });
     if (!l) throw new NotFoundException("Demande introuvable");
     const slot = l.finalSlot as { date?: string } | null;
-    if (slot?.date && slot.date < new Date().toISOString().slice(0, 10)) throw new BadRequestException("Ce cours a déjà eu lieu.");
+    if (slot?.date && slot.date < nowParis().date) throw new BadRequestException("Ce cours a déjà eu lieu.");
     if (dto.series && l.seriesId) { await this.endSeries(l.seriesId, "Série annulée par l'adulte", { memberId: user.id }); return this.prisma.lessonRequest.findUnique({ where: { id } }); }
     await this.prisma.lessonRequest.update({ where: { id }, data: { status: LessonStatus.REFUSED, slotKey: null, coachReply: "Annulé par l'adulte", answeredAt: new Date(), seenByMemberAt: new Date() } });
     return this.prisma.lessonRequest.findUnique({ where: { id } });

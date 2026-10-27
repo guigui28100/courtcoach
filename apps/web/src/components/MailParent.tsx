@@ -50,7 +50,7 @@ export function MailParent({ email, firstName, initialTopic = "etoiles" }: { ema
 export function MailFamilyBar({ playerId, firstName, topic }: { playerId: string; firstName: string; topic: "missions" | "bulletin" | "bilan" }) {
   const isCoach = useAuth().me?.role === "COACH";
   const [parents, setParents] = useState<{ userId: string; email: string; role: string }[] | null>(null);
-  useEffect(() => { if (isCoach) get<{ userId: string; email: string; role: string }[]>(`/players/${playerId}/access`).then((l) => setParents(l.filter((a) => a.role !== "YOUTH"))).catch(() => setParents([])); }, [isCoach, playerId]);
+  useEffect(() => { if (isCoach) get<{ userId: string; email: string; role: string }[]>(`/players/${playerId}/access`).then((l) => setParents(l.filter((a) => a.role === "GUARDIAN"))).catch(() => setParents([])); }, [isCoach, playerId]);
   if (!isCoach || parents === null) return null;
   return (
     <section className="card grid gap-2" aria-label="Prévenir la famille">

@@ -185,7 +185,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
               <li key={a.userId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line px-3 py-2">
                 <span><strong>{a.email}</strong> · {a.role === "YOUTH" ? "jeune" : "parent"}<small className="hint block">{a.mustChangePassword ? "Mot de passe provisoire pas encore changé" : a.lastLoginAt ? `Dernière connexion le ${fmtDate(a.lastLoginAt)}` : "Jamais connecté"}</small></span>
                 <span className="flex flex-wrap items-start gap-2">
-                {a.role !== "YOUTH" && <MailParent email={a.email} firstName={p.firstName} />}
+                {a.role === "GUARDIAN" && <MailParent email={a.email} firstName={p.firstName} />}
                 <button className="btn-outline btn-sm" onClick={async () => { if (confirm(`Donner un nouveau mot de passe provisoire à ${a.email} ? L'ancien ne marchera plus.`)) { try { const r = await post<{ email: string; temporaryPassword: string }>(`/players/${p.id}/access/${a.userId}/reset-password`); setCreated({ email: r.email, password: r.temporaryPassword, existing: false }); loadAccess(); } catch (x) { alert((x as Error).message); } } }}>Mot de passe oublié</button>
                 <button className="btn-danger btn-sm" onClick={async () => { if (confirm(`Retirer l'accès de ${a.email} ?`)) { await del(`/players/${p.id}/access/${a.userId}`); loadAccess(); } }}>Retirer l'accès</button>
                 </span>
