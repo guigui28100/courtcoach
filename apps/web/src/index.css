@@ -340,30 +340,23 @@ html:not([data-gal="teen"]) .gal-tabs button[aria-selected="true"] .tab-ico { ba
 [data-gal="teen"] .gal-tabs button[aria-selected="true"] { background: linear-gradient(180deg, #c9ad77, #c9ad77); color: #090807; font-weight: 800; box-shadow: 0 8px 24px rgba(201, 173, 119, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 [data-gal="teen"] .gal-tabs button > span.absolute { background: #c9ad77; border-color: #0d0c0a; box-shadow: 0 0 12px #c9ad77; }
 /* Bandeau d'accueil */
-.teen-hero { position: relative; overflow: hidden; display: grid; gap: 1.6rem; padding: 2.4rem 2.6rem; border-radius: 0.375rem; }
-.teen-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.6rem; }
-.teen-hero-text { display: grid; gap: 0.75rem; max-width: 36rem; }
-.teen-rank { text-align: right; display: grid; gap: 0.1rem; }
-.teen-rank small { color: #cfc5b0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
-.teen-rank b { font-family: var(--font-serif); font-size: 4.6rem; font-weight: 600; line-height: 1; color: #c9ad77; }
-.teen-rank span { color: #cfc5b0; font-size: 1.25rem; }
-.teen-track { position: relative; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
-.teen-track i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: #c9ad77; }
-.teen-track u { position: absolute; top: -6px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #c9ad77; border: 3px solid #1a1610; }
-.teen-ends { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; color: #cfc5b0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
-.teen-chips { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
-.teen-chips li { border: 1px solid rgba(201, 173, 119, 0.4); border-radius: 0.25rem; padding: 0.5rem 1rem; color: #f3ede0; }
-.teen-chips b { margin-right: 0.4rem; color: #c9ad77; font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; }
+.teen-hero { position: relative; overflow: hidden; display: grid; gap: 0; padding: 0; border-radius: 0.375rem; }
+.teen-hero-text { display: grid; gap: 0.75rem; padding: 2.6rem 2.6rem 2.2rem; }
+.teen-stats { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; border-top: 1px solid rgba(201, 173, 119, 0.3); }
+.teen-stats li { flex: 1 1 9rem; display: grid; gap: 0.1rem; padding: 1.1rem 1.6rem; border-right: 1px solid rgba(201, 173, 119, 0.2); }
+.teen-stats li:last-child { border-right: 0; }
+.teen-stats small { color: #cfc5b0; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.teen-stats b { display: flex; align-items: baseline; gap: 0.5rem; font-family: var(--font-serif); font-size: 2.5rem; font-weight: 600; line-height: 1.1; color: #f3ede0; }
+.teen-stats em { font-family: var(--font-ui); font-style: normal; font-size: 1rem; font-weight: 700; color: #c9ad77; }
+@media (min-width: 420px) { .teen-title { white-space: nowrap; } }
 .teen-kicker { margin: 0; display: flex; align-items: center; gap: 0.75rem; color: #c9ad77; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; }
 .teen-kicker::before { content: ""; width: 2.1rem; height: 2px; background: linear-gradient(90deg, transparent, #c9ad77); }
-.teen-title { margin: 0; color: #fff; font-size: clamp(2.3rem, 4.4vw, 4rem); line-height: 0.95; overflow-wrap: normal; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-transform: uppercase; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+.teen-title { margin: 0; color: #fff; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 0.95; overflow-wrap: normal; font-weight: 900; font-style: italic; letter-spacing: -0.03em; text-transform: uppercase; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
 .teen-title span { color: transparent; -webkit-text-stroke: 2px #c9ad77; filter: drop-shadow(0 0 18px rgba(201, 173, 119, 0.4)); }
 .teen-sub { margin: 0; max-width: 22rem; color: #dcd6cb; font-size: 1.1rem; }
 @media (max-width: 767px) {
   .teen-hero { padding: 1.5rem 1.2rem; }
-  .teen-rank { text-align: left; }
-  .teen-rank b { font-size: 3.4rem; }
-  }
+      }
 /* Étapes */
 [data-gal="teen"] .step-card { position: relative; overflow: hidden; border-radius: 0.375rem; border: 1px solid rgba(255, 255, 255, 0.11); background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)); backdrop-filter: blur(18px); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09); }
 [data-gal="teen"] .step-ico { position: static; width: 2.9rem; height: 2.9rem; border-radius: 0.375rem; color: #c9ad77; background: linear-gradient(160deg, rgba(201, 173, 119, 0.12), rgba(201, 173, 119, 0.03)); border: 1px solid rgba(201, 173, 119, 0.28); }

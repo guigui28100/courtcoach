@@ -18,7 +18,7 @@ import { ThemeRadar } from "../components/ThemeRadar";
 import { useFollowUp } from "../components/Suivi";
 import { BackLink } from "../components/ui";
 import { gestureVideo, GestureBeforeAfter, useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { AXES, RANKINGS, isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars, inPeriod, fmtDay } from "../types";
+import { AXES, isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars, inPeriod, fmtDay } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -29,41 +29,20 @@ const MISSION: Record<string, { label: string; emoji: string; color: string }> =
 };
 
 function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: number; starsTotal: number }) {
-  // Place du classement actuel sur l'échelle NC → objectif (aucun classement de départ n'est enregistré)
-  const ri = p.ranking ? RANKINGS.indexOf(p.ranking) : -1;
-  const ti = p.targetRanking ? RANKINGS.indexOf(p.targetRanking) : -1;
-  const rankPct = ri >= 0 && ti > 0 ? Math.max(0, Math.min(100, Math.round((ri / ti) * 100))) : null;
   if (isTeen(p)) {
     return (
       <section className="teen-hero glass gal-pop" aria-labelledby="gal-titre">
-        <div className="teen-hero-row">
-          <div className="teen-hero-text">
-            <p className="teen-kicker">Mon espace joueur</p>
-            <h1 id="gal-titre" className="teen-title">Bonjour<br /><span>{p.firstName} !</span></h1>
-            <p className="teen-sub">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
-          </div>
-          {p.ranking && (
-            <div className="teen-rank">
-              <small>Mon classement</small>
-              <b>{p.ranking}</b>
-              {p.targetRanking && <span>→ objectif {p.targetRanking}</span>}
-            </div>
-          )}
+        <div className="teen-hero-text">
+          <p className="teen-kicker">Mon espace joueur</p>
+          <h1 id="gal-titre" className="teen-title">Bonjour <span>{p.firstName} !</span></h1>
+          <p className="teen-sub">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
         </div>
-        {rankPct !== null && (
-          <div className="teen-track-wrap">
-            <div className="teen-track" role="progressbar" aria-label="Chemin vers mon objectif de classement" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rankPct}>
-              <i style={{ width: `${rankPct}%` }} />
-              <u style={{ left: `${rankPct}%` }} />
-            </div>
-            <div className="teen-ends"><span>Mon classement : {p.ranking}</span><span>Mon objectif : {p.targetRanking}</span></div>
-          </div>
-        )}
-        {(starsTotal > 0 || done > 0 || wins > 0) && (
-          <ul className="teen-chips" aria-label="Mes repères">
-            {starsTotal > 0 && <li><b>{starsTotal}</b> étoile{starsTotal > 1 ? "s" : ""}</li>}
-            {done > 0 && <li><b>{done}</b> mission{done > 1 ? "s" : ""} réussie{done > 1 ? "s" : ""}</li>}
-            {wins > 0 && <li><b>{wins}</b> victoire{wins > 1 ? "s" : ""}</li>}
+        {(starsTotal > 0 || done > 0 || wins > 0 || p.ranking) && (
+          <ul className="teen-stats" aria-label="Mes repères">
+            {starsTotal > 0 && <li><small>Étoiles</small><b>{starsTotal}</b></li>}
+            {done > 0 && <li><small>Missions réussies</small><b>{done}</b></li>}
+            {wins > 0 && <li><small>Victoires</small><b>{wins}</b></li>}
+            {p.ranking && <li><small>Classement</small><b>{p.ranking}{p.targetRanking ? <em>→ {p.targetRanking}</em> : null}</b></li>}
           </ul>
         )}
       </section>
