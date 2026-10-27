@@ -326,36 +326,6 @@ function Objectifs({ p }: { p: Player }) {
           {[1, 2, 3].map((n) => <button key={n} role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"btn btn-sm " + (t === n ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Trimestre {n}{season === currentSeason() && n === trimesterOf() ? " · en cours" : ""}</button>)}
         </div>
       </div>
-      <details className="card group grid gap-3">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">📚 Ma bibliothèque d'objectifs <small className="font-normal text-muted">· en donner un à {p.firstName} en un clic</small></h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
-        <GoalLibraryTab players={[p]} isCoach={isCoach} only={p} trimester={t} onGiven={load} />
-      </details>
-      <form onSubmit={addQuick} className="card grid gap-3 border-2 !border-clay" aria-labelledby="obj-add">
-        <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
-        <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
-        <div className="grid gap-1"><strong>1. Le domaine</strong>
-          <div role="radiogroup" aria-label="Domaine" className="flex flex-wrap gap-2">
-            {AXES.map((a) => <button key={a.key} type="button" role="radio" aria-checked={newAxis === a.key} onClick={() => { setNewAxis(a.key); setTopic(""); }} className={"btn btn-sm " + (newAxis === a.key ? "text-white" : "border-2 border-line bg-white text-ink")} style={newAxis === a.key ? { background: a.color } : undefined}>{a.label}</button>)}
-          </div>
-        </div>
-        <div className="grid gap-1"><strong>2. Le point à travailler</strong>
-          <div role="radiogroup" aria-label="Point à travailler" className="flex flex-wrap gap-2">
-            {topics.map((x) => <button key={x} type="button" role="radio" aria-checked={topic === x} onClick={() => setTopic(topic === x ? "" : x)} className={"btn btn-sm " + (topic === x ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>{x}</button>)}
-            <button type="button" role="radio" aria-checked={topic === ""} onClick={() => setTopic("")} className={"btn btn-sm " + (topic === "" ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Autre / général</button>
-          </div>
-        </div>
-        <div className="grid gap-2"><strong>3. Les objectifs de travail{topic ? ` pour « ${topic} »` : ""}</strong>
-          {newObjs.map((o, i) => (
-            <div key={i} className="flex gap-2">
-              <input className="input min-w-0 flex-1" aria-label={`Objectif ${i + 1}`} maxLength={180} placeholder={i === 0 ? "Ex. : Fiabiliser la première balle" : "Un autre objectif"} value={o} onChange={(e) => setNewObjs((l) => l.map((x, j) => (j === i ? e.target.value : x)))} />
-              {newObjs.length > 1 && <button type="button" className="btn-outline btn-sm" aria-label={`Retirer l'objectif ${i + 1}`} onClick={() => setNewObjs((l) => l.filter((_, j) => j !== i))}>✕</button>}
-            </div>
-          ))}
-          {newObjs.length < 8 && <button type="button" className="btn-outline btn-sm self-start" onClick={() => setNewObjs((l) => [...l, ""])}>+ Ajouter un autre objectif</button>}
-        </div>
-        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={!filled.length || saving}>{saving ? "Enregistrement…" : filled.length > 1 ? `Créer les ${filled.length} missions` : "Créer la mission"}</button>{added && <p role="status" className="m-0 font-bold text-ok">{added}</p>}</div>
-        <p className="hint m-0">Chaque trimestre ne montre que ses propres objectifs. Tu peux modifier un objectif, le <strong>reporter au trimestre suivant</strong> (ou non), ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
-      </form>
       <div className="grid gap-4 lg:grid-cols-2">
         {AXES.map((a) => {
           const mine = here.filter((g) => g.axis === a.key); // seulement ce qui est prévu pour CE trimestre
@@ -401,6 +371,39 @@ function Objectifs({ p }: { p: Player }) {
           );
         })}
       </div>
+      <details className="card group grid gap-3">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">📚 Ma bibliothèque d'objectifs <small className="font-normal text-muted">· en donner un à {p.firstName} en un clic</small></h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
+        <GoalLibraryTab players={[p]} isCoach={isCoach} only={p} trimester={t} onGiven={load} />
+      </details>
+      <details className="card grid gap-3 border-2 !border-clay" open={here.length === 0}>
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">＋ Nouvel objectif pour {p.firstName} · trimestre {t}</h3><span aria-hidden="true" className="text-xl">▾</span></summary>
+      <form onSubmit={addQuick} className="grid gap-3" aria-labelledby="obj-add">
+        <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
+        <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
+        <div className="grid gap-1"><strong>1. Le domaine</strong>
+          <div role="radiogroup" aria-label="Domaine" className="flex flex-wrap gap-2">
+            {AXES.map((a) => <button key={a.key} type="button" role="radio" aria-checked={newAxis === a.key} onClick={() => { setNewAxis(a.key); setTopic(""); }} className={"btn btn-sm " + (newAxis === a.key ? "text-white" : "border-2 border-line bg-white text-ink")} style={newAxis === a.key ? { background: a.color } : undefined}>{a.label}</button>)}
+          </div>
+        </div>
+        <div className="grid gap-1"><strong>2. Le point à travailler</strong>
+          <div role="radiogroup" aria-label="Point à travailler" className="flex flex-wrap gap-2">
+            {topics.map((x) => <button key={x} type="button" role="radio" aria-checked={topic === x} onClick={() => setTopic(topic === x ? "" : x)} className={"btn btn-sm " + (topic === x ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>{x}</button>)}
+            <button type="button" role="radio" aria-checked={topic === ""} onClick={() => setTopic("")} className={"btn btn-sm " + (topic === "" ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Autre / général</button>
+          </div>
+        </div>
+        <div className="grid gap-2"><strong>3. Les objectifs de travail{topic ? ` pour « ${topic} »` : ""}</strong>
+          {newObjs.map((o, i) => (
+            <div key={i} className="flex gap-2">
+              <input className="input min-w-0 flex-1" aria-label={`Objectif ${i + 1}`} maxLength={180} placeholder={i === 0 ? "Ex. : Fiabiliser la première balle" : "Un autre objectif"} value={o} onChange={(e) => setNewObjs((l) => l.map((x, j) => (j === i ? e.target.value : x)))} />
+              {newObjs.length > 1 && <button type="button" className="btn-outline btn-sm" aria-label={`Retirer l'objectif ${i + 1}`} onClick={() => setNewObjs((l) => l.filter((_, j) => j !== i))}>✕</button>}
+            </div>
+          ))}
+          {newObjs.length < 8 && <button type="button" className="btn-outline btn-sm self-start" onClick={() => setNewObjs((l) => [...l, ""])}>+ Ajouter un autre objectif</button>}
+        </div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={!filled.length || saving}>{saving ? "Enregistrement…" : filled.length > 1 ? `Créer les ${filled.length} missions` : "Créer la mission"}</button>{added && <p role="status" className="m-0 font-bold text-ok">{added}</p>}</div>
+        <p className="hint m-0">Chaque trimestre ne montre que ses propres objectifs. Tu peux modifier un objectif, le <strong>reporter au trimestre suivant</strong> (ou non), ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
+      </form>
+      </details>
       {t < 3 && here.length > 0 && <PrepareNext key={`${season}-${t}`} p={p} season={season} t={t} goals={goals} onDone={load} onNext={() => setT(t + 1)} />}
     </div>
   );
@@ -546,7 +549,7 @@ export default function PlayerDetail() {
           {tab === "profil" && <Profil p={p} onSaved={load} />}
           {tab === "accords" && <Accords p={p} onChanged={load} />}
           {tab === "depart" && <StartEvalPanel p={p} onGoto={(x) => setTab(x)} />}
-          {tab === "objectifs" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /><Objectifs p={p} /></>}
+          {tab === "objectifs" && <><Objectifs p={p} /><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /></>}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
           {tab === "videos" && <PlayerVideosTab p={p} />}
           {tab === "matchs" && <><PlayerReports p={p} /><Matchs p={p} /></>}

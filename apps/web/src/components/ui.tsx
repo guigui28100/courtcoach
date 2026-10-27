@@ -245,6 +245,6 @@ export function MultiSelect({ id, name, options, value, allowOther }: { id: stri
 export function BackLink({ fallback, className, children }: { fallback: string; className?: string; children: ReactNode }) {
   const nav = useNavigate();
   return (
-    <Link to={fallback} className={className} onClick={(e) => { e.preventDefault(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav(fallback); }}>{children}</Link>
+    <Link to={fallback} className={(className ?? "") + " inline-flex min-h-10 items-center max-sm:min-w-10"} onClick={(e) => { e.preventDefault(); if ((window.history.state?.idx ?? 0) > 0) nav(-1); else nav(fallback); }}>{children}</Link>
   );
 }
