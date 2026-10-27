@@ -5,7 +5,7 @@ export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string;
   return (
     <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-paper to-chalk">
       <ClubLogo className="pointer-events-none absolute -right-4 top-1/2 size-44 -translate-y-1/2 text-champagne opacity-25 max-lg:hidden" />
-      <div className="relative mx-auto flex max-w-6xl items-center gap-5 px-4 py-9 sm:py-11">
+      <div className="relative mx-auto flex max-w-[2400px] items-center gap-5 px-4 lg:px-10 2xl:px-14 py-9 sm:py-11">
         {icon}
         <div className="min-w-0">
           {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
@@ -59,14 +59,14 @@ export function StatTile({ value, label, icon, to, tone = "clay" }: { value: num
 // Écran de chargement : des blocs qui brillent doucement, plus agréables qu'un simple « Chargement… »
 export function Skeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div className="mx-auto grid max-w-6xl gap-3 px-4 py-8" role="status" aria-label="Chargement en cours">
+    <div className="mx-auto grid max-w-[2400px] gap-3 px-4 lg:px-10 2xl:px-14 py-8" role="status" aria-label="Chargement en cours">
       <div className="skeleton h-9 w-1/2" />
       {Array.from({ length: lines }, (_, i) => <div key={i} className="skeleton h-20" />)}
     </div>
   );
 }
 
-export const Page = ({ children }: { children: ReactNode }) => <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6 px-4 py-6">{children}</div>;
+export const Page = ({ children }: { children: ReactNode }) => <div className="mx-auto grid max-w-[2400px] grid-cols-[minmax(0,1fr)] gap-6 px-4 lg:px-10 2xl:px-14 py-6">{children}</div>;
 
 export function Field({ label, id, children, hint }: { label: string; id: string; children: ReactNode; hint?: string }) {
   return (
@@ -117,7 +117,7 @@ export function CoachHero({ eyebrow, title, subtitle, chips, actions, tone = "de
   return (
     <section className="relative isolate overflow-hidden border-b-2 border-champagne text-chalk" style={{ background: `radial-gradient(700px 320px at 90% 0%, rgba(201,173,119,0.20), transparent 62%), ${base}` }}>
       <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-[0.05]" aria-hidden="true"><defs><pattern id="hero-lines" width="72" height="72" patternUnits="userSpaceOnUse"><path d="M0 71.5h72M71.5 0v72" stroke="#c9ad77" strokeWidth="1" fill="none" /></pattern></defs><rect width="100%" height="100%" fill="url(#hero-lines)" /></svg>
-      <div className="mx-auto grid max-w-6xl items-center gap-4 px-4 py-10 sm:py-12 md:grid-cols-[1fr_auto]">
+      <div className="mx-auto grid max-w-[2400px] items-center gap-4 px-4 lg:px-10 2xl:px-14 py-10 sm:py-12 md:grid-cols-[1fr_auto]">
         <div className="grid gap-3">
           <p className="eyebrow m-0 !text-champagne">{eyebrow}</p>
           <h1 className="m-0 !text-chalk">{title}</h1>

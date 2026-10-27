@@ -490,7 +490,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
   return (
     <div className="relative isolate overflow-clip">
       <Stars />
-      <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-6">
+      <div className="relative z-10 mx-auto grid max-w-[2400px] grid-cols-[minmax(0,1fr)] gap-5 px-4 lg:px-10 2xl:px-14 py-6">
         {previewId && (
           <p className="glass m-0 flex flex-wrap items-center justify-between gap-2 !p-3 text-sm" role="note">
             <span>👀 <strong>Aperçu coach</strong> : c'est exactement ce que voit {p?.firstName ?? "le jeune"} (sans pouvoir envoyer de vidéo).</span>

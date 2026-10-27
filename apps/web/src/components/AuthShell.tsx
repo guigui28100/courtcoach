@@ -62,7 +62,7 @@ const TOUR: { icon: string; title: string; who: string; items: string[] }[] = [
 function SiteTour() {
   return (
     <section id="tour" className="scroll-mt-20 border-t border-line bg-paper px-4 py-14 sm:px-8 lg:px-12" aria-labelledby="tour-title">
-      <div className="mx-auto grid max-w-6xl gap-8">
+      <div className="mx-auto grid max-w-[2400px] gap-8">
         <header className="max-w-2xl">
           <p className="eyebrow mb-2">À quoi sert CourtCoach ?</p>
           <h2 id="tour-title" className="m-0">Tout le suivi du Tennis Club Houdan, au même endroit</h2>

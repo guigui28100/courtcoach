@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, HttpException, Injectable, NotFoundException } from "@nestjs/common";
+import { nowParis } from "../profs/planning";
 import { ConsentKind, Role, Video, VideoStatus } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../common/audit.service";
@@ -511,6 +512,11 @@ export class VideosService {
     // Jetons de connexion périmés et invitations périmées (ou utilisées depuis plus de 30 jours) : elles contiennent une adresse e-mail et ne servent plus à rien
     const e = await this.prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } });
     const f = await this.prisma.invitation.deleteMany({ where: { OR: [{ expiresAt: { lt: now } }, { usedAt: { lt: new Date(now.getTime() - 30 * 24 * 3600 * 1000) } }] } });
-    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count };
+    // Demandes de cours particuliers : effacées 12 mois après le cours (elles gardent le nom, l'âge et le niveau d'un partenaire de cours à deux, et le téléphone passe par le profil de l'adulte). Une demande plus récente que 12 mois, ou dont le cours est encore à venir, reste.
+    const oldLessons = await this.prisma.lessonRequest.findMany({ where: { createdAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } }, select: { id: true, finalSlot: true } });
+    const today = nowParis().date, yearAgo = new Date(Date.UTC(+today.slice(0, 4) - 1, +today.slice(5, 7) - 1, +today.slice(8, 10))).toISOString().slice(0, 10);
+    const lessonIds = oldLessons.filter((l) => { const dt = (l.finalSlot as { date?: string } | null)?.date; return !dt || dt < yearAgo; }).map((l) => l.id);
+    const g = lessonIds.length ? await this.prisma.lessonRequest.deleteMany({ where: { id: { in: lessonIds } } }) : { count: 0 };
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count };
   }
 }

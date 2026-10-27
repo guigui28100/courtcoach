@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { get, post } from "../api";
 import { useAuth } from "../auth";
 import { BackLink, Err, Field, Page, PageHead, ProgressBar } from "../components/ui";
-import { fmtMo } from "../types";
+import { fmtDay, fmtMo, todayIso } from "../types";
+import { HOLIDAYS_WARN_DAYS, holidaysDaysLeft, holidaysLastDay } from "../schoolDays";
 import { homeFor } from "../components/Guard";
 import { ClubAccess } from "../components/ClubAccess";
 import { SignaturePad } from "../components/SignaturePad";
@@ -32,6 +33,13 @@ export default function Securite() {
     <>
       <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : me?.role === "PRESIDENT" ? "Espace du président" : me?.role === "BUREAU" ? "Espace du bureau" : "Espace coach"} title="Sécurité de mon compte"><BackLink fallback={me ? homeFor(me.role) : "/coach"} className="mb-2 inline-block font-bold text-ink underline">← Retour</BackLink><br />{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
       <Page>
+        {me?.role === "COACH" && holidaysDaysLeft(todayIso()) < HOLIDAYS_WARN_DAYS && (
+          <section className="grid gap-2 rounded border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-vac">
+            <h2 id="s-vac" className="m-0 text-lg">⚠️ Les dates de vacances scolaires s'arrêtent bientôt</h2>
+            <p className="m-0">Les vacances (zone C) sont connues jusqu'au <strong>{fmtDay(holidaysLastDay())}</strong>. Après cette date, les plannings de cours ne sauteront plus les vacances et les étoiles ne préviendront plus.</p>
+            <p className="m-0"><strong>À faire une fois par an :</strong> demande-moi d'ajouter la nouvelle année (dates officielles sur education.gouv.fr). Fichiers concernés : <code>apps/api/src/players/school-days.ts</code> et <code>apps/web/src/schoolDays.ts</code> (la même liste dans les deux).</p>
+          </section>
+        )}
         {me?.role === "COACH" && me.totpKeyShared && (
           <section className="grid gap-2 rounded-2xl border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-cle">
             <h2 id="s-cle" className="m-0 text-lg">⚠️ La clé de ta double authentification n'a pas sa propre clé</h2>

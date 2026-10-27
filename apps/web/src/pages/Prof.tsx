@@ -54,7 +54,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
     <>
       {preview && (
         <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="mx-auto flex max-w-[2400px] flex-wrap items-center justify-between gap-3">
             <p className="m-0"><strong>👀 Aperçu : voici ce que voit un entraîneur qui donne des cours particuliers.</strong> Fiche, demandes et documents sont des exemples inventés, rien n'est enregistré. Essaie le bouton « Je souhaite donner des cours » puis « Arrêter ».</p>
             <BackLink fallback={me?.role === "PRESIDENT" ? "/president" : "/coach/adultes"} className="btn-ink btn-sm no-underline">← Retour</BackLink>
           </div>

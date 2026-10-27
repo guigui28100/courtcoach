@@ -400,7 +400,7 @@ function AdultView({ preview, lessons, seenLocal, onLessonsChanged, onSeen, vide
     <>
       {preview && (
         <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="mx-auto flex max-w-[2400px] flex-wrap items-center justify-between gap-3">
             <p className="m-0"><strong>👀 Aperçu : voici ce que voit un adulte.</strong> Les demandes ci-dessous sont des exemples inventés, rien n'est envoyé ni enregistré.</p>
             <BackLink fallback={me?.role === "PRESIDENT" ? "/president" : "/coach/adultes"} className="btn-ink btn-sm no-underline">{me?.role === "PRESIDENT" ? "← Retour" : "← Retour aux demandes"}</BackLink>
           </div>
