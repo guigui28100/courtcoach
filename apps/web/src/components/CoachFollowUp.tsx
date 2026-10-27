@@ -43,7 +43,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
   const series = useMemo(() => {
     const now: Record<string, number> = {}, before: Record<string, number> = {};
     EVAL_AXES.forEach((a) => { now[a.key] = axisAverage({ ratings }, a); before[a.key] = axisAverage(prev, a); });
-    return [{ label: periodShort(season, t), values: now, color: "#b8471f" }, ...(prev ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#10203a", dashed: true }] : [])];
+    return [{ label: periodShort(season, t), values: now, color: "#7b5d2a" }, ...(prev ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#2a2720", dashed: true }] : [])];
   }, [ratings, prev, season, t, prevP.t, prevP.season]);
 
   async function save(e: FormEvent<HTMLFormElement>) {
@@ -83,7 +83,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
             <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin du trimestre {t}</Link></div>
           {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
             <div className="grid gap-3 lg:grid-cols-2">
-              {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} season={season} stars={stars ?? []} color={axisOf(g)?.color ?? "#7c3aed"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
+              {here.map((g) => <GoalEvalCard key={`${g.id}-${t}`} g={g} t={t} season={season} stars={stars ?? []} color={axisOf(g)?.color ?? "#7b5d2a"} label={axisOf(g)?.label ?? ""} onUpdate={(n) => { setGoals((l) => l.map((x) => (x.id === n.id ? n : x))); setVersion((v) => v + 1); }} />)}
             </div>
           )}
         </section>

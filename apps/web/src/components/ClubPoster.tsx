@@ -1,4 +1,5 @@
 import { Backdrop } from "./PosterBackdrop";
+import { SERIF } from "./posterFonts";
 import { glue, teamParts } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
@@ -78,16 +79,16 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
 function Header({ m }: { m: string }) {
   const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
   return (
-    <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#d0592b 0%,#a63e1a 55%,#7d2c12 100%)", color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
-      <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#fff" strokeWidth="4">
+    <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#2b261d 0%,#17140f 60%)", color: "#fff", overflow: "hidden", fontVariantNumeric: "lining-nums", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
+      <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#c9ad77" strokeWidth="4">
         <CourtLines cx={397} y={24} h={228} netWidth={6} />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40 }}>
         <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
-        <div className="font-display" style={{ fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
+        <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
-          <span style={{ background: "#f2d230", color: "#3a2c00", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
+          <span style={{ background: "#c9ad77", color: "#17140f", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
           <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1}</span>
         </div>
       </div>
@@ -98,11 +99,11 @@ function Header({ m }: { m: string }) {
 function Footer({ events }: { events: ClubEvent[] }) {
   const kinds = [...new Set(events.map((e) => e.kind))].map(kindOf);
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, background: "#1b1863", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
       <div style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
         <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}><PosterLogo size={26} style={{ verticalAlign: "-6px", marginRight: 8 }} />Tennis Club Houdan</div>
         <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>4 courts couverts · terre battue et dur · septembre → mai</div>
-        <div style={{ fontSize: 14, fontWeight: 800, marginTop: 3, color: "#ffe45c", whiteSpace: "nowrap" }}>✉️ tennisclubhoudan@gmail.com</div>
+        <div style={{ fontSize: 14, fontWeight: 800, marginTop: 3, color: "#dfcb98", whiteSpace: "nowrap" }}>✉️ tennisclubhoudan@gmail.com</div>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", justifyContent: "flex-end", maxWidth: 330, fontSize: 11.5 }}>
         {kinds.map((k) => <span key={k.key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><i style={{ width: 11, height: 11, borderRadius: 3, background: k.color, display: "inline-block" }} />{k.label}</span>)}
@@ -130,7 +131,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   const lc = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   return (
     <div style={{ padding: "0 40px", textAlign: "left" }}>
-      <div className="font-display" style={{ fontWeight: 900, color: "#fff", background: "#a63e1a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
+      <div style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
@@ -144,31 +145,31 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 </svg>
                 <div style={{ position: "absolute", left: 14, top: 10, textAlign: "left" }}>
                   <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.startDate)]}</div>
-                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
                   <div style={line}>{MOIS[+e.startDate.slice(5, 7) - 1]}</div>
                 </div>
                 <div style={{ position: "absolute", right: 14, bottom: 10, textAlign: "right" }}>
                   <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.endDate)]}</div>
-                  <div className="font-display" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
                   <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
                 </div>
               </div>
             ) : (
             <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
-              <div className="font-display" style={{ fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
+              <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
               <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
             </div>
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
-              <div style={{ fontWeight: 900, fontSize: 24, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
+              <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", marginTop: 8 }}>
-                  {[...(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)), ...detailParts(e, showWho)].map((t, i) => <span key={i} style={{ whiteSpace: "nowrap", background: "#eef1f8", color: "#1b1863", fontWeight: 800, fontSize: 16, borderRadius: 999, padding: "3px 12px" }}>{t}</span>)}
+                  {[...(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)), ...detailParts(e, showWho)].map((t, i) => <span key={i} style={{ whiteSpace: "nowrap", background: "#f1ebdd", color: "#17140f", fontWeight: 800, fontSize: 16, borderRadius: 999, padding: "3px 12px" }}>{t}</span>)}
                 </div>
               ) : null}
-              {e.note && <div style={{ fontSize: 14, color: "#2b2a42", marginTop: 5, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
+              {e.note && <div style={{ fontSize: 14, color: "#2b261d", marginTop: 5, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
             </div>
           </div>
         ); })}
@@ -186,24 +187,24 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return two ? (
       <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", marginTop: 5 }} />
-        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
+        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#17140f", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ) : (
       <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "8px 0", textAlign: "left" }}>
         <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", alignSelf: "center" }} />
-        <span style={{ width: 250, flex: "0 0 250px", fontSize: 15, fontWeight: 800, color: "#1b1863", lineHeight: 1.25 }}>{when(e)}</span>
+        <span style={{ width: 250, flex: "0 0 250px", fontSize: 15, fontWeight: 800, color: "#17140f", lineHeight: 1.25 }}>{when(e)}</span>
         <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "#4a4333", marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
       </div>
     ); };
     return (
       <div style={{ padding: "0 40px", marginTop: 20, textAlign: "left" }}>
         {n > 0 ? (<>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#a63e1a", marginBottom: 6 }}>ET AUSSI CE MOIS-CI</div>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>ET AUSSI CE MOIS-CI</div>
           <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 28 }}>{shown.map(cell)}</div>
           {more > 0 && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#6b6557", marginTop: 8 }}>… et {more} autre{more > 1 ? "s" : ""} événement{more > 1 ? "s" : ""} ce mois-ci</div>}
         </>) : (
           <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
-            <b style={{ color: "#1b1863" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
+            <b style={{ color: "#17140f" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
           </div>
         )}
       </div>
@@ -216,24 +217,24 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
       <div style={{ minWidth: mode === "compact" ? 62 : 74, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
         <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]}{multi ? `–${SHORT[weekdayOf(e.endDate)]}` : ""}</div>
-        <div className="font-display" style={{ fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
+        <div style={{ fontFamily: SERIF, fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#1b1863", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
+        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
         <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}><Parts parts={[fullRange(e), ...detailParts(e, showWho)]} /></div>
-        {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3b3a52", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
+        {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3a352c", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
       </div>
     </div>
   ); });
   return (
     <div style={{ padding: "0 40px", display: "grid", gridTemplateColumns: side ? "1fr 250px" : "1fr", gap: 22, marginTop: 18 }}>
       {n > 0 && <div>
-        <div style={{ fontWeight: 900, color: "#a63e1a", letterSpacing: "0.12em", fontSize: 15, marginBottom: 8 }}>{withCards ? "📅 ET AUSSI CE MOIS-CI" : "📅 TOUT LE PROGRAMME"}</div>
+        <div style={{ fontWeight: 900, color: "#7b5d2a", letterSpacing: "0.12em", fontSize: 15, marginBottom: 8 }}>{withCards ? "📅 ET AUSSI CE MOIS-CI" : "📅 TOUT LE PROGRAMME"}</div>
         <div style={{ display: "grid", gridTemplateColumns: mode === "compact" ? "1fr 1fr" : "1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
       </div>}
       {(n === 0 || (n <= 9 && !withCards)) && (
         <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
-          <b style={{ color: "#1b1863" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
+          <b style={{ color: "#17140f" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
         </div>
       )}
     </div>
@@ -249,12 +250,12 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
   return (
     <div style={{ padding: "0 36px", marginTop: 14 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
-        {DAYS.map((d) => <div key={d} style={{ textAlign: "center", fontWeight: 900, fontSize: 13, color: "#fff", background: "#1b1863", borderRadius: 8, padding: "5px 0", letterSpacing: "0.08em" }}>{d.slice(0, 3).toUpperCase()}</div>)}
+        {DAYS.map((d) => <div key={d} style={{ textAlign: "center", fontWeight: 900, fontSize: 13, color: "#fff", background: "#17140f", borderRadius: 8, padding: "5px 0", letterSpacing: "0.08em" }}>{d.slice(0, 3).toUpperCase()}</div>)}
         {days.map((d) => {
           const evs = list.filter((e) => e.startDate <= d && e.endDate >= d); const out = d.slice(0, 7) !== m;
           return (
             <div key={d} style={{ height: cellH, background: out ? "#f3ede0" : "#fff", border: "2px solid #eadfcb", borderRadius: 10, padding: "3px 4px", overflow: "hidden", opacity: out ? 0.5 : 1 }}>
-              <div className="font-display" style={{ fontWeight: 900, fontSize: 16, color: "#1b1863" }}>{dayNum(d)}</div>
+              <div style={{ fontFamily: SERIF, fontWeight: 900, fontSize: 16, color: "#17140f" }}>{dayNum(d)}</div>
               <div style={{ display: "grid", gap: 2 }}>
                 {evs.slice(0, 3).map((e) => <div key={e.id} style={{ background: colorOf(e), color: textOn(colorOf(e)), borderRadius: 5, fontSize: 9.5, fontWeight: 800, lineHeight: 1.15, padding: "1px 4px" }}>{kindOf(e.kind).icon} {label(e)}{showWho && e.who.length ? ` · ${e.who.map((w) => w.replace(" (moi)", "").split(" ")[0]).join(", ")}` : ""}</div>)}
                 {evs.length > 3 && <div style={{ fontSize: 9, fontWeight: 800, color: "#6b6557" }}>+{evs.length - 3} autres</div>}
@@ -267,8 +268,8 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
         <div style={{ marginTop: 8, background: "#fff", border: "2px solid #eadfcb", borderRadius: 10, padding: "4px 10px" }}>
           {noted.map((e) => (
             <div key={e.id} style={{ height: 40, overflow: "hidden", borderTop: "1px solid #f0e6d2", paddingTop: 2 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#1b1863" }}><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 5, background: colorOf(e), marginRight: 5 }} />{kindOf(e.kind).icon} {label(e)} <span style={{ fontWeight: 600, color: "#6b6557" }}>· {fullRange(e)}</span></div>
-              <div style={{ fontSize: 10.5, color: "#3b3a52", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>
+              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#17140f" }}><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 5, background: colorOf(e), marginRight: 5 }} />{kindOf(e.kind).icon} {label(e)} <span style={{ fontWeight: 600, color: "#6b6557" }}>· {fullRange(e)}</span></div>
+              <div style={{ fontSize: 10.5, color: "#3a352c", lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>
             </div>
           ))}
         </div>
@@ -327,8 +328,8 @@ export function ClubPoster({ events, month, model, showWho, partners, bg = "" }:
         {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}
       </div>
       {logos.length > 0 && (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 96, height: PARTNER_H, background: "#fff", borderTop: "3px solid #b8471f", display: "flex", alignItems: "center", gap: 16, padding: "0 40px" }}>
-          <div style={{ flex: "0 0 auto", fontSize: 12, fontWeight: 900, letterSpacing: "0.2em", color: "#b8471f", lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 96, height: PARTNER_H, background: "#fff", borderTop: "3px solid #7b5d2a", display: "flex", alignItems: "center", gap: 16, padding: "0 40px" }}>
+          <div style={{ flex: "0 0 auto", fontSize: 12, fontWeight: 900, letterSpacing: "0.2em", color: "#7b5d2a", lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 12, height: PARTNER_H - 24 }}>
             {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 150, height: "100%", objectFit: "contain" }} />)}
           </div>

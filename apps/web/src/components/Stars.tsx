@@ -110,8 +110,8 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
   );
 }
 
-const QUICK = [{ n: -1, emoji: "⬇️", label: "Recul −1", color: "#8b1e3f" }, { n: 0, emoji: "😕", label: "Pas encore", color: "#d64545" }, { n: 1, emoji: "🙂", label: "Ça progresse", color: "#e8920c" }, { n: 2, emoji: "😃", label: "Réussi", color: "#2c9a5b" }];
-const DOMAIN_COLOR: Record<string, string> = { technique: "#b8471f", tactique: "#2a6fb0", physique: "#2f8f5b", mental: "#7a4cc2" };
+const QUICK = [{ n: -1, emoji: "⬇️", label: "Recul −1", color: "#8b1e3f" }, { n: 0, emoji: "😕", label: "Pas encore", color: "#c0392b" }, { n: 1, emoji: "🙂", label: "Ça progresse", color: "#e8920c" }, { n: 2, emoji: "😃", label: "Réussi", color: "#2c9a5b" }];
+const DOMAIN_COLOR: Record<string, string> = { technique: "#8a5a1a", tactique: "#4a6d8f", physique: "#3f7a56", mental: "#6f5588" };
 function QuickButtons({ value, onPick, who, name }: { value: number; onPick: (n: number) => void; who: string; name: string }) {
   return (
     <div className="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label={`${name} pour ${who}`}>
@@ -173,7 +173,7 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
       <div key={q.key} className="grid gap-2">
         <div className="grid grid-cols-2 gap-2" role="group" aria-label={`${q.label} de ${who}`}>
           <button type="button" aria-pressed={n > 0} title={q.hint} onClick={() => set({ stars: n > 0 ? 0 : 1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n > 0 ? "border-[#e0a800] bg-[#f5c518] text-[#4a3800]" : "border-line bg-white text-ink hover:bg-sand")}>🌟 {q.key === "attitude" ? "Super attitude" : "Super concentration"}</button>
-          <button type="button" aria-pressed={n < 0} onClick={() => set({ stars: n < 0 ? 0 : -1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n < 0 ? "border-[#8b1e3f] bg-[#8b1e3f] text-white" : "border-line bg-white text-ink hover:bg-sand")}>⬇️ {q.key === "attitude" ? "Attitude à revoir" : "Concentration à revoir"}</button>
+          <button type="button" aria-pressed={n < 0} onClick={() => set({ stars: n < 0 ? 0 : -1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n < 0 ? "border-[#b3925a] bg-[#b3925a] text-white" : "border-line bg-white text-ink hover:bg-sand")}>⬇️ {q.key === "attitude" ? "Attitude à revoir" : "Concentration à revoir"}</button>
         </div>
         {noteField(n, l, set)}
       </div>

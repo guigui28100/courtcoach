@@ -83,7 +83,7 @@ export function VideosIntro({ who = "jeune", dark = false }: { who?: keyof typeo
   return (
     <div className="grid gap-2 sm:grid-cols-2" aria-label="Comment ça marche">
       <div className={"grid content-start gap-1 rounded-2xl p-3 " + box}><strong>{t.up[0]}</strong><span className="text-sm opacity-90">{t.up[1]}</span></div>
-      <div className={"grid content-start gap-1 rounded-2xl p-3 ring-2 ring-[#dcf247] " + box}><strong>{t.down[0]}</strong><span className="text-sm opacity-90">{t.down[1]}</span></div>
+      <div className={"grid content-start gap-1 rounded-2xl p-3 ring-2 ring-champagne " + box}><strong>{t.down[0]}</strong><span className="text-sm opacity-90">{t.down[1]}</span></div>
     </div>
   );
 }
@@ -212,7 +212,7 @@ export function VideoList({ videos, onChanged, empty, openId, preview = false }:
 // Étiquette du geste sur une vidéo (vue du coach ; le joueur ne voit jamais un ancien départ)
 export const MarkBadge = ({ v }: { v: VideoRow }) => {
   const m = GESTURE_MARKS.find((g) => g.key === v.mark);
-  if (m) return <span className={"badge " + (m.key === "DEPART" ? "!border-[#1d4ed8] !bg-[#dbeafe]" : "!border-ok !bg-[#eef8f1]")}>{m.emoji} {m.label}</span>;
+  if (m) return <span className={"badge " + (m.key === "DEPART" ? "!border-[#585143] !bg-[#eeebe6]" : "!border-ok !bg-[#eef8f1]")}>{m.emoji} {m.label}</span>;
   return v.mark === "ANCIEN_DEPART" ? <span className="badge">🕘 Ancien départ</span> : null;
 };
 

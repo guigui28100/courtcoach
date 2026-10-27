@@ -1,31 +1,31 @@
 import { ReactNode, useState } from "react";
 import { CourtLines } from "./CourtLines";
+import { ClubLogo } from "./ui";
 
 // Habillage des pages de connexion : un panneau « terrain de tennis » à gauche, le formulaire à droite (en haut sur téléphone).
 export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebrow?: string; title: string; subtitle?: ReactNode; children: ReactNode; tour?: boolean }) {
   return (
     <>
     <div className="grid lg:min-h-[calc(100dvh-125px)] lg:grid-cols-[1fr_1.1fr]">
-      <aside className="relative overflow-hidden bg-gradient-to-br from-clay to-[#7d2d12] px-6 py-8 text-white lg:px-12 lg:py-14" aria-label="Présentation">
-        <svg viewBox="0 0 260 120" className="pointer-events-none absolute -bottom-6 -right-10 w-[22rem] text-white/15 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-          <CourtLines cx={130} y={6} h={108} netWidth={4} />
+      <aside className="relative overflow-hidden px-6 py-10 text-chalk lg:px-14 lg:py-16" style={{ background: "radial-gradient(700px 420px at 100% 0%, rgba(201,173,119,0.22), transparent 62%), linear-gradient(160deg, #17140f 0%, #241f16 100%)" }} aria-label="Présentation">
+        <svg viewBox="0 0 260 120" className="pointer-events-none absolute -bottom-6 -right-10 w-[24rem] text-champagne opacity-30 max-lg:hidden" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" aria-hidden="true">
+          <CourtLines cx={130} y={6} h={108} netWidth={2.2} />
         </svg>
-        <div className="relative grid max-w-md gap-4">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-ball shadow-lg" aria-hidden="true">
-            <svg viewBox="0 0 32 32" className="h-9 w-9"><circle cx="16" cy="16" r="15" fill="#dcf247" /><path d="M5 6c6 5 6 15 0 20M27 6c-6 5-6 15 0 20" fill="none" stroke="#10203a" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          </span>
+        <div className="relative grid max-w-md gap-5">
+          <ClubLogo className="size-16 text-champagne" />
           <div>
-            <p className="m-0 text-xs font-bold uppercase tracking-[0.16em] text-white/80">Tennis Club Houdan</p>
-            <p className="m-0 mt-1 font-display text-3xl font-black leading-tight lg:text-4xl" style={{ fontStretch: "85%" }}>Cours, vidéos, suivi et vie du club : tout au même endroit.</p>
+            <p className="eyebrow m-0 !text-champagne">Tennis Club Houdan</p>
+            <p className="m-0 mt-3 font-serif text-4xl font-medium leading-[1.05] lg:text-5xl">Cours, vidéos, suivi et vie du club : <em className="italic text-champagne">tout au même endroit.</em></p>
           </div>
-          <ul className="m-0 grid list-none gap-2.5 p-0 text-white/90 max-lg:hidden">
+          <hr className="rule-gold w-24" />
+          <ul className="m-0 grid list-none gap-3 p-0 text-chalk/85 max-lg:hidden">
             {["Tes vidéos et les conseils de ton coach, au même endroit", "Objectifs et bulletins de l'année pour les jeunes du Centre", "Données protégées : aucune publicité, aucun suivi"].map((t) => (
-              <li key={t} className="flex items-start gap-2.5"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20 text-sm font-bold" aria-hidden="true">✓</span>{t}</li>
+              <li key={t} className="flex items-start gap-3"><span className="mt-2.5 h-px w-5 shrink-0 bg-champagne" aria-hidden="true" />{t}</li>
             ))}
           </ul>
           {tour && (
             <button type="button" onClick={() => document.getElementById("tour")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
-              className="mt-1 flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left text-sm font-extrabold text-clay shadow-lg hover:bg-ball hover:text-ink">
+              className="mt-1 flex items-center justify-between gap-3 rounded-[3px] border border-champagne/70 px-4 py-3 text-left font-ui text-xs font-semibold uppercase tracking-[0.14em] text-champagne hover:bg-champagne hover:text-ink">
               <span>À quoi sert CourtCoach ? Découvre le site</span>
               <span aria-hidden="true" className="text-xl leading-none motion-safe:animate-bounce">⌄</span>
             </button>
@@ -33,11 +33,12 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
         </div>
       </aside>
 
-      <section className="grid content-center bg-gradient-to-b from-chalk to-sand/50 px-4 py-8 sm:px-8 lg:py-14">
+      <section className="grid content-center bg-chalk px-4 py-10 sm:px-8 lg:py-16">
         <div className="mx-auto grid w-full max-w-md gap-5">
           <header>
-            {eyebrow && <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-clay">{eyebrow}</p>}
-            <h1 className="mb-1">{title}</h1>
+            {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
+            <h1 className="mb-2">{title}</h1>
+            <hr className="rule-gold mb-3 w-20" />
             {subtitle && <p className="m-0 text-muted">{subtitle}</p>}
           </header>
           {children}
@@ -60,25 +61,27 @@ const TOUR: { icon: string; title: string; who: string; items: string[] }[] = [
 // Présentation de tout ce que fait le site, sous le formulaire de connexion (rien de personnel, aucun appel extérieur).
 function SiteTour() {
   return (
-    <section id="tour" className="scroll-mt-20 bg-sand/60 px-4 py-10 sm:px-8 lg:px-12" aria-labelledby="tour-title">
-      <div className="mx-auto grid max-w-6xl gap-6">
+    <section id="tour" className="scroll-mt-20 border-t border-line bg-paper px-4 py-14 sm:px-8 lg:px-12" aria-labelledby="tour-title">
+      <div className="mx-auto grid max-w-6xl gap-8">
         <header className="max-w-2xl">
-          <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-clay">À quoi sert CourtCoach ?</p>
+          <p className="eyebrow mb-2">À quoi sert CourtCoach ?</p>
           <h2 id="tour-title" className="m-0">Tout le suivi du Tennis Club Houdan, au même endroit</h2>
-          <p className="mt-2 text-muted">Chacun voit seulement ce qui le concerne. Les jeunes, leurs parents et les professeurs entrent par invitation du coach ; les adultes peuvent créer leur compte.</p>
+          <hr className="rule-gold my-4 w-24" />
+          <p className="m-0 text-muted">Chacun voit seulement ce qui le concerne. Les jeunes, leurs parents et les professeurs entrent par invitation du coach ; les adultes peuvent créer leur compte.</p>
         </header>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TOUR.map((c) => (
-            <article key={c.title} className="grid content-start gap-2 rounded-2xl border border-ink/10 bg-white p-5 shadow-sm">
-              <h3 className="m-0 flex items-center gap-2 text-lg"><span aria-hidden="true">{c.icon}</span>{c.title}</h3>
-              <p className="m-0 text-xs font-bold uppercase tracking-wide text-clay">{c.who}</p>
-              <ul className="m-0 grid list-none gap-1.5 p-0 text-sm">
-                {c.items.map((t) => <li key={t} className="flex gap-2"><span className="text-clay" aria-hidden="true">•</span><span>{t}</span></li>)}
+        <div className="grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {TOUR.map((c, k) => (
+            <article key={c.title} className="grid content-start gap-2 border-t border-ink pt-4">
+              <span className="font-serif text-3xl font-medium leading-none text-champagne-deep" style={{ fontFeatureSettings: '"lnum"' }} aria-hidden="true">{["I", "II", "III", "IV", "V"][k]}</span>
+              <h3 className="m-0">{c.title}</h3>
+              <p className="eyebrow m-0">{c.who}</p>
+              <ul className="m-0 mt-1 grid list-none gap-2 p-0 text-sm">
+                {c.items.map((t) => <li key={t} className="flex gap-3"><span className="mt-2 h-px w-3 shrink-0 bg-champagne-deep" aria-hidden="true" /><span>{t}</span></li>)}
               </ul>
             </article>
           ))}
         </div>
-        <p className="m-0 rounded-xl bg-white p-4 text-sm shadow-sm">🔒 <strong>Vie privée :</strong> aucune publicité, aucun suivi, aucun service extérieur. Les vidéos et les données des jeunes ne sont visibles que de leur famille et de leur coach, et sont supprimées sur demande ou après 12 mois.</p>
+        <p className="m-0 border-l-2 border-champagne-deep pl-4 text-sm text-muted"><strong className="text-ink">Vie privée :</strong> aucune publicité, aucun suivi, aucun service extérieur. Les vidéos et les données des jeunes ne sont visibles que de leur famille et de leur coach, et sont supprimées sur demande ou après 12 mois.</p>
       </div>
     </section>
   );
@@ -90,7 +93,7 @@ export function PasswordInput({ id, name, autoComplete, minLength, required = tr
   return (
     <div className="relative">
       <input id={id} name={name} type={show ? "text" : "password"} required={required} minLength={minLength} maxLength={128} autoComplete={autoComplete} className="input !pr-24" />
-      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-lg px-3 text-sm font-bold text-clay hover:bg-sand">{show ? "Masquer" : "Afficher"}</button>
+      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-[3px] px-3 font-ui text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-clay hover:bg-champagne-soft">{show ? "Masquer" : "Afficher"}</button>
     </div>
   );
 }

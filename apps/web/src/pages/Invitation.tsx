@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { get } from "../api";
 import { useAuth } from "../auth";
-import { BackLink, Err, Field, PageHead } from "../components/ui";
+import { BackLink, Err, Field, Notice, PageHead } from "../components/ui";
 
 export default function Invitation() {
   const { token = "" } = useParams();
@@ -23,7 +23,7 @@ export default function Invitation() {
     } catch (err) { setError((err as Error).message); }
   }
 
-  if (invalid) return (<><PageHead title="Invitation introuvable" /><div className="mx-auto max-w-lg p-6"><p>Ce lien a déjà été utilisé ou a expiré. Demande un nouveau lien à ton coach.</p><BackLink fallback="/" className="btn-outline no-underline">← Retour à l'accueil</BackLink></div></>);
+  if (invalid) return <Notice eyebrow="Invitation" title="Invitation introuvable" action={<BackLink fallback="/" className="btn-outline no-underline">← Retour à l'accueil</BackLink>}>Ce lien a déjà été utilisé ou a expiré. Demande un nouveau lien à ton coach.</Notice>;
   if (!info) return <p className="p-8 text-center text-muted">Chargement…</p>;
   return (
     <>

@@ -22,10 +22,10 @@ import { isTeen, missionPercent, missionStars, axisAverage, checkpointAt, curren
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
-  TECHNIQUE: { label: "Technique", emoji: "🎾", color: "#ff9b73" },
-  TACTIQUE: { label: "Tactique", emoji: "🧠", color: "#7dbbff" },
-  PHYSIQUE: { label: "Physique", emoji: "💪", color: "#6ee8aa" },
-  MENTAL: { label: "Mental", emoji: "🔥", color: "#d3b2ff" },
+  TECHNIQUE: { label: "Technique", emoji: "🎾", color: "#d9a066" },
+  TACTIQUE: { label: "Tactique", emoji: "🧠", color: "#8fb0cf" },
+  PHYSIQUE: { label: "Physique", emoji: "💪", color: "#7fb995" },
+  MENTAL: { label: "Mental", emoji: "🔥", color: "#b79cd0" },
 };
 
 function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: number; starsTotal: number }) {
@@ -52,7 +52,7 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
   return (
     <section className="gal-pop glass hero-card grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
-        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#dcf247]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
+        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#c9ad77]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
         <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Bonjour {p.firstName} !</h1>
         <p className="m-0 max-w-xl text-lg text-white/85">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
@@ -88,8 +88,8 @@ function StartBilan({ p, base, goals, stars }: { p: Player; base: string; goals:
           <p className="m-0 text-white/85">C'est ton coach qui l'a rempli : c'est là que tu commences la saison. Tes missions viennent de là, et tu peux voir ta progression sur ta toile, juste en dessous.</p>
           {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-bold text-clay">💬 Le mot de ton coach</footer></blockquote>}
           <div className="grid gap-3 sm:grid-cols-2">
-            {start.strengths && <p className="m-0"><strong className="text-[#dcf247]">⭐ Tes points forts : </strong>{start.strengths}</p>}
-            {start.improve && <p className="m-0"><strong className="text-[#dcf247]">🎯 Pour progresser : </strong>{start.improve}</p>}
+            {start.strengths && <p className="m-0"><strong className="text-[#c9ad77]">⭐ Tes points forts : </strong>{start.strengths}</p>}
+            {start.improve && <p className="m-0"><strong className="text-[#c9ad77]">🎯 Pour progresser : </strong>{start.improve}</p>}
           </div>
           <div><Link to={`${base}/bulletin/${season}/0`} className="gal-btn btn-sm no-underline">Voir mon bilan de départ en entier</Link></div>
         </section>
@@ -332,7 +332,7 @@ function MatchesTab({ p, preview }: { p: Player; preview: boolean }) {
           <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
             {matches.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-2xl bg-white/10 p-3">
-                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
+                <span className="flex items-center justify-between gap-2"><strong>{m.tournament}{m.round && ` · ${m.round}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#c9ad77] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
                 <span className="text-sm text-white/80">{fmtDate(m.date)}{m.score && ` · ${m.score}`}</span>
                 {m.remark && <span className="text-sm text-white/80">{m.remark}</span>}
               </li>
@@ -354,11 +354,11 @@ function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: 
         <p className="m-0 text-lg text-white/90">Ici, tu retrouves <strong>2 choses</strong> :</p>
         <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
           <li className="grid gap-1 rounded-2xl border border-white/25 bg-white/10 p-4"><strong className="text-xl">📄 Les bulletins de mon coach</strong><span>Son bilan de début d'année et son bulletin de chaque trimestre. Tu peux les relire quand tu veux.</span></li>
-          <li className="grid gap-1 rounded-2xl border-2 border-[#dcf247] bg-white/10 p-4"><strong className="text-xl">✍️ Mon bulletin à moi</strong><span>Trois fois dans l'année, <strong>c'est toi qui remplis ton propre bulletin</strong> : avec des boutons à toucher, tu dis comment s'est passé ton trimestre.</span></li>
+          <li className="grid gap-1 rounded-2xl border-2 border-[#c9ad77] bg-white/10 p-4"><strong className="text-xl">✍️ Mon bulletin à moi</strong><span>Trois fois dans l'année, <strong>c'est toi qui remplis ton propre bulletin</strong> : avec des boutons à toucher, tu dis comment s'est passé ton trimestre.</span></li>
         </ul>
         <p className="m-0 rounded-xl bg-white/10 p-3"><strong>💡 Pourquoi remplir mon bulletin ?</strong> Pour réfléchir à mon jeu : ce dont je suis fier, ce que je veux améliorer, ce que j'aimerais faire. Ton coach le lit et ça l'aide à mieux t'aider. <strong>Il n'y a pas de mauvaise réponse</strong>, et ça ne change pas ta note. Compte 10 minutes ; tu peux enregistrer un brouillon et finir plus tard.</p>
         {!preview && (pending !== null
-          ? <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend en bas : clique sur « ✍️ Mon bulletin à remplir » pour l'ouvrir !</p>
+          ? <p role="status" className="m-0 rounded-xl bg-[#c9ad77] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend en bas : clique sur « ✍️ Mon bulletin à remplir » pour l'ouvrir !</p>
           : <p className="m-0 text-white/85">🗓️ Ton bulletin s'ouvre le <strong>1er décembre</strong> (trimestre 1), le <strong>1er mars</strong> (trimestre 2) et le <strong>1er juin</strong> (trimestre 3).</p>)}
       </section>
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins-coach">
@@ -384,7 +384,7 @@ function PreviewVideos({ mine }: { mine: VideoRow[] }) {
 
 function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow[]; fresh: VideoRow[]; refresh: () => void; openId?: string | null }) {
   return (
-    <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(76,29,149,0.35)]" aria-labelledby="gal-videos">
+    <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(201, 173, 119, 0.193)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
       <VideosIntro who="jeune" />
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
@@ -504,9 +504,9 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => ((k !== "renseignements" && k !== "autorisations") || isParent) && (k !== "tournois" || !!p.committeeTrainer)).map(([k, icon, label]) => (
-                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
+                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
-                    {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#4338ca] bg-[#ff5d8f]" aria-label="Nouveau" />}
+                    {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#17140f] bg-[#b3925a]" aria-label="Nouveau" />}
                   </button>
                 ))}
               </div>
@@ -522,7 +522,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               </div>
               {tab === "accueil" && isParent && <ParentReminders p={p} go={go} />}
               {newStars > 0 && tab !== "progres" && (
-                <button type="button" role="status" onClick={() => go("progres")} className="lift flex flex-wrap items-center gap-3 rounded-3xl border-2 border-[#dcf247] bg-[#dcf247]/20 p-4 text-left text-white backdrop-blur-md">
+                <button type="button" role="status" onClick={() => go("progres")} className="lift flex flex-wrap items-center gap-3 rounded-3xl border-2 border-[#c9ad77] bg-[#c9ad77]/20 p-4 text-left text-white backdrop-blur-md">
                   <span aria-hidden="true" className="text-4xl">🌟</span>
                   <span className="grid gap-0.5"><strong className="text-xl leading-tight">Ton coach t'a donné {newStars} étoile{newStars > 1 ? "s" : ""} !</strong><span className="text-white/90">Tu progresses sur tes missions : va voir ta progression →</span></span>
                 </button>
@@ -547,7 +547,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                   {!previewId && (
                     <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                       <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
-                      <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#dcf247] underline">Politique de confidentialité</Link></p>
+                      <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#c9ad77] underline">Politique de confidentialité</Link></p>
                       <p className="m-0 text-sm text-white/80">Pour demander une copie des données ou la suppression du dossier, écris au club.</p>
                       <div className="flex flex-wrap gap-2">
                         <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>

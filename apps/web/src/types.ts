@@ -2,10 +2,10 @@ export type Role = "COACH" | "TRAINER" | "ADULT" | "GUARDIAN" | "YOUTH" | "PRESI
 export interface Me { id: string; email: string; role: Role; firstName: string | null; lastName?: string | null; birthYear?: number | null; level?: string | null; phone?: string | null; clubMember?: boolean; mustChangePassword?: boolean; twoFactor?: boolean; totpKeyShared?: boolean; accesses: { playerId: string; relation: string }[]; }
 export type Axis = "TECHNIQUE" | "TACTIQUE" | "PHYSIQUE" | "MENTAL";
 export const AXES: { key: Axis; label: string; color: string }[] = [
-  { key: "TECHNIQUE", label: "Technique", color: "#b8471f" },
-  { key: "TACTIQUE", label: "Tactique", color: "#2a6fb0" },
-  { key: "PHYSIQUE", label: "Physique", color: "#2f8f5b" },
-  { key: "MENTAL", label: "Mental", color: "#7a4cc2" },
+  { key: "TECHNIQUE", label: "Technique", color: "#8a5a1a" },
+  { key: "TACTIQUE", label: "Tactique", color: "#4a6d8f" },
+  { key: "PHYSIQUE", label: "Physique", color: "#3f7a56" },
+  { key: "MENTAL", label: "Mental", color: "#6f5588" },
 ];
 export interface Player {
   id: string; firstName: string; lastName: string; birthDate: string | null; sex: string | null; club: string | null; licence: string | null;
@@ -17,8 +17,8 @@ export interface Player {
 export interface Consent { id: string; kind: "PRIVACY_POLICY" | "FOLLOW_UP" | "IMAGE" | "HEALTH" | "ACCOUNT"; givenBy: string; method: string; grantedAt: string; withdrawnAt: string | null; }
 export type GoalStatus = "ACHIEVED" | "IN_PROGRESS" | "NOT_ACHIEVED";
 export const STATUS: Record<GoalStatus, { label: string; emoji: string; bg: string; ink: string }> = {
-  ACHIEVED: { label: "Atteint", emoji: "✅", bg: "#dcf247", ink: "#10203a" },
-  IN_PROGRESS: { label: "En cours", emoji: "🔄", bg: "#e7e0ff", ink: "#4c1d95" },
+  ACHIEVED: { label: "Atteint", emoji: "✅", bg: "#c9ad77", ink: "#2a2720" },
+  IN_PROGRESS: { label: "En cours", emoji: "🔄", bg: "#f3f1ec", ink: "#655d4d" },
   NOT_ACHIEVED: { label: "Pas atteint", emoji: "❌", bg: "#ffe2dc", ink: "#8f1d12" },
 };
 export interface GoalCheckpoint { authorId?: string | null; authorName?: string | null; authorRole?: string | null; trimester: number; status: GoalStatus; progress: number; comment: string; }
@@ -49,10 +49,10 @@ export function currentSeason(d = new Date()) { const y = d.getFullYear(); retur
 // ----- Évaluations trimestrielles : 5 axes, 21 compétences notées de 1 à 5 -----
 export interface EvalAxis { key: string; label: string; color: string; skills: [string, string][]; }
 export const EVAL_AXES: EvalAxis[] = [
-  { key: "technique", label: "Technique", color: "#b8471f", skills: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["retour", "Retour de service"], ["volee", "Volée et jeu au filet"], ["deplacements", "Jeu de jambes et placements"]] },
-  { key: "tactique", label: "Tactique", color: "#2a6fb0", skills: [["lecture", "Lecture du jeu"], ["construction", "Construction du point"], ["variations", "Variations (hauteur, effets, directions)"], ["choix", "Choix des schémas en match"]] },
-  { key: "physique", label: "Physique", color: "#2f8f5b", skills: [["vitesse", "Vitesse et explosivité"], ["endurance", "Endurance"], ["coordination", "Coordination et équilibre"], ["souplesse", "Souplesse et prévention des blessures"]] },
-  { key: "mental", label: "Mental en compétition", color: "#7a4cc2", skills: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["combativite", "Combativité"], ["confiance", "Confiance et autonomie"]] },
+  { key: "technique", label: "Technique", color: "#8a5a1a", skills: [["coup_droit", "Coup droit"], ["revers", "Revers"], ["service", "Service"], ["retour", "Retour de service"], ["volee", "Volée et jeu au filet"], ["deplacements", "Jeu de jambes et placements"]] },
+  { key: "tactique", label: "Tactique", color: "#4a6d8f", skills: [["lecture", "Lecture du jeu"], ["construction", "Construction du point"], ["variations", "Variations (hauteur, effets, directions)"], ["choix", "Choix des schémas en match"]] },
+  { key: "physique", label: "Physique", color: "#3f7a56", skills: [["vitesse", "Vitesse et explosivité"], ["endurance", "Endurance"], ["coordination", "Coordination et équilibre"], ["souplesse", "Souplesse et prévention des blessures"]] },
+  { key: "mental", label: "Mental en compétition", color: "#6f5588", skills: [["concentration", "Concentration"], ["emotions", "Gestion des émotions"], ["combativite", "Combativité"], ["confiance", "Confiance et autonomie"]] },
   { key: "attitude", label: "Attitude à l'entraînement", color: "#8a6200", skills: [["assiduite", "Assiduité et ponctualité"], ["etat_esprit", "État d'esprit à l'entraînement"], ["esprit_equipe", "Esprit d'équipe et fair-play"]] },
 ];
 // Bilan de départ : le détail à noter dans chaque domaine (clé enregistrée : d_<domaine>_<point>)
@@ -68,7 +68,7 @@ export const LEVELS: { label: string; rating: number; color: string }[] = [
   { label: "Non maîtrisé", rating: 1, color: "#d64545" },
   { label: "En cours d'acquisition", rating: 2, color: "#e8920c" },
   { label: "En maîtrise", rating: 4, color: "#2c9a5b" },
-  { label: "Point fort", rating: 5, color: "#1f6fd1" },
+  { label: "Point fort", rating: 5, color: "#897e67" },
 ];
 export const levelOf = (rating: number | undefined) => (!rating ? -1 : rating <= 1.5 ? 0 : rating <= 3.5 ? 1 : rating <= 4.5 ? 2 : 3);
 // Création d'une mission : domaine → le point précis à travailler (« Autre » = libre) → un ou plusieurs objectifs

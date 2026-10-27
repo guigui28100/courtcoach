@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { SERIF } from "./posterFonts";
 import { NoBreak } from "./NoBreak";
 import { Offer, perkOf, PERKS, Sponsor } from "../sponsors";
 import { CourtLines } from "./CourtLines";
@@ -6,7 +7,7 @@ import { CourtLines } from "./CourtLines";
 // Dossier de présentation à envoyer aux entreprises qui pourraient devenir partenaires : 2 pages A4 dessinées dans le navigateur (rien n'est envoyé sur Internet).
 export const SPONSOR_W = 794, SPONSOR_H = 1123;
 const FONT = "Archivo, 'Arial Narrow', system-ui, sans-serif";
-const NAVY = "#1b1863", CLAY = "#b8471f", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
+const NAVY = "#17140f", CLAY = "#7b5d2a", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a";
 const LOGO = "url(/logo-tch.png) center / contain no-repeat";
 const EMAIL = "tennisclubhoudan@gmail.com";
 
@@ -27,12 +28,12 @@ export function buildSponsorDossier(offer: Offer, sponsors: Sponsor[]): ReactNod
   return [
     // Page 1 : couverture et présentation du club
     <Page key="p1">
-      <div style={{ position: "relative", background: `linear-gradient(135deg, ${CLAY}, #7d2d12)`, color: "#fff", padding: "54px 56px 46px", flex: "0 0 auto", overflow: "hidden" }}>
+      <div style={{ position: "relative", background: `linear-gradient(135deg, #2b261d, #17140f)`, color: "#fff", padding: "54px 56px 46px", flex: "0 0 auto", overflow: "hidden" }}>
         <svg viewBox="0 0 400 190" style={{ position: "absolute", right: -30, bottom: -28, width: 560, color: "rgba(255,255,255,.16)" }} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden><CourtLines cx={200} y={8} h={174} netWidth={5} /></svg>
         <div style={{ position: "relative" }}>
           <span role="img" aria-label="Tennis Club Houdan" style={{ display: "inline-block", width: 74, height: 74, verticalAlign: "middle", background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
           <div style={{ marginTop: 20, fontSize: 15, fontWeight: 900, letterSpacing: "0.3em", color: GOLD }}>TENNIS CLUB HOUDAN</div>
-          <h1 style={{ margin: "10px 0 0", color: "#fff", fontSize: 56, lineHeight: 1.02, fontWeight: 900, letterSpacing: "-0.02em" }}>Devenez partenaire<br />de votre club de tennis</h1>
+          <h1 style={{ fontFamily: SERIF, margin: "10px 0 0", color: "#fff", fontSize: 56, lineHeight: 1.02, fontWeight: 900, letterSpacing: "-0.02em" }}>Devenez partenaire<br />de votre club de tennis</h1>
           <p style={{ margin: "16px 0 0", fontSize: 20, opacity: 0.92 }}>Dossier de présentation · saison en cours</p>
         </div>
       </div>
@@ -61,7 +62,7 @@ export function buildSponsorDossier(offer: Offer, sponsors: Sponsor[]): ReactNod
     <Page key="p2">
       <div style={{ background: NAVY, color: "#fff", padding: "34px 56px 28px", flex: "0 0 auto" }}>
         <div style={{ fontSize: 14, fontWeight: 900, letterSpacing: "0.3em", color: GOLD }}>CE QUE NOUS VOUS PROPOSONS</div>
-        <h2 style={{ margin: "8px 0 0", color: "#fff", fontSize: 40, lineHeight: 1.05, fontWeight: 900 }}>Votre soutien, notre visibilité</h2>
+        <h2 style={{ fontFamily: SERIF, margin: "8px 0 0", color: "#fff", fontSize: 40, lineHeight: 1.05, fontWeight: 900 }}>Votre soutien, notre visibilité</h2>
       </div>
       <div style={{ height: 8, background: `linear-gradient(90deg, ${CLAY}, ${GOLD})`, flex: "0 0 auto" }} />
       <div style={{ flex: 1, padding: "26px 56px 0", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: 18, minHeight: 0 }}>

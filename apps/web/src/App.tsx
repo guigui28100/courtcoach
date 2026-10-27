@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes, useParams } from "react-router-dom";
-import { BackLink, Skeleton } from "./components/ui";
+import { BackLink, Notice, Skeleton } from "./components/ui";
 import { useAuth } from "./auth";
 import { Guard } from "./components/Guard";
 import { Layout } from "./components/Layout";
@@ -72,7 +72,7 @@ export default function App() {
         <Route path="/espace" element={<Guard roles={["ADULT"]}><AdultSpace /></Guard>} />
         <Route path="/suivi" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Suivi /></Guard>} />
         <Route path="/suivi/:id/bulletin/:season/:t" element={<Guard roles={["GUARDIAN", "YOUTH"]}><Bulletin /></Guard>} />
-        <Route path="*" element={<div className="grid justify-items-center gap-3 p-10 text-center"><p className="m-0 text-lg">Page introuvable.</p><BackLink fallback="/" className="btn-clay no-underline">← Retour</BackLink></div>} />
+        <Route path="*" element={<Notice eyebrow="Erreur 404" title="Page introuvable" action={<BackLink fallback="/" className="btn-clay no-underline">← Retour</BackLink>}>Cette adresse n'existe pas ou a changé.</Notice>} />
       </Routes>
       </Suspense>
     </Layout>

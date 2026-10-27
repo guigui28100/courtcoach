@@ -9,7 +9,7 @@ const VIEW_STATUS: Record<GoalStatus, string> = { ACHIEVED: "✅ Réussi", IN_PR
 
 // Lecture seule d'un bulletin d'auto-évaluation (envoyé) : pour le jeune, le coach et le bulletin.
 export function SelfEvalView({ ev, goals, dark = false }: { ev: SelfEvaluation; goals: Goal[]; dark?: boolean }) {
-  const box = dark ? "bg-white/10" : "bg-[#f3efff]";
+  const box = dark ? "bg-white/10" : "bg-[#f9f8f5]";
   const mood = ev.mood ? MOODS[ev.mood - 1] : null;
   const w = (me: string, he: string) => (dark ? me : he); // « mes » pour le jeune, « ses » pour le coach
   const list = (title: string, items: string[], preset: keyof typeof SELF_PRESETS) => items.length > 0 && (
@@ -36,7 +36,7 @@ function Chips({ options, value, max, onChange }: { options: [string, string][];
       {options.map(([id, label]) => {
         const on = value.includes(id); const full = !on && value.length >= max;
         return <button key={id} type="button" aria-pressed={on} disabled={full} onClick={() => onChange(on ? value.filter((v) => v !== id) : [...value, id])}
-          className={"min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors disabled:opacity-40 " + (on ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}>{on ? "✓ " : ""}{label}</button>;
+          className={"min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors disabled:opacity-40 " + (on ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}>{on ? "✓ " : ""}{label}</button>;
       })}
     </div>
   );
@@ -46,7 +46,7 @@ function Faces({ value, onChange, label, faces }: { value: number | null | undef
   return (
     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
       {faces.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={value === i + 1} onClick={() => onChange(i + 1)}
-        className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (value === i + 1 ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}
+        className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (value === i + 1 ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}
     </div>
   );
 }
@@ -72,7 +72,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
     if (!(await save())) return; setBusy(true);
     try { await post(`${base}/send`); setMsg("🚀 Envoyé à ton coach !"); onChanged(); } catch (e: any) { setMsg("⚠️ " + (e.message || "Envoi impossible")); } finally { setBusy(false); }
   };
-  const step = (n: number, title: string, hint?: string) => <><h3 className="m-0 text-lg"><span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-[#dcf247] text-sm font-black text-ink" aria-hidden="true">{n}</span>{title}</h3>{hint && <p className="m-0 text-sm text-white/80">{hint}</p>}</>;
+  const step = (n: number, title: string, hint?: string) => <><h3 className="m-0 text-lg"><span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-[#c9ad77] text-sm font-black text-ink" aria-hidden="true">{n}</span>{title}</h3>{hint && <p className="m-0 text-sm text-white/80">{hint}</p>}</>;
   return (
     <form onSubmit={(e) => { e.preventDefault(); save(); }}>
       <fieldset disabled={locked} className={"m-0 grid min-w-0 gap-5 border-0 p-0 " + (locked ? "opacity-60" : "")}>
@@ -83,7 +83,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
             <div key={g.id} className="grid gap-2 rounded-2xl bg-white/10 p-3"><strong>{g.title}</strong>
               <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={`Mission : ${g.title}`}>
                 {GOAL_CHOICES.map((s) => <button key={s} type="button" role="radio" aria-checked={gs[g.id] === s} onClick={() => setGs({ ...gs, [g.id]: s })}
-                  className={"min-h-11 rounded-full border-2 px-4 py-1.5 font-bold " + (gs[g.id] === s ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}>{SELF_STATUS[s]}</button>)}
+                  className={"min-h-11 rounded-full border-2 px-4 py-1.5 font-bold " + (gs[g.id] === s ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}>{SELF_STATUS[s]}</button>)}
               </div><small className="text-white/70">{a?.label}</small></div>
           ); })}
         </div>
@@ -103,7 +103,7 @@ function Form({ p, goals, season, t, initial, onChanged, preview, locked }: { pr
         <button type="submit" className="btn btn-sm border-2 border-white/70 text-white hover:bg-white hover:text-ink" disabled={busy}>💾 Enregistrer mon brouillon</button>
         <button type="button" className="gal-btn" disabled={busy} onClick={send}>🚀 Envoyer à mon coach</button>
       </div>
-      {msg && <p role="status" className="m-0 font-bold text-[#dcf247]">{msg}</p>}
+      {msg && <p role="status" className="m-0 font-bold text-[#c9ad77]">{msg}</p>}
           </fieldset>
     </form>
   );
@@ -123,21 +123,21 @@ export function SelfEvalSection({ p, goals, preview, onSaved }: { p: Player; goa
   const opens = t === null ? null : selfEvalOpensOn(season, t);
   return (
     <details className="glass gal-pop group" aria-labelledby="gal-mon-bulletin">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2><span className="shrink-0 whitespace-nowrap rounded-full bg-[#dcf247] px-3 py-1 text-sm font-bold text-ink"><span className="group-open:hidden">Ouvrir ▾</span><span className="hidden group-open:inline">Fermer ▴</span></span></summary>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h2 id="gal-mon-bulletin" className="m-0 text-2xl">✍️ Mon bulletin à remplir</h2><span className="shrink-0 whitespace-nowrap rounded-full bg-[#c9ad77] px-3 py-1 text-sm font-bold text-ink"><span className="group-open:hidden">Ouvrir ▾</span><span className="hidden group-open:inline">Fermer ▴</span></span></summary>
       <div className="mt-4 grid gap-4">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Choisir le trimestre">
         {[1, 2, 3].map((n) => { const e = list?.find((x) => x.season === season && x.trimester === n); return (
-          <button key={n} type="button" role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"min-h-11 rounded-full border-2 px-4 font-bold " + (t === n ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white")}>Trimestre {n} · {SELF_EVAL_MONTH[n]}{e?.sentAt ? " ✅" : lockedAt(n) ? " 🔒" : e ? " ✏️" : ""}</button>
+          <button key={n} type="button" role="tab" aria-selected={t === n} onClick={() => setT(n)} className={"min-h-11 rounded-full border-2 px-4 font-bold " + (t === n ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white")}>Trimestre {n} · {SELF_EVAL_MONTH[n]}{e?.sentAt ? " ✅" : lockedAt(n) ? " 🔒" : e ? " ✏️" : ""}</button>
         ); })}
       </div>
       {list === null || t === null ? <p className="m-0 text-white/80">Chargement…</p> : cur?.sentAt ? (
         <div className="grid gap-3">
-          <p role="status" className="m-0 rounded-xl bg-[#dcf247] p-3 font-bold text-ink">🚀 Envoyé à ton coach le {fmtDate(cur.sentAt)}{preview ? "" : cur.readAt ? " · il l'a lu ✅" : " · il ne l'a pas encore lu"}</p>
+          <p role="status" className="m-0 rounded-xl bg-[#c9ad77] p-3 font-bold text-ink">🚀 Envoyé à ton coach le {fmtDate(cur.sentAt)}{preview ? "" : cur.readAt ? " · il l'a lu ✅" : " · il ne l'a pas encore lu"}</p>
           <SelfEvalView ev={cur} goals={goals} dark />
         </div>
       ) : (
         <>
-          {lockedAt(t) && opens && <p role="status" className="m-0 rounded-xl border-2 border-[#dcf247] p-3 font-bold">🔒 Ce bulletin s'ouvrira le 1er {SELF_EVAL_MONTH[t]} {opens.getUTCFullYear()}. En attendant, lis ce qui t'attend et observe ton jeu : tu en auras besoin pour répondre.</p>}
+          {lockedAt(t) && opens && <p role="status" className="m-0 rounded-xl border-2 border-[#c9ad77] p-3 font-bold">🔒 Ce bulletin s'ouvrira le 1er {SELF_EVAL_MONTH[t]} {opens.getUTCFullYear()}. En attendant, lis ce qui t'attend et observe ton jeu : tu en auras besoin pour répondre.</p>}
           <Form key={`${season}-${t}`} preview={preview} locked={lockedAt(t)} p={p} goals={goals} season={season} t={t} initial={cur} onChanged={() => { load(); onSaved?.(); }} />
         </>
       )}
@@ -157,7 +157,7 @@ export function CoachSelfEval({ p, season, t, goals, onPick }: { p: Player; seas
   if (!list?.length) return null;
   const others = list.filter((e) => e !== cur);
   return (
-    <section className="grid gap-3 rounded-2xl border-2 border-[#7a4cc2] bg-white p-4" aria-label="Auto-évaluation du joueur">
+    <section className="grid gap-3 rounded-2xl border-2 border-[#6f5588] bg-white p-4" aria-label="Auto-évaluation du joueur">
       <h3 className="m-0">💬 Le regard de {p.firstName} sur son trimestre</h3>
       {cur ? <><p className="m-0 text-sm text-muted">Envoyé le {fmtDate(cur.sentAt!)}. Lecture seule : c'est son avis, il ne change pas ton évaluation.</p><SelfEvalView ev={cur} goals={goals} /></> : <p className="m-0 text-muted">Pas d'auto-évaluation envoyée pour cette période.</p>}
       {others.length > 0 && <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold">Autres bulletins reçus :</span>{others.map((e) => <button key={e.id} type="button" className="btn btn-outline btn-sm" onClick={() => onPick(e.season, e.trimester)}>{e.readAt ? "" : "🆕 "}T{e.trimester} · {e.season.replace("-", "/")}</button>)}</div>}

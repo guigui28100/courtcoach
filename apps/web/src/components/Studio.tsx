@@ -50,7 +50,7 @@ function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number, h = w) {
   const [a, b, c] = s.pts;
   if (s.tool === "text") {
     const size = Math.max(16, Math.min(w / 26, h / 12)) * Math.max(0.8, Math.min(1.4, s.size ?? 1));
-    g.font = `bold ${size}px sans-serif`; g.textAlign = "left"; g.textBaseline = "middle"; g.lineWidth = size / 5; g.strokeStyle = "#10203a"; g.fillStyle = s.color;
+    g.font = `bold ${size}px sans-serif`; g.textAlign = "left"; g.textBaseline = "middle"; g.lineWidth = size / 5; g.strokeStyle = "#17140f"; g.fillStyle = s.color;
     // Le texte revient à la ligne pour rester dans l'image : on coupe aux espaces (et au milieu d'un mot trop long)
     const maxW = Math.min(w - 16, w * 0.7), lines: string[] = [];
     let cur = "";
@@ -92,7 +92,7 @@ function drawShape(g: CanvasRenderingContext2D, s: Shape, w: number, h = w) {
       const mid = a1 + d / 2, label = `${Math.round(angleOf(a, b, c))}°`;
       g.font = `bold ${Math.max(18, w / 28)}px sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
       const lx = b[0] + Math.cos(mid) * (r + g.measureText(label).width * 0.8), ly = b[1] + Math.sin(mid) * (r + 22);
-      g.lineWidth = lw * 1.6; g.strokeStyle = "#10203a"; g.strokeText(label, lx, ly); g.fillStyle = s.color; g.fillText(label, lx, ly);
+      g.lineWidth = lw * 1.6; g.strokeStyle = "#17140f"; g.strokeText(label, lx, ly); g.fillStyle = s.color; g.fillText(label, lx, ly);
     }
   }
 }
@@ -394,10 +394,10 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
     pauseBoth();
     const H = 540, wA = Math.round((A.videoWidth * H) / A.videoHeight), wB = Math.round((B.videoWidth * H) / B.videoHeight), gap = 12;
     const c = document.createElement("canvas"); c.width = wA + wB + gap; c.height = H;
-    const g = c.getContext("2d")!; g.fillStyle = "#10203a"; g.fillRect(0, 0, c.width, H);
+    const g = c.getContext("2d")!; g.fillStyle = "#17140f"; g.fillRect(0, 0, c.width, H);
     g.drawImage(A, 0, 0, wA, H); g.drawImage(B, wA + gap, 0, wB, H);
     if (pose) { if (skA.current) drawSkeleton(g, skA.current, 0, 0, wA, H, { guides, labels: true }); if (skB.current) drawSkeleton(g, skB.current, wA + gap, 0, wB, H, { guides, labels: true }); } // les deux squelettes, avec leurs mesures, pour comparer le placement
-    g.font = "bold 24px sans-serif"; g.textBaseline = "top"; g.lineWidth = 5; g.strokeStyle = "#10203a"; g.fillStyle = "#fff";
+    g.font = "bold 24px sans-serif"; g.textBaseline = "top"; g.lineWidth = 5; g.strokeStyle = "#17140f"; g.fillStyle = "#fff";
     const lab = (txt: string, x: number) => { g.strokeText(txt, x + 12, 10); g.fillText(txt, x + 12, 10); };
     lab(`${pair[0].title} · ${frDate(pair[0].recordedAt)}`, 0); lab(`${pair[1].title} · ${frDate(pair[1].recordedAt)}`, wA + gap);
     setFrame(c);

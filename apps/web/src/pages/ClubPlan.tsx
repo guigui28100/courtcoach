@@ -108,30 +108,30 @@ export function ClubPlan() {
     <Page>
       <div className="grid gap-3">
         <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#d0592b] via-[#a63e1a] to-[#7d2c12] px-5 py-5 text-white shadow-md">
-          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-25" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 100"><g fill="none" stroke="#fff" strokeWidth="1.2"><CourtLines cx={200} y={12} h={76} netWidth={2} /></g></svg>
+        <section className="relative overflow-hidden rounded bg-ink px-5 py-5 text-white border-b-2 border-champagne">
+          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-20" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 100"><g fill="none" stroke="#c9ad77" strokeWidth="1.2"><CourtLines cx={200} y={12} h={76} netWidth={2} /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <ClubLogo className="size-16 text-white drop-shadow" />
               <div className="min-w-0">
-                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-white/80">{readOnly ? "Lecture seule" : "Réservé au club"} · Saison {season} / {season + 1}</p>
+                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-champagne">{readOnly ? "Lecture seule" : "Réservé au club"} · Saison {season} / {season + 1}</p>
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {!readOnly && <button type="button" className="rounded-xl bg-white px-4 py-2.5 font-extrabold text-[#b8471f] shadow-md hover:bg-[#fff1c2]" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
-              <button type="button" className="rounded-xl border-2 border-white/60 bg-white/15 px-4 py-2.5 font-extrabold text-white hover:bg-white/25" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "📤 Exporter" : "⋯ Affiche, export, réglages"}</button>
+              {!readOnly && <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
+              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "📤 Exporter" : "⋯ Affiche, export, réglages"}</button>
             </div>
           </div>
         </section>
       </div>
       <Err msg={err} />
       <div className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border-2 border-[#5b6680] bg-white p-2.5 shadow-sm">
-          <div role="tablist" aria-label="Façon de voir le planning" className="flex w-full rounded-xl sm:w-auto bg-[#e9edf5] p-1">
+        <div className="flex flex-wrap items-center gap-3 rounded border border-line bg-paper p-2.5">
+          <div role="tablist" aria-label="Façon de voir le planning" className="flex w-full rounded sm:w-auto bg-sand p-1">
             {VIEWS.map(([k, l]) => (
               <button key={k} role="tab" aria-selected={view === k} type="button" onClick={() => { setView(k); setMulti(false); }}
-                className={`flex-1 rounded-lg px-2 py-2 text-sm font-extrabold sm:flex-none sm:px-4 sm:text-base ${view === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
+                className={`flex-1 rounded-lg px-2 py-2 text-sm font-extrabold sm:flex-none sm:px-4 sm:text-base ${view === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
             ))}
           </div>
           <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
@@ -141,7 +141,7 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {readOnly && <p className="m-0 rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
+        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
@@ -330,13 +330,13 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#8a7f72]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#5e574a]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
       <div className="grid grid-cols-7 gap-2.5">
         {rows.map((d) => {
           const evs = cellEvents(d);
           const out = d.slice(0, 7) !== month;
           const weekend = weekdayOf(d) >= 5;
-          const bg = d === first ? "border-2 border-clay bg-[#ffd9c2] shadow-md" : d === today ? "border-2 border-clay bg-[#fff1c2] shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#7f9fd0] bg-[#d9e6f8]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
+          const bg = d === first ? "border-2 border-ink bg-champagne-soft shadow-md" : d === today ? "border-2 border-champagne-deep bg-white shadow-md" : out ? "border-2 border-[#cfc6b8] bg-[#ebe5da] opacity-60" : isVacation(d) ? "border-2 border-[#c9ad77] bg-[#f8f2e3]" : weekend ? "border-2 border-[#a89c88] bg-[#f1e8d9]" : "border-2 border-[#a89c88] bg-white";
           return (
             <div key={d} data-cell={d} onClick={() => { if (justDragged.current) return; click(d); }}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
@@ -345,7 +345,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 {evs.slice(0, 3).map((e) => { const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                   {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
                   className={"block w-full select-none rounded-md px-1 py-0.5 text-center sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
-                  style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #1b1863" : "0 -4px 0 0 #1b1863") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
+                  style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </div>
@@ -353,7 +353,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
         })}
       </div>
       {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-extrabold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>↕ {ghost.text}</div>}
-      {onReorder && <p className="m-0 hidden rounded-xl bg-[#eef2fb] px-3 py-2 text-sm font-bold text-[#1b1863] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
@@ -393,7 +393,7 @@ export function Modal({ title, onClose, children, wide, bare }: { title: string;
   );
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full ${wide ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto rounded-t-3xl bg-[#fbf8f2] p-5 shadow-2xl sm:rounded-3xl`}>
+      <div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className={`max-h-[92vh] w-full ${wide ? "max-w-5xl" : "max-w-2xl"} overflow-y-auto rounded-t bg-[#fbf8f2] p-5 shadow-2xl sm:rounded-3xl`}>
         <div className="mb-3 flex items-center justify-between gap-2"><h2 className="m-0 text-xl text-ink">{title}</h2><button type="button" className="btn-outline" onClick={onClose}>✕ Fermer</button></div>
         {children}
       </div>
@@ -423,7 +423,7 @@ function MiniCalendar({ start, end, onPick }: { start: string; end: string; onPi
         {days.map((d) => {
           const inR = d >= start && d <= end; const edge = d === start || d === end;
           return <button key={d} type="button" aria-label={fmtDay(d)} aria-pressed={inR} onClick={() => onPick(d)}
-            className={`h-8 rounded-md font-bold ${edge ? "bg-clay text-white" : inR ? "bg-[#f6d9cc] text-ink" : d.slice(0, 7) === m ? (isVacation(d) ? "bg-[#eef3fa] text-ink" : "text-ink hover:bg-sand") : "text-muted opacity-40"}`}>{+d.slice(8, 10)}</button>;
+            className={`h-8 rounded-md font-bold ${edge ? "bg-clay text-white" : inR ? "bg-champagne-soft text-ink" : d.slice(0, 7) === m ? (isVacation(d) ? "bg-champagne-soft text-ink" : "text-ink hover:bg-sand") : "text-muted opacity-40"}`}>{+d.slice(8, 10)}</button>;
         })}
       </div>
     </div>
@@ -674,7 +674,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
@@ -749,7 +749,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
     return card("Pour quelle catégorie ?", <>
       <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
         {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#1b1863] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
         <div key={g}><b className="text-sm text-muted">{g}</b>
@@ -769,7 +769,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
         <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => setHaut(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
     </div>
     {!rankOk && <p role="alert" className="m-0 rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
-    {range && <p className="m-0 rounded-xl bg-[#eef3fb] px-3 py-2 text-sm font-bold text-[#1b1863]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
+    {range && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
     <Nav ok={rankOk} skip /></>);
   if (cur === "surface") return card("Sur quelle surface ?", <>
     <ChoiceField label="Surface" options={SURFACES} value={c.info.place} onChange={(v) => info({ place: v })} placeholder="Ex. Terre battue couverte" /><Nav skip /></>);
@@ -791,7 +791,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#eef3fb] p-3 text-sm font-bold text-[#1b1863]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
 }
 
@@ -956,7 +956,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
         <div>
-          <p className="mb-3 mt-0 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
+          <p className="mb-3 mt-0 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-bold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
             <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
             <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
@@ -971,9 +971,9 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           <button type="button" className="btn-clay" disabled={!chosen} onClick={() => setStep(2)}>Valider la durée →</button>
         </div>
       ) : (<>
-      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#1b1863] px-3 py-2 text-sm font-bold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-extrabold text-[#1b1863]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
+      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-bold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-extrabold text-[#17140f]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
       {already.length > 0 && (
-        <Fold color="#b8471f" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
+        <Fold color="#7b5d2a" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#fff6f0] p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />

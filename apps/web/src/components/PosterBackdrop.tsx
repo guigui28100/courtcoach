@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 // Fonds possibles d'une affiche : « Classique » (neutre, sans fond) ou une photo du club (déposée dans apps/web/public).
 export type PosterBg = string; // "" (classique) ou l'adresse d'une photo du club (ex. "/fond-bulle.jpg")
 // Les photos du club (une photo absente n'est simplement pas proposée)
-export const PHOTOS = [{ url: "/fond-bulle.jpg", label: "Sous la bulle" }, { url: "/fond-terres.jpg", label: "Les 4 courts" }, { url: "/fond-nuit.jpg", label: "La bulle de nuit" }, { url: "/fond-neige.jpg", label: "Sous la neige" }];
+export const PHOTOS = [{ url: "/fond-bulle.jpg", label: "Sous la bulle" }, { url: "/fond-terres.jpg", label: "Les 4 courts" }, { url: "/fond-nuit.jpg", label: "La bulle de nuit" }, { url: "/fond-neige.jpg", label: "Sous la neige" }, { url: "/fond-style1.jpg", label: "Tennis bleu nuit" }, { url: "/fond-style2.jpg", label: "Joueurs sur fond bleu" }, { url: "/fond-style3.jpg", label: "Raquette rose et vert" }];
 const VEILS = { light: "rgba(255,255,255,.04) 0%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.4) 100%", normal: "rgba(255,255,255,.14) 0%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.6) 100%", strong: "rgba(255,255,255,.45) 0%,rgba(255,255,255,.58) 50%,rgba(255,255,255,.76) 100%" };
 // Le fond et son voile blanc (le voile garde le texte lisible) ; sans fond choisi (« Classique »), rien n'est dessiné
 export function Backdrop({ bg, w, h, veil = "normal" }: { bg: PosterBg; w: number; h: number; veil?: "light" | "normal" | "strong" }) {

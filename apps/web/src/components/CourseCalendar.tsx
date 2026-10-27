@@ -27,8 +27,17 @@ const TONE = { ACCEPTED: "bg-[#15803d] text-white", BOOKED: "border-2 border-[#e
 const MARK = { ACCEPTED: "✔", BOOKED: "⏳", REFUSED: "✖" } as const;
 
 // Nombre de créneaux libres de chaque jour (tous les professeurs ensemble) : affiché dans le calendrier avant de cliquer
-export function useFreeCounts(preview: boolean) {
+// `version` change quand les cours de l'adulte changent (réservation, annulation) : les nombres de créneaux libres sont alors relus
+export function useFreeCounts(preview: boolean, version = "") {
   const [data, setData] = useState<{ counts: Map<string, number>; last: string } | null>(null);
+  const [tick, setTick] = useState(0); // un autre adulte a pu réserver pendant ce temps : on relit au retour sur la page et toutes les 3 minutes
+  useEffect(() => {
+    if (preview) return;
+    const again = () => { if (document.visibilityState === "visible") setTick((n) => n + 1); };
+    const t = window.setInterval(again, 180_000);
+    document.addEventListener("visibilitychange", again); window.addEventListener("focus", again);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", again); window.removeEventListener("focus", again); };
+  }, [preview]);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -37,16 +46,16 @@ export function useFreeCounts(preview: boolean) {
         const all = await Promise.all(profs.filter((p) => !p.paused).map(async (p) => { try { return preview ? previewPlanning(p.slots) : (await get<{ days: PlanDay[] }>(`/profs/${p.id}/planning`)).days; } catch { return [] as PlanDay[]; } }));
         const counts = new Map<string, number>(); let last = "";
         for (const days of all) for (const d of days) { if (d.date > last) last = d.date; counts.set(d.date, (counts.get(d.date) ?? 0) + d.slots.filter((x) => x.free).length); }
-        if (live && last) setData({ counts, last });
+        if (live) setData({ counts, last }); // même sans aucun créneau : tous les jours sont alors grisés
       } catch { /* sans les nombres, le calendrier garde son ＋ */ }
     })();
     return () => { live = false; };
-  }, [preview]);
+  }, [preview, version, tick]);
   return data;
 }
 
 export function CourseCalendar({ lessons, onLesson, onDay, preview = false, locked = false }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void; preview?: boolean; locked?: boolean }) {
-  const avail = useFreeCounts(preview);
+  const avail = useFreeCounts(preview, lessons.map((l) => `${l.id}${l.status}`).join(","));
   const shown = useMemo(() => lessons.filter((l) => l.finalSlot && (l.status === "ACCEPTED" || l.status === "BOOKED" || l.status === "REFUSED")), [lessons]);
   const first = shown.filter((l) => l.status !== "REFUSED" && l.finalSlot!.date >= todayIso()).sort((a, b) => a.finalSlot!.date.localeCompare(b.finalSlot!.date))[0];
   const [month, setMonth] = useState((first?.finalSlot?.date ?? todayIso()).slice(0, 7));
@@ -71,13 +80,14 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           const here = shown.filter((l) => l.finalSlot!.date === d);
           const n = avail ? (avail.counts.get(d) ?? 0) : undefined; // créneaux libres ce jour-là (undefined = pas encore connu)
           const free = !locked && here.length === 0 && d > today && (n === undefined || n > 0);
-          const closed = !locked && here.length === 0 && d > today && avail !== null && d <= avail.last && n === 0; // dans la période réservable mais plus rien de libre
+          const closed = !locked && here.length === 0 && d > today && avail !== null && avail.counts.has(d) && n === 0; // un professeur propose ce jour-là mais tous ses créneaux sont pris : « complet » (un jour où personne ne donne cours n'affiche rien)
           const weekend = i % 7 >= 5;
+          const off = here.length === 0 && !free; // pas de créneau libre ce jour-là (passé, aujourd'hui, personne ne donne cours, ou complet) : grisé et non cliquable
           return (
             <div key={d} role={free ? "button" : undefined} tabIndex={free ? 0 : undefined} aria-label={free ? `${dayLong(d)} : ${n === undefined ? "aucun cours, réserver" : `${n} créneau${n > 1 ? "x" : ""} libre${n > 1 ? "s" : ""}, réserver`}` : undefined}
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
-              className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : d < today ? "opacity-60" : "")}>
-              <b className={"text-sm " + (d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
+              className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (off ? (d === today ? "border-ink " : "border-[#d6cdbb] ") + "bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_6px,#e9e3d5_6px,#e9e3d5_12px)] text-[#6f6757] " : d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : "")}>
+              <b className={"text-sm " + (off ? "text-[#6f6757]" : d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
               {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs"><span className="sm:hidden">＋ {n}</span><span className="max-sm:hidden">{n > 1 ? "Créneaux" : "Créneau"} : {n}</span></span>)}
               {closed && <span className="mt-1 block text-center text-[0.55rem] font-bold tracking-tight text-muted sm:text-xs"><span aria-hidden="true" className="sm:hidden">✕</span><span className="max-sm:sr-only">complet</span></span>}
               <div className="mt-1 grid gap-1">
@@ -91,7 +101,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre</span></p>
     </div>
   );
 }

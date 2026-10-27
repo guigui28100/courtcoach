@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { get, post } from "../api";
-import { BackLink, Err, Field, PageHead } from "../components/ui";
+import { BackLink, Err, Field, Notice, PageHead } from "../components/ui";
 
 // Page d'installation : sert une seule fois, pour créer le compte du coach. Elle se ferme ensuite toute seule.
 export default function Installation() {
@@ -19,18 +19,8 @@ export default function Installation() {
   }
 
   if (available === null) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  if (done) return (
-    <>
-      <PageHead title="Installation terminée 🎾">Ton compte coach est créé. Cette page se ferme toute seule : plus personne ne peut s'en servir.</PageHead>
-      <div className="mx-auto max-w-lg px-4 py-8"><Link to="/connexion" className="btn-clay no-underline">Me connecter</Link></div>
-    </>
-  );
-  if (!available) return (
-    <>
-      <PageHead title="Installation" />
-      <div className="mx-auto grid max-w-lg gap-3 p-6"><p className="m-0">L'installation n'est pas disponible : le compte coach existe déjà, ou la clé d'installation n'a pas encore été réglée.</p><BackLink fallback="/" className="font-bold text-ink underline">← Retour</BackLink></div>
-    </>
-  );
+  if (done) return <Notice eyebrow="Installation" title="Installation terminée" action={<Link to="/connexion" className="btn-clay no-underline">Me connecter</Link>}>Ton compte coach est créé. Cette page se ferme toute seule : plus personne ne peut s'en servir.</Notice>;
+  if (!available) return <Notice eyebrow="Installation" title="Installation indisponible" action={<BackLink fallback="/" className="btn-outline no-underline">← Retour</BackLink>}>Le compte coach existe déjà, ou la clé d'installation n'a pas encore été réglée.</Notice>;
   return (
     <>
       <PageHead title="Installation de CourtCoach">Crée le compte du coach. Il te faut la clé d'installation que tu as choisie sur Vercel.</PageHead>

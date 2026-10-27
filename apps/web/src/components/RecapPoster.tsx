@@ -1,4 +1,5 @@
 import { Backdrop } from "./PosterBackdrop";
+import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -23,11 +24,11 @@ export function matchParts(m: RecapMatch): [string, string, string] { // [sujet,
 }
 export const matchSentence = (m: RecapMatch) => matchParts(m).join(" ");
 const outcomeWord = (m: RecapMatch) => { const a = Number(m.us), b = Number(m.them); return m.us.trim() === "" || m.them.trim() === "" ? "" : a > b ? "Victoire" : a < b ? "Défaite" : "Match nul"; };
-const outcomeColor = (m: RecapMatch) => { const a = Number(m.us), b = Number(m.them); return m.us.trim() === "" || m.them.trim() === "" ? "#64748b" : a > b ? "#15803d" : a < b ? "#b91c1c" : "#64748b"; };
+const outcomeColor = (m: RecapMatch) => { const a = Number(m.us), b = Number(m.them); return m.us.trim() === "" || m.them.trim() === "" ? "#5e574a" : a > b ? "#15803d" : a < b ? "#b91c1c" : "#5e574a"; };
 export const emptyRecap = (): RecapData => ({ headline: "", photos: [], results: [], matches: [], message: "" });
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
-const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
+const NAVY = "#17140f", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a";
 
 // Photo choisie sur l'appareil : réduite (1000 px) et gardée en mémoire seulement
 export async function photoFromFile(file: File): Promise<string> {
@@ -78,7 +79,7 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const hdH = sq ? 100 : 112, ftH = sq ? 96 : 104, partH = logos.length ? 92 : 0, px = 56;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4);
-  const title: CSSProperties = { margin: 0, fontStretch: "normal", fontSize: teamsMode ? `min(${p(sq ? 66 : 76)}, ${Math.floor((w - px * 2 - 4) / (name.length * 0.68))}px)` : `min(${p(sq ? 74 : 88)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: 900, letterSpacing: "-0.02em", color: NAVY };
+  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontStretch: "normal", fontSize: teamsMode ? `min(${p(sq ? 66 : 76)}, ${Math.floor((w - px * 2 - 4) / (name.length * 0.5))}px)` : `min(${p(sq ? 74 : 88)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: 900, letterSpacing: "-0.02em", color: NAVY };
   const card: CSSProperties = { flexShrink: 0, border: `2px solid ${LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: "#fff", padding: `${p(12)} ${p(18)}` };
   const head = (t: string) => <div style={{ fontSize: p(15), fontWeight: 900, letterSpacing: "0.16em", color: acc, marginBottom: p(8) }}>{t}</div>;
 
@@ -86,7 +87,7 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
   const cols = photos.length <= 1 ? 1 : photos.length === 2 || photos.length === 4 ? 2 : 3;
   const rows = Math.ceil(photos.length / cols);
   const grid = photos.length > 0 && (
-    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden" }}>
+    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden", fontVariantNumeric: "lining-nums" }}>
       {photos.map((src, i) => <img key={i} src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", gridColumn: photos.length === 3 && i === 0 ? "1 / span 3" : undefined }} />)}
     </div>
   );
@@ -137,7 +138,7 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
               </div>
             </div>
           )}
-          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a4256", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
+          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
         </div>
       </div>
       {logos.length > 0 && (
