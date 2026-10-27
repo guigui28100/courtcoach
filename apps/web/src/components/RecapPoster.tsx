@@ -13,7 +13,7 @@ import { fullRange } from "./ClubPoster";
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
 export interface RecapMatch { team: string; opponent: string; us: string; them: string } // team = « sen-m#1 » (catégorie + numéro d'équipe)
-export interface RecapData { headline: string; photos: string[]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
+export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
 export { teamPlain, catPlain };
 // « TC Houdan bat TC Guyancourt » / « TC Houdan perd contre TC Guyancourt » / « TC Houdan fait match nul contre TC Guyancourt »
@@ -43,7 +43,10 @@ export async function photoFromFile(file: File): Promise<string> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string }) {
+// Photos par rangée selon leur nombre : la taille de chaque photo s'adapte (1 grande, 2 côte à côte, 3 = 1 + 2, 5 = 2 + 3…)
+export const PHOTO_ROWS: Record<number, number[]> = { 1: [1], 2: [2], 3: [1, 2], 4: [2, 2], 5: [2, 3], 6: [3, 3], 7: [3, 4], 8: [4, 4] };
+
+export function RecapPoster({ e, format, data, partners, bg = "", onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; onPan?: (i: number, x: number, y: number) => void }) {
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
@@ -54,7 +57,7 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
   const matches = data.matches.filter((m) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim());
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement photos et texte
   const results = lite ? [] : data.results.filter((r) => r.what.trim() || r.result.trim());
-  const photos = data.photos.slice(0, 6); const logos = partners ?? [];
+  const photos = data.photos.slice(0, 8); const logos = partners ?? [];
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
@@ -83,12 +86,22 @@ export function RecapPoster({ e, format, data, partners, bg = "" }: { e: ClubEve
   const card: CSSProperties = { flexShrink: 0, border: `2px solid ${LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: "#fff", padding: `${p(12)} ${p(18)}` };
   const head = (t: string) => <div style={{ fontSize: p(15), fontWeight: 900, letterSpacing: "0.16em", color: acc, marginBottom: p(8) }}>{t}</div>;
 
-  // Photos : de 1 à 6, en mosaïque
-  const cols = photos.length <= 1 ? 1 : photos.length === 2 || photos.length === 4 ? 2 : 3;
-  const rows = Math.ceil(photos.length / cols);
+  // Photos : de 1 à 8, rangées égales ; en prévisualisation, glisser une photo déplace le cadrage dedans
+  const layout = PHOTO_ROWS[photos.length] ?? [];
+  const rows = layout.length;
+  const cells = layout.flatMap((n, r) => Array.from({ length: n }, () => ({ r, span: 12 / n })));
+  const pan = (i: number) => (ev: React.PointerEvent<HTMLImageElement>) => {
+    if (!onPan) return;
+    const el = ev.currentTarget; const rect = el.getBoundingClientRect(); const k = rect.width / el.offsetWidth || 1;
+    const f = data.focus?.[i] ?? [50, 50]; const x0 = ev.clientX, y0 = ev.clientY;
+    el.setPointerCapture(ev.pointerId);
+    const move = (m: PointerEvent) => onPan(i, Math.max(0, Math.min(100, f[0] - ((m.clientX - x0) / k / el.offsetWidth) * 140)), Math.max(0, Math.min(100, f[1] - ((m.clientY - y0) / k / el.offsetHeight) * 140)));
+    const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  };
   const grid = photos.length > 0 && (
-    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden", fontVariantNumeric: "lining-nums" }}>
-      {photos.map((src, i) => <img key={i} src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", gridColumn: photos.length === 3 && i === 0 ? "1 / span 3" : undefined }} />)}
+    <div style={{ display: "grid", gap: p(8), gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden", fontVariantNumeric: "lining-nums" }}>
+      {photos.map((src, i) => { const f = data.focus?.[i] ?? [50, 50]; return <img key={i} src={src} alt="" draggable={false} onPointerDown={pan(i)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f[0]}% ${f[1]}%`, display: "block", gridColumn: `span ${cells[i].span}`, gridRow: cells[i].r + 1, minWidth: 0, minHeight: 0, cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} />; })}
     </div>
   );
 

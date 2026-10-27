@@ -10,7 +10,7 @@ const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   <button type="button" aria-pressed={on} onClick={onClick} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
 );
 const slug = (e: ClubEvent) => titleOf(e).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const MAX_PHOTOS = 6, MAX_RESULTS = 10;
+const MAX_PHOTOS = 8, MAX_RESULTS = 10;
 const QUICK = [["🥇 Vainqueur", ""], ["🥈 Finaliste", ""], ["Demi-finalistes", ""], ["Match par équipes", "Victoire 4 – 2"]];
 
 // Fenêtre de l'affiche de bilan : on choisit des photos, on écrit les résultats et le déroulement ; RIEN n'est enregistré ni envoyé.
@@ -37,6 +37,13 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const { w, h } = RECAP_SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.5, (window.innerWidth < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => { window.removeEventListener("resize", f); window.removeEventListener("keydown", k); }; }, [w, onClose]);
   const set = (p: Partial<RecapData>) => setD((o) => ({ ...o, ...p }));
+  const move = (from: number, to: number) => setD((o) => {
+    if (from === to || from < 0 || to < 0 || from >= o.photos.length || to >= o.photos.length) return o;
+    const ph = [...o.photos]; const f = [...(o.focus ?? [])]; while (f.length < ph.length) f.push([50, 50]);
+    const [a] = ph.splice(from, 1); const [b] = f.splice(from, 1); ph.splice(to, 0, a); f.splice(to, 0, b);
+    return { ...o, photos: ph, focus: f };
+  });
+  const remove = (i: number) => setD((o) => ({ ...o, photos: o.photos.filter((_, j) => j !== i), focus: (o.focus ?? []).filter((_, j) => j !== i) }));
   const addPhotos = async (files: FileList | null) => {
     if (!files) return; setMsg("");
     try { const room = MAX_PHOTOS - d.photos.length; const list = await Promise.all(Array.from(files).slice(0, room).map(photoFromFile)); set({ photos: [...d.photos, ...list] }); if (files.length > room) setMsg(`${MAX_PHOTOS} photos au plus : les autres n'ont pas été ajoutées.`); }
@@ -77,10 +84,16 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
               <input aria-label="Titre en haut" className={`${field} mt-1`} maxLength={40} placeholder="Résultats du tournoi" value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
             <div className="rounded-2xl border-2 border-line bg-white p-3">
               <p className="m-0 mb-2 text-sm font-bold text-ink">📷 Photos <span className="font-normal text-muted">({d.photos.length} sur {MAX_PHOTOS})</span></p>
+              <p className="m-0 mb-2 text-xs text-muted">La taille des photos s'adapte à leur nombre. Change l'ordre avec ◀ ▶ (ou en glissant une vignette) ; sur l'affiche, glisse une photo pour choisir la partie visible.</p>
               <div className="flex flex-wrap items-center gap-2">
                 {d.photos.map((s, i) => (
-                  <span key={i} className="relative"><img src={s} alt={`Photo ${i + 1}`} className="size-16 rounded-lg object-cover" />
-                    <button type="button" aria-label={`Retirer la photo ${i + 1}`} className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-ink text-xs text-white" onClick={() => set({ photos: d.photos.filter((_, j) => j !== i) })}>✕</button></span>))}
+                  <span key={i} className="relative grid gap-1" draggable onDragStart={(ev) => ev.dataTransfer.setData("text/plain", String(i))} onDragOver={(ev) => ev.preventDefault()} onDrop={(ev) => { ev.preventDefault(); move(Number(ev.dataTransfer.getData("text/plain")), i); }}>
+                    <img src={s} alt={`Photo ${i + 1}`} className="size-16 cursor-grab rounded-lg object-cover" />
+                    <button type="button" aria-label={`Retirer la photo ${i + 1}`} className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-ink text-xs text-white" onClick={() => remove(i)}>✕</button>
+                    <span className="flex justify-between">
+                      <button type="button" aria-label={`Avancer la photo ${i + 1}`} disabled={i === 0} className="rounded border border-line px-2 text-xs disabled:opacity-30" onClick={() => move(i, i - 1)}>◀</button>
+                      <button type="button" aria-label={`Reculer la photo ${i + 1}`} disabled={i === d.photos.length - 1} className="rounded border border-line px-2 text-xs disabled:opacity-30" onClick={() => move(i, i + 1)}>▶</button>
+                    </span></span>))}
                 {d.photos.length < MAX_PHOTOS && <label className="btn-outline cursor-pointer">＋ Ajouter des photos<input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} /></label>}
               </div>
             </div>
@@ -138,7 +151,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
           </div>
           <div className="min-w-0 md:sticky md:top-0 md:self-start">
             <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-              <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} /></div>
+              <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} onPan={(i, x, y) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; })} /></div>
             </div>
             <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
