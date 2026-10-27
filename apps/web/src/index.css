@@ -669,3 +669,68 @@ h1, h2, h3, .font-display { font-variant-numeric: lining-nums; }
 
 /* Cases à cocher plus grandes (doigt) : la case et son texte restent cliquables ensemble */
 input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; }
+
+/* Mes missions du jeune : UNE liste numérotée, sans cartes (domaine en pastille à droite) */
+.mlist { border: 1px solid rgba(201, 173, 119, 0.3); border-radius: 6px; background: rgba(255, 248, 230, 0.03); }
+.mlist-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.9rem; padding: 0.95rem 1.25rem; border-top: 1px solid rgba(201, 173, 119, 0.18); }
+.mlist-row:first-child { border-top: 0; }
+.mlist-n { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 600; line-height: 1; min-width: 1.6rem; color: var(--color-champagne); font-variant-numeric: lining-nums; }
+.mlist-body { display: grid; gap: 0.35rem; justify-items: start; min-width: 0; }
+.mlist-title { font-size: 1.15rem; line-height: 1.3; font-weight: 500; }
+.mlist-how { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; opacity: 0.8; }
+.mlist-pill { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.3rem 0.65rem; border-radius: 3px; border: 1px solid var(--dd); color: var(--d); white-space: nowrap; }
+html[data-mode="light"] .mlist { background: #fffdf8; border-color: #ddd3c0; }
+html[data-mode="light"] .mlist-row { border-top-color: #e8dfcc; }
+html[data-mode="light"] .mlist-n { color: #7b5d2a; }
+html[data-mode="light"] .mlist-pill { color: var(--dd); }
+@media (max-width: 640px) { .mlist-row { grid-template-columns: auto minmax(0, 1fr); padding: 0.85rem 1rem; } .mlist-pill { grid-column: 2; justify-self: start; } }
+
+/* Mes progrès du jeune : chiffres, tableau des missions, dernières étoiles (sans cartes une par une) */
+.prog-kpis { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid rgba(201, 173, 119, 0.3); border-radius: 6px; background: rgba(255, 248, 230, 0.04); }
+.prog-kpis > div { padding: 1rem 1.3rem; border-right: 1px solid rgba(201, 173, 119, 0.2); min-width: 0; }
+.prog-kpis > div:last-child { border-right: 0; }
+.prog-kpis small { display: block; font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.8; }
+.prog-kpis b { font-family: var(--font-serif); font-size: 2.3rem; font-weight: 600; line-height: 1.15; font-variant-numeric: lining-nums; }
+.prog-kpis b i { font-family: var(--font-ui); font-style: normal; font-size: 1rem; font-weight: 400; opacity: 0.8; }
+.prog-kpis .prog-date { font-size: 1.4rem; display: block; }
+.prog-panel { border: 1px solid rgba(201, 173, 119, 0.3); border-radius: 6px; background: rgba(255, 248, 230, 0.03); overflow: hidden; }
+.prog-table { width: 100%; border-collapse: collapse; }
+.prog-table th { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; text-align: left; padding: 0.8rem 1.3rem; border-bottom: 1px solid rgba(201, 173, 119, 0.25); opacity: 0.8; }
+.prog-table td { padding: 0.95rem 1.3rem; border-top: 1px solid rgba(201, 173, 119, 0.15); vertical-align: middle; }
+.prog-table tbody tr:first-child td { border-top: 0; }
+.prog-title { display: flex; align-items: center; gap: 0.6rem; font-size: 1.1rem; line-height: 1.3; }
+.prog-dot { flex: none; width: 0.65rem; height: 0.65rem; border-radius: 50%; background: var(--d); }
+.prog-dom { display: block; margin-left: 1.25rem; font-family: var(--font-ui); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+.prog-mobile { display: none; margin: 0.35rem 0 0 1.25rem; font-size: 0.85rem; font-weight: 700; color: var(--c); }
+.prog-bar { height: 0.55rem; min-width: 8rem; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.prog-bar i { display: block; height: 100%; border-radius: 4px; background: var(--c); }
+.prog-n { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; white-space: nowrap; font-variant-numeric: lining-nums; }
+.prog-n small { font-family: var(--font-ui); font-size: 0.85rem; font-weight: 400; opacity: 0.8; }
+.prog-w { font-family: var(--font-ui); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; color: var(--c); }
+.prog-two { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; align-items: start; }
+.prog-h { margin: 0; padding: 0.9rem 1.3rem; border-bottom: 1px solid rgba(201, 173, 119, 0.25); font-size: 1.4rem; }
+.prog-list { list-style: none; margin: 0; padding: 0; }
+.prog-list li { display: flex; justify-content: space-between; gap: 0.8rem; padding: 0.7rem 1.3rem; border-top: 1px solid rgba(201, 173, 119, 0.15); }
+.prog-list li:first-child { border-top: 0; }
+.prog-list b { color: var(--color-champagne); }
+.prog-list b.neg { color: #e8a0a0; }
+html[data-mode="light"] .prog-kpis, html[data-mode="light"] .prog-panel { background: #fffdf8; border-color: #ddd3c0; }
+html[data-mode="light"] .prog-kpis > div, html[data-mode="light"] .prog-table th, html[data-mode="light"] .prog-table td, html[data-mode="light"] .prog-h, html[data-mode="light"] .prog-list li { border-color: #e8dfcc; }
+html[data-mode="light"] .prog-bar { background: #e6dfcf; }
+html[data-mode="light"] .prog-list b { color: #7b5d2a; }
+html[data-mode="light"] .prog-list b.neg { color: #a1291f; }
+html[data-mode="light"] .prog-w, html[data-mode="light"] .prog-mobile { color: var(--cd); }
+@media (max-width: 760px) {
+  .prog-hide { display: none; }
+  .prog-mobile { display: block; }
+  .prog-two { grid-template-columns: 1fr; }
+  .prog-kpis > div { padding: 0.75rem 0.7rem; }
+  .prog-kpis b { font-size: 1.7rem; }
+  .prog-kpis .prog-date { font-size: 1rem; }
+  .prog-table th, .prog-table td { padding: 0.8rem 0.8rem; }
+  .prog-bar { min-width: 4.5rem; }
+}
+/* Titres des espaces jeune : clairs en mode sombre, même hors des cartes « verre » */
+:root:root:root .galaxy-sky h1, :root:root:root .galaxy-sky h2, :root:root:root .galaxy-sky h3 { color: #fffdf8; }
+:root:root:root[data-mode="light"] .galaxy-sky h1, :root:root:root[data-mode="light"] .galaxy-sky h2, :root:root:root[data-mode="light"] .galaxy-sky h3 { color: #17140f; }
+:root:root:root .galaxy-sky .mcard-title, :root:root:root .galaxy-sky .mdesc-title { color: #fffdf8; }
