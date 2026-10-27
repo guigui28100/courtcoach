@@ -64,23 +64,23 @@ export function CourtArt({ className = "" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 560 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
-        <linearGradient id="ta-fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#1a2638" /><stop offset="1" stopColor="#0b111b" /></linearGradient>
-        <linearGradient id="ta-tr" x1="0" x2="1"><stop offset="0" stopColor="#c6ff3d" stopOpacity="0" /><stop offset="1" stopColor="#c6ff3d" /></linearGradient>
-        <radialGradient id="ta-bl" cx="35%" cy="30%"><stop offset="0" stopColor="#f6ffb8" /><stop offset=".55" stopColor="#c6ff3d" /><stop offset="1" stopColor="#6fa500" /></radialGradient>
-        <radialGradient id="ta-gl"><stop offset="0" stopColor="#c6ff3d" stopOpacity=".55" /><stop offset="1" stopColor="#c6ff3d" stopOpacity="0" /></radialGradient>
+        <linearGradient id="ta-fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2f2b23" /><stop offset="1" stopColor="#161410" /></linearGradient>
+        <linearGradient id="ta-tr" x1="0" x2="1"><stop offset="0" stopColor="#c9ad77" stopOpacity="0" /><stop offset="1" stopColor="#c9ad77" /></linearGradient>
+        <radialGradient id="ta-bl" cx="35%" cy="30%"><stop offset="0" stopColor="#dfcb98" /><stop offset=".55" stopColor="#c9ad77" /><stop offset="1" stopColor="#b3925a" /></radialGradient>
+        <radialGradient id="ta-gl"><stop offset="0" stopColor="#c9ad77" stopOpacity=".55" /><stop offset="1" stopColor="#c9ad77" stopOpacity="0" /></radialGradient>
         <filter id="ta-gw"><feGaussianBlur stdDeviation="3" /></filter>
       </defs>
       <g transform="translate(40 30)">
         <path d="M70 300L440 300L520 40L170 40Z" fill="url(#ta-fl)" stroke="#ffffff66" strokeWidth="2" />
         <g stroke="#ffffff55" strokeWidth="2" fill="none">{PERSPECTIVE_LINES.map((d, i) => <path key={i} d={d} />)}</g>
         <path d={PERSPECTIVE_NET} stroke="#ffffffcc" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-        <path d={PERSPECTIVE_NET} stroke="#c6ff3d" strokeWidth="2.5" fill="none" filter="url(#ta-gw)" opacity=".7" />
+        <path d={PERSPECTIVE_NET} stroke="#c9ad77" strokeWidth="2.5" fill="none" filter="url(#ta-gw)" opacity=".7" />
         <path d="M140 270C230 -20 360 -10 440 120" fill="none" stroke="url(#ta-tr)" strokeWidth="3.5" strokeLinecap="round" />
-        <path d="M140 270C230 -20 360 -10 440 120" fill="none" stroke="#c6ff3d" strokeWidth="1.2" strokeDasharray="2 10" strokeLinecap="round" opacity=".8" />
-        <ellipse cx="442" cy="158" rx="46" ry="12" fill="none" stroke="#c6ff3d" strokeOpacity=".6" /><ellipse cx="442" cy="158" rx="24" ry="6" fill="none" stroke="#c6ff3d" strokeOpacity=".9" />
+        <path d="M140 270C230 -20 360 -10 440 120" fill="none" stroke="#c9ad77" strokeWidth="1.2" strokeDasharray="2 10" strokeLinecap="round" opacity=".8" />
+        <ellipse cx="442" cy="158" rx="46" ry="12" fill="none" stroke="#c9ad77" strokeOpacity=".6" /><ellipse cx="442" cy="158" rx="24" ry="6" fill="none" stroke="#c9ad77" strokeOpacity=".9" />
         <circle cx="442" cy="150" r="46" fill="url(#ta-gl)" />
         <g transform="translate(405 62)"><circle r="26" fill="url(#ta-bl)" /><path d="M-17 -14C-1 -2 -1 12 -17 22M17 -14C1 -2 1 12 17 22" stroke="#fff" strokeWidth="2.4" fill="none" strokeLinecap="round" opacity=".92" /></g>
-        <g transform="translate(110 262) rotate(-28)" opacity=".95"><ellipse cx="0" cy="-34" rx="22" ry="30" fill="none" stroke="#e7edf7" strokeWidth="3" /><path d="M-14 -50H14M-20 -38H20M-18 -26H18M-8 -62V-6M0 -64V-4M8 -62V-6" stroke="#e7edf7" strokeOpacity=".5" strokeWidth="1" /><path d="M0 -4V30" stroke="#e7edf7" strokeWidth="5" strokeLinecap="round" /><path d="M0 14V30" stroke="#c6ff3d" strokeWidth="5" strokeLinecap="round" /></g>
+        <g transform="translate(110 262) rotate(-28)" opacity=".95"><ellipse cx="0" cy="-34" rx="22" ry="30" fill="none" stroke="#f2f0ec" strokeWidth="3" /><path d="M-14 -50H14M-20 -38H20M-18 -26H18M-8 -62V-6M0 -64V-4M8 -62V-6" stroke="#f2f0ec" strokeOpacity=".5" strokeWidth="1" /><path d="M0 -4V30" stroke="#f2f0ec" strokeWidth="5" strokeLinecap="round" /><path d="M0 14V30" stroke="#c9ad77" strokeWidth="5" strokeLinecap="round" /></g>
       </g>
     </svg>
   );

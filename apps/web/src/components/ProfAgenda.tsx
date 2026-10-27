@@ -107,7 +107,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
                     <small className="block text-muted">À confirmer avant {fmtDeadline(l.createdAt)}</small>
                   </span>
                   <span className="flex flex-wrap gap-2">
-                    <button className="btn-clay btn-sm !bg-ok" onClick={() => confirmNow(l)}>✅ Je confirme</button>
+                    <button className="btn-clay btn-sm !bg-ok !text-white" onClick={() => confirmNow(l)}>✅ Je confirme</button>
                     <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => jump(l)}>Voir dans l'agenda</button>
                   </span>
                 </li>

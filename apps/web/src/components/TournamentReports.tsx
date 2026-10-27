@@ -212,8 +212,8 @@ export function PendingReports({ list, onChanged }: { list: TournamentReport[] |
 // ----- « Carte de joueur » (blanc et vert tennis) : ce que voient le jeune et sa famille quand ils ouvrent un bilan validé -----
 const isFinal = (round?: string | null) => /finale/i.test(round ?? "") && !/demi|1\/2|1\/4|quart|huiti|1\/8/i.test(round ?? "");
 const THEME_BARS: Record<string, { label: string; w: number; color: string; text: string }> = {
-  "tres-bien": { label: "Très bien", w: 100, color: "#1f7a4d", text: "#1d2a22" },
-  bien: { label: "Bien", w: 66, color: "#1f7a4d", text: "#1d2a22" },
+  "tres-bien": { label: "Très bien", w: 100, color: "#17140f", text: "#17140f" },
+  bien: { label: "Bien", w: 66, color: "#17140f", text: "#17140f" },
   "a-travailler": { label: "À renforcer", w: 33, color: "#c2552b", text: "#a3411c" },
 };
 function ReportCard({ r }: { r: TournamentReport }) {
@@ -226,19 +226,19 @@ function ReportCard({ r }: { r: TournamentReport }) {
   const rows = (["tres-bien", "bien", "a-travailler"] as const).flatMap((lvl) => REPORT_THEMES.filter((t) => r.themes[t.key]?.level === lvl).map((t) => ({ key: t.key, label: t.label, lvl })));
   const tiles: [string, string][] = [[`${wins.length}/${r.matches.length}`, "matchs gagnés"], ...(best ? [[best, "meilleur adversaire battu"] as [string, string]] : []), ...(stars > 0 ? [[`+${stars} ⭐`, "étoiles ×2 en match"] as [string, string]] : [])];
   return (
-    <div className="overflow-hidden rounded-2xl border-2 border-[#1f7a4d] bg-white text-[#1d2a22]">
-      <div className="flex items-center justify-between gap-3 border-b-4 border-[#dcf247] bg-[#1f7a4d] px-5 py-4 text-white">
-        <div><p className="m-0 text-xs font-bold tracking-[0.2em]" style={{ color: "#dcf247" }}>BILAN DE TOURNOI</p><p className="m-0 mt-1 text-2xl font-extrabold leading-tight" style={{ color: "#ffffff" }}>{r.name}</p><p className="m-0 mt-0.5 text-sm" style={{ color: "#e3f1e8" }}>{fmtPeriod(r.dateFrom, r.dateTo)}</p></div>
+    <div className="overflow-hidden rounded-2xl border-2 border-[#17140f] bg-white text-[#17140f]">
+      <div className="flex items-center justify-between gap-3 border-b-4 border-[#c9ad77] bg-[#17140f] px-5 py-4 text-white">
+        <div><p className="m-0 text-xs font-bold tracking-[0.2em]" style={{ color: "#c9ad77" }}>BILAN DE TOURNOI</p><p className="m-0 mt-1 text-2xl font-extrabold leading-tight" style={{ color: "#ffffff" }}>{r.name}</p><p className="m-0 mt-0.5 text-sm" style={{ color: "#e3f1e8" }}>{fmtPeriod(r.dateFrom, r.dateTo)}</p></div>
         {medal && <div className="text-center" aria-label={medal.label}><div className="text-5xl leading-none">{medal.icon}</div><p className="m-0 mt-1 text-xs font-bold" style={{ color: "#ffffff" }}>{medal.label}</p></div>}
       </div>
       <div className="grid gap-4 p-5">
-        <div className="flex flex-wrap gap-2">{tiles.map(([a, b]) => <div key={b} className="min-w-[7rem] flex-1 rounded-xl bg-[#eef3ec] px-3 py-3 text-center"><b className="block text-2xl text-[#1f7a4d]">{a}</b><span className="text-xs text-[#5d6b62]">{b}</span></div>)}</div>
-        {rows.length > 0 && <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#1f7a4d]">FORME PAR THÈME</p>
-          <ul className="m-0 mt-2 grid list-none gap-2 p-0">{rows.map((t) => { const b = THEME_BARS[t.lvl]; return <li key={t.key} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 text-[15px] sm:grid-cols-[minmax(6rem,9rem)_1fr_5.5rem]"><span>{t.label}</span><b className="text-right sm:order-3" style={{ color: b.text }}>{b.label}</b><span aria-hidden="true" className="col-span-2 h-3 rounded-full bg-[#d4dfd2] sm:order-2 sm:col-span-1"><span className="block h-3 rounded-full" style={{ width: `${b.w}%`, background: b.color }} /></span></li>; })}</ul></div>}
-        <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#1f7a4d]">LES MATCHS</p>
-          <table className="mt-1 w-full border-collapse text-[15px]"><thead><tr className="text-left text-xs text-[#5d6b62]"><th className="py-1 font-normal">TOUR</th><th className="font-normal">SCORE</th><th className="font-normal">ADV.</th><th className="text-right font-normal"><span className="sm:hidden">RÉS.</span><span className="hidden sm:inline">RÉSULTAT</span></th></tr></thead>
-            <tbody>{r.matches.map((m, i) => <tr key={i} className="border-t border-[#d4dfd2]"><td className="py-2 pr-2">{m.round || "—"}</td><td className="pr-2">{m.score || "—"}</td><td>{m.opponentRanking || "—"}</td><td className="whitespace-nowrap text-right"><b className={m.result === "Victoire" ? "text-[#1f7a4d]" : "text-[#c2352b]"}><span className="sm:hidden">{m.result === "Victoire" ? "V" : "D"}</span><span className="hidden sm:inline">{m.result === "Victoire" ? "Victoire" : "Défaite"}</span></b></td></tr>)}</tbody></table></div>
-        {r.summary && <blockquote className="m-0 border-l-[5px] border-[#1f7a4d] py-1 pl-4 text-base italic leading-relaxed">« {r.summary} »<footer className="mt-1 text-xs not-italic text-[#5d6b62]">— ton entraîneur</footer></blockquote>}
+        <div className="flex flex-wrap gap-2">{tiles.map(([a, b]) => <div key={b} className="min-w-[7rem] flex-1 rounded-xl bg-[#f6f1e6] px-3 py-3 text-center"><b className="block text-2xl text-[#17140f]">{a}</b><span className="text-xs text-[#5e574a]">{b}</span></div>)}</div>
+        {rows.length > 0 && <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#17140f]">FORME PAR THÈME</p>
+          <ul className="m-0 mt-2 grid list-none gap-2 p-0">{rows.map((t) => { const b = THEME_BARS[t.lvl]; return <li key={t.key} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 text-[15px] sm:grid-cols-[minmax(6rem,9rem)_1fr_5.5rem]"><span>{t.label}</span><b className="text-right sm:order-3" style={{ color: b.text }}>{b.label}</b><span aria-hidden="true" className="col-span-2 h-3 rounded-full bg-[#ddd3c0] sm:order-2 sm:col-span-1"><span className="block h-3 rounded-full" style={{ width: `${b.w}%`, background: b.color }} /></span></li>; })}</ul></div>}
+        <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#17140f]">LES MATCHS</p>
+          <table className="mt-1 w-full border-collapse text-[15px]"><thead><tr className="text-left text-xs text-[#5e574a]"><th className="py-1 font-normal">TOUR</th><th className="font-normal">SCORE</th><th className="font-normal">ADV.</th><th className="text-right font-normal"><span className="sm:hidden">RÉS.</span><span className="hidden sm:inline">RÉSULTAT</span></th></tr></thead>
+            <tbody>{r.matches.map((m, i) => <tr key={i} className="border-t border-[#ddd3c0]"><td className="py-2 pr-2">{m.round || "—"}</td><td className="pr-2">{m.score || "—"}</td><td>{m.opponentRanking || "—"}</td><td className="whitespace-nowrap text-right"><b className={m.result === "Victoire" ? "text-[#17140f]" : "text-[#c2352b]"}><span className="sm:hidden">{m.result === "Victoire" ? "V" : "D"}</span><span className="hidden sm:inline">{m.result === "Victoire" ? "Victoire" : "Défaite"}</span></b></td></tr>)}</tbody></table></div>
+        {r.summary && <blockquote className="m-0 border-l-[5px] border-[#17140f] py-1 pl-4 text-base italic leading-relaxed">« {r.summary} »<footer className="mt-1 text-xs not-italic text-[#5e574a]">— ton entraîneur</footer></blockquote>}
       </div>
     </div>
   );
@@ -266,4 +266,4 @@ export function ChildReports({ playerId, hideEmpty = false }: { playerId: string
   );
 }
 
-export function ReportTag({ children }: { children?: ReactNode }) { return <span className="rounded-full bg-[#dcf247] px-2 py-0.5 text-xs font-extrabold text-[#10203a]">{children ?? "⚔️ En match ×2"}</span>; }
+export function ReportTag({ children }: { children?: ReactNode }) { return <span className="rounded-full bg-[#c9ad77] px-2 py-0.5 text-xs font-extrabold text-[#17140f]">{children ?? "⚔️ En match ×2"}</span>; }

@@ -6,7 +6,7 @@ import { CourseStar, currentSeason, Goal, goalApplies, itemKey, MISSION_TOPICS, 
 // Elle sert aussi, avec les notes d'une évaluation, à « l'Image du joueur » des bulletins.
 const AXES = ["technique", "tactique", "physique", "mental", "attitude"] as const;
 const AXIS_NAME: Record<string, string> = { technique: "Technique", tactique: "Tactique", physique: "Physique", mental: "Mental", attitude: "Attitude" };
-const COLOR: Record<string, [string, string]> = { technique: ["#ff9b73", "#b8471f"], tactique: ["#7dbbff", "#2a6fb0"], physique: ["#6ee8aa", "#2f8f5b"], mental: ["#d3b2ff", "#7a4cc2"], attitude: ["#ffd84d", "#946b00"] }; // [fond sombre, fond clair]
+const COLOR: Record<string, [string, string]> = { technique: ["#d9a066", "#8a5a1a"], tactique: ["#8fb0cf", "#4a6d8f"], physique: ["#7fb995", "#3f7a56"], mental: ["#b79cd0", "#6f5588"], attitude: ["#ffd84d", "#946b00"] }; // [fond sombre, fond clair]
 // Un point à travailler d'une mission → le point du bilan correspondant
 const TOPIC_ITEM: Record<string, string> = { "Coup droit": "coup_droit", "Revers": "revers", "Service": "service", "Volée": "volee", "Smash": "smash", "Montées au filet": "jeu_filet", "Jeu au filet": "jeu_filet", "Défendre": "defendre", "Attaquer": "attaquer", "Concentration": "concentration", "Gestion des émotions": "emotions", "Routines": "routines", "Combativité": "combativite", "Confiance": "confiance", "Endurance": "endurance", "Vitesse": "vitesse", "Explosivité": "explosivite" };
 const SHORT: Record<string, string> = { "Gestion des émotions": "Émotions", "Retour de service": "Retour", "Construire le point (régularité)": "Construire", "Construire le point": "Construire", "Lecture du jeu": "Lecture du jeu" };
@@ -65,7 +65,7 @@ export function ThemeRadarSvg({ spokes, series, dark = false, summary }: { spoke
 }
 
 const Legend = ({ items, dark }: { items: { label: string; color: string; dashed?: boolean }[]; dark: boolean }) => (
-  <figcaption className={"flex flex-wrap justify-center gap-4 text-sm font-bold " + (dark ? "text-white" : "text-[#10203a]")}>
+  <figcaption className={"flex flex-wrap justify-center gap-4 text-sm font-bold " + (dark ? "text-white" : "text-[#2a2720]")}>
     {items.map((s) => <span key={s.label} className="flex items-center gap-2"><span aria-hidden className="inline-block h-0 w-6 border-t-[3px]" style={{ borderColor: s.color, borderStyle: s.dashed ? "dashed" : "solid" }} />{s.label}</span>)}
   </figcaption>
 );
@@ -87,7 +87,7 @@ export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune",
   const start = spokes.map((s) => s.start), now = spokes.map((s) => Math.min(5, s.start + (earned.get(s.id)?.stars ?? 0) / STARS_PER_POINT));
   const summary = "Toile par thème. " + spokes.map((s, i) => `${s.label} : départ ${start[i]} sur 5, maintenant ${now[i].toFixed(1)}`).join(". ");
   const box = "m-0 rounded-2xl p-3 " + (dark ? "bg-white/10" : "bg-sand/60");
-  const series: RadarSerie[] = [{ label: me ? "Mon départ" : "Départ", values: start, color: dark ? "#ffffff" : "#10203a", dashed: true }, { label: me ? "Mon niveau maintenant" : "Maintenant", values: now, color: dark ? "#dcf247" : "#e0b100" }];
+  const series: RadarSerie[] = [{ label: me ? "Mon départ" : "Départ", values: start, color: dark ? "#ffffff" : "#2a2720", dashed: true }, { label: me ? "Mon niveau maintenant" : "Maintenant", values: now, color: dark ? "#c9ad77" : "#e0b100" }];
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="theme-radar">
       <h2 id="theme-radar" className="m-0 text-2xl">📍 {me ? "Ma toile" : "La toile du joueur"} · trimestre {t}</h2>

@@ -20,12 +20,12 @@ export const perkOf = (k: string): { key: string; icon: string; label: string; h
 
 export type SponsorStatus = "A_CONTACTER" | "RELANCE" | "SIGNE" | "FACTURE" | "PAYE" | "TERMINE";
 export const STATUSES: { key: SponsorStatus; label: string; color: string }[] = [
-  { key: "A_CONTACTER", label: "À contacter", color: "#64748b" },
+  { key: "A_CONTACTER", label: "À contacter", color: "#5e574a" },
   { key: "RELANCE", label: "À relancer", color: "#c2410c" },
-  { key: "SIGNE", label: "Contrat signé", color: "#1d4ed8" },
-  { key: "FACTURE", label: "Facture envoyée", color: "#7c3aed" },
+  { key: "SIGNE", label: "Contrat signé", color: "#3f5f86" },
+  { key: "FACTURE", label: "Facture envoyée", color: "#6f5588" },
   { key: "PAYE", label: "Payé", color: "#15803d" },
-  { key: "TERMINE", label: "Terminé", color: "#475569" },
+  { key: "TERMINE", label: "Terminé", color: "#645c4c" },
 ];
 export const statusOf = (k: string) => STATUSES.find((s) => s.key === k) ?? STATUSES[0];
 

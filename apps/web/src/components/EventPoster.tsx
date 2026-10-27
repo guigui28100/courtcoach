@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { SERIF } from "./posterFonts";
 import { NoBreak, longestLink } from "./NoBreak";
 import { Backdrop, PosterBg } from "./PosterBackdrop";
 import type { CSSProperties, ReactNode } from "react";
@@ -12,7 +13,7 @@ import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from
 export type PosterFormat = "A4" | "CARRE";
 export const SIZES: Record<PosterFormat, { w: number; h: number }> = { A4: { w: 794, h: 1123 }, CARRE: { w: 1080, h: 1080 } };
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
-const NAVY = "#1b1863", GOLD = "#f4c20d", LINE = "#e3e6ee", MUTED = "#5b6477";
+const NAVY = "#17140f", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a";
 
 // Couleur de repère : une par type, et pour un tournoi une par catégorie
 const TOURNOI_COLOR: Record<string, string> = { "Messieurs (adultes)": "#1e3a8a", "Dames (adultes)": "#be185d", "Jeunes": "#15a34a" };
@@ -97,13 +98,13 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
   const hdH = sq ? 112 : 140, ftH = sq ? 112 : 148, px = sq ? 56 : 48;
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par son mot le plus long
-  const title: CSSProperties = { margin: 0, fontSize: `min(${pt(sq ? 70 : 84)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 900), letterSpacing: "-0.02em", color: NAVY, ...deco("titre") };
+  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontSize: `min(${pt(sq ? 70 : 84)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 900), letterSpacing: "-0.02em", color: NAVY, ...deco("titre") };
   const onPhoto = bg !== ""; // sur une photo : cartes transparentes, texte entouré d'un halo blanc pour rester lisible
   const HALO: CSSProperties = onPhoto ? { textShadow: "0 0 6px rgba(255,255,255,1), 0 0 14px rgba(255,255,255,.95), 0 0 26px rgba(255,255,255,.8)" } : {};
   const card: CSSProperties = { border: `2px solid ${onPhoto ? "rgba(255,255,255,.55)" : LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, padding: `${pi(12)} ${pi(16)}`, display: "flex", alignItems: "center", gap: pi(14), minWidth: 0 };
 
   const dateEl = (
-    <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", border: `2px solid ${acc}`, maxWidth: "100%" }}>
+    <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", fontVariantNumeric: "lining-nums", border: `2px solid ${acc}`, maxWidth: "100%" }}>
       <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
         <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
@@ -138,7 +139,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a4256", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
@@ -149,7 +150,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const glow: CSSProperties = bg !== "" ? { textShadow: "0 0 10px rgba(255,255,255,.95), 0 0 22px rgba(255,255,255,.9), 0 1px 2px rgba(255,255,255,.9)" } : {}; // pas de carte : un halo blanc fait ressortir le texte posé directement sur le fond
-  const titleEl = <div style={glow}><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a4256", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const titleEl = <div style={glow}><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (

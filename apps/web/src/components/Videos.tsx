@@ -212,7 +212,7 @@ export function VideoList({ videos, onChanged, empty, openId, preview = false }:
 // Étiquette du geste sur une vidéo (vue du coach ; le joueur ne voit jamais un ancien départ)
 export const MarkBadge = ({ v }: { v: VideoRow }) => {
   const m = GESTURE_MARKS.find((g) => g.key === v.mark);
-  if (m) return <span className={"badge " + (m.key === "DEPART" ? "!border-[#3f4b5c] !bg-[#e6e9ee]" : "!border-ok !bg-[#eef8f1]")}>{m.emoji} {m.label}</span>;
+  if (m) return <span className={"badge " + (m.key === "DEPART" ? "!border-[#585143] !bg-[#eeebe6]" : "!border-ok !bg-[#eef8f1]")}>{m.emoji} {m.label}</span>;
   return v.mark === "ANCIEN_DEPART" ? <span className="badge">🕘 Ancien départ</span> : null;
 };
 

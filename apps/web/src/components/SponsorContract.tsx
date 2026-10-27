@@ -1,11 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
+import { SERIF } from "./posterFonts";
 import { Pack, perkOf, PERKS, Sponsor } from "../sponsors";
 
 // Convention de partenariat (parrainage / « sponsoring ») : 3 pages A4 dessinées dans le navigateur, à imprimer ou enregistrer en PDF.
 // Ce qui est connu (partenaire, formule, contreparties, montant, dates) est écrit ; le reste est une ligne pointillée à remplir à la main.
 export const CONTRACT_W = 794, CONTRACT_H = 1123;
 const FONT = "Archivo, 'Arial Narrow', system-ui, sans-serif";
-const NAVY = "#1b1863", CLAY = "#b8471f", LINE = "#cfd4e0", MUTED = "#5b6477";
+const NAVY = "#17140f", CLAY = "#7b5d2a", LINE = "#ddd3c0", MUTED = "#5e574a";
 const LOGO = "url(/logo-tch.png) center / contain no-repeat";
 
 export interface ContractData { sponsor: Sponsor | null; pack: Pack | null }
@@ -19,7 +20,7 @@ const F = ({ v, w = 220 }: { v?: string; w?: number }) => v
 
 const Page = ({ n, children }: { n: number; children: ReactNode }) => (
   <div className="dossier-page" style={{ width: CONTRACT_W, height: CONTRACT_H, background: "#fff", position: "relative", overflow: "hidden", fontFamily: FONT, color: NAVY, breakAfter: "page", display: "flex", flexDirection: "column", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
-    <div style={{ height: 6, background: `linear-gradient(90deg, ${CLAY}, #f4c20d)`, flex: "0 0 auto" }} />
+    <div style={{ height: 6, background: `linear-gradient(90deg, ${CLAY}, #c9ad77)`, flex: "0 0 auto" }} />
     <div style={{ flex: 1, padding: "26px 50px 0", fontSize: 12.5, lineHeight: 1.42, minHeight: 0, display: "flex", flexDirection: "column", gap: 9 }} data-body>{children}</div>
     <div style={{ height: 44, flex: "0 0 auto", borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 50px", fontSize: 11, color: MUTED }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800 }}><span aria-hidden style={{ display: "inline-block", width: 22, height: 22, background: NAVY, WebkitMask: LOGO, mask: LOGO }} />Tennis Club Houdan · Convention de partenariat</span>
@@ -49,7 +50,7 @@ export function buildContract({ sponsor: s, pack }: ContractData): ReactNode[] {
     <Page key="1" n={1}>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: "0.3em", color: CLAY }}>TENNIS CLUB HOUDAN</div>
-        <h1 style={{ margin: "4px 0 0", fontSize: 26, lineHeight: 1.1, fontWeight: 900, color: NAVY }}>Convention de partenariat</h1>
+        <h1 style={{ fontFamily: SERIF, margin: "4px 0 0", fontSize: 26, lineHeight: 1.1, fontWeight: 900, color: NAVY }}>Convention de partenariat</h1>
         <div style={{ fontSize: 14, fontWeight: 700, color: MUTED }}>(parrainage / sponsoring)</div>
       </div>
       <P style={{ textAlign: "left" }}><b>Entre les soussignés :</b></P>
@@ -83,12 +84,12 @@ export function buildContract({ sponsor: s, pack }: ContractData): ReactNode[] {
       <P style={{ textAlign: "left" }}>Le Club s'engage à mettre en œuvre, pendant la durée de la convention, les actions cochées ci-dessous (☒ = incluse, ☐ = non incluse) :</P>
       <div style={{ display: "grid", gap: 4 }}>
         {PERKS.map((p) => (
-          <div key={p.key} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: `1.5px solid ${chosen.has(p.key) ? NAVY : LINE}`, borderRadius: 8, padding: "4px 10px", background: chosen.has(p.key) ? "#f3f5fb" : "#fff" }}>
+          <div key={p.key} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: `1.5px solid ${chosen.has(p.key) ? NAVY : LINE}`, borderRadius: 8, padding: "4px 10px", background: chosen.has(p.key) ? "#f6f1e6" : "#fff" }}>
             <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>{chosen.has(p.key) ? "☒" : "☐"}</span>
             <div><b>{p.label}</b> <span style={{ fontSize: 11, color: MUTED }}>— {p.hint}</span></div>
           </div>))}
         {customs.map((k) => (
-          <div key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: `1.5px solid ${NAVY}`, borderRadius: 8, padding: "6px 10px", background: "#f3f5fb" }}>
+          <div key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: `1.5px solid ${NAVY}`, borderRadius: 8, padding: "6px 10px", background: "#f6f1e6" }}>
             <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>☒</span><div><b>{perkOf(k)?.label}</b></div>
           </div>))}
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", border: `1.5px solid ${LINE}`, borderRadius: 8, padding: "6px 10px" }}>

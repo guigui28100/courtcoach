@@ -53,7 +53,7 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
 
       {l.status !== "REFUSED" && (!ask ? (
         <div className="flex flex-wrap gap-2">
-          {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
+          {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok !text-white" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
           <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
           {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>⛔ Arrêter la série</button>}
         </div>

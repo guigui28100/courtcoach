@@ -22,7 +22,7 @@ const MissionChecksLine = ({ m, goals }: { m: DeclaredMatch; goals: Goal[] }) =>
   return rows.length ? <span className="text-sm">🚀 Missions : {rows.map((g, i) => <span key={g.id}>{i > 0 && " · "}{g.title} <span title={MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[1]}>{MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[0]}</span></span>)}</span> : null;
 };
 
-const pill = (on: boolean) => "min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors " + (on ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20");
+const pill = (on: boolean) => "min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors " + (on ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20");
 
 // Formulaire de déclaration d'un match : surtout des boutons, aucun nom d'adversaire
 function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: DeclaredMatch; onDone: () => void; preview?: boolean }) {
@@ -51,7 +51,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
       onDone();
     } catch (x) { setMsg("⚠️ " + (x as Error).message); } finally { setBusy(false); }
   }
-  const step = (n: number, t: string) => <h4 className="m-0 text-base"><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-[#dcf247] text-xs font-black text-ink" aria-hidden="true">{n}</span>{t}</h4>;
+  const step = (n: number, t: string) => <h4 className="m-0 text-base"><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-[#c9ad77] text-xs font-black text-ink" aria-hidden="true">{n}</span>{t}</h4>;
   return (
     <form onSubmit={save} className="grid gap-4 rounded-2xl bg-white/10 p-4" noValidate>
       <div className="grid gap-2">{step(1, "Quel match ?")}
@@ -71,7 +71,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
         <small className="text-white/70">Pas de nom, s'il te plaît : seulement son niveau et son classement.</small>
       </div>
       <div className="grid gap-2">{step(4, "Comment as-tu joué ?")}
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ton ressenti">{FEELINGS.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={feeling === i + 1} onClick={() => setFeeling(i + 1)} className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (feeling === i + 1 ? "border-[#dcf247] bg-[#dcf247] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ton ressenti">{FEELINGS.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={feeling === i + 1} onClick={() => setFeeling(i + 1)} className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (feeling === i + 1 ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}</div>
       </div>
       {goals.length > 0 && (
         <div className="grid gap-2">{step(5, "Et mes missions ? (en un clic, facultatif)")}
@@ -93,7 +93,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
       <div className="flex flex-wrap items-center gap-3">
         <button className="gal-btn" disabled={busy}>{initial ? "💾 Enregistrer les changements" : "✅ Enregistrer ce match"}</button>
         <button type="button" className="btn btn-sm border-2 border-white/60 text-white hover:bg-white hover:text-ink" onClick={onDone}>Annuler</button>
-        {msg && <p role="status" className="m-0 font-bold text-[#dcf247]">{msg}</p>}
+        {msg && <p role="status" className="m-0 font-bold text-[#c9ad77]">{msg}</p>}
       </div>
     </form>
   );
@@ -105,11 +105,11 @@ function MatchCard({ m, p, onChanged, preview, goals }: { m: DeclaredMatch; p: P
   const left = Math.max(0, Math.ceil((new Date(m.editableUntil).getTime() - Date.now()) / 86400000));
   return (
     <li className="grid gap-1.5 rounded-2xl bg-white/10 p-3">
-      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#dcf247] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
+      <span className="flex flex-wrap items-center justify-between gap-2"><strong>{matchLabel(MATCH_KINDS_ALL, m.kind)}{m.event && ` · ${m.event}`}</strong><span className={"gal-chip " + (m.result === "Victoire" ? "!bg-[#c9ad77] !text-ink" : "")}>{m.result === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</span></span>
       <span className="text-sm text-white/85">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire : {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</span>
       {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm text-white/85">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
       <span className="text-sm text-white/85"><MissionChecksLine m={m} goals={goals} /></span>
-      {m.coachComment && <span className="rounded-xl bg-[#dcf247] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
+      {m.coachComment && <span className="rounded-xl bg-[#c9ad77] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
       <span className="flex flex-wrap items-center gap-2 text-sm">
         {m.editable ? (<>
           <button type="button" className="btn btn-sm border-2 border-white/60 text-white hover:bg-white hover:text-ink" onClick={() => setEdit(true)}>✏️ Modifier</button>

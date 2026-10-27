@@ -330,7 +330,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#8a7f72]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#5e574a]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
       <div className="grid grid-cols-7 gap-2.5">
         {rows.map((d) => {
           const evs = cellEvents(d);

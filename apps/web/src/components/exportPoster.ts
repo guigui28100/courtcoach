@@ -6,10 +6,10 @@ const toDataUrl = async (url: string, mime: string) => {
 };
 
 async function posterToCanvas(node: HTMLElement, w: number, h: number, scale: number): Promise<HTMLCanvasElement> {
-  const [logo, font] = await Promise.all([toDataUrl("/logo-tch.png", "image/png"), toDataUrl("/fonts/archivo-latin-400-900.woff2", "font/woff2")]);
+  const [logo, font, serif6, serif7] = await Promise.all([toDataUrl("/logo-tch.png", "image/png"), toDataUrl("/fonts/archivo-latin-400-900.woff2", "font/woff2"), toDataUrl("/fonts/cormorant-garamond-latin-600.woff2", "font/woff2"), toDataUrl("/fonts/cormorant-garamond-latin-700.woff2", "font/woff2")]);
   let xhtml = new XMLSerializer().serializeToString(node).split("/logo-tch.png").join(logo);
   for (const f of new Set(xhtml.match(/\/fond-[a-z0-9-]+\.jpg/g) ?? [])) xhtml = xhtml.split(f).join(await toDataUrl(f, "image/jpeg")); // la photo choisie est intégrée à l'image
-  const style = `<style>@font-face{font-family:'ArchivoPoster';font-weight:100 900;src:url(${font}) format('woff2');}</style>`;
+  const style = `<style>@font-face{font-family:'ArchivoPoster';font-weight:100 900;src:url(${font}) format('woff2');}@font-face{font-family:'CormorantPoster';font-weight:100 600;src:url(${serif6}) format('woff2');}@font-face{font-family:'CormorantPoster';font-weight:700 900;src:url(${serif7}) format('woff2');}</style>`;
   xhtml = xhtml.replace(/^(<div[^>]*>)/, `$1${style}`);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}" viewBox="0 0 ${w} ${h}"><foreignObject width="${w}" height="${h}">${xhtml}</foreignObject></svg>`;
   const img = new Image();
