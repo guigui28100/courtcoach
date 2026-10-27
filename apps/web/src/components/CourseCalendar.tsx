@@ -27,8 +27,17 @@ const TONE = { ACCEPTED: "bg-[#15803d] text-white", BOOKED: "border-2 border-[#e
 const MARK = { ACCEPTED: "✔", BOOKED: "⏳", REFUSED: "✖" } as const;
 
 // Nombre de créneaux libres de chaque jour (tous les professeurs ensemble) : affiché dans le calendrier avant de cliquer
-export function useFreeCounts(preview: boolean) {
+// `version` change quand les cours de l'adulte changent (réservation, annulation) : les nombres de créneaux libres sont alors relus
+export function useFreeCounts(preview: boolean, version = "") {
   const [data, setData] = useState<{ counts: Map<string, number>; last: string } | null>(null);
+  const [tick, setTick] = useState(0); // un autre adulte a pu réserver pendant ce temps : on relit au retour sur la page et toutes les 3 minutes
+  useEffect(() => {
+    if (preview) return;
+    const again = () => { if (document.visibilityState === "visible") setTick((n) => n + 1); };
+    const t = window.setInterval(again, 180_000);
+    document.addEventListener("visibilitychange", again); window.addEventListener("focus", again);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", again); window.removeEventListener("focus", again); };
+  }, [preview]);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -41,12 +50,12 @@ export function useFreeCounts(preview: boolean) {
       } catch { /* sans les nombres, le calendrier garde son ＋ */ }
     })();
     return () => { live = false; };
-  }, [preview]);
+  }, [preview, version, tick]);
   return data;
 }
 
 export function CourseCalendar({ lessons, onLesson, onDay, preview = false, locked = false }: { lessons: Lesson[]; onLesson: (l: Lesson) => void; onDay: (date: string) => void; preview?: boolean; locked?: boolean }) {
-  const avail = useFreeCounts(preview);
+  const avail = useFreeCounts(preview, lessons.map((l) => `${l.id}${l.status}`).join(","));
   const shown = useMemo(() => lessons.filter((l) => l.finalSlot && (l.status === "ACCEPTED" || l.status === "BOOKED" || l.status === "REFUSED")), [lessons]);
   const first = shown.filter((l) => l.status !== "REFUSED" && l.finalSlot!.date >= todayIso()).sort((a, b) => a.finalSlot!.date.localeCompare(b.finalSlot!.date))[0];
   const [month, setMonth] = useState((first?.finalSlot?.date ?? todayIso()).slice(0, 7));
@@ -71,7 +80,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           const here = shown.filter((l) => l.finalSlot!.date === d);
           const n = avail ? (avail.counts.get(d) ?? 0) : undefined; // créneaux libres ce jour-là (undefined = pas encore connu)
           const free = !locked && here.length === 0 && d > today && (n === undefined || n > 0);
-          const closed = !locked && here.length === 0 && d > today && avail !== null && d <= avail.last && n === 0; // dans la période réservable mais plus rien de libre
+          const closed = !locked && here.length === 0 && d > today && avail !== null && avail.counts.has(d) && n === 0; // un professeur propose ce jour-là mais tous ses créneaux sont pris : « complet » (un jour où personne ne donne cours n'affiche rien)
           const weekend = i % 7 >= 5;
           return (
             <div key={d} role={free ? "button" : undefined} tabIndex={free ? 0 : undefined} aria-label={free ? `${dayLong(d)} : ${n === undefined ? "aucun cours, réserver" : `${n} créneau${n > 1 ? "x" : ""} libre${n > 1 ? "s" : ""}, réserver`}` : undefined}
