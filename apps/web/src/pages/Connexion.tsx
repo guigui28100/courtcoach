@@ -29,10 +29,10 @@ export default function Connexion() {
 
   return (
     <AuthShell tour eyebrow={mode === "connexion" ? "Connexion" : "Nouveau compte"} title={mode === "connexion" ? "Content de te revoir !" : "Créer mon compte"} subtitle={mode === "connexion" ? "Connecte-toi pour retrouver tes vidéos et ton suivi." : "Gratuit pour les adhérents adultes du club."}>
-      <div role="tablist" aria-label="Connexion ou inscription" className="grid grid-cols-2 gap-1 rounded-full bg-sand p-1">
+      <div role="tablist" aria-label="Connexion ou inscription" className="grid grid-cols-2 border-b border-line">
         {(["connexion", "inscription"] as const).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setError(""); setNeedCode(false); }}
-            className={"min-h-11 rounded-full font-bold transition-all " + (mode === m ? "bg-white text-ink shadow" : "text-muted hover:text-ink")}>{m === "connexion" ? "J'ai un compte" : "Je suis nouveau"}</button>
+            className={"-mb-px min-h-12 border-b-2 font-ui text-[0.78rem] font-semibold uppercase tracking-[0.12em] transition-colors " + (mode === m ? "border-champagne-deep text-ink" : "border-transparent text-muted hover:text-ink")}>{m === "connexion" ? "J'ai un compte" : "Je suis nouveau"}</button>
         ))}
       </div>
 

@@ -206,7 +206,7 @@ export function CoachHome() {
     ...(!me?.twoFactor ? [{ space: "Compte" as const, text: "Active la double authentification (2 minutes) avant d'enregistrer de vrais jeunes", to: "/coach/securite", cta: "Activer" }] : []),
     ...(d.storage && d.storage.usedBytes / d.storage.quotaBytes > 0.8 ? [{ space: "Compte" as const, text: "L'espace de stockage des vidéos est presque plein", to: "/coach/securite", cta: "Voir" }] : []),
   ];
-  const tag = { Adultes: "border-l-[#2a6fb0]", Jeunes: "border-l-clay", Compte: "border-l-ink" };
+  const tag = { Adultes: "border-l-[#3f4b5c]", Jeunes: "border-l-clay", Compte: "border-l-ink" };
   const icon = { Adultes: "👥", Jeunes: "🏆", Compte: "🔐" };
   const h = new Date().getHours();
   const first = me?.firstName?.trim() || "coach";
@@ -225,73 +225,73 @@ export function CoachHome() {
   const menu: [string, string, string][] = [["home", "Accueil", "/coach"], ["star", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["doc", "Bulletins", "/coach/centre?onglet=bulletins"], ["film", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["cal", "Planning du club", "/coach/club"], ["shield", "Sécurité", "/coach/securite"]];
   const dayLabel = (iso: string) => { const dt = new Date(`${iso}T12:00:00`); return dt.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }).replace(".", "").replace(/^./, (c) => c.toUpperCase()); };
   const byDay = week.reduce<{ day: string; items: typeof week }[]>((acc, x) => { const k = x.l.finalSlot!.date; const g = acc.find((y) => y.day === k); if (g) g.items.push(x); else acc.push({ day: k, items: [x] }); return acc; }, []);
-  const spaceDot = { Adultes: "bg-[#9ccbff]", Jeunes: "bg-[#94e3b6]", Compte: "bg-[#c3d1ee]" };
-  const stat = (n: number, label: string, color: string) => <div className="rounded-2xl border border-[#3f5d96] bg-[#2a4272] px-4 py-3"><div className="text-sm text-[#b9c9e6]">{label}</div><b className={"block font-display text-4xl font-black leading-tight " + color}>{n}</b></div>;
+  const spaceDot = { Adultes: "bg-[#c9ad77]", Jeunes: "bg-[#8fb89a]", Compte: "bg-[#d6cdbb]" };
+  const stat = (n: number, label: string, color: string) => <div className="rounded border border-[#4a4234] bg-[#26211a] px-4 py-3"><div className="text-sm text-[#cfc5b0]">{label}</div><b className={"block font-display text-4xl font-semibold leading-tight " + color}>{n}</b></div>;
   return (
-    <div className="bg-[#1d2f55] text-white print:bg-white print:text-ink">
+    <div className="bg-[#1f1a12] text-white print:bg-white print:text-ink">
       <div className="mx-auto flex max-w-7xl gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
-        <aside aria-label="Raccourcis" className="min-w-0 shrink-0 border-[#31497a] bg-[#16264a] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden">
-          <p className="m-0 mb-2 hidden px-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#8fa6d0] lg:block">Menu</p>
+        <aside aria-label="Raccourcis" className="min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden">
+          <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a89c82] lg:block">Menu</p>
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 lg:grid lg:gap-1.5 lg:overflow-visible">
-            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-[#c4531f] text-white" : "text-[#c3d1ee] hover:bg-[#213a68] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
+            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-bold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
           </ul>
         </aside>
         <div className="min-w-0 flex-1 px-4 py-6 lg:px-8">
           <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <p className="m-0 text-xs font-black uppercase tracking-[0.16em] text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
+              <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
               <h1 className="m-0 mt-1 text-3xl leading-tight text-white sm:text-4xl">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first}</h1>
-              <p className="m-0 mt-1 text-[#c3d1ee]">{line2}</p>
+              <p className="m-0 mt-1 text-[#d6cdbb]">{line2}</p>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded-xl bg-ball px-4 py-2.5 font-display font-extrabold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
-              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded-xl bg-[#2c4574] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#35527f]"><Ico n="film" />Analyser une vidéo</Link>
-              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded-xl bg-[#2c4574] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#35527f]"><Ico n="cal" />Mon agenda</Link>
+              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded bg-champagne px-4 py-2.5 font-display font-bold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
+              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="film" />Analyser une vidéo</Link>
+              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
             </div>
           </header>
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Chiffres du jour">
-            {stat(todos.length, todos.length > 1 ? "À faire" : "À faire", "text-[#ffb089]")}
-            {stat(d.booked.length, "Cours à confirmer", "text-[#9ccbff]")}
-            {stat(adultWait.length + youthWait.length, adultWait.length + youthWait.length > 1 ? "Vidéos à analyser" : "Vidéo à analyser", "text-[#dcbcf2]")}
-            {stat(d.players.length, d.players.length > 1 ? "Jeunes suivis" : "Jeune suivi", "text-[#94e3b6]")}
+            {stat(todos.length, todos.length > 1 ? "À faire" : "À faire", "text-[#c9ad77]")}
+            {stat(d.booked.length, "Cours à confirmer", "text-[#c9ad77]")}
+            {stat(adultWait.length + youthWait.length, adultWait.length + youthWait.length > 1 ? "Vidéos à analyser" : "Vidéo à analyser", "text-[#d6cdbb]")}
+            {stat(d.players.length, d.players.length > 1 ? "Jeunes suivis" : "Jeune suivi", "text-[#8fb89a]")}
           </div>
           <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
             <HomeFold id="todo" title="À faire aujourd'hui" count={String(todos.length)} preview={todos.length ? `${todos.slice(0, 2).map((t) => t.text).join(" · ")}${todos.length > 2 ? ` · +${todos.length - 2}` : ""}` : "Tout est à jour 🎾"}>
-              {todos.length === 0 ? <p className="m-0 border-t border-[#3a5385] pt-3 text-center text-[#c3d1ee]">Tout est à jour 🎾</p> : (
+              {todos.length === 0 ? <p className="m-0 border-t border-[#3a3326] pt-3 text-center text-[#d6cdbb]">Tout est à jour 🎾</p> : (
                 <ul className="m-0 grid list-none p-0">
                   {todos.slice(0, 6).map((t, i) => (
-                    <li key={i} className="flex items-center gap-3 border-t border-[#3a5385] py-2">
+                    <li key={i} className="flex items-center gap-3 border-t border-[#3a3326] py-2">
                       <span aria-hidden="true" className={"size-2.5 shrink-0 rounded-full " + spaceDot[t.space]} />
-                      <span className="min-w-0 flex-1 text-sm leading-snug"><strong className="text-white">{t.text}</strong> <span className="text-[#b9c9e6]">· {t.space === "Compte" ? "Mon compte" : t.space === "Adultes" ? "Adultes" : "Jeunes"}</span></span>
-                      <Link to={t.to} className="shrink-0 rounded-lg bg-clay px-3 py-1.5 text-sm font-bold text-white no-underline hover:bg-clay-dark">{t.cta}</Link>
+                      <span className="min-w-0 flex-1 text-sm leading-snug"><strong className="text-white">{t.text}</strong> <span className="text-[#cfc5b0]">· {t.space === "Compte" ? "Mon compte" : t.space === "Adultes" ? "Adultes" : "Jeunes"}</span></span>
+                      <Link to={t.to} className="shrink-0 rounded bg-champagne px-3 py-1.5 text-sm font-semibold text-ink no-underline hover:bg-champagne-deep">{t.cta}</Link>
                     </li>
                   ))}
                 </ul>
               )}
-              {todos.length > 6 && <p className="m-0 border-t border-[#3a5385] pt-2 text-sm text-[#b9c9e6]">… et {todos.length - 6} autre{todos.length - 6 > 1 ? "s" : ""} dans les espaces Adultes et Jeunes.</p>}
+              {todos.length > 6 && <p className="m-0 border-t border-[#3a3326] pt-2 text-sm text-[#cfc5b0]">… et {todos.length - 6} autre{todos.length - 6 > 1 ? "s" : ""} dans les espaces Adultes et Jeunes.</p>}
             </HomeFold>
             <HomeFold id="week" title="Ma semaine" count={`${week.length} cours`} preview={week.length ? week.slice(0, 3).map(({ l }) => `${dayLabel(l.finalSlot!.date)} ${fmtHour(l.finalSlot!.time)} ${adultName(l.member, "Adhérent")}`).join(" · ") : "Aucun cours dans les 7 prochains jours"}>
-              {week.length === 0 ? <p className="m-0 border-t border-[#3a5385] pt-3 text-[#c3d1ee]">Aucun cours dans les 7 prochains jours.</p> : (
+              {week.length === 0 ? <p className="m-0 border-t border-[#3a3326] pt-3 text-[#d6cdbb]">Aucun cours dans les 7 prochains jours.</p> : (
                 <ul className="m-0 grid list-none p-0">
                   {byDay.map((g) => (
-                    <li key={g.day} className="flex gap-3 border-t border-[#3a5385] py-2">
+                    <li key={g.day} className="flex gap-3 border-t border-[#3a3326] py-2">
                       <b className="w-20 shrink-0 font-display text-sm text-white">{dayLabel(g.day)}</b>
-                      <span className="grid min-w-0 flex-1 gap-0.5 text-sm">{g.items.map(({ l, wait }) => <span key={l.id} className="min-w-0 truncate text-[#eef3fb]"><b className="font-display text-white">{fmtHour(l.finalSlot!.time)}</b> {adultName(l.member, "Adhérent")} · {l.objective}{l.prof && l.prof.id !== me?.id ? ` · avec ${l.prof.firstName ?? "un prof"}` : ""}{wait && <b className="ml-1.5 text-[#ffe08a]"> (à confirmer)</b>}</span>)}</span>
+                      <span className="grid min-w-0 flex-1 gap-0.5 text-sm">{g.items.map(({ l, wait }) => <span key={l.id} className="min-w-0 truncate text-[#efe8da]"><b className="font-display text-white">{fmtHour(l.finalSlot!.time)}</b> {adultName(l.member, "Adhérent")} · {l.objective}{l.prof && l.prof.id !== me?.id ? ` · avec ${l.prof.firstName ?? "un prof"}` : ""}{wait && <b className="ml-1.5 text-[#ffe08a]"> (à confirmer)</b>}</span>)}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a5385] pt-2 text-sm font-bold text-[#ffb089] no-underline hover:underline">Voir mon agenda →</Link>
+              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a3326] pt-2 text-sm font-bold text-[#c9ad77] no-underline hover:underline">Voir mon agenda →</Link>
             </HomeFold>
           </div>
           <section className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2" aria-label="Mes deux espaces">
-            <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded-[1.4rem] border border-[#5b9be0] p-5 text-white" style={{ background: "linear-gradient(135deg,#2a62a8,#3b82cf)" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-black leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+            <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#2b261d" }}>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
-            <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded-[1.4rem] border border-[#5cc596] p-5 text-white" style={{ background: "linear-gradient(135deg,#1f7a52,#3aa874)" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black uppercase tracking-wider">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-black leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+            <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#26211a" }}>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
           </section>
         </div>
@@ -307,11 +307,11 @@ function HomeFold({ id, title, count, preview, children }: { id: string; title: 
   const [open, setOpen] = useState(read);
   const toggle = () => { const n = !open; setOpen(n); try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); o[id] = n; localStorage.setItem(KEY, JSON.stringify(o)); } catch { /* sans mémoire */ } };
   return (
-    <section className="rounded-2xl border border-[#3f5d96] bg-[#243a66] px-4 py-3">
+    <section className="rounded border border-[#4a4234] bg-[#26211a] px-4 py-3">
       <button type="button" aria-expanded={open} onClick={toggle} className="flex w-full items-center gap-3 border-0 bg-transparent p-0 text-left text-white">
         <h2 className="m-0 whitespace-nowrap text-lg text-white">{title}</h2>
-        <span className="shrink-0 rounded-full bg-clay px-2.5 py-0.5 text-xs font-black text-white">{count}</span>
-        <span className={"min-w-0 flex-1 truncate text-right text-sm text-[#b9c9e6] " + (open ? "invisible" : "")}>{preview}</span>
+        <span className="shrink-0 rounded-full bg-champagne px-2.5 py-0.5 text-xs font-semibold text-ink">{count}</span>
+        <span className={"min-w-0 flex-1 truncate text-right text-sm text-[#cfc5b0] " + (open ? "invisible" : "")}>{preview}</span>
         <svg viewBox="0 0 24 24" className={"size-5 shrink-0 text-ball transition-transform " + (open ? "rotate-90" : "")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
       </button>
       {open && <div className="mt-2.5">{children}</div>}
@@ -413,7 +413,7 @@ export function Centre() {
         eyebrow="Espace jeunes · Centre de compétition"
         title="🏆 Mes jeunes compétiteurs"
         subtitle={isCoach ? "Profil, objectifs de l'année, accords des parents et accès des familles." : "Les jeunes que le coach te confie : objectifs, missions, bilans, bulletins, étoiles et vidéos."}
-        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-ball text-ink no-underline hover:bg-[#c9e02f]">⭐ Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-champagne text-ink no-underline hover:bg-champagne-deep">⭐ Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
       />
       <Page>
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>

@@ -60,7 +60,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
       <div className="relative">
         <div className="relative h-12 overflow-hidden bg-gradient-to-br from-clay to-clay-dark" aria-hidden="true">
           <span className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: "repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 40px),repeating-linear-gradient(0deg,#fff 0 2px,transparent 2px 40px)" }} />
-          <span className="absolute right-3 top-2 h-6 w-6 rounded-full bg-ball shadow-[0_3px_0_#a9bd1c]" />
+          <span className="absolute right-3 top-2 h-6 w-6 rounded-full bg-ball shadow-[0_2px_0_#b3925a]" />
         </div>
         <div className={"flex items-end justify-between gap-2 " + pad}>
           <span className="relative z-10 -mt-6 rounded-full ring-2 ring-ball"><span className="block rounded-full ring-2 ring-white"><Avatar name={name} size={48} /></span></span>
@@ -284,7 +284,7 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
               <td className="w-8 sm:w-12" />
               {dates.map((d, k) => { const free = byDate.get(d)?.slots.filter((s) => s.free).length ?? 0; const now = d === today; return (
                 <th key={d} scope="col" className={"rounded-xl px-0 py-1 text-center " + (now ? "bg-ink text-white" : "bg-[#f3e7d9]")}>
-                  <small className={"block text-[0.65rem] font-bold uppercase tracking-wider sm:text-xs " + (now ? "text-[#dcf247]" : "text-muted")}>{DAY_NAMES[k]}</small>
+                  <small className={"block text-[0.65rem] font-bold uppercase tracking-wider sm:text-xs " + (now ? "text-champagne" : "text-muted")}>{DAY_NAMES[k]}</small>
                   <b className="font-display text-base leading-tight sm:text-xl">{Number(d.slice(8, 10))}</b>
                   <small className={"block text-[0.6rem] font-bold " + (now ? "text-white/80" : free ? "text-[#1d6b43]" : "text-muted/70")}>{free ? `${free} libre${free > 1 ? "s" : ""}` : "—"}</small>
                 </th>

@@ -3,13 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 
 export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string; title: string; icon?: ReactNode; children?: ReactNode }) {
   return (
-    <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-sand to-[#f6e3d1]">
-      <ClubLogo className="pointer-events-none absolute -right-2 top-1/2 size-36 -translate-y-1/2 text-clay opacity-90 max-lg:hidden" />
-      <div className="relative mx-auto flex max-w-6xl items-center gap-4 px-4 py-7">
+    <section className="relative overflow-hidden border-b border-line bg-gradient-to-b from-paper to-chalk">
+      <ClubLogo className="pointer-events-none absolute -right-4 top-1/2 size-44 -translate-y-1/2 text-champagne opacity-25 max-lg:hidden" />
+      <div className="relative mx-auto flex max-w-6xl items-center gap-5 px-4 py-9 sm:py-11">
         {icon}
         <div className="min-w-0">
-          {eyebrow && <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">{eyebrow}</p>}
-          <h1 className="mb-1">{title}</h1>
+          {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
+          <h1 className="mb-2">{title}</h1>
+          <hr className="rule-gold mb-3 w-24" />
           {children && <div className="max-w-2xl text-muted">{children}</div>}
         </div>
       </div>
@@ -17,25 +18,41 @@ export function PageHead({ eyebrow, title, icon, children }: { eyebrow?: string;
   );
 }
 
-const HUES = ["#b8471f", "#2a6fb0", "#2f8f5b", "#7a4cc2", "#c47b00", "#c0306a"];
+// Page de message (introuvable, lien expiré, installation fermée…) : titre en Garamond, filet champagne, une seule action
+export function Notice({ eyebrow, title, children, action }: { eyebrow?: string; title: string; children?: ReactNode; action?: ReactNode }) {
+  return (
+    <section className="relative isolate overflow-hidden">
+      <ClubLogo className="pointer-events-none absolute left-1/2 top-1/2 -z-10 size-[26rem] -translate-x-1/2 -translate-y-1/2 text-champagne opacity-[0.14]" />
+      <div className="mx-auto grid max-w-xl justify-items-center gap-4 px-4 py-24 text-center sm:py-32">
+        {eyebrow && <p className="eyebrow m-0">{eyebrow}</p>}
+        <h1 className="m-0">{title}</h1>
+        <hr className="rule-gold w-24" style={{ background: "linear-gradient(90deg, transparent, var(--color-champagne), transparent)" }} />
+        {children && <div className="max-w-md text-muted">{children}</div>}
+        {action && <div className="mt-2 flex flex-wrap justify-center gap-3">{action}</div>}
+      </div>
+    </section>
+  );
+}
+
+const HUES = ["#17140f", "#7b5d2a", "#4b5a4a", "#5a4660", "#6b5a45", "#3f4b5c"];
 export const hueOf = (name: string) => HUES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % HUES.length];
 // Pastille ronde avec les initiales (couleur stable pour une même personne) : aucun nom de famille ni photo
 export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
   const ini = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
   const hue = HUES[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % HUES.length];
-  return <span aria-hidden="true" className="inline-grid shrink-0 place-items-center rounded-full font-display font-black text-white shadow-sm" style={{ width: size, height: size, background: hue, fontSize: size * 0.4 }}>{ini}</span>;
+  return <span aria-hidden="true" className="inline-grid shrink-0 place-items-center rounded-full border border-champagne font-serif font-semibold text-champagne-soft shadow-sm" style={{ width: size, height: size, background: hue, fontSize: size * 0.4 }}>{ini}</span>;
 }
 
 // Case de chiffre clé qui mène à la bonne partie de la page
 export function StatTile({ value, label, icon, to, tone = "clay" }: { value: number | string; label: string; icon: string; to?: string; tone?: "clay" | "ok" | "ink" }) {
-  const tones = { clay: "bg-[#fdf1ea] text-clay", ok: "bg-[#eaf6ef] text-ok", ink: "bg-[#e8edf6] text-ink" };
+  const tones = { clay: "bg-champagne-soft text-clay", ok: "bg-[#e6f0e9] text-ok", ink: "bg-sand text-ink" };
   const body = (
     <>
-      <span className={"grid h-12 w-12 place-items-center rounded-2xl text-2xl " + tones[tone]} aria-hidden="true">{icon}</span>
-      <span className="grid"><strong className="font-display text-3xl font-black leading-none text-ink">{value}</strong><span className="text-sm font-bold text-muted">{label}</span></span>
+      <span className={"grid h-12 w-12 place-items-center rounded-full text-2xl " + tones[tone]} aria-hidden="true">{icon}</span>
+      <span className="grid"><strong className="font-serif text-4xl font-semibold leading-none text-ink">{value}</strong><span className="font-ui text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted">{label}</span></span>
     </>
   );
-  const cls = "card lift flex items-center gap-4 !p-4 no-underline";
+  const cls = "card lift flex items-center gap-4 !p-4 no-underline border-t-2 border-t-champagne";
   return to ? <a href={to} className={cls}>{body}</a> : <div className={cls}>{body}</div>;
 }
 
@@ -62,11 +79,11 @@ export function Field({ label, id, children, hint }: { label: string; id: string
 }
 
 export const Err = ({ msg }: { msg?: string }) => (msg ? <p role="alert" className="alert-err m-0">{msg}</p> : null);
-export const Empty = ({ children }: { children: ReactNode }) => <p className="rounded-2xl border-2 border-dashed border-line bg-white p-6 text-center text-muted">{children}</p>;
+export const Empty = ({ children }: { children: ReactNode }) => <p className="rounded-[4px] border border-dashed border-stone bg-paper p-8 text-center font-serif text-lg italic text-muted">{children}</p>;
 
-export function ProgressBar({ value, color = "#b8471f" }: { value: number; color?: string }) {
+export function ProgressBar({ value, color = "#b3925a" }: { value: number; color?: string }) {
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-sand" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
+    <div className="h-1.5 overflow-hidden rounded-full bg-sand" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
       <div className="h-full rounded-full transition-[width]" style={{ width: `${value}%`, background: color }} />
     </div>
   );
@@ -96,39 +113,41 @@ export function BallArt({ className = "" }: { className?: string }) {
 
 // Bandeau d'accueil du coach : fond bleu nuit, balle, salutation, chiffres et boutons d'action
 export function CoachHero({ eyebrow, title, subtitle, chips, actions, tone = "default" }: { eyebrow: string; title: string; subtitle?: ReactNode; chips?: ReactNode; actions?: ReactNode; tone?: "default" | "adultes" | "jeunes" }) {
-  const base = { default: "linear-gradient(120deg,#0e1c33 0%,#1b3760 100%)", adultes: "linear-gradient(120deg,#16355f 0%,#2a6fb0 100%)", jeunes: "linear-gradient(120deg,#0e1c33 0%,#1b3760 60%,#93371a 130%)" }[tone];
+  const base = { default: "linear-gradient(120deg,#17140f 0%,#2b261d 100%)", adultes: "linear-gradient(120deg,#17140f 0%,#33291a 100%)", jeunes: "linear-gradient(120deg,#17140f 0%,#252016 60%,#3a2f1a 130%)" }[tone];
   return (
-    <section className="relative isolate overflow-hidden text-white" style={{ background: `radial-gradient(700px 320px at 88% 10%, rgba(220,242,71,0.22), transparent 62%), radial-gradient(520px 260px at 0% 120%, rgba(184,71,31,0.45), transparent 65%), ${base}` }}>
-      <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-[0.07]" aria-hidden="true"><defs><pattern id="hero-lines" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M0 63.5h64M63.5 0v64" stroke="#fff" strokeWidth="1" fill="none" /></pattern></defs><rect width="100%" height="100%" fill="url(#hero-lines)" /></svg>
-      <div className="mx-auto grid max-w-6xl items-center gap-4 px-4 py-8 sm:py-10 md:grid-cols-[1fr_auto]">
+    <section className="relative isolate overflow-hidden border-b-2 border-champagne text-chalk" style={{ background: `radial-gradient(700px 320px at 90% 0%, rgba(201,173,119,0.20), transparent 62%), ${base}` }}>
+      <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full opacity-[0.05]" aria-hidden="true"><defs><pattern id="hero-lines" width="72" height="72" patternUnits="userSpaceOnUse"><path d="M0 71.5h72M71.5 0v72" stroke="#c9ad77" strokeWidth="1" fill="none" /></pattern></defs><rect width="100%" height="100%" fill="url(#hero-lines)" /></svg>
+      <div className="mx-auto grid max-w-6xl items-center gap-4 px-4 py-10 sm:py-12 md:grid-cols-[1fr_auto]">
         <div className="grid gap-3">
-          <p className="m-0 text-xs font-bold uppercase tracking-[0.18em] text-[#dcf247]">{eyebrow}</p>
-          <h1 className="m-0 !text-white">{title}</h1>
-          {subtitle && <p className="m-0 max-w-xl text-lg text-white/85">{subtitle}</p>}
+          <p className="eyebrow m-0 !text-champagne">{eyebrow}</p>
+          <h1 className="m-0 !text-chalk">{title}</h1>
+          <hr className="rule-gold w-28" />
+          {subtitle && <p className="m-0 max-w-xl text-lg text-chalk/80">{subtitle}</p>}
           {chips && <div className="flex flex-wrap gap-2">{chips}</div>}
           {actions && <div className="mt-1 flex flex-wrap gap-2">{actions}</div>}
         </div>
-        <ClubLogo className="coach-ball size-40 justify-self-center text-white max-md:hidden lg:size-48" />
+        <ClubLogo className="size-40 justify-self-center text-champagne opacity-90 max-md:hidden lg:size-48" />
       </div>
     </section>
   );
 }
 
-export const HeroChip = ({ children }: { children: ReactNode }) => <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-bold backdrop-blur">{children}</span>;
+export const HeroChip = ({ children }: { children: ReactNode }) => <span className="inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-white/5 px-3.5 py-1 font-ui text-xs font-semibold uppercase tracking-[0.1em] text-chalk">{children}</span>;
 
 // Grande tuile de raccourci (couleur, icône, titre, texte, pastille de nombre)
 export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: string; title: string; text: string; to: string; tone: "yellow" | "clay" | "blue" | "ink"; badge?: number }) {
-  const bg = { yellow: "linear-gradient(135deg,#fff3b0,#ffe56a)", clay: "linear-gradient(135deg,#fde3d6,#f6b79a)", blue: "linear-gradient(135deg,#dbe9fb,#a9c8f2)", ink: "linear-gradient(135deg,#dfe5ef,#b8c4d8)" }[tone];
-  const cls = "lift relative grid content-start gap-1 rounded-3xl p-4 text-ink no-underline";
+  const top = { yellow: "#c9ad77", clay: "#7b5d2a", blue: "#4b5563", ink: "#17140f" }[tone];
+  const cls = "lift relative grid content-start gap-1.5 rounded-[4px] border border-line bg-paper p-5 text-ink no-underline";
   const inner = (
     <>
-      <span className="text-4xl" aria-hidden="true">{icon}</span>
-      <strong className="font-display text-lg leading-tight">{title}</strong>
-      <span className="text-sm text-ink/75">{text}</span>
-      {!!badge && <span className="absolute right-3 top-3 grid h-8 min-w-8 place-items-center rounded-full bg-clay px-2 font-display text-sm font-black text-white shadow" aria-label={`${badge} à traiter`}>{badge}</span>}
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: top }} />
+      <span className="text-3xl" aria-hidden="true">{icon}</span>
+      <strong className="font-serif text-2xl font-semibold leading-tight">{title}</strong>
+      <span className="text-sm text-muted">{text}</span>
+      {!!badge && <span className="absolute right-3 top-4 grid h-7 min-w-7 place-items-center rounded-full bg-ink px-2 font-ui text-xs font-bold text-champagne" aria-label={`${badge} à traiter`}>{badge}</span>}
     </>
   );
-  return to.startsWith("#") ? <a href={to} className={cls} style={{ background: bg }}>{inner}</a> : <Link to={to} className={cls} style={{ background: bg }}>{inner}</Link>;
+  return to.startsWith("#") ? <a href={to} className={cls}>{inner}</a> : <Link to={to} className={cls}>{inner}</Link>;
 }
 
 // Sépare l'icône (emoji) du texte d'un onglet : le texte revenu à la ligne reste aligné proprement, sous le texte et non sous l'icône
@@ -144,8 +163,8 @@ export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: 
     <div className={side ? "tabbar side" : "tabbar"}>
       <div role="tablist" aria-label={label}>
         {tabs.map(([k, l, n]) => (
-          <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (active === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}>
-            <TabLabel text={l} />{!!n && <b className="ml-1.5 rounded-full bg-clay px-2 py-0.5 text-xs text-white">{n}</b>}
+          <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-2 px-4 font-semibold transition-colors " + (active === k ? "border-champagne-deep text-ink" : "border-transparent text-muted hover:text-ink")}>
+            <TabLabel text={l} />{!!n && <b className="ml-1.5 rounded-full bg-ink px-2 py-0.5 text-xs text-champagne">{n}</b>}
           </button>
         ))}
       </div>
@@ -160,10 +179,10 @@ export const SideLayout = ({ nav, children }: { nav: ReactNode; children: ReactN
 
 // Qui a saisi : le coach est orange, chaque entraîneur de comité a sa propre couleur (stable, tirée de son identifiant)
 export interface Authored { authorId?: string | null; authorName?: string | null; authorRole?: string | null; }
-const TRAINER_COLORS = ["#2a6fb0", "#2f8f5b", "#7a4cc2", "#0e7490", "#be185d", "#4d7c0f"];
+const TRAINER_COLORS = ["#3f5f86", "#3a7a56", "#6b4a8a", "#0e6e86", "#9d2a5c", "#6b5a45"];
 export function authorColor(a: Authored | null | undefined) {
   if (!a?.authorName) return null;
-  if (a.authorRole === "COACH") return "#b8471f";
+  if (a.authorRole === "COACH") return "#7b5d2a";
   let h = 0; for (const ch of a.authorId ?? a.authorName) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return TRAINER_COLORS[h % TRAINER_COLORS.length];
 }
@@ -203,9 +222,9 @@ export function MultiSelect({ id, name, options, value, allowOther }: { id: stri
       <summary id={id} className="input flex min-h-12 cursor-pointer list-none items-center justify-between gap-2">
         <span className={chosen.length ? "" : "text-muted"}>{chosen.length ? chosen.join(", ") : "Choisir…"}</span><span aria-hidden="true">▾</span>
       </summary>
-      <div className="absolute left-0 right-0 z-20 mt-1 grid gap-1 rounded-2xl border-2 border-line bg-white p-2 shadow-lg">
+      <div className="absolute left-0 right-0 z-20 mt-1 grid gap-1 rounded-[4px] border border-stone bg-paper p-2 shadow-lg">
         {all.map((o) => (
-          <label key={o} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-sand">
+          <label key={o} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 hover:bg-champagne-soft">
             <input type="checkbox" className="h-5 w-5" checked={chosen.includes(o)} onChange={() => toggle(o)} />{o}
           </label>
         ))}

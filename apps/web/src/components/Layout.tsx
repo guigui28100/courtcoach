@@ -46,9 +46,12 @@ const Icon = ({ name }: { name: string }) => <svg viewBox="0 0 24 24" className=
 
 export function Brand({ light = false }: { light?: boolean }) {
   return (
-    <Link to="/" className={"flex items-center gap-2 font-display text-2xl font-black no-underline " + (light ? "text-[#dcf247]" : "text-clay")} style={{ fontStretch: "80%" }} aria-label="CourtCoach, accueil">
-      <ClubLogo className={"size-12 " + (light ? "text-white" : "text-clay")} />
-      CourtCoach
+    <Link to="/" className={"flex items-center gap-2.5 no-underline sm:gap-3 " + (light ? "text-white" : "text-ink")} aria-label="CourtCoach, accueil">
+      <ClubLogo className={"size-9 sm:size-11 " + (light ? "text-white" : "text-ink")} />
+      <span className="grid leading-none">
+        <span className={"font-serif text-[1.2rem] font-semibold uppercase tracking-[0.14em] sm:text-[1.55rem] sm:tracking-[0.2em] " + (light ? "text-[#dcf247]" : "text-ink")}>CourtCoach</span>
+        <span className={"mt-1 font-ui text-[0.52rem] font-semibold uppercase tracking-[0.26em] sm:text-[0.6rem] sm:tracking-[0.34em] " + (light ? "text-white/70" : "text-clay")}>Tennis Club Houdan</span>
+      </span>
     </Link>
   );
 }
@@ -78,17 +81,17 @@ export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const galaxy = ((me?.role === "YOUTH" || me?.role === "GUARDIAN") && pathname === "/suivi") || ((me?.role === "COACH" || me?.role === "TRAINER") && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)) || pathname.includes("/bulletin/"); // univers « galaxie » de l'espace jeune
   const link = ({ isActive }: { isActive: boolean }) =>
-    "inline-flex items-center gap-1.5 whitespace-nowrap px-1 py-2.5 font-bold border-b-[3px] no-underline transition-colors " + (galaxy ? (isActive ? "text-white border-[#dcf247]" : "text-white/80 border-transparent hover:text-white") : (isActive ? "text-ink border-clay" : "text-muted border-transparent hover:text-ink"));
+    "inline-flex items-center gap-1.5 whitespace-nowrap px-0.5 py-2.5 border-b-2 no-underline transition-colors " + (galaxy ? "font-bold " + (isActive ? "text-white border-[#dcf247]" : "text-white/80 border-transparent hover:text-white") : "font-ui text-[0.74rem] font-semibold uppercase tracking-[0.14em] " + (isActive ? "text-ink border-champagne-deep" : "text-muted border-transparent hover:text-ink hover:border-champagne"));
 
   return (
     <div className="flex min-h-dvh flex-col">
       <NetLoader />
-      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-[#fff3bf] px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
+      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-champagne-soft border-b border-champagne px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
-      <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95")}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5">
+      <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(20,16,80,0.45)]" : "border-line bg-chalk/95 shadow-[0_1px_0_rgba(201,173,119,0.45)]")}>
+        <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-4">
           <span className="shrink-0 whitespace-nowrap"><Brand light={galaxy} /></span>
-          <nav aria-label="Menu principal" className="hidden items-center gap-4 md:flex xl:gap-5">
+          <nav aria-label="Menu principal" className="hidden items-center gap-5 md:flex xl:gap-7">
             {items.map((i) => <NavLink key={i.to} to={i.to} end className={link}><span className="hidden lg:inline-flex"><Icon name={i.icon} /></span>{i.short && i.short !== i.label ? <><span className="2xl:hidden">{i.short}</span><span className="hidden 2xl:inline">{i.label}</span></> : i.label}</NavLink>)}
             {me ? (
               <button className={galaxy ? "btn btn-sm shrink-0 whitespace-nowrap border-2 border-white/70 text-white hover:bg-white hover:text-ink" : "btn-outline btn-sm shrink-0 whitespace-nowrap"} onClick={async () => { await logout(); nav("/"); }}><span className="lg:hidden">Quitter</span><span className="hidden lg:inline">Se déconnecter</span></button>
@@ -105,7 +108,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {me && (
         <nav aria-label="Menu principal" className={"print:hidden sticky bottom-0 z-40 grid border-t md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
           {items.map((i) => (
-            <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-bold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#dcf247]" : "text-white/80") : (isActive ? "bg-[#fdf1ea] text-clay" : "text-muted"))}>
+            <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-bold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#dcf247]" : "text-white/80") : (isActive ? "bg-champagne-soft text-ink" : "text-muted"))}>
               <Icon name={i.icon} />{i.short ?? i.label}
             </NavLink>
           ))}
@@ -113,11 +116,12 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
       )}
 
-      <footer className="print:hidden bg-ink px-4 py-6 text-sm text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2">
-          <p className="m-0 whitespace-nowrap"><strong>Tennis Club Houdan</strong> · CourtCoach</p>
+      <footer className="print:hidden border-t-2 border-champagne bg-ink px-4 py-8 text-sm text-chalk/85">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-3">
+          <p className="m-0 whitespace-nowrap font-serif text-xl font-semibold uppercase tracking-[0.18em] text-champagne">CourtCoach</p>
+          <p className="m-0 whitespace-nowrap"><strong className="font-semibold text-chalk">Tennis Club Houdan</strong></p>
           <p className="m-0">
-            Association à but non lucratif · <Link to="/confidentialite" className="underline">Confidentialité</Link>
+            Association à but non lucratif · <Link to="/confidentialite" className="underline decoration-champagne underline-offset-4">Confidentialité</Link>
           </p>
           {me && (me.role === "YOUTH" || me.role === "GUARDIAN") && (
             <p className="m-0 basis-full rounded-lg bg-white/10 px-3 py-2">

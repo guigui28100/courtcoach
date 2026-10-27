@@ -69,7 +69,7 @@ export default function SponsorsPage() {
   return (
     <Page>
       <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
-      <header className="rounded-3xl bg-gradient-to-br from-[#b8471f] to-[#7d2d12] p-5 text-white">
+      <header className="rounded border-b-2 border-champagne bg-ink p-5 text-white">
         <p className="m-0 text-xs font-bold uppercase tracking-[0.16em] text-white/80">Coach et président</p>
         <h1 className="m-0 !text-white">🤝 Partenaires du club</h1>
         <p className="m-0 mt-1 text-white/90">Les entreprises qui soutiennent le club : suivi, contreparties, logos sur les affiches et dossier à leur envoyer.</p>
@@ -159,7 +159,7 @@ function SponsorForm({ initial, offer, onClose, onDone }: { initial: Sponsor | n
           <p className="m-0 text-sm font-bold text-ink">🏅 Grade (formule de partenariat)</p>
           <div className="flex flex-wrap gap-2">
             <Pill on={!v.pack} onClick={() => set({ pack: "" })}>✂️ Sur mesure</Pill>
-            {offer.packs.map((p) => <Pill key={p.name} on={v.pack === p.name} color="#b8471f" onClick={() => set({ pack: p.name, perks: [...p.perks], amount: v.amount || p.price })}>{p.name}{p.price ? ` · ${p.price}` : ""}</Pill>)}
+            {offer.packs.map((p) => <Pill key={p.name} on={v.pack === p.name} color="#7b5d2a" onClick={() => set({ pack: p.name, perks: [...p.perks], amount: v.amount || p.price })}>{p.name}{p.price ? ` · ${p.price}` : ""}</Pill>)}
           </div>
           <p className="m-0 mt-1 text-sm font-bold text-ink">Ce que le club lui offre en échange</p>
           <p className="m-0 text-xs text-muted">{v.pack ? `Les contreparties de « ${v.pack} » sont déjà cochées : tu peux en ajouter ou en retirer (le grade reste, la liste devient personnalisée).` : "Choisis un grade pour cocher d'un coup ses contreparties, ou coche à la main."}</p>

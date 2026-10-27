@@ -13,10 +13,10 @@ export function Radar({ series, size = 280, dark = false }: { series: RadarSerie
   const summary = series.map((s) => `${s.label} : ${EVAL_AXES.map((a) => `${a.label} ${(s.values[a.key] || 0).toFixed(1)}`).join(", ")}`).join(". ");
   return (
     <figure className="m-0 grid justify-items-center gap-2">
-      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size }} role="img" aria-label={`Graphique en toile d'araignée. ${summary}`}>
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size, overflow: "visible" }} role="img" aria-label={`Graphique en toile d'araignée. ${summary}`}>
         {[1, 2, 3, 4, 5].map((l) => <polygon key={l} points={poly(() => l)} fill="none" stroke={grid} strokeWidth={l === 5 ? 1.5 : 1} />)}
         {EVAL_AXES.map((a, i) => { const [x, y] = pt(i, 5); const [lx, ly] = pt(i, 6.15); return (
-          <g key={a.key}><line x1={c} y1={c} x2={x} y2={y} stroke={grid} /><text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={dark ? DARK[a.key] ?? a.color : a.color}>{a.label}</text></g>
+          <g key={a.key}><line x1={c} y1={c} x2={x} y2={y} stroke={grid} /><text x={lx} y={ly} textAnchor={lx < c - 8 ? "end" : lx > c + 8 ? "start" : "middle"} dominantBaseline="middle" fontSize="12" fontWeight="700" fill={dark ? DARK[a.key] ?? a.color : a.color}>{a.label}</text></g>
         ); })}
         {series.map((s) => (
           <g key={s.label}>

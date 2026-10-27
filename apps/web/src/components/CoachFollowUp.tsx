@@ -43,7 +43,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
   const series = useMemo(() => {
     const now: Record<string, number> = {}, before: Record<string, number> = {};
     EVAL_AXES.forEach((a) => { now[a.key] = axisAverage({ ratings }, a); before[a.key] = axisAverage(prev, a); });
-    return [{ label: periodShort(season, t), values: now, color: "#b8471f" }, ...(prev ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#10203a", dashed: true }] : [])];
+    return [{ label: periodShort(season, t), values: now, color: "#7b5d2a" }, ...(prev ? [{ label: periodShort(prevP.season, prevP.t), values: before, color: "#10203a", dashed: true }] : [])];
   }, [ratings, prev, season, t, prevP.t, prevP.season]);
 
   async function save(e: FormEvent<HTMLFormElement>) {
