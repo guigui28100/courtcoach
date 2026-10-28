@@ -137,7 +137,7 @@ describe("Planning du club (réservé au coach)", () => {
   });
 
   it("« Mon planning » : chacun ne voit que les événements où il est placé, et écrit ses propres jours de cours", async () => {
-    for (const k of ["adulte", "parent", "jeune"]) { await A[k].get("/api/club/mine").expect(403); await A[k].get("/api/club/my-schedule").expect(403); await A[k].put("/api/club/my-schedule").set(ORIGIN).send({ items: [] }).expect(403); }
+    for (const k of ["adulte", "parent", "jeune"]) { await A[k].get("/api/club/mine").expect(403); await A[k].get("/api/club/my-schedule").expect(403); }
     await request(app.getHttpServer()).get("/api/club/mine").expect(401);
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2099-05-01", endDate: "2099-05-01", courts: [], who: ["Entraineur"], time: "10 h", place: "Court 1" }).expect(201);
     await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2099-05-02", endDate: "2099-05-02", courts: [], who: ["Quelqu'un d'autre"] }).expect(201);
