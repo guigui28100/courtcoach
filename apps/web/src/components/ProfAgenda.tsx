@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { post } from "../api";
+import { get, post } from "../api";
+import { fmtRange, kindOf, titleOf } from "../clubPlan";
+import { KIND_COLOR, useMyClubEvents } from "./MyClubEvents";
 import { adultName, collapseSeries, everyDay, fmtDeadline, fmtSlot, fmtTime, Lesson, ProfSlot, WEEKDAYS } from "../types";
 import { offDay } from "../series";
 import { LessonRow } from "../pages/Coach";
 
 // Agenda du professeur : la semaine en grille (jours en colonnes, heures en lignes).
 // Vert = cours confirmé, jaune = à confirmer, vert clair = libre, hachuré = pas disponible. On touche un cours : sa fiche s'ouvre.
+interface ClubCourse { weekday: number; start: string; end: string; label: string; kind?: string }
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const localToday = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Paris" }); // date du jour à Paris (AAAA-MM-JJ)
 const addDays = (date: string, n: number) => iso(new Date(new Date(`${date}T12:00:00Z`).getTime() + n * 86_400_000));
@@ -41,6 +44,11 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
     return () => { clearInterval(a); clearInterval(b); document.removeEventListener("visibilitychange", vis); };
   }, [reload]);
   useEffect(() => { if (follow) setAnchor(today); }, [today, follow]);
+  // Ajouts du club : les cours placés par le coach (cours adultes, compétition jeunes, école de tennis) et les événements où le professeur est affecté
+  const [club, setClub] = useState<ClubCourse[]>([]);
+  useEffect(() => { if (!preview) get<ClubCourse[]>("/club/my-schedule").then(setClub).catch(() => setClub([])); }, [preview]);
+  const ev = useMyClubEvents();
+  const evList = preview ? [] : ev.list ?? [];
   const [open, setOpen] = useState<Lesson | null>(null);
   const [err, setErr] = useState("");
   const start = anchor; // 7 jours (3 sur téléphone) à partir d'aujourd'hui : l'agenda avance d'un jour chaque jour
@@ -51,6 +59,8 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const upcomingOf = (l: Lesson) => l.seriesId ? shown.filter((r) => r.seriesId === l.seriesId && r.finalSlot!.date >= today).length : 0;
   const lessonAt = (date: string, hour: number) => shown.find((l) => l.finalSlot!.date === date && Math.floor(mins(l.finalSlot!.time) / 60) === hour);
 
+  const clubAt = (date: string, hour: number) => club.find((c) => c.weekday === weekdayOf(date) && mins(c.start) <= hour * 60 && mins(c.end) >= (hour + 1) * 60 && !(skipHolidays && offDay(date)));
+  const eventsOn = (date: string) => evList.filter((e) => e.startDate <= date && e.endDate >= date);
   const free = (date: string, hour: number) => slots.some((s) => {
     const okDay = s.date ? s.date === date : s.weekday === weekdayOf(date) && !(skipHolidays && offDay(date));
     return okDay && mins(s.start) <= hour * 60 && mins(s.end) >= (hour + 1) * 60;
@@ -60,10 +70,11 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const hours = useMemo(() => {
     const set = new Set<number>();
     for (let h = 6; h <= 22; h++) for (const d of days) if (free(d, h)) set.add(h);
+    for (let h = 6; h <= 22; h++) for (const d of days) if (clubAt(d, h)) set.add(h);
     for (const l of shown) if (days.includes(l.finalSlot!.date)) set.add(Math.floor(mins(l.finalSlot!.time) / 60));
     const list = [...set].sort((x, y) => x - y);
     return list.length ? list : [17, 18, 19];
-  }, [days.join(), slots, shown, skipHolidays]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [days.join(), slots, shown, skipHolidays, club]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const byStamp = (a: Lesson, b: Lesson) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time);
   const upcoming = (l: Lesson) => l.finalSlot!.date >= today;
@@ -80,7 +91,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const title = `Du ${dayNum(days[0])} ${days[0].slice(5, 7) === last.slice(5, 7) ? "" : monthOf(days[0]) + " "}au ${dayNum(last)} ${monthOf(last)}`;
 
   return (
-    <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Mon agenda">
+    <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Ton agenda">
       <div className="agenda-hero flex flex-wrap items-center gap-3 px-4 py-4 text-white">
         <span aria-hidden className="text-3xl">🎾</span>
         <div className="min-w-[12rem] flex-1">
@@ -115,13 +126,14 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
             </ul>
           </div>
         )}
-        {inPeriod.length === 0 && !hours.some((h) => days.some((d) => free(d, h))) && <p className="m-0 mb-2 rounded-xl bg-sand p-3 text-sm">Aucun cours ni créneau libre sur cette période.</p>}
+        {inPeriod.length === 0 && !hours.some((h) => days.some((d) => free(d, h) || clubAt(d, h))) && <p className="m-0 mb-2 rounded-xl bg-sand p-3 text-sm">Aucun cours ni créneau libre sur cette période.</p>}
         <div className="agenda-grid" style={{ gridTemplateColumns: `3rem repeat(${count}, minmax(0, 1fr))` }} role="grid" aria-label="Agenda de la période">
           <div />
           {days.map((d) => (
             <div key={d} className={"agenda-day " + (d === today ? "is-today" : "")} role="columnheader">
               <small>{WEEKDAYS[weekdayOf(d)].slice(0, 3)}</small>
               <b>{dayNum(d)}</b>
+              {eventsOn(d).length > 0 && <small aria-label="Événement du club ce jour-là">🏆</small>}
             </div>
           ))}
           {hours.map((h) => (
@@ -143,6 +155,8 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
                     </button>
                   );
                 }
+                const cc = clubAt(d, h);
+                if (cc) return <div key={d + h} role="gridcell" className="agenda-lesson cursor-default" style={{ background: KIND_COLOR[cc.kind ?? ""] ?? "#4a4437", color: "#fff" }} aria-label={`${cc.label}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h`}><span className="min-w-0 text-left leading-tight"><b className="block truncate">{cc.label || "Cours du club"}</b><small className="block truncate">🎾 Club</small></span></div>;
                 return free(d, h)
                   ? <div key={d + h} role="gridcell" className="agenda-free" aria-label={`${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h : libre`}><span>libre</span></div>
                   : <div key={d + h} role="gridcell" className="agenda-off" aria-hidden />;
@@ -157,7 +171,21 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
           <li><i className="agenda-dot border border-[#b5dcbf] bg-[#e7f4ea]" />Libre</li>
           <li><i className="agenda-dot border border-line bg-[#f1ece1]" />Pas disponible</li>
           <li>🔁 série · 👥 à deux</li>
+          {club.length > 0 && <li><i className="agenda-dot" style={{ background: "#2f5f9e" }} />Cours du club</li>}
         </ul>
+        {evList.length > 0 && (
+          <div className="mt-3 grid gap-1">
+            <h4 className="m-0 flex flex-wrap items-center gap-2 text-base font-bold">🏆 Événements du club où tu es placé{ev.fresh.length > 0 && <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => ev.markSeen(evList)}>J'ai tout vu</button>}</h4>
+            <ul className="m-0 grid list-none gap-1 p-0">
+              {evList.map((e) => { const st = ev.state(e); return (
+                <li key={e.id} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm">
+                  <b>{kindOf(e.kind).icon} {titleOf(e)}</b> {st === "nouveau" && <span className="rounded-full bg-champagne px-2 py-0.5 text-xs font-bold text-ink">Nouveau</span>}{st === "modifie" && <span className="rounded-full bg-[#ffe08a] px-2 py-0.5 text-xs font-bold text-ink">Modifié</span>}
+                  <span className="block capitalize">{fmtRange(e.startDate, e.endDate)}{e.time ? ` · 🕒 ${e.time}` : ""}{e.place ? ` · 📍 ${e.place}` : ""}</span>
+                  {e.note && <span className="block text-muted [overflow-wrap:anywhere]">📝 {e.note}</span>}
+                </li>); })}
+            </ul>
+          </div>
+        )}
         {later.length > 0 && (
           <div className="mt-3 grid gap-1">
             <h4 className="m-0 text-base font-bold">📆 Prochains cours (plus tard)</h4>

@@ -47,6 +47,17 @@ export class PeopleDto {
   @IsArray() @ArrayMaxSize(MAX_PEOPLE) @ValidateNested({ each: true }) @Type(() => PersonDto) people!: PersonDto[];
 }
 
+export class ScheduleItemDto {
+  @IsInt() @Min(0) @Max(6) weekday!: number; // 0 = lundi … 6 = dimanche
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) start!: string;
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) end!: string;
+  @IsOptional() @Transform(trim) @IsString() @MaxLength(60) label?: string;
+  @IsOptional() @IsIn(["ADULTES", "COMPETITION", "ECOLE"]) kind?: string; // cours adultes, compétition jeunes, école de tennis
+}
+export class ScheduleDto {
+  @IsArray() @ArrayMaxSize(40) @ValidateNested({ each: true }) @Type(() => ScheduleItemDto) items!: ScheduleItemDto[];
+}
+
 // Nouvel ordre des événements d'une case du calendrier
 export class ReorderDto {
   @IsArray() @ArrayMaxSize(60) @IsString({ each: true }) @MaxLength(60, { each: true }) ids!: string[];

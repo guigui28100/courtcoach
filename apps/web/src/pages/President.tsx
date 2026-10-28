@@ -6,8 +6,9 @@ import { ProfsAdmin } from "../components/Profs";
 import { CoachHero, Empty, Page, TabsBar } from "../components/ui";
 import { collapseSeries, Lesson, profName, todayIso } from "../types";
 import { LessonRow } from "./Coach";
+import { WeekPlanner } from "../components/WeekPlanner";
 
-const TABS = ["activite", "demandes", "profs"] as const;
+const TABS = ["activite", "demandes", "profs", "club"] as const;
 type Tab = (typeof TABS)[number];
 const byDate = (a: Lesson, b: Lesson) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time);
 
@@ -42,7 +43,7 @@ export default function PresidentPage() {
       <Page>
         <Link to="/coach/club/partenaires" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 no-underline hover:border-ink"><span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#f3efe6] text-2xl" aria-hidden>🤝</span><span><b className="block text-ink">Partenaires du club</b><span className="text-sm text-muted">Suivi des sponsors, logos pour les affiches et dossier de présentation à leur envoyer.</span></span></Link>
         <TabsBar side={false} label="Cours particuliers" active={tab} onChange={(k) => setParams(k === "activite" ? {} : { onglet: k })}
-          tabs={[["activite", "📊 Activité des professeurs", toConfirm.length], ["demandes", "📨 Demandes de cours", old.length], ["profs", "👩‍🏫 Professeurs"]]} />
+          tabs={[["activite", "📊 Activité des professeurs", toConfirm.length], ["demandes", "📨 Demandes de cours", old.length], ["profs", "👩‍🏫 Professeurs"], ["club", "🗓️ Cours du club"]]} />
         {err && <p role="alert" className="m-0 rounded-xl bg-[#fde8e8] p-3 font-bold text-[#8a1c1c]">{err}</p>}
         {lessons === null && !err && <p className="text-muted">Chargement…</p>}
         {lessons !== null && tab === "activite" && (
@@ -68,7 +69,24 @@ export default function PresidentPage() {
           </div>
         )}
         {tab === "profs" && <ProfsAdmin onChanged={load} />}
+        {tab === "club" && <ClubCourses />}
       </Page>
     </>
+  );
+}
+
+// Le président place, pour chaque entraîneur, ses cours du club (cours adultes, compétition jeunes, école de tennis) : même grille que le coach
+function ClubCourses() {
+  const [staff, setStaff] = useState<{ id: string; firstName: string; role: string }[] | null>(null);
+  const [who, setWho] = useState("");
+  useEffect(() => { get<{ id: string; firstName: string; role: string }[]>("/club/staff").then((l) => { setStaff(l); setWho(l[0]?.id ?? ""); }).catch(() => setStaff([])); }, []);
+  if (staff === null) return <p className="text-muted">Chargement…</p>;
+  const name = (p: { firstName: string; role: string }) => (p.firstName || "Entraîneur") + (p.role === "COACH" ? " (coach)" : "");
+  return (
+    <section className="grid gap-3">
+      <div><h2 className="m-0 text-xl">🗓️ Placer les cours du club</h2><p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine : cours adultes, compétition jeunes, école de tennis. Elle les voit dans « Ton agenda ».</p></div>
+      <div className="flex flex-wrap gap-2">{staff.map((p) => <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={"rounded-full border-2 px-3 py-1 text-sm font-bold " + (who === p.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>{name(p)}</button>)}</div>
+      {who ? <WeekPlanner key={who} id={who} name={name(staff.find((p) => p.id === who)!)} /> : <p className="text-muted">Aucun entraîneur pour le moment.</p>}
+    </section>
   );
 }

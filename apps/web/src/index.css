@@ -674,6 +674,9 @@ html[data-mode="light"] .mlist { background: #fffdf8; border-color: #ddd3c0; }
 html[data-mode="light"] .mlist-row { border-top-color: #e8dfcc; }
 html[data-mode="light"] .mlist-n { color: #7b5d2a; }
 html[data-mode="light"] .mlist-pill { color: var(--dd); }
+/* Bouton « Voir la vidéo » d'une mission : texte foncé sur fond clair (en clair il était blanc sur blanc) */
+html[data-mode="light"] .mlist .mdesc-video { color: #17140f; background: #f1e9d6; border-color: #b3925a; }
+html[data-mode="light"] .mlist .mdesc-video:hover, html[data-mode="light"] .mlist .mdesc-video:focus-visible { background: #e6dab9; }
 @media (max-width: 640px) { .mlist-row { grid-template-columns: auto minmax(0, 1fr); padding: 0.85rem 1rem; } .mlist-pill { grid-column: 2; justify-self: start; } }
 
 /* Mes progrès du jeune : chiffres, tableau des missions, dernières étoiles (sans cartes une par une) */

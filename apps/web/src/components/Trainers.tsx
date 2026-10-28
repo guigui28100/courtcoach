@@ -1,3 +1,4 @@
+import { WeekPlanner } from "./WeekPlanner";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { del, get, post, put } from "../api";
 import { Avatar, Empty, Err, Field, hueOf } from "./ui";
@@ -42,6 +43,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
   const [adding, setAdding] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [edits, setEdits] = useState<Record<string, string[]>>({});
+  const [weekOf, setWeekOf] = useState<string | null>(null);
   const [saved, setSaved] = useState("");
   const load = useCallback(() => { get<Trainer[]>("/trainers").then(setList).catch((e) => { setList([]); setErr((e as Error).message); }); }, []);
   useEffect(load, [load]);
@@ -102,6 +104,8 @@ export function TrainersTab({ players }: { players: Player[] }) {
                 <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-bold text-muted">{t.kind === "CLUB" ? "🎾 Club" : "🏛️ Comité"}</span>{t.teaches && <span className="ml-1 rounded-full bg-[#eef8f1] px-2.5 py-0.5 align-middle text-xs font-bold text-ok">👩‍🏫 Donne des cours particuliers</span>}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
                 <span className="flex flex-wrap gap-2"><button className="btn-outline btn-sm" onClick={() => reset(t)}>Nouveau mot de passe</button><button className="btn-danger btn-sm" onClick={() => remove(t)}>Supprimer le compte</button></span>
               </div>
+              <div><button className="btn-ink btn-sm" aria-expanded={weekOf === t.id} onClick={() => setWeekOf(weekOf === t.id ? null : t.id)}>🗓️ {weekOf === t.id ? "Fermer son planning" : "Placer ses cours de la semaine"}</button></div>
+              {weekOf === t.id && <WeekPlanner id={t.id} name={t.firstName ?? "l'entraîneur"} />}
               <PlayerPicker players={players} value={sel} onChange={(ids) => setEdits((o) => ({ ...o, [t.id]: ids }))} name={t.firstName ?? "lui"} />
               <div className="flex flex-wrap items-center gap-3">
                 <button className="btn-clay btn-sm" disabled={!dirty} onClick={() => savePlayers(t)}>Enregistrer ses jeunes</button>
