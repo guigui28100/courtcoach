@@ -14,14 +14,16 @@ export interface ContractData { sponsor: Sponsor | null; pack: Pack | null }
 const fmt = (iso: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); return m ? `${m[3]}/${m[2]}/${m[1]}` : ""; };
 
 // Un champ : la valeur en gras si on la connaît, sinon une ligne pointillée à remplir au stylo
-const F = ({ v, w = 220 }: { v?: string; w?: number }) => v
-  ? <b>{v}</b>
-  : <span style={{ display: "inline-block", width: w, borderBottom: `1.5px dotted ${MUTED}`, height: "1em", verticalAlign: "baseline" }} />;
+// Tout est modifiable au clavier : on clique dans la ligne pointillée (ou n'importe où dans le texte) et on tape ; la ligne s'allonge toute seule
+const F = ({ v, w = 220 }: { v?: string; w?: number }) => (
+  <span contentEditable suppressContentEditableWarning spellCheck={false} className="contract-field"
+    style={{ display: "inline-block", minWidth: v ? undefined : w, borderBottom: v ? undefined : `1.5px dotted ${MUTED}`, fontWeight: v ? 700 : undefined, minHeight: "1em", verticalAlign: "baseline" }}>{v}</span>
+);
 
 const Page = ({ n, children }: { n: number; children: ReactNode }) => (
   <div className="dossier-page" style={{ width: CONTRACT_W, height: CONTRACT_H, background: "#fff", position: "relative", overflow: "hidden", fontFamily: FONT, color: NAVY, breakAfter: "page", display: "flex", flexDirection: "column", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
     <div style={{ height: 6, background: `linear-gradient(90deg, ${CLAY}, #c9ad77)`, flex: "0 0 auto" }} />
-    <div style={{ flex: 1, padding: "26px 50px 0", fontSize: 12.5, lineHeight: 1.42, minHeight: 0, display: "flex", flexDirection: "column", gap: 9 }} data-body>{children}</div>
+    <div style={{ flex: 1, padding: "26px 50px 0", fontSize: 12.5, lineHeight: 1.42, minHeight: 0, display: "flex", flexDirection: "column", gap: 9, outline: "none" }} data-body contentEditable suppressContentEditableWarning spellCheck={false} className="contract-body">{children}</div>
     <div style={{ height: 44, flex: "0 0 auto", borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 50px", fontSize: 11, color: MUTED }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800 }}><span aria-hidden style={{ display: "inline-block", width: 22, height: 22, background: NAVY, WebkitMask: LOGO, mask: LOGO }} />Tennis Club Houdan · Convention de partenariat</span>
       <span>Page {n}/3 · Paraphes : Club ……… Partenaire ………</span>

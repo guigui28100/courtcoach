@@ -14,6 +14,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/coach/centre", label: "Jeunes · Centre de compétition", short: "Jeunes", icon: "users" },
     { to: "/coach/prof", label: "Mes cours", icon: "star" },
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
+    { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   TRAINER: [
@@ -24,6 +25,7 @@ const NAV: Record<Role, NavItem[]> = {
   PRESIDENT: [
     { to: "/president", label: "Cours particuliers", short: "Cours", icon: "star" },
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
+    { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   BUREAU: [
@@ -85,7 +87,7 @@ export function Layout({ children }: { children: ReactNode }) {
     "inline-flex items-center gap-1.5 whitespace-nowrap px-0.5 py-2.5 border-b-2 no-underline transition-colors " + (galaxy ? "font-bold " + (isActive ? "text-white border-[#c9ad77]" : "text-white/80 border-transparent hover:text-white") : "font-ui text-[0.74rem] font-semibold uppercase tracking-[0.14em] " + (isActive ? "text-ink border-champagne-deep" : "text-muted border-transparent hover:text-ink hover:border-champagne"));
 
   // Barre de navigation à gauche (ordinateur) pour le coach, les entraîneurs, le président et le bureau, sauf sur le planning du club (calendrier pleine largeur)
-  const side = !!me && ["COACH", "TRAINER", "PRESIDENT", "BUREAU"].includes(me.role) && !galaxy && !pathname.startsWith("/coach/club");
+  const side = !!me && ["COACH", "TRAINER", "PRESIDENT", "BUREAU"].includes(me.role) && !galaxy && pathname !== "/coach/club";
   useEffect(() => { setSidebar(side); return () => setSidebar(false); }, [side]);
   const sub = useSubNav().items;
   const activeTo = [...items].filter((i) => pathname === i.to || pathname.startsWith(i.to + "/")).sort((a, b) => b.to.length - a.to.length)[0]?.to;
