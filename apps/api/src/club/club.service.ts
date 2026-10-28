@@ -55,7 +55,15 @@ export class ClubService {
     return Array.isArray(row?.value) ? row!.value : [];
   }
 
-  async setMySchedule(userId: string, items: { weekday: number; start: string; end: string; label?: string }[]) {
+  async scheduleOf(userId: string) { await this.staffOrFail(userId); return this.mySchedule(userId); }
+
+  private async staffOrFail(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true, deletedAt: true } });
+    if (!u || u.deletedAt || (u.role !== "TRAINER" && u.role !== "COACH")) throw new NotFoundException("Personne introuvable.");
+  }
+
+  async setSchedule(userId: string, items: { weekday: number; start: string; end: string; label?: string }[]) {
+    await this.staffOrFail(userId);
     const out = items.map((i) => ({ weekday: i.weekday, start: i.start, end: i.end, label: (i.label ?? "").trim().replace(/\s+/g, " ") }));
     if (out.some((i) => i.end <= i.start)) throw new BadRequestException("L'heure de fin doit être après l'heure de début.");
     await this.prisma.clubSetting.upsert({ where: { key: `schedule:${userId}` }, update: { value: out }, create: { key: `schedule:${userId}`, value: out } });

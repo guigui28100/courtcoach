@@ -145,9 +145,13 @@ describe("Planning du club (réservé au coach)", () => {
     const mine = (await A.entraineur.get("/api/club/mine").expect(200)).body;
     expect(mine).toHaveLength(1); expect(mine[0].startDate).toBe("2099-05-01"); expect(mine[0].time).toBe("10 h"); expect(mine[0].who).toBeUndefined();
     expect((await A.coach.get("/api/club/mine").expect(200)).body).toHaveLength(0);
-    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
-    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 2, start: "16:00", end: "14:00" }] }).expect(400);
-    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 9, start: "14:00", end: "16:00" }] }).expect(400);
+    const tid = (await prisma.user.findFirstOrThrow({ where: { email: "entraineur@exemple.fr" } })).id;
+    await A.entraineur.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [] }).expect(403); // l'entraîneur ne place pas ses jours lui-même
+    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [] }).expect(404);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "16:00", end: "14:00" }] }).expect(400);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 9, start: "14:00", end: "16:00" }] }).expect(400);
+    await A.coach.put("/api/club/schedule/inconnu").set(ORIGIN).send({ items: [] }).expect(404);
     expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(1);
     expect((await A.coach.get("/api/club/my-schedule").expect(200)).body).toHaveLength(0);
   });

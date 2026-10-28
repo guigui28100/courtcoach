@@ -13,9 +13,10 @@ export class ClubController {
   @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Get("plan") plan() { return this.svc.plan(); }
   // « Mes événements » : chaque personne du site (coach, entraîneur, président) ne voit que les événements où son nom est coché dans « Qui s'en occupe ? »
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get("mine") mine(@CurrentUser() u: AuthUser) { return this.svc.mine(u.id); }
-  // Mes jours de cours habituels (jour + horaires) : chacun écrit les siens, personne d'autre ne les modifie
+  // Jours de cours habituels (jour + horaires) : chacun LIT les siens, mais seul le coach les place, pour lui-même ou pour un entraîneur
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get("my-schedule") mySchedule(@CurrentUser() u: AuthUser) { return this.svc.mySchedule(u.id); }
-  @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Put("my-schedule") @HttpCode(200) setMySchedule(@CurrentUser() u: AuthUser, @Body() dto: ScheduleDto) { return this.svc.setMySchedule(u.id, dto.items); }
+  @Roles(Role.COACH) @Get("schedule/:userId") scheduleOf(@Param("userId") id: string) { return this.svc.scheduleOf(id); }
+  @Roles(Role.COACH) @Put("schedule/:userId") @HttpCode(200) setSchedule(@Param("userId") id: string, @Body() dto: ScheduleDto) { return this.svc.setSchedule(id, dto.items); }
   @Put("teams") @HttpCode(200) teams(@Body() dto: TeamCountsDto) { return this.svc.setTeams(dto.counts); }
   @Put("people") @HttpCode(200) people(@Body() dto: PeopleDto) { return this.svc.setPeople(dto.people); }
   @Put("events-order") @HttpCode(200) reorder(@Body() dto: ReorderDto) { return this.svc.reorder(dto.ids); }

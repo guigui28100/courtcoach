@@ -51,8 +51,8 @@ const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dima
 const wd = (d: string) => (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
 const addDay = (d: string, n: number) => new Date(new Date(`${d}T12:00:00Z`).getTime() + n * 86_400_000).toISOString().slice(0, 10);
 
-// Mes jours de cours habituels : on choisit le jour, l'heure de début et de fin, et un petit nom (facultatif)
-function Schedule({ items, onSaved }: { items: Course[]; onSaved: (c: Course[]) => void }) {
+// Jours de cours habituels : c'est le COACH qui les place (jour, heure de début et de fin, nom facultatif) ; la personne les voit dans son planning
+function Schedule({ userId, items, readOnly, onSaved }: { userId: string; items: Course[]; readOnly: boolean; onSaved: (c: Course[]) => void }) {
   const [day, setDay] = useState(2);
   const [start, setStart] = useState("14:00");
   const [end, setEnd] = useState("16:00");
@@ -60,24 +60,41 @@ function Schedule({ items, onSaved }: { items: Course[]; onSaved: (c: Course[]) 
   const [err, setErr] = useState("");
   async function save(next: Course[]) {
     setErr("");
-    try { onSaved(await put<Course[]>("/club/my-schedule", { items: next })); } catch (x) { setErr((x as Error).message || "Impossible d'enregistrer."); }
+    try { onSaved(await put<Course[]>(`/club/schedule/${userId}`, { items: next })); } catch (x) { setErr((x as Error).message || "Impossible d'enregistrer."); }
   }
   const sorted = [...items].sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start));
   return (
-    <section className="rounded border-2 border-line bg-white p-4">
-      <h2 className="m-0 text-xl">🗓️ Mes jours de cours habituels</h2>
-      <p className="m-0 mt-1 text-sm text-muted">Écris ici tes cours de la semaine. Ils reviennent chaque semaine dans ton planning ci-dessous, avec les événements du club où tu es placé.</p>
+    <div>
+      {sorted.length === 0 && <p className="m-0 mt-2 text-sm text-muted">{readOnly ? "Le coach n'a pas encore placé tes cours de la semaine." : "Aucun cours placé pour le moment."}</p>}
       {sorted.length > 0 && <ul className="m-0 mt-3 grid list-none gap-1 p-0">{sorted.map((c) => (
         <li key={`${c.weekday}${c.start}`} className="flex flex-wrap items-center gap-2 border-t border-line py-1.5"><b className="w-24">{DAYS[c.weekday]}</b><span>{c.start.replace(":", " h ")} – {c.end.replace(":", " h ")}</span><span className="min-w-0 flex-1 text-muted">{c.label}</span>
-          <button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => save(items.filter((x) => x !== c))}>🗑️ Retirer</button></li>))}</ul>}
-      <div className="mt-3 flex flex-wrap items-end gap-2">
+          {!readOnly && <button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => save(items.filter((x) => x !== c))}>🗑️ Retirer</button>}</li>))}</ul>}
+      {!readOnly && <div className="mt-3 flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-sm font-bold">Jour<select className="input" value={day} onChange={(e) => setDay(+e.target.value)}>{DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select></label>
         <label className="grid gap-1 text-sm font-bold">De<input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} /></label>
         <label className="grid gap-1 text-sm font-bold">À<input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
         <label className="grid min-w-40 flex-1 gap-1 text-sm font-bold">Nom du cours (facultatif)<input className="input" maxLength={60} placeholder="ex. École de tennis" value={label} onChange={(e) => setLabel(e.target.value)} /></label>
         <button className="btn-ink" onClick={() => save([...items, { weekday: day, start, end, label: label.trim() }])}>＋ Ajouter</button>
-      </div>
+      </div>}
       {err && <p role="alert" className="m-0 mt-2 text-sm font-bold text-[#a3281f]">{err}</p>}
+    </div>
+  );
+}
+
+// Réservé au coach : il choisit pour qui il place les cours de la semaine (lui ou un entraîneur)
+function CoachSchedules() {
+  const { me } = useAuth();
+  const [people, setPeople] = useState<{ id: string; name: string }[]>([]);
+  const [who, setWho] = useState(me?.id ?? "");
+  const [items, setItems] = useState<Course[]>([]);
+  useEffect(() => { get<{ id: string; firstName: string | null }[]>("/trainers").then((l) => setPeople([{ id: me?.id ?? "", name: `${me?.firstName ?? "Moi"} (moi)` }, ...l.map((t) => ({ id: t.id, name: t.firstName ?? "Entraîneur" }))])).catch(() => {}); }, [me?.id, me?.firstName]);
+  useEffect(() => { if (who) get<Course[]>(`/club/schedule/${who}`).then(setItems).catch(() => setItems([])); }, [who]);
+  return (
+    <section className="rounded border-2 border-line bg-white p-4">
+      <h2 className="m-0 text-xl">🗓️ Placer les jours de cours</h2>
+      <p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine (jour et horaires). Ils reviennent chaque semaine dans son planning.</p>
+      <div className="mt-2 flex flex-wrap gap-2">{people.map((p) => <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={"rounded-full border-2 px-3 py-1 text-sm font-bold " + (who === p.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>{p.name}</button>)}</div>
+      {who && <Schedule userId={who} items={items} readOnly={false} onSaved={setItems} />}
     </section>
   );
 }
@@ -119,7 +136,7 @@ export default function MyClubEventsPage() {
           )}
         </section>
         <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted"><span>👤 Cours particulier</span><span>🎾 Cours habituel du club</span><span>🏆 Événement où tu interviens</span></p>
-        <Schedule items={courses} onSaved={setCourses} />
+        {me?.role === "COACH" ? <CoachSchedules /> : <section className="rounded border-2 border-line bg-white p-4"><h2 className="m-0 text-xl">🗓️ Mes jours de cours habituels</h2><p className="m-0 mt-1 text-sm text-muted">Placés par le coach. Ils reviennent chaque semaine dans ton planning ci-dessus.</p><Schedule userId={me?.id ?? ""} items={courses} readOnly onSaved={setCourses} /></section>}
         <section>
           <h2 className="m-0 mb-3 text-xl">🏆 Mes événements à venir</h2>
           {list === null ? null : list.length === 0 ? <p className="m-0 rounded border border-line bg-white p-4 text-muted">Tu n'es placé sur aucun événement à venir pour le moment. Quand le coach t'en ajoutera un, il apparaîtra ici et un message t'attendra sur ton accueil.</p> : (
