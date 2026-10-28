@@ -4,7 +4,7 @@ import { get, put } from "../api";
 import { useAuth } from "../auth";
 import { ClubEvent, colorOf, fmtRange, kindOf, titleOf } from "../clubPlan";
 import { PageHead, Page } from "./ui";
-import { todayIso } from "../types";
+import { adultName, Lesson, todayIso } from "../types";
 
 type Mine = Pick<ClubEvent, "id" | "kind" | "title" | "startDate" | "endDate" | "bands" | "courts" | "teams" | "time" | "place" | "audience" | "note">;
 // Ce qui change pour la personne : si la date, l'heure ou le lieu bougent, l'événement redevient « modifié »
@@ -84,7 +84,10 @@ function Schedule({ items, onSaved }: { items: Course[]; onSaved: (c: Course[]) 
 
 export default function MyClubEventsPage() {
   const { list, state, markSeen } = useMyClubEvents();
+  const { me } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [privates, setPrivates] = useState<Lesson[]>([]); // mes cours particuliers (réservés ou confirmés)
+  useEffect(() => { get<Lesson[]>("/lessons").then((all) => setPrivates(all.filter((l) => l.finalSlot && ["ACCEPTED", "BOOKED"].includes(l.status) && l.profId === me?.id))).catch(() => setPrivates([])); }, [me?.id, me?.role]);
   useEffect(() => { get<Course[]>("/club/my-schedule").then(setCourses).catch(() => {}); }, []);
   const fresh = (list ?? []).filter((e) => state(e) !== "vu");
   const today = todayIso();
@@ -93,7 +96,7 @@ export default function MyClubEventsPage() {
     <>
       <PageHead eyebrow="Planning du club" title="Mon planning" icon="📅" />
       <Page>
-        <p className="m-0 text-muted">Tes cours de la semaine et les événements du club où le coach ou le président t'a placé (tournoi, stage, animation, match…). Seuls tes événements sont affichés ici.</p>
+        <p className="m-0 text-muted">Tes cours particuliers, tes cours habituels au club et les événements du club où le coach ou le président t'a placé (tournoi, stage, animation, match…). Seuls tes événements sont affichés ici.</p>
         {fresh.length > 0 && <div className="flex flex-wrap items-center gap-3 rounded border-2 border-champagne bg-[#fff6dd] p-3"><span>🔔 <b>{fresh.length}</b> nouveau{fresh.length > 1 ? "x" : ""} ou modifié{fresh.length > 1 ? "s" : ""}.</span><button className="btn-ink" onClick={() => markSeen(list ?? [])}>J'ai tout vu</button></div>}
         <section>
           <h2 className="m-0 mb-3 text-xl">📆 Mes 14 prochains jours</h2>
@@ -101,18 +104,21 @@ export default function MyClubEventsPage() {
             <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
               {days.map((d) => {
                 const cs = courses.filter((c) => c.weekday === wd(d)).sort((a, b) => a.start.localeCompare(b.start));
+                const ps = privates.filter((l) => l.finalSlot!.date === d).sort((a, b) => a.finalSlot!.time.localeCompare(b.finalSlot!.time));
                 const es = (list ?? []).filter((e) => e.startDate <= d && e.endDate >= d);
                 return (
-                  <li key={d} className={"rounded border-2 p-3 " + (cs.length || es.length ? "border-line bg-white" : "border-dashed border-line bg-transparent text-muted")}>
+                  <li key={d} className={"rounded border-2 p-3 " + (cs.length || es.length || ps.length ? "border-line bg-white" : "border-dashed border-line bg-transparent text-muted")}>
                     <b className="capitalize">{fmtRange(d, d)}</b>{d === today && <span className="ml-2 rounded-full bg-ink px-2 py-0.5 text-xs text-white">Aujourd'hui</span>}
-                    {!cs.length && !es.length && <p className="m-0 text-sm">Rien de prévu</p>}
+                    {!cs.length && !es.length && !ps.length && <p className="m-0 text-sm">Rien de prévu</p>}
                     {cs.map((c) => <p key={c.start} className="m-0 mt-1 text-sm">🎾 <b>{c.start.replace(":", " h ")} – {c.end.replace(":", " h ")}</b> {c.label || "Cours"}</p>)}
+                    {ps.map((l) => <p key={l.id} className="m-0 mt-1 text-sm">👤 <b>{l.finalSlot!.time.replace(":", " h ")}</b> Cours particulier · {adultName(l.member, "Adhérent")}{l.status === "BOOKED" ? " (à confirmer)" : ""}{l.place ? ` · ${l.place}` : ""}</p>)}
                     {es.map((e) => <p key={e.id} className="m-0 mt-1 text-sm" style={{ color: colorOf(e) }}>{kindOf(e.kind).icon} <b>{titleOf(e)}</b>{e.time ? ` · ${e.time}` : ""}{e.place ? ` · ${e.place}` : ""}{state(e) === "nouveau" ? " 🔔 nouveau" : state(e) === "modifie" ? " 🔔 modifié" : ""}</p>)}
                   </li>);
               })}
             </ul>
           )}
         </section>
+        <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted"><span>👤 Cours particulier</span><span>🎾 Cours habituel du club</span><span>🏆 Événement où tu interviens</span></p>
         <Schedule items={courses} onSaved={setCourses} />
         <section>
           <h2 className="m-0 mb-3 text-xl">🏆 Mes événements à venir</h2>
