@@ -7,6 +7,7 @@ import { useAuth } from "../auth";
 import { TrainersTab } from "../components/Trainers";
 import { ProfsAdmin } from "../components/Profs";
 import { TournamentsTab } from "../components/Tournaments";
+import { useRegisterSubNav } from "../components/subnav";
 import { Avatar, ClubLogo, CoachHero, Empty, Err, Field, HeroChip, hueOf, Page, SideLayout, TabsBar } from "../components/ui";
 import { MarkBadge, useVideos } from "../components/Videos";
 import { adultFacts, adultName, collapseSeries, everyDay, fmtDeadline, currentSeason, DEPART_SHOTS, GESTURE_MARKS, fmtDate, fmtSlot, todayIso, fmtDay, fmtMo, fullName, Lesson, Player, profName, SelfEvaluation, TournamentReport, trimesterOf, VideoRow } from "../types";
@@ -224,6 +225,7 @@ export function CoachHome() {
   const ICON: Record<string, string> = { home: "M4 11l8-7 8 7v9H4z M10 20v-6h4v6", star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z", doc: "M7 3h7l4 4v14H7z M14 3v4h4 M10 12h5 M10 16h5", film: "M5.5 5h13A2.5 2.5 0 0121 7.5v9a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5v-9A2.5 2.5 0 015.5 5z M10 9.5v5l4.5-2.5z", cal: "M6 5h12a2.5 2.5 0 012.5 2.5v10A2.5 2.5 0 0118 20H6a2.5 2.5 0 01-2.5-2.5v-10A2.5 2.5 0 016 5z M3.5 10h17 M8 3v4 M16 3v4", shield: "M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z M9 12l2 2 4-4", arrow: "M5 12h14 M13 6l6 6-6 6" };
   const Ico = ({ n, cls = "size-5" }: { n: string; cls?: string }) => <svg viewBox="0 0 24 24" className={cls + " shrink-0"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON[n].split(" M").map((d, i) => <path key={i} d={(i ? "M" : "") + d} />)}</svg>;
   const toDo = adultWait.length + d.booked.length + d.pending.length + d.profsWaiting;
+  const homeInSidebar = useRegisterSubNav([["Donner des étoiles", "/coach/centre/fin-de-cours"], ["Bulletins", "/coach/centre?onglet=bulletins"], ["Vidéos et gestes", "/coach/centre?onglet=videos"]].map(([label, to]) => ({ key: to, label, to, active: false })));
   const menu: [string, string, string][] = [["home", "Accueil", "/coach"], ["star", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["doc", "Bulletins", "/coach/centre?onglet=bulletins"], ["film", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["cal", "Planning du club", "/coach/club"], ["shield", "Sécurité", "/coach/securite"]];
   const dayLabel = (iso: string) => { const dt = new Date(`${iso}T12:00:00`); return dt.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }).replace(".", "").replace(/^./, (c) => c.toUpperCase()); };
   const byDay = week.reduce<{ day: string; items: typeof week }[]>((acc, x) => { const k = x.l.finalSlot!.date; const g = acc.find((y) => y.day === k); if (g) g.items.push(x); else acc.push({ day: k, items: [x] }); return acc; }, []);
@@ -232,7 +234,7 @@ export function CoachHome() {
   return (
     <div className="bg-[#1f1a12] text-white print:bg-white print:text-ink">
       <div className="mx-auto flex max-w-[2400px] gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
-        <aside aria-label="Raccourcis" className="min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden">
+        <aside aria-label="Raccourcis" className={(homeInSidebar ? "md:hidden " : "") + "min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden"}>
           <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a89c82] lg:block">Menu</p>
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 lg:grid lg:gap-1.5 lg:overflow-visible">
             {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-bold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}

@@ -1,3 +1,4 @@
+import { useRegisterSubNav, useSubNav } from "./subnav";
 import { ReactNode, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -159,8 +160,9 @@ export function TabLabel({ text }: { text: string }) {
 
 // Barre d'onglets collée sous l'en-tête (avec pastille de nombre)
 export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: [string, string, number?][]; active: string; onChange: (k: string) => void; label: string; side?: boolean }) {
+  const inSidebar = useRegisterSubNav(tabs.map(([k, l, n]) => ({ key: k, label: l, count: n, active: active === k, onSelect: () => onChange(k) })));
   return (
-    <div className={side ? "tabbar side" : "tabbar"}>
+    <div className={(side ? "tabbar side" : "tabbar") + (inSidebar ? " md:hidden" : "")}>
       <div role="tablist" aria-label={label}>
         {tabs.map(([k, l, n]) => (
           <button key={k} role="tab" aria-selected={active === k} onClick={(e) => { onChange(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-2 px-4 font-semibold transition-colors " + (active === k ? "border-champagne-deep text-ink" : "border-transparent text-muted hover:text-ink")}>
@@ -173,9 +175,12 @@ export function TabsBar({ tabs, active, onChange, label, side = true }: { tabs: 
 }
 
 // Page à deux colonnes sur ordinateur : menu à gauche, contenu à droite (menu en haut sur téléphone)
-export const SideLayout = ({ nav, children }: { nav: ReactNode; children: ReactNode }) => (
-  <div className="grid gap-4 md:grid-cols-[230px_minmax(0,1fr)] md:items-stretch md:gap-6">{nav}<div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">{children}</div></div>
-);
+export const SideLayout = ({ nav, children }: { nav: ReactNode; children: ReactNode }) => {
+  const { sidebar } = useSubNav();
+  return (
+  <div className={"grid gap-4 md:items-stretch md:gap-6 " + (sidebar ? "" : "md:grid-cols-[230px_minmax(0,1fr)]")}>{nav}<div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">{children}</div></div>
+  );
+};
 
 // Qui a saisi : le coach est orange, chaque entraîneur de comité a sa propre couleur (stable, tirée de son identifiant)
 export interface Authored { authorId?: string | null; authorName?: string | null; authorRole?: string | null; }

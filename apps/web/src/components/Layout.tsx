@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Role } from "../types";
 import { ClubLogo } from "./ui";
+import { setSidebar, useSubNav } from "./subnav";
 
 type NavItem = { to: string; label: string; short?: string; icon: string };
 const NAV: Record<Role, NavItem[]> = {
@@ -83,12 +84,47 @@ export function Layout({ children }: { children: ReactNode }) {
   const link = ({ isActive }: { isActive: boolean }) =>
     "inline-flex items-center gap-1.5 whitespace-nowrap px-0.5 py-2.5 border-b-2 no-underline transition-colors " + (galaxy ? "font-bold " + (isActive ? "text-white border-[#c9ad77]" : "text-white/80 border-transparent hover:text-white") : "font-ui text-[0.74rem] font-semibold uppercase tracking-[0.14em] " + (isActive ? "text-ink border-champagne-deep" : "text-muted border-transparent hover:text-ink hover:border-champagne"));
 
+  // Barre de navigation à gauche (ordinateur) pour le coach, les entraîneurs, le président et le bureau, sauf sur le planning du club (calendrier pleine largeur)
+  const side = !!me && ["COACH", "TRAINER", "PRESIDENT", "BUREAU"].includes(me.role) && !galaxy && !pathname.startsWith("/coach/club");
+  useEffect(() => { setSidebar(side); return () => setSidebar(false); }, [side]);
+  const sub = useSubNav().items;
+  const activeTo = [...items].filter((i) => pathname === i.to || pathname.startsWith(i.to + "/")).sort((a, b) => b.to.length - a.to.length)[0]?.to;
+  const sideLink = ({ isActive }: { isActive: boolean }) =>
+    "flex items-center gap-3 rounded-sm px-3 py-2.5 font-ui text-sm font-semibold no-underline transition-colors " + (isActive ? "bg-champagne text-ink" : "text-chalk/85 hover:bg-white/10 hover:text-white");
+
   return (
     <div className="flex min-h-dvh flex-col">
       <NetLoader />
       {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-champagne-soft border-b border-champagne px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
-      <header className={"print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(23, 20, 15, 0.45)]" : "border-line bg-chalk/95 shadow-[0_1px_0_rgba(201,173,119,0.45)]")}>
+      <div className={side ? "flex flex-1 flex-col md:flex-row" : "contents"}>
+      {side && me && (
+        <aside aria-label="Menu principal" className="print:hidden sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto bg-ink px-3 py-5 text-chalk md:flex">
+          <Link to="/" className="mb-4 flex items-center gap-2.5 border-b border-champagne/40 px-2 pb-5 no-underline" aria-label="CourtCoach, accueil">
+            <ClubLogo className="size-10 shrink-0 text-white" />
+            <span className="grid leading-none"><span className="font-serif text-lg font-semibold uppercase tracking-[0.12em] text-champagne">CourtCoach</span><span className="mt-1 font-ui text-[0.5rem] font-semibold uppercase tracking-[0.22em] text-white/70">Tennis Club Houdan</span></span>
+          </Link>
+          {items.map((i) => (
+            <div key={i.to} className="grid gap-1">
+              <NavLink to={i.to} end className={({ isActive }) => sideLink({ isActive: isActive || activeTo === i.to }) + (sub && activeTo === i.to ? " !bg-white/10 !text-champagne" : "")}><Icon name={i.icon} />{i.label}</NavLink>
+              {sub && activeTo === i.to && (
+                <ul aria-label={"Sections : " + i.label} className="m-0 mb-1 ml-5 grid list-none gap-0.5 border-l border-champagne/40 p-0 pl-2">
+                  {sub.map((x) => {
+                    const cls = "flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left font-ui text-[0.82rem] font-semibold no-underline transition-colors " + (x.active ? "bg-champagne text-ink" : "text-chalk/80 hover:bg-white/10 hover:text-white");
+                    const inner = <><span className="min-w-0">{x.label}</span>{!!x.count && <b className="shrink-0 rounded-full bg-champagne px-2 text-xs text-ink">{x.count}</b>}</>;
+                    return <li key={x.key}>{x.to ? <Link to={x.to} className={cls}>{inner}</Link> : <button type="button" aria-current={x.active ? "page" : undefined} className={cls} onClick={x.onSelect}>{inner}</button>}</li>;
+                  })}
+                </ul>
+              )}
+            </div>
+          ))}
+          <div className="mt-auto border-t border-champagne/40 px-2 pt-4 text-xs text-chalk/70">
+            <button className="btn btn-sm w-full border border-white/50 text-white hover:bg-white hover:text-ink" onClick={async () => { await logout(); nav("/"); }}>Se déconnecter</button>
+          </div>
+        </aside>
+      )}
+      <div className={side ? "flex min-w-0 flex-1 flex-col" : "contents"}>
+      <header className={(side ? "md:hidden " : "") + "print:hidden sticky top-0 z-40 border-b backdrop-blur " + (galaxy ? "gal-bar border-white/30 shadow-[0_6px_20px_rgba(23, 20, 15, 0.45)]" : "border-line bg-chalk/95 shadow-[0_1px_0_rgba(201,173,119,0.45)]")}>
         <div className="mx-auto flex min-h-[72px] max-w-[2400px] items-center justify-between gap-4 px-4 lg:px-10 2xl:px-14">
           <span className="shrink-0 whitespace-nowrap"><Brand light={galaxy} /></span>
           <nav aria-label="Menu principal" className="hidden items-center gap-5 md:flex xl:gap-7">
@@ -115,6 +151,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <button className={"flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs font-bold " + (galaxy ? "text-white/80" : "text-muted")} onClick={async () => { await logout(); nav("/"); }}><Icon name="out" />Quitter</button>
         </nav>
       )}
+
+      </div>
+      </div>
 
       <footer className="print:hidden border-t-2 border-champagne bg-ink px-4 py-8 lg:px-10 2xl:px-14 text-sm text-chalk/85">
         <div className="mx-auto flex max-w-[2400px] flex-wrap items-center gap-x-8 gap-y-3">
