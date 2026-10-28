@@ -61,7 +61,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
           </div>
         </div>
       )}
-      <PageHead eyebrow="Cours particuliers" title={preview ? "Bonjour Guillaume !" : me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes cours réservés, tes disponibilités et ta présentation, au même endroit.</PageHead>
+      <PageHead eyebrow="Ton agenda" title={preview ? "Bonjour Guillaume !" : me?.firstName ? `Bonjour ${me.firstName} !` : "Bonjour !"}>Donne des cours particuliers aux adultes du club : tes cours réservés, tes disponibilités et ta présentation, au même endroit.</PageHead>
       <Page>
         <Err msg={err} />
         {resp && !resp.optedIn && (
@@ -80,7 +80,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
         )}
         {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
         {p && (
-          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Mes cours", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
+          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Ton agenda", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
             {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} slots={p.slots} skipHolidays={p.skipHolidays !== false} preview={preview} />}
             {tab === "dispos" && <Availability p={p} onSaved={setP} />}
             {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Tes cours à venir sont annulés (les adultes sont prévenus), ta fiche, tes disponibilités et tes documents sont effacés. Tu pourras recommencer plus tard, mais il faudra tout ressaisir et le coach devra te revalider. Pour une simple coupure, utilise la « Pause » dans « Mes disponibilités ».</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
@@ -103,7 +103,7 @@ function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: 
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
-      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Mes cours particuliers</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré). Tu peux ensuite libérer un cours ou arrêter une série.</p></div>
+      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Ton agenda</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré). Tu peux ensuite libérer un cours ou arrêter une série.</p></div>
       <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
         <div><b className="block font-display text-3xl font-black text-clay">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).length}</b><small className="text-muted">cours à venir</small></div>
         <div><b className="block font-display text-3xl font-black text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>

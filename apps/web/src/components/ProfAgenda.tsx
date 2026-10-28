@@ -91,7 +91,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const title = `Du ${dayNum(days[0])} ${days[0].slice(5, 7) === last.slice(5, 7) ? "" : monthOf(days[0]) + " "}au ${dayNum(last)} ${monthOf(last)}`;
 
   return (
-    <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Mon agenda">
+    <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Ton agenda">
       <div className="agenda-hero flex flex-wrap items-center gap-3 px-4 py-4 text-white">
         <span aria-hidden className="text-3xl">🎾</span>
         <div className="min-w-[12rem] flex-1">
