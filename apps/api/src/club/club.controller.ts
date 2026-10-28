@@ -15,6 +15,7 @@ export class ClubController {
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get("mine") mine(@CurrentUser() u: AuthUser) { return this.svc.mine(u.id); }
   // Jours de cours habituels (jour + horaires) : chacun LIT les siens, mais seul le coach les place, pour lui-même ou pour un entraîneur
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get("my-schedule") mySchedule(@CurrentUser() u: AuthUser) { return this.svc.mySchedule(u.id); }
+  @Roles(Role.COACH, Role.PRESIDENT) @Get("staff") staff() { return this.svc.staff(); }
   @Roles(Role.COACH, Role.PRESIDENT) @Get("schedule/:userId") scheduleOf(@Param("userId") id: string) { return this.svc.scheduleOf(id); }
   @Roles(Role.COACH, Role.PRESIDENT) @Put("schedule/:userId") @HttpCode(200) setSchedule(@Param("userId") id: string, @Body() dto: ScheduleDto) { return this.svc.setSchedule(id, dto.items); }
   @Put("teams") @HttpCode(200) teams(@Body() dto: TeamCountsDto) { return this.svc.setTeams(dto.counts); }

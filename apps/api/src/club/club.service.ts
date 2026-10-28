@@ -55,6 +55,12 @@ export class ClubService {
     return Array.isArray(row?.value) ? row!.value : [];
   }
 
+  // Les personnes dont le coach ou le président peut placer les cours du club (prénom seulement, pas d'e-mail)
+  async staff() {
+    const users = await this.prisma.user.findMany({ where: { role: { in: ["TRAINER", "COACH"] }, deletedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, firstName: true, role: true } });
+    return users.map((u) => ({ id: u.id, firstName: u.firstName ?? "", role: u.role }));
+  }
+
   async scheduleOf(userId: string) { await this.staffOrFail(userId); return this.mySchedule(userId); }
 
   private async staffOrFail(userId: string) {
