@@ -5,6 +5,7 @@ import { api, del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { PROF_LEVELS, PriceNote, ProfCardView } from "../components/Profs";
 import { ProfAgenda } from "../components/ProfAgenda";
+import { WeekPlanner } from "../components/WeekPlanner";
 import { Empty, Err, Field, Page, PageHead, SideLayout, TabsBar } from "../components/ui";
 import { collapseSeries, todayIso, DOC_KINDS, fmtDate, fmtProfSlot, Lesson, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfCard, ProfMe, ProfMeResp, ProfSlot, STATUS_TEXT, WEEKDAYS } from "../types";
 import { LessonRow } from "./Coach";
@@ -93,6 +94,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
 }
 
 function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: Lesson[] | null; reload: () => void; slots: ProfSlot[]; skipHolidays: boolean; preview: boolean }) {
+  const { me } = useAuth();
   const [view, setView] = useState<"agenda" | "liste">("agenda");
   if (!lessons) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const byDate = (a: Lesson, b: Lesson) => ((a.finalSlot?.date ?? "9") + (a.finalSlot?.time ?? "")).localeCompare((b.finalSlot?.date ?? "9") + (b.finalSlot?.time ?? ""));
@@ -114,6 +116,7 @@ function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: 
       <PriceNote />
       {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
       {view === "agenda" && <ProfAgenda lessons={lessons} slots={slots} skipHolidays={skipHolidays} reload={reload} preview={preview} />}
+      {view === "agenda" && !preview && me?.role === "COACH" && <details className="rounded border-2 border-line bg-white p-3"><summary className="cursor-pointer font-bold">🗓️ Placer mes cours du club (cours adultes, compétition jeunes, école de tennis)</summary><div className="mt-3"><WeekPlanner id={me.id} name="moi" /></div></details>}
       {view === "liste" && <>
       {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
       {group("Cours confirmés à venir", null, booked)}
