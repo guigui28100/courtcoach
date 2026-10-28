@@ -725,3 +725,8 @@ html[data-mode="light"] .prog-w, html[data-mode="light"] .prog-mobile { color: v
 :root:root:root .galaxy-sky h1, :root:root:root .galaxy-sky h2, :root:root:root .galaxy-sky h3 { color: #fffdf8; }
 :root:root:root[data-mode="light"] .galaxy-sky h1, :root:root:root[data-mode="light"] .galaxy-sky h2, :root:root:root[data-mode="light"] .galaxy-sky h3 { color: #17140f; }
 :root:root:root .galaxy-sky .mcard-title, :root:root:root .galaxy-sky .mdesc-title { color: #fffdf8; }
+
+/* Convention de partenariat : texte modifiable au clavier (rien de tout cela à l'impression) */
+.contract-body:hover, .contract-field:hover { background: rgba(201, 173, 119, 0.12); }
+.contract-field:focus { outline: 2px solid #c9ad77; outline-offset: 1px; background: rgba(201, 173, 119, 0.18); }
+@media print { .contract-body:hover, .contract-field:hover, .contract-field:focus { background: none; outline: none; } }

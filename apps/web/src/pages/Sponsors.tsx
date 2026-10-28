@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
@@ -233,10 +233,14 @@ function Dossier({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
   const pages = useMemo(() => buildSponsorDossier(offer, sponsors), [offer, sponsors]);
   const [n, setN] = useState(0); const [scale, setScale] = useState(0.5);
   useEffect(() => { const f = () => setScale(Math.min(0.7, (Math.min(window.innerWidth, 760) - 40) / SPONSOR_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  // Le texte se tape directement dans les pages : à l'impression on recopie les pages telles qu'elles sont à l'écran (avec ce qui a été tapé)
+  const live = useRef<HTMLDivElement>(null); const printBox = useRef<HTMLDivElement>(null);
   const print = () => {
+    const box = printBox.current, src = live.current; if (!box || !src) return;
+    box.replaceChildren(...Array.from(src.children).map((c) => { const k = c.firstElementChild!.cloneNode(true) as HTMLElement; k.querySelectorAll("[contenteditable]").forEach((e) => e.removeAttribute("contenteditable")); return k; }));
     const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:0}";
     document.head.appendChild(st); document.body.classList.add("printing-affiche");
-    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); box.replaceChildren(); window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done); window.print();
   };
   return (
@@ -252,7 +256,7 @@ function Dossier({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
       </div>
       <button type="button" className="btn-clay w-full sm:w-auto sm:justify-self-center" onClick={print}>📄 Imprimer ou enregistrer en PDF</button>
       <p className="m-0 text-center text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF », format A4, marges : aucune. Tu l'envoies ensuite toi-même par e-mail.</p>
-      {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
+      {createPortal(<div ref={printBox} className="affiche-print" style={{ background: "#fff" }} />, document.body)}
     </section>
   );
 }
@@ -266,15 +270,19 @@ function Contract({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
   const pages = useMemo(() => buildContract({ sponsor, pack }), [sponsor, pack]);
   const [n, setN] = useState(0); const [scale, setScale] = useState(0.5);
   useEffect(() => { const f = () => setScale(Math.min(0.9, (Math.min(window.innerWidth, 900) - 40) / CONTRACT_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  // Le texte se tape directement dans les pages : à l'impression on recopie les pages telles qu'elles sont à l'écran (avec ce qui a été tapé)
+  const live = useRef<HTMLDivElement>(null); const printBox = useRef<HTMLDivElement>(null);
   const print = () => {
+    const box = printBox.current, src = live.current; if (!box || !src) return;
+    box.replaceChildren(...Array.from(src.children).map((c) => { const k = c.firstElementChild!.cloneNode(true) as HTMLElement; k.querySelectorAll("[contenteditable]").forEach((e) => e.removeAttribute("contenteditable")); return k; }));
     const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:0}";
     document.head.appendChild(st); document.body.classList.add("printing-affiche");
-    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
+    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); box.replaceChildren(); window.removeEventListener("afterprint", done); };
     window.addEventListener("afterprint", done); window.print();
   };
   return (
     <section className="grid gap-3">
-      <p className="m-0 text-sm text-muted">Une convention de partenariat (parrainage) de 3 pages, à imprimer et faire signer. Choisis le partenaire : son nom, son grade, ses contreparties, son montant et ses dates sont écrits tout seuls ; ce qui manque (adresse, SIRET, IBAN, signatures…) reste en pointillés à remplir au stylo. Sans partenaire, choisis seulement un grade.</p>
+      <p className="m-0 text-sm text-muted">Une convention de partenariat (parrainage) de 3 pages, à imprimer et faire signer. Choisis le partenaire : son nom, son grade, ses contreparties, son montant et ses dates sont écrits tout seuls. <b>Tu peux taper directement dans la page</b> : clique dans une ligne pointillée (adresse, SIRET, IBAN…) ou dans n'importe quel texte pour le corriger ; ce que tu écris est conservé quand tu changes de page, mais pas si tu changes de partenaire. Ce qui reste en pointillés se remplit au stylo. Sans partenaire, choisis seulement un grade.</p>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-bold">Partenaire
           <select className="rounded-xl border-2 border-line bg-white p-2" value={who} onChange={(e) => { setWho(e.target.value); setN(0); }}>
@@ -290,7 +298,7 @@ function Contract({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
         </label>
       </div>
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: CONTRACT_W * scale, height: CONTRACT_H * scale }}>
-        <div style={{ width: CONTRACT_W, height: CONTRACT_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>{pages[n]}</div>
+        <div ref={live} style={{ width: CONTRACT_W, height: CONTRACT_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>{pages.map((pg, i) => <div key={i} style={{ display: i === n ? "block" : "none" }}>{pg}</div>)}</div>
       </div>
       <div className="flex items-center justify-center gap-3">
         <button type="button" className="btn-outline" aria-label="Page précédente" disabled={n === 0} onClick={() => setN(n - 1)}>‹</button>
@@ -299,7 +307,7 @@ function Contract({ offer, sponsors }: { offer: Offer; sponsors: Sponsor[] }) {
       </div>
       <button type="button" className="btn-clay w-full sm:w-auto sm:justify-self-center" onClick={print}>📄 Imprimer ou enregistrer en PDF</button>
       <p className="m-0 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">⚠️ C'est un <b>modèle de départ</b>, pas un conseil juridique. Avant de le faire signer, fais-le relire par la fédération, la mairie (service des associations) ou un juriste, surtout pour la TVA (un parrainage est en général facturé avec TVA, mais le régime dépend de la situation du club) et pour l'adresse, le SIRET et le pouvoir du président. Il faut aussi vérifier que les statuts du club autorisent ce type de partenariat.</p>
-      {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
+      {createPortal(<div ref={printBox} className="affiche-print" style={{ background: "#fff" }} />, document.body)}
     </section>
   );
 }
