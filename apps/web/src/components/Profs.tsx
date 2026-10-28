@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { ADULT_LEVELS, DOC_KINDS, fmtDate, fmtProfSlot, PlanDay, PRICE_MEMBER, PRICE_OTHER, SUNDAY_EXTRA, ProfAdmin, ProfCard, ProfStatus, profName, priceOn, WEEKDAYS } from "../types";
@@ -174,12 +174,9 @@ const STATUS_BADGE: Record<ProfStatus, [string, string]> = {
 };
 
 // Coach : tous les professeurs, leurs documents, validation
-const ProfPlanning = lazy(() => import("./ProfPlanning").then((m) => ({ default: m.ProfPlanning })));
-
 export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
   const [list, setList] = useState<ProfAdmin[] | null>(null);
   const [err, setErr] = useState("");
-  const [planOf, setPlanOf] = useState<string | null>(null);
   const load = useCallback(() => { get<ProfAdmin[]>("/profs/admin").then(setList).catch((e) => { setList([]); setErr((e as Error).message); }); }, []);
   useEffect(load, [load]);
   async function approve(p: ProfAdmin, approved: boolean) {
@@ -212,11 +209,9 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
               <div className="flex flex-wrap items-center gap-2">
                 {p.status === "waiting" && <button className="btn-clay btn-sm" onClick={() => approve(p, true)}>✅ J'ai vérifié : rendre visible</button>}
                 {(p.status === "visible" || p.status === "paused") && <button className="btn-outline btn-sm" onClick={() => approve(p, false)}>Retirer de la liste</button>}
-                <button className="btn-ink btn-sm" aria-expanded={planOf === p.id} onClick={() => setPlanOf(planOf === p.id ? null : p.id)}>📅 {planOf === p.id ? "Fermer le planning" : "Gérer son planning"}</button>
                 {p.status === "missing" && <span className="hint">En attente des documents.</span>}
                 {p.status === "expired" && <span className="hint">Carte expirée : le professeur doit déposer la nouvelle.</span>}
               </div>
-              {planOf === p.id && <Suspense fallback={<div className="skeleton h-24" />}><ProfPlanning id={p.id} name={name} /></Suspense>}
             </li>
           ); })}
         </ul>

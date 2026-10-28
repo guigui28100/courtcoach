@@ -123,7 +123,7 @@ function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: 
   );
 }
 
-export function Availability({ p, onSaved, adminId }: { p: ProfMe; onSaved: (p: ProfMe) => void; adminId?: string }) {
+function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void }) {
   const [slots, setSlots] = useState<ProfSlot[]>(p.slots);
   const [mode, setMode] = useState<"week" | "date">("week");
   const [weekday, setWeekday] = useState(0), [date, setDate] = useState(""), [start, setStart] = useState("18:00"), [end, setEnd] = useState("20:00");
@@ -136,7 +136,7 @@ export function Availability({ p, onSaved, adminId }: { p: ProfMe; onSaved: (p: 
   }
   async function save() {
     setMsg(null);
-    try { const saved = await put<ProfMe>(adminId ? `/profs/${adminId}/slots` : "/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { const saved = await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function setHolidays(v: boolean) {
     setMsg(null);

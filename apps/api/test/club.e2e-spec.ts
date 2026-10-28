@@ -151,6 +151,10 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
     await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "16:00", end: "14:00" }] }).expect(400);
     await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 9, start: "14:00", end: "16:00" }] }).expect(400);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "18:00", end: "20:00", label: "Compétition jeunes", kind: "COMPETITION" }] }).expect(200);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "18:00", end: "20:00", kind: "AUTRE" }] }).expect(400);
+    expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body[0].kind).toBe("COMPETITION");
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
     await A.coach.put("/api/club/schedule/inconnu").set(ORIGIN).send({ items: [] }).expect(404);
     expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(1);
     expect((await A.coach.get("/api/club/my-schedule").expect(200)).body).toHaveLength(0);

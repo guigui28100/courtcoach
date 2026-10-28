@@ -62,9 +62,9 @@ export class ClubService {
     if (!u || u.deletedAt || (u.role !== "TRAINER" && u.role !== "COACH")) throw new NotFoundException("Personne introuvable.");
   }
 
-  async setSchedule(userId: string, items: { weekday: number; start: string; end: string; label?: string }[]) {
+  async setSchedule(userId: string, items: { weekday: number; start: string; end: string; label?: string; kind?: string }[]) {
     await this.staffOrFail(userId);
-    const out = items.map((i) => ({ weekday: i.weekday, start: i.start, end: i.end, label: (i.label ?? "").trim().replace(/\s+/g, " ") }));
+    const out = items.map((i) => ({ weekday: i.weekday, start: i.start, end: i.end, label: (i.label ?? "").trim().replace(/\s+/g, " "), ...(i.kind ? { kind: i.kind } : {}) }));
     if (out.some((i) => i.end <= i.start)) throw new BadRequestException("L'heure de fin doit être après l'heure de début.");
     await this.prisma.clubSetting.upsert({ where: { key: `schedule:${userId}` }, update: { value: out }, create: { key: `schedule:${userId}`, value: out } });
     return out;

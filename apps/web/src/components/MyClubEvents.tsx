@@ -4,6 +4,7 @@ import { get, put } from "../api";
 import { useAuth } from "../auth";
 import { ClubEvent, colorOf, fmtRange, kindOf, titleOf } from "../clubPlan";
 import { PageHead, Page } from "./ui";
+import { WeekPlanner } from "./WeekPlanner";
 import { adultName, Lesson, todayIso } from "../types";
 
 type Mine = Pick<ClubEvent, "id" | "kind" | "title" | "startDate" | "endDate" | "bands" | "courts" | "teams" | "time" | "place" | "audience" | "note">;
@@ -46,7 +47,8 @@ export function ClubNotice() {
   );
 }
 
-interface Course { weekday: number; start: string; end: string; label: string }
+const KIND_COLOR: Record<string, string> = { ADULTES: "#2f5f9e", COMPETITION: "#6f4b9e", ECOLE: "#c2561f" }; // cours adultes, compétition jeunes, école de tennis
+interface Course { weekday: number; start: string; end: string; label: string; kind?: string }
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const wd = (d: string) => (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
 const addDay = (d: string, n: number) => new Date(new Date(`${d}T12:00:00Z`).getTime() + n * 86_400_000).toISOString().slice(0, 10);
@@ -92,9 +94,9 @@ function CoachSchedules() {
   return (
     <section className="rounded border-2 border-line bg-white p-4">
       <h2 className="m-0 text-xl">🗓️ Placer les jours de cours</h2>
-      <p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine (jour et horaires). Ils reviennent chaque semaine dans son planning.</p>
+      <p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine : cours adultes, compétition jeunes, école de tennis.</p>
       <div className="mt-2 flex flex-wrap gap-2">{people.map((p) => <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={"rounded-full border-2 px-3 py-1 text-sm font-bold " + (who === p.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>{p.name}</button>)}</div>
-      {who && <Schedule userId={who} items={items} readOnly={false} onSaved={setItems} />}
+      {who && <div className="mt-3"><WeekPlanner key={who} id={who} name={people.find((p) => p.id === who)?.name ?? ""} /></div>}
     </section>
   );
 }
@@ -127,7 +129,7 @@ export default function MyClubEventsPage() {
                   <li key={d} className={"rounded border-2 p-3 " + (cs.length || es.length || ps.length ? "border-line bg-white" : "border-dashed border-line bg-transparent text-muted")}>
                     <b className="capitalize">{fmtRange(d, d)}</b>{d === today && <span className="ml-2 rounded-full bg-ink px-2 py-0.5 text-xs text-white">Aujourd'hui</span>}
                     {!cs.length && !es.length && !ps.length && <p className="m-0 text-sm">Rien de prévu</p>}
-                    {cs.map((c) => <p key={c.start} className="m-0 mt-1 text-sm">🎾 <b>{c.start.replace(":", " h ")} – {c.end.replace(":", " h ")}</b> {c.label || "Cours"}</p>)}
+                    {cs.map((c) => <p key={c.start} className="m-0 mt-1 text-sm" style={{ color: KIND_COLOR[c.kind ?? ""] }}>🎾 <b>{c.start.replace(":", " h ")} – {c.end.replace(":", " h ")}</b> {c.label || "Cours"}</p>)}
                     {ps.map((l) => <p key={l.id} className="m-0 mt-1 text-sm">👤 <b>{l.finalSlot!.time.replace(":", " h ")}</b> Cours particulier · {adultName(l.member, "Adhérent")}{l.status === "BOOKED" ? " (à confirmer)" : ""}{l.place ? ` · ${l.place}` : ""}</p>)}
                     {es.map((e) => <p key={e.id} className="m-0 mt-1 text-sm" style={{ color: colorOf(e) }}>{kindOf(e.kind).icon} <b>{titleOf(e)}</b>{e.time ? ` · ${e.time}` : ""}{e.place ? ` · ${e.place}` : ""}{state(e) === "nouveau" ? " 🔔 nouveau" : state(e) === "modifie" ? " 🔔 modifié" : ""}</p>)}
                   </li>);

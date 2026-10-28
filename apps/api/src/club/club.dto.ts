@@ -52,6 +52,7 @@ export class ScheduleItemDto {
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) start!: string;
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) end!: string;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(60) label?: string;
+  @IsOptional() @IsIn(["ADULTES", "COMPETITION", "ECOLE"]) kind?: string; // cours adultes, compétition jeunes, école de tennis
 }
 export class ScheduleDto {
   @IsArray() @ArrayMaxSize(40) @ValidateNested({ each: true }) @Type(() => ScheduleItemDto) items!: ScheduleItemDto[];

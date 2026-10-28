@@ -30,9 +30,6 @@ export class ProfsController {
 
   // Coach : tous les professeurs, leurs documents, validation
   @Roles(Role.COACH, Role.PRESIDENT) @Get("admin") adminList() { return this.svc.adminList(); }
-  // Le coach et le président gèrent le planning (disponibilités) d'un professeur à sa place
-  @Roles(Role.COACH, Role.PRESIDENT) @Get(":id/slots") slotsOf(@Param("id") id: string) { return this.svc.slotsOf(id); }
-  @Roles(Role.COACH, Role.PRESIDENT) @Put(":id/slots") @HttpCode(200) setSlotsOf(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: SlotsDto) { return this.svc.setSlotsOf(u, id, dto.slots); }
   @Roles(Role.COACH, Role.PRESIDENT) @Post(":id/approval") @HttpCode(200) approve(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: ApproveDto) { return this.svc.approve(u, id, dto.approved); }
 
   // Document : le coach, ou le professeur pour SES propres documents

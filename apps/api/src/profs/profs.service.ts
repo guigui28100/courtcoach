@@ -150,15 +150,6 @@ export class ProfsService {
     return this.me(user);
   }
 
-  async slotsOf(id: string) { const u = await this.assertProf(id); return this.me(u as unknown as AuthUser); }
-
-  async setSlotsOf(manager: AuthUser, id: string, slots: SlotDto[]) {
-    const u = await this.assertProf(id);
-    const out = await this.setSlots(u as unknown as AuthUser, slots);
-    await this.audit.log(manager.id, "prof-slots-managed", "User", id);
-    return out;
-  }
-
   async setSlots(user: AuthUser, slots: SlotDto[]) {
     await this.assertProf(user.id);
     const t = todayIso();
