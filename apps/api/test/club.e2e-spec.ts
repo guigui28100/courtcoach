@@ -135,4 +135,20 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: [c.id, "inconnu"] }).expect(404);
     await A.coach.put("/api/club/events-order").set(ORIGIN).send({ ids: "x" }).expect(400);
   });
+
+  it("« Mon planning » : chacun ne voit que les événements où il est placé, et écrit ses propres jours de cours", async () => {
+    for (const k of ["adulte", "parent", "jeune"]) { await A[k].get("/api/club/mine").expect(403); await A[k].get("/api/club/my-schedule").expect(403); await A[k].put("/api/club/my-schedule").set(ORIGIN).send({ items: [] }).expect(403); }
+    await request(app.getHttpServer()).get("/api/club/mine").expect(401);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2099-05-01", endDate: "2099-05-01", courts: [], who: ["Entraineur"], time: "10 h", place: "Court 1" }).expect(201);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2099-05-02", endDate: "2099-05-02", courts: [], who: ["Quelqu'un d'autre"] }).expect(201);
+    await A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: "2001-05-02", endDate: "2001-05-02", courts: [], who: ["entraineur"] }).expect(201);
+    const mine = (await A.entraineur.get("/api/club/mine").expect(200)).body;
+    expect(mine).toHaveLength(1); expect(mine[0].startDate).toBe("2099-05-01"); expect(mine[0].time).toBe("10 h"); expect(mine[0].who).toBeUndefined();
+    expect((await A.coach.get("/api/club/mine").expect(200)).body).toHaveLength(0);
+    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
+    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 2, start: "16:00", end: "14:00" }] }).expect(400);
+    await A.entraineur.put("/api/club/my-schedule").set(ORIGIN).send({ items: [{ weekday: 9, start: "14:00", end: "16:00" }] }).expect(400);
+    expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(1);
+    expect((await A.coach.get("/api/club/my-schedule").expect(200)).body).toHaveLength(0);
+  });
 });

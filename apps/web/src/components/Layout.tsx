@@ -13,6 +13,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/coach/adultes", label: "Adultes · Coaching", short: "Adultes", icon: "star" },
     { to: "/coach/centre", label: "Jeunes · Centre de compétition", short: "Jeunes", icon: "users" },
     { to: "/coach/prof", label: "Mes cours", icon: "star" },
+    { to: "/mes-evenements", label: "Mon planning", short: "Mes dates", icon: "star" },
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
     { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
@@ -20,10 +21,12 @@ const NAV: Record<Role, NavItem[]> = {
   TRAINER: [
     { to: "/coach/centre", label: "Mes jeunes · Centre", short: "Jeunes", icon: "users" },
     { to: "/prof", label: "Cours particuliers", short: "Cours", icon: "star" },
+    { to: "/mes-evenements", label: "Mon planning", short: "Club", icon: "home" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   PRESIDENT: [
     { to: "/president", label: "Cours particuliers", short: "Cours", icon: "star" },
+    { to: "/mes-evenements", label: "Mon planning", short: "Mes dates", icon: "star" },
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
     { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },

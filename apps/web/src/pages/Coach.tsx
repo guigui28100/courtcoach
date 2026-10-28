@@ -1,4 +1,5 @@
 import { HOLIDAYS_WARN_DAYS, holidaysDaysLeft, holidaysLastDay } from "../schoolDays";
+import { ClubNotice } from "../components/MyClubEvents";
 import { PendingReports } from "../components/TournamentReports";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -253,6 +254,7 @@ export function CoachHome() {
               <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
             </div>
           </header>
+          <ClubNotice />
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Chiffres du jour">
             {stat(todos.length, todos.length > 1 ? "À faire" : "À faire", "text-[#c9ad77]")}
             {stat(d.booked.length, "Cours à confirmer", "text-[#c9ad77]")}
@@ -420,6 +422,7 @@ export function Centre() {
         actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-champagne text-ink no-underline hover:bg-champagne-deep">⭐ Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
       />
       <Page>
+        {!isCoach && <ClubNotice />}
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
         <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos et gestes", youthWait.length + youthDrafts + youthReplies], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "🏆 Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
 
