@@ -59,6 +59,16 @@ describe("Cours particuliers : un entraîneur choisit d'en donner ; documents, v
     await A.comite.get("/api/lessons").expect(403); // l'autre entraîneur n'a toujours rien
   });
 
+  it("le coach gère les disponibilités d'un professeur ; ni l'adulte, ni un entraîneur ne le peuvent", async () => {
+    for (const who of ["adulte", "parent", "comite", "prof2"]) { await A[who].get(`/api/profs/${profId}/slots`).expect(403); await A[who].put(`/api/profs/${profId}/slots`).set(ORIGIN).send({ slots: [] }).expect(403); }
+    const r = (await A.coach.put(`/api/profs/${profId}/slots`).set(ORIGIN).send({ slots: [{ weekday: 0, start: "09:00", end: "12:00" }, { weekday: 6, start: "21:00", end: "22:00" }] }).expect(200)).body;
+    expect(r.slots).toHaveLength(2);
+    expect((await A.prof.get("/api/profs/me").expect(200)).body.slots).toHaveLength(2); // le professeur retrouve ce que le coach a placé
+    await A.coach.put(`/api/profs/${profId}/slots`).set(ORIGIN).send({ slots: [{ weekday: 0, start: "12:00", end: "09:00" }] }).expect(400);
+    await A.coach.put("/api/profs/inconnu/slots").set(ORIGIN).send({ slots: [] }).expect(403);
+    await A.coach.put(`/api/profs/${profId}/slots`).set(ORIGIN).send({ slots: [] }).expect(200);
+  });
+
   it("le professeur ne voit que les jeunes que le coach lui confie", async () => {
     expect((await A.prof.get("/api/players").expect(200)).body.map((p: any) => p.id)).toEqual([p1]);
     await A.prof.get(`/api/players/${p2}`).expect(404);
