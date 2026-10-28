@@ -10,6 +10,7 @@ import { activeLines, starItems, StarLine, StarCount, StarLinesEditor, starLines
 import { ThemeRadar } from "../components/ThemeRadar";
 import { useFollowUp } from "../components/Suivi";
 import { offDayReason } from "../schoolDays";
+import { useRegisterSubNav } from "../components/subnav";
 import { AuthorBadge, authorColor, Avatar, BackLink, Empty, Err, Field, MultiSelect, SelectOrText, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge, MarkBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
@@ -527,9 +528,10 @@ export default function PlayerDetail() {
   const setTab = (k: Tab) => { setSearch(k === "profil" ? {} : { onglet: k }); };
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
+  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de début d'année"], ["objectifs", "🎯 Définir les objectifs de travail"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
+  const inSidebar = useRegisterSubNav((p ? tabs : []).map(([k, l]) => ({ key: k, label: l, active: tab === k, onSelect: () => setTab(k) })));
   if (missing || (viewAs && !viewAs.playerIds.includes(id))) return <Page><Empty>Ce joueur est introuvable.</Empty><BackLink fallback="/coach/centre" className="btn-clay no-underline">Retour</BackLink></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
-  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de début d'année"], ["objectifs", "🎯 Définir les objectifs de travail"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
@@ -537,7 +539,7 @@ export default function PlayerDetail() {
       </PageHead>
       <Page>
         <SideLayout nav={
-        <div className="tabbar side">
+        <div className={"tabbar side" + (inSidebar ? " md:hidden" : "")}>
           <div role="tablist" aria-label="Sections du dossier">
             {tabs.map(([k, label]) => (
               <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}><TabLabel text={label} /></button>
