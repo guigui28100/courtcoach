@@ -89,6 +89,9 @@ export function Layout({ children }: { children: ReactNode }) {
   useEffect(() => { setSidebar(side); return () => setSidebar(false); }, [side]);
   const sub = useSubNav().items;
   const activeTo = [...items].filter((i) => pathname === i.to || pathname.startsWith(i.to + "/")).sort((a, b) => b.to.length - a.to.length)[0]?.to;
+  // Les sous-menus de la barre de gauche sont fermés au départ : un clic sur la rubrique les ouvre, un second clic les ferme
+  const [openSub, setOpenSub] = useState<string | null>(null);
+  useEffect(() => { setOpenSub((o) => (o === activeTo ? o : null)); }, [activeTo]);
   const sideLink = ({ isActive }: { isActive: boolean }) =>
     "flex items-center gap-3 rounded-sm px-3 py-2.5 font-ui text-sm font-semibold no-underline transition-colors " + (isActive ? "bg-champagne text-ink" : "text-chalk/85 hover:bg-white/10 hover:text-white");
 
@@ -106,8 +109,13 @@ export function Layout({ children }: { children: ReactNode }) {
           </Link>
           {items.map((i) => (
             <div key={i.to} className="grid gap-1">
-              <NavLink to={i.to} end className={({ isActive }) => sideLink({ isActive: isActive || activeTo === i.to }) + (sub && activeTo === i.to ? " !bg-white/10 !text-champagne" : "")}><Icon name={i.icon} />{i.label}</NavLink>
-              {sub && activeTo === i.to && (
+              <NavLink to={i.to} end aria-expanded={sub && activeTo === i.to ? openSub === i.to : undefined}
+                onClick={(e) => { if (activeTo === i.to && pathname === i.to && sub) { e.preventDefault(); setOpenSub(openSub === i.to ? null : i.to); } else setOpenSub(i.to); }}
+                className={({ isActive }) => sideLink({ isActive: isActive || activeTo === i.to }) + (sub && activeTo === i.to ? " !bg-white/10 !text-champagne" : "")}>
+                <Icon name={i.icon} /><span className="min-w-0 flex-1">{i.label}</span>
+                {sub && activeTo === i.to && <svg viewBox="0 0 24 24" className={"h-4 w-4 shrink-0 transition-transform " + (openSub === i.to ? "rotate-180" : "")} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>}
+              </NavLink>
+              {sub && activeTo === i.to && openSub === i.to && (
                 <ul aria-label={"Sections : " + i.label} className="m-0 mb-1 ml-5 grid list-none gap-0.5 border-l border-champagne/40 p-0 pl-2">
                   {sub.map((x) => {
                     const cls = "flex w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left font-ui text-[0.82rem] font-semibold no-underline transition-colors " + (x.active ? "bg-champagne text-ink" : "text-chalk/80 hover:bg-white/10 hover:text-white");
