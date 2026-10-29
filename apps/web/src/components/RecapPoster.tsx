@@ -1,4 +1,5 @@
 import { Backdrop } from "./PosterBackdrop";
+import { Fmts, FmtStyle, pickFmt } from "./posterFmt";
 import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -46,7 +47,7 @@ export async function photoFromFile(file: File): Promise<string> {
 // Photos par rangée selon leur nombre : la taille de chaque photo s'adapte (1 grande, 2 côte à côte, 3 = 1 + 2, 5 = 2 + 3…)
 export const PHOTO_ROWS: Record<number, number[]> = { 1: [1], 2: [2], 3: [1, 2], 4: [2, 2], 5: [2, 3], 6: [3, 3], 7: [3, 4], 8: [4, 4] };
 
-export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; size?: number; onPan?: (i: number, x: number, y: number) => void }) {
+export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (i: number, x: number, y: number) => void }) {
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
@@ -61,8 +62,8 @@ export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPa
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const g = 1 + size * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
-  const sig = JSON.stringify([size, e, format, data.headline, data.message, results, matches, photos.length, logos.length]);
+  const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
+  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches, photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -107,26 +108,27 @@ export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPa
   );
 
   return (
-    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={w} h={h} veil="strong" />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH + partH - 40, fontSize: 420, lineHeight: 1, opacity: 0.06, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 36, height: hdH - 36, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
-        <div style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>BILAN</div>
+        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
+        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>BILAN</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k * g }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
-            {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
-            <div role="heading" aria-level={1} style={title}>{name}</div>
-            {rankLine && <div style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            <div style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+            {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
+            <div data-fmt="titre" role="heading" aria-level={1} style={title}>{name}</div>
+            {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
+            <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>
           {grid}
           {matches.length > 0 && (
-            <div style={{ flexShrink: 0, display: "grid", gap: p(10) }}>
+            <div data-fmt="rencontres" style={{ flexShrink: 0, display: "grid", gap: p(10) }}>
               {matches.map((m, i) => (
                 <div key={i} style={{ ...card, display: "block", borderLeft: `10px solid ${outcomeColor(m)}` }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: p(12), marginBottom: p(6) }}>
@@ -141,7 +143,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPa
             </div>
           )}
           {results.length > 0 && (
-            <div style={card}>
+            <div data-fmt="resultats" style={card}>
               {head("🏆 RÉSULTATS")}
               <div style={{ display: "grid", gap: p(6) }}>
                 {results.map((r, i) => (
@@ -152,20 +154,20 @@ export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPa
               </div>
             </div>
           )}
-          {data.message.trim() && <p style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
+          {data.message.trim() && <p data-fmt="texte" style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
         </div>
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>
-          <div style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>MERCI À<br />NOS PARTENAIRES</div>
+          <div data-fmt="partenaires" style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>MERCI À<br />NOS PARTENAIRES</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 14, height: partH - 28 }}>
             {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 170, height: "100%", objectFit: "contain" }} />)}
           </div>
         </div>
       )}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: ftH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: `0 ${px}px` }}>
-        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.04em" }}>Merci à tous !</div>
-        <div style={{ fontSize: 15, opacity: 0.92, whiteSpace: "nowrap" }}>tennisclubhoudan@gmail.com</div>
+        <div data-fmt="pied" style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.04em" }}>Merci à tous !</div>
+        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, whiteSpace: "nowrap" }}>tennisclubhoudan@gmail.com</div>
         <span aria-hidden style={{ display: "inline-block", width: 60, height: 60, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
     </div>

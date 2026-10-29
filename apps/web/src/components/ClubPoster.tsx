@@ -3,6 +3,7 @@ import { SERIF } from "./posterFonts";
 import { glue, teamParts } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
+import { Fmts, FmtStyle, pickFmt, stepZoom } from "./posterFmt";
 import { CourtLines } from "./CourtLines";
 import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
@@ -10,9 +11,7 @@ import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf
 export const POSTER_W = 794;
 export const POSTER_H = 1123;
 export type PosterModel = "liste" | "calendrier";
-// Réglage de la taille des textes (en crans : 0 = normal, 1 cran = 8 %) ; « tout » agrandit ou réduit l'ensemble
-export type MonthFmt = Partial<Record<"tout" | "entete" | "cartes" | "liste", number>>;
-export const stepZoom = (n?: number) => 1 + (n ?? 0) * 0.08;
+
 
 const SHORT = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
 const PRIORITY = ["FETE", "FETE_ECOLE", "JUMELAGE", "TOURNOI", "STAGE_ENFANTS", "STAGE_ADULTES", "ANIMATION", "EQUIPES", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS", "AG", "AGE"];
@@ -89,14 +88,14 @@ function Header({ m, z = 1 }: { m: string; z?: number }) {
         <CourtLines cx={397} y={24} h={228} netWidth={6} />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
-      <div style={{ position: "absolute", left: 52, top: 40, zoom: z }}>
+      <div style={{ position: "absolute", left: 52, top: 40, zoom: z }}><div data-fmt="entete">
         <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
         <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
           <span style={{ background: "#c9ad77", color: "#17140f", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
           <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1}</span>
         </div>
-      </div>
+      </div></div>
     </div>
   );
 }
@@ -105,12 +104,12 @@ function Footer({ events }: { events: ClubEvent[] }) {
   const kinds = [...new Set(events.map((e) => e.kind))].map(kindOf);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
-      <div style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
+      <div data-fmt="pied" style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}>
         <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}><PosterLogo size={26} style={{ verticalAlign: "-6px", marginRight: 8 }} />Tennis Club Houdan</div>
         <div style={{ fontSize: 13, opacity: 0.85, marginTop: 2 }}>4 courts couverts · terre battue et dur · septembre → mai</div>
         <div style={{ fontSize: 14, fontWeight: 800, marginTop: 3, color: "#dfcb98", whiteSpace: "nowrap" }}>✉️ tennisclubhoudan@gmail.com</div>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", justifyContent: "flex-end", maxWidth: 330, fontSize: 11.5 }}>
+      <div data-fmt="legende" style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", justifyContent: "flex-end", maxWidth: 330, fontSize: 11.5 }}>
         {kinds.map((k) => <span key={k.key} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><i style={{ width: 11, height: 11, borderRadius: 3, background: k.color, display: "inline-block" }} />{k.label}</span>)}
       </div>
     </div>
@@ -127,34 +126,34 @@ function pickTop(list: ClubEvent[]): ClubEvent[] {
   const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
   return list.some((e) => e.featured) ? starred : auto;
 }
-function Featured({ list, showWho, z = 1 }: { list: ClubEvent[]; showWho: boolean; z?: number }) {
+function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   const top = pickTop(list);
   if (top.length === 0) return null;
   const MOIS = MONTHS.map((x) => x.toLowerCase());
   const lc = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   return (
-    <div style={{ padding: "0 40px", textAlign: "left", zoom: z }}>
-      <div style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
+    <div style={{ padding: "0 40px", textAlign: "left" }}>
+      <div data-fmt="titres" style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
-              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "12px 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}>
+              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "12px 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate">
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>au</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.endDate)])} {dayNum(e.endDate)}</div>
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
-              </div>
+              </div></div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}>
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate">
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
-            </div>
+            </div></div>
             )}
-            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte">
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
@@ -163,7 +162,7 @@ function Featured({ list, showWho, z = 1 }: { list: ClubEvent[]; showWho: boolea
                 </div>
               ) : null}
               {e.note && <div style={{ fontSize: 14, color: "#2b261d", marginTop: 5, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
-            </div>
+            </div></div>
           </div>
         ); })}
       </div>
@@ -184,7 +183,7 @@ const whenLines = (e: ClubEvent, short = false): string[] => {
 };
 
 // « Et aussi ce mois-ci » : une frise verticale (la date à gauche, la puce SUR la ligne, l'événement à droite)
-function ListModel({ m, list, showWho, withCards, z = 1 }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean; z?: number }) {
+function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
   const cap = 12;
   const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
@@ -197,24 +196,24 @@ function ListModel({ m, list, showWho, withCards, z = 1 }: { m: string; list: Cl
     const det = e.kind === "EQUIPES" ? detailParts(e, false) : detailParts(e, showWho);
     return (
       <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px ${two ? 28 : 34}px 1fr`, padding: "8px 0", alignItems: "start", textAlign: "left" }}>
-        {lines.length === 2 ? (
+        <div data-fmt="ldate">{lines.length === 2 ? (
           <div style={{ display: "grid", gridTemplateColumns: "auto auto", justifyContent: "end", columnGap: 8, fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH }}>
             {lines.map((l, i) => <><span key={`a${i}`} style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span key={`b${i}`} style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></>)}
           </div>
-        ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}
+        ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}</div>
         <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}><div data-fmt="ltexte">
           <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
           {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
-        </div>
+        </div></div>
       </div>
     );
   };
   return (
-    <div style={{ padding: "0 40px", marginTop: withCards ? 20 : 18, textAlign: "left", zoom: z }}>
+    <div style={{ padding: "0 40px", marginTop: withCards ? 20 : 18, textAlign: "left" }}>
       {n > 0 ? (<>
-        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>{withCards ? "ET AUSSI CE MOIS-CI" : "TOUT LE PROGRAMME"}</div>
+        <div data-fmt="titres" style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>{withCards ? "ET AUSSI CE MOIS-CI" : "TOUT LE PROGRAMME"}</div>
         <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 24, alignItems: "start" }}>
           {cols.map((c, i) => (
             <div key={i} style={{ position: "relative" }}>
@@ -273,8 +272,8 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
 
 // Zone libre entre l'en-tête et le bandeau bleu du bas (modèle « liste »).
 const BODY_TOP = 296, BODY_BOTTOM = 112, PARTNER_H = 78;
-function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number; fmt?: MonthFmt }) {
-  const g = stepZoom(fmt?.tout), zc = stepZoom(fmt?.cartes), zl = stepZoom(fmt?.liste);
+function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number; fmt?: Fmts }) {
+  const g = stepZoom(fmt?.tout?.size);
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
@@ -300,25 +299,26 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
     let live = true; fonts?.ready.then(() => { if (live) run(); });
     return () => { live = false; };
-  }, [list, month, showWho, cards, extra, zc, zl, g]);
+  }, [list, month, showWho, cards, extra, g]);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM - extra, overflow: "hidden" }}>
       <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale * g})`, transformOrigin: "top left", width: POSTER_W / (fit.scale * g) }}>
-        <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} z={zc} />}</div>
+        <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
         <div style={{ height: fit.gap }} />
-        <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} z={zl} /></div>
+        <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>
       </div>
     </div>
   );
 }
 
-export function ClubPoster({ events, month, model, showWho, partners, bg = "", fmt }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: MonthFmt }) {
+export function ClubPoster({ events, month, model, showWho, partners, bg = "", fmt, onPick }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
   const list = monthEvents(events, month);
   const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
-    <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
-      <Header m={month} z={stepZoom(fmt?.entete) * stepZoom(fmt?.tout)} />
+      <Header m={month} z={stepZoom(fmt?.tout?.size)} />
       <div style={{ marginTop: 6 }}>
         {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} fmt={fmt} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}
       </div>

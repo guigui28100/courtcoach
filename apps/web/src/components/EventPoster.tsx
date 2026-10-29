@@ -5,6 +5,7 @@ import { Backdrop, PosterBg } from "./PosterBackdrop";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
+import { FmtStyle, pickFmt } from "./posterFmt";
 import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
@@ -35,14 +36,14 @@ function dateBlock(e: ClubEvent) {
 
 type Row = { icon: string; title: string; text: string };
 
-export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero" | "tout";
+export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero" | "tout" | "entete" | "type" | "accroche" | "pied" | "mail" | "partenaires";
 export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
 export { PHOTOS } from "./PosterBackdrop";
 export type { PosterBg } from "./PosterBackdrop";
 
-export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light = false }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean }) {
+export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light = false, onPick }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
@@ -105,7 +106,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
   const card: CSSProperties = { border: `2px solid ${onPhoto ? "rgba(255,255,255,.55)" : LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, padding: `${pi(12)} ${pi(16)}`, display: "flex", alignItems: "center", gap: pi(14), minWidth: 0 };
 
   const dateEl = (
-    <div style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", fontVariantNumeric: "lining-nums", border: `2px solid ${acc}`, maxWidth: "100%" }}>
+    <div data-fmt="date" style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", fontVariantNumeric: "lining-nums", border: `2px solid ${acc}`, maxWidth: "100%" }}>
       <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
         <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
@@ -114,7 +115,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     </div></div>
   );
   const rowsEl = rows.length > 0 && (
-    <div style={{ ...deco("infos"), display: "grid", gap: pi(10), gridTemplateColumns: rows.length > 1 ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)" }}>
+    <div data-fmt="infos" style={{ ...deco("infos"), display: "grid", gap: pi(10), gridTemplateColumns: rows.length > 1 ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)" }}>
       {rows.map((r) => (
         <div key={r.title} style={card}>
           <span aria-hidden style={{ flex: `0 0 ${pi(44)}`, width: pi(44), height: pi(44), borderRadius: 12, background: acc, display: "grid", placeItems: "center", fontSize: pi(23) }}>{r.icon}</span>
@@ -123,7 +124,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const tarifEl = formulas.length > 0 && (
-    <div style={{ border: `2px solid ${NAVY}`, borderRadius: 16, overflow: "hidden", background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, ...deco("tarifs") }}>
+    <div data-fmt="tarifs" style={{ border: `2px solid ${NAVY}`, borderRadius: 16, overflow: "hidden", background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, ...deco("tarifs") }}>
       <div style={{ background: NAVY, color: "#fff", display: "flex", alignItems: "center", padding: `${pf(9)} ${pf(18)}`, fontSize: pf(13), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", gap: 10 }}>
         <span style={{ flex: 1 }}>{formulas.length > 1 ? "Formules et tarifs" : "Tarif"}</span>
         {twoPrices && <><span style={{ width: pf(112), textAlign: "right" }}>Adhérent</span><span style={{ width: pf(130), textAlign: "right", whiteSpace: "nowrap" }}>Non adhérent</span></>}
@@ -140,29 +141,30 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteEl = e.note && <p data-fmt="texte" style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
-    <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
+    <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0` }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
         <div key={t}>
-          <div style={{ whiteSpace: "nowrap", fontWeight: wt("equipe", 900), lineHeight: 1.05, color: NAVY, fontSize: `min(${pk("equipe")(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)`, ...deco("equipe") }}>{cat}</div>
-          <div style={{ fontWeight: wt("numero", 900), lineHeight: 1.05, color: acc, fontSize: pk("numero")(sq ? 52 : 60), marginTop: pt(4), ...deco("numero") }}>{num}</div>
+          <div data-fmt="equipe" style={{ whiteSpace: "nowrap", fontWeight: wt("equipe", 900), lineHeight: 1.05, color: NAVY, fontSize: `min(${pk("equipe")(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)`, ...deco("equipe") }}>{cat}</div>
+          <div data-fmt="numero" style={{ fontWeight: wt("numero", 900), lineHeight: 1.05, color: acc, fontSize: pk("numero")(sq ? 52 : 60), marginTop: pt(4), ...deco("numero") }}>{num}</div>
         </div>); })}
     </div>
   );
   const glow: CSSProperties = bg !== "" ? { textShadow: "0 0 10px rgba(255,255,255,.95), 0 0 22px rgba(255,255,255,.9), 0 1px 2px rgba(255,255,255,.9)" } : {}; // pas de carte : un halo blanc fait ressortir le texte posé directement sur le fond
-  const titleEl = <div style={glow}><h1 style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("titre") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const titleEl = <div style={glow}><h1 data-fmt="titre" style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p data-fmt="accroche" style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
-    <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <FmtStyle fmts={fmt} noZoom={["titre", "date", "infos", "tarifs", "texte", "equipe", "numero"]} />
       <Backdrop bg={bg} w={w} h={h} veil={light ? "light" : "normal"} />
       <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.045, background: `repeating-linear-gradient(90deg,transparent 0 ${w / 6.6 - 2}px,${NAVY} ${w / 6.6 - 2}px ${w / 6.6}px)` }} />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH - 40, fontSize: sq ? 420 : 520, lineHeight: 1, opacity: 0.07, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 40, height: hdH - 40, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
-        <div style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "9px 18px", fontWeight: 900, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap", flexShrink: 0 }}>{kd.icon} {tour ? "Tournoi" : kd.label}</div>
+        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
+        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "9px 18px", fontWeight: 900, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap", flexShrink: 0 }}>{kd.icon} {tour ? "Tournoi" : kd.label}</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k * g }}>
@@ -170,18 +172,18 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>
-          <div style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
+          <div data-fmt="partenaires" style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 14, height: partH - 28 }}>
             {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 170, height: "100%", objectFit: "contain" }} />)}
           </div>
         </div>
       )}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: ftH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 24, padding: `0 ${px}px` }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div data-fmt="pied" style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", color: GOLD }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
           <div style={{ fontSize: Math.min(sq ? 22 : 25, Math.floor((w - px * 2 - 64 - 48 - 250) / (Math.max(longestLink(inscription), 1) * 0.62))), fontWeight: 900, lineHeight: 1.2, marginTop: 4, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
         </div>
-        <div style={{ fontSize: 15, opacity: 0.92, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>✉️ tennisclubhoudan@gmail.com</div>
+        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>✉️ tennisclubhoudan@gmail.com</div>
         <span aria-hidden style={{ display: "inline-block", width: 64, height: 64, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
     </div>
