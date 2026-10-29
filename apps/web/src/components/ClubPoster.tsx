@@ -55,7 +55,7 @@ function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
 function MatchLines({ e, icon, rest, inline }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean }) {
   const more = labelParts(e).slice(2);
   return <>{e.teams.map((t, i) => { const [cat, num] = teamParts(t); return inline ? (
-    <span key={t} data-nw style={{ display: "block", marginTop: i ? 3 : 0, whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}<span style={{ fontWeight: 900, color: "#b8471f" }}>{"\u00a0\u00a0·\u00a0\u00a0"}{num}</span></span>
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
   ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
       <span data-nw style={{ display: "block", whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
