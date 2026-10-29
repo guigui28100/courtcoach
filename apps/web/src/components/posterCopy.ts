@@ -105,7 +105,7 @@ function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; typ
       if (ti?.bas && ti?.haut) s += `, ${pub.fem ? "classées" : "classés"} de ${ti.bas} à ${ti.haut}`;
       const surf = surfacePhrase(e.place ?? "");
       if (surf) { s += `, ${surf}`; covers.surface = true; }
-      return { text: `${s}, au Tennis Club Houdan.`, covers };
+      return { text: `${s}.`, covers };
     }
     case "EQUIPES": {
       const home = /domicile/i.test(e.place ?? "");
@@ -120,13 +120,13 @@ function ledeRaw(e: ClubEvent): { text: string; covers: { audience: boolean; typ
       if (/^(enfants|ados|adolescents|adultes|jeunes|débutants|joueurs|tous)\b/.test(who)) who = `les ${who}`.replace("les tous", "tous");
       if (aud) covers.audience = true;
       const len = days > 1 ? `, sur ${days} jours` : "";
-      return { text: `Un stage de tennis pour ${who}${len}, au Tennis Club Houdan.`, covers };
+      return { text: `Un stage de tennis pour ${who}${len}.`, covers };
     }
     case "ANIMATION":
-      if (aud) { covers.audience = true; return { text: `Une animation pour ${low(aud)}, au Tennis Club Houdan.`, covers }; }
-      return { text: "Une animation ouverte à tous, au Tennis Club Houdan.", covers };
+      if (aud) { covers.audience = true; return { text: `Une animation pour ${low(aud)}.`, covers }; }
+      return { text: "Une animation ouverte à tous.", covers };
     case "JUMELAGE": return { text: "Une rencontre amicale entre clubs jumelés.", covers };
-    case "FETE": return { text: "Venez fêter ça ensemble, au Tennis Club Houdan !", covers };
+    case "FETE": return { text: "Venez fêter ça ensemble !", covers };
     case "FETE_ECOLE": return { text: "Les enfants de l'école de tennis, leurs parents et leurs entraîneurs se retrouvent pour la fête.", covers };
     case "INSCRIPTIONS": return { text: "Venez rencontrer les entraîneurs et vous inscrire pour la nouvelle saison.", covers };
     case "DEBUT_COURS": return { text: "C'est la reprise : les cours recommencent !", covers };
