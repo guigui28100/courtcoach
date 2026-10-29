@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
+import { adultName, Lesson, todayIso } from "../types";
 import { check, clashing, CourseKind, DAY_END, DAY_START, DURATION, endOf, hm, hmFull, PlanBlock, snap, STEP, toMin, toTime } from "../weekPlan";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -18,6 +19,10 @@ const dur = (k: CourseKind) => (DURATION[k] % 60 ? `${Math.floor(DURATION[k] / 6
 
 interface Saved { weekday: number; start: string; end: string; label: string; kind?: string }
 interface Drag { kind: CourseKind; id?: string; offY: number; x: number; y: number; sx: number; sy: number; moved: boolean }
+const addD = (date: string, n: number) => new Date(new Date(`${date}T12:00:00Z`).getTime() + n * 86_400_000).toISOString().slice(0, 10);
+const mondayOf = (date: string) => addD(date, -((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7));
+const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const PRIV_MIN = 60; // un cours particulier dure 1 h (affichage seulement : il vient des réservations des adultes)
 let uid = 0;
 const newId = () => `b${++uid}`;
 
@@ -33,6 +38,13 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
   const blocksRef = useRef<PlanBlock[]>([]);
   blocksRef.current = blocks;
   const cols = useRef<(HTMLDivElement | null)[]>([]);
+  // Cours particuliers du prof (réservés ou confirmés) : on les VOIT dans la semaine choisie, sans pouvoir les modifier
+  const [monday, setMonday] = useState(() => mondayOf(todayIso()));
+  const [priv, setPriv] = useState<Lesson[]>([]);
+  useEffect(() => { get<Lesson[]>("/lessons").then((all) => setPriv(all.filter((l) => l.profId === id && l.finalSlot && (l.status === "BOOKED" || l.status === "ACCEPTED")))).catch(() => setPriv([])); }, [id]);
+  const weekDates = Array.from({ length: 7 }, (_, i) => addD(monday, i));
+  const privBlocks = priv.filter((l) => weekDates.includes(l.finalSlot!.date)).map((l) => ({ l, weekday: weekDates.indexOf(l.finalSlot!.date), start: toMin(l.finalSlot!.time), end: toMin(l.finalSlot!.time) + PRIV_MIN }));
+  const privClash = (b: PlanBlock) => privBlocks.find((p) => p.weekday === b.weekday && p.start < b.end && p.end > b.start);
 
   useEffect(() => {
     get<Saved[]>(`/club/schedule/${id}`).then((list) => {
@@ -127,11 +139,18 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         <p className="m-0 self-center text-sm text-muted">{pick ? <>👆 <b>{kindOf(pick)!.label}</b> choisi : touche l'endroit du planning où il commence.</> : "↓ Glisse un type dans la semaine."}</p>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2" aria-label="Semaine affichée">
+        <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" aria-label="Semaine précédente" onClick={() => setMonday((m) => addD(m, -7))}>‹</button>
+        <b className="min-w-[13rem] text-center text-sm">Semaine du {Number(weekDates[0].slice(8, 10))} au {Number(weekDates[6].slice(8, 10))} {MONTHS[Number(weekDates[6].slice(5, 7)) - 1]}</b>
+        <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" aria-label="Semaine suivante" onClick={() => setMonday((m) => addD(m, 7))}>›</button>
+        <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => setMonday(mondayOf(todayIso()))}>Cette semaine</button>
+        <span className="text-xs text-muted">Les cours du club se répètent chaque semaine. Les cours particuliers (🎾 jaune / vert) sont à voir seulement : ils viennent des réservations.</span>
+      </div>
       {!ready ? (msg ? <p role="alert" className="m-0 font-bold text-bad">{msg.text}</p> : <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />) : (
         <div className="overflow-x-auto">
           <div className="min-w-[720px]" style={{ display: "grid", gridTemplateColumns: "3.6rem repeat(7, minmax(0, 1fr))", columnGap: 4 }}>
             <div />
-            {DAYS.map((d) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-bold text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span></div>)}
+            {DAYS.map((d, i) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-bold leading-tight text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span><small className="block font-normal opacity-80">{Number(weekDates[i].slice(8, 10))} {MONTHS[Number(weekDates[i].slice(5, 7)) - 1].slice(0, 4)}.</small></div>)}
             {/* axe des heures : une graduation toutes les demi-heures, alignée sur les cours */}
             <div className="relative select-none" style={{ height: ROWS * ROW }} aria-hidden="true">
               {labels.map((m, i) => <span key={m} className={"absolute right-1 text-[11px] leading-none " + (m % 60 ? "text-muted" : "font-bold text-ink")} style={{ top: i * ROW - 5 }}>{hmFull(m)}</span>)}
@@ -155,6 +174,13 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
                     </div>
                   );
                 })}
+                {privBlocks.filter((p) => p.weekday === wd).map((p) => (
+                  <div key={p.l.id} aria-label={`Cours particulier${p.l.status === "BOOKED" ? " à confirmer" : ""}, ${d}, de ${hm(p.start)} à ${hm(p.end)}, ${adultName(p.l.member, "adhérent")}`} title="Cours particulier : à voir seulement"
+                    className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded border-2 px-1 py-0.5 text-[11px] font-bold leading-tight"
+                    style={{ top: px(p.start - DAY_START), height: px(PRIV_MIN) - 2, background: p.l.status === "BOOKED" ? "#fff0a8" : "#d7f0df", borderColor: p.l.status === "BOOKED" ? "#c9ac00" : "#1f7a45", color: "#17140f" }}>
+                    <span className="block truncate">🎾 Particulier{p.l.status === "BOOKED" ? " · à confirmer" : ""}</span>
+                    <span className="block truncate font-normal">{hm(p.start)} – {hm(p.end)} · {adultName(p.l.member, "adhérent")}</span>
+                  </div>))}
                 {preview && preview.weekday === wd && drag && (
                   <div aria-hidden="true" className="pointer-events-none absolute inset-x-0.5 z-10 rounded border-2 border-dashed px-1.5 py-1 text-xs font-bold"
                     style={{ top: px(preview.start - DAY_START), height: px(preview.end - preview.start) - 2, background: preview.ok ? "rgba(31,122,69,.25)" : "rgba(217,45,32,.25)", borderColor: preview.ok ? "#1f7a45" : "#d92d20", color: preview.ok ? "#124d2b" : "#8a1c1c" }}>
@@ -167,6 +193,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         </div>
       )}
 
+      {blocks.some((b) => privClash(b)) && <p role="status" className="m-0 rounded border-2 border-[#c9ac00] bg-[#fff8d6] p-2 text-sm font-bold text-[#5c4300]">⚠ Cette semaine, un cours du club tombe en même temps qu'un cours particulier ({blocks.filter((b) => privClash(b)).map((b) => `${DAYS[b.weekday].toLowerCase()} ${hm(b.start)}`).join(", ")}). Rien n'est bloqué : à toi de voir.</p>}
       {preview && !preview.ok && <p role="alert" className="m-0 rounded border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-bold text-bad">⚠ {preview.reason} Si tu lâches ici, rien ne sera placé.</p>}
       {drag && (
         <div aria-hidden="true" className="pointer-events-none fixed z-[200] rounded px-3 py-1.5 text-sm font-bold text-white shadow-lg" style={{ left: drag.x + 12, top: drag.y + 8, background: kindOf(drag.kind)!.bg, opacity: drag.moved ? 0.92 : 0 }}>
