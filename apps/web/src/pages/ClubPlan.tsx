@@ -3,8 +3,9 @@ import { RANKINGS } from "../types";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { ClubPoster, monthEvents, MonthFmt, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
-import { SizeStepper } from "../components/TextSize";
+import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
+import { FmtPanel, FmtItem, SelOutline } from "../components/FmtPanel";
+import { Fmts } from "../components/posterFmt";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
@@ -14,7 +15,7 @@ import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, has
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
 import { BgPicker } from "../components/PosterBackdrop";
-import { EventPoster, PosterBg, PosterFormat, SIZES, BlockKey, BlockFmt, PosterFmt } from "../components/EventPoster";
+import { EventPoster, PosterBg, PosterFormat, SIZES, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1068,50 +1069,25 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
   );
 }
 
-// ───────────── Mise en forme du texte de l'affiche : taille, gras, italique, souligné, alignement, bloc par bloc ─────────────
-const FMT_BLOCKS: { key: BlockKey; label: string }[] = [
-  { key: "titre", label: "Titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
+// ───────────── Mise en forme du texte de l'affiche d'un événement : chaque texte se touche sur l'aperçu ou se choisit dans la liste ─────────────
+const monthFmtItems = (liste: boolean): FmtItem[] => [
+  { key: "entete", label: "Mois et saison (en haut)" },
+  ...(liste ? [
+    { key: "titres", label: "Titres « À ne pas manquer » / « Et aussi »" }, { key: "cdate", label: "Dates des grandes cartes" }, { key: "ctexte", label: "Textes des grandes cartes" },
+    { key: "ldate", label: "Dates de la liste" }, { key: "ltexte", label: "Textes de la liste" },
+  ] : []),
+  { key: "pied", label: "Bas de page (club, e-mail)" }, { key: "legende", label: "Légende des couleurs" },
+  { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
-const FMT_COLORS = [["#17140f", "Noir"], ["#1b1863", "Bleu nuit"], ["#2E86C1", "Bleu"], ["#1E8449", "Vert"], ["#D35400", "Orange"], ["#C0392B", "Rouge"], ["#8E44AD", "Violet"], ["#B8860B", "Or"]];
-function FormatPanel({ fmt, onChange, team }: { fmt: PosterFmt; onChange: (f: PosterFmt) => void; team?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const [key, setKey] = useState<BlockKey>(team ? "numero" : "titre");
-  const all = { key: "tout" as BlockKey, label: "Tous les textes" };
-  const blocks = team ? [{ key: "equipe" as BlockKey, label: "Catégorie de l'équipe" }, { key: "numero" as BlockKey, label: "Numéro de l'équipe" }, ...FMT_BLOCKS, all] : [...FMT_BLOCKS, all];
-  const cur: BlockFmt = fmt[key] ?? {};
-  const set = (patch: Partial<BlockFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
-  const size = cur.size ?? 0;
-  const tog = (label: string, on: boolean | undefined, f: () => void, st?: React.CSSProperties) => (
-    <button type="button" aria-pressed={!!on} onClick={f} style={st} className={`min-h-8 min-w-8 rounded-md border px-2 text-sm ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
-  );
-  return (
-    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-lg border border-line bg-white p-2">
-      <summary className="cursor-pointer text-xs font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
-      <p className="mb-1 mt-1 text-xs text-muted">Choisis une partie, puis règle-la (réglages gardés dans ce navigateur).</p>
-      <div className="mb-1 flex flex-wrap gap-1">{blocks.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
-      <div className="flex flex-wrap items-center gap-1">
-        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A−</button>
-        <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
-        <button type="button" aria-label="Plus grand" disabled={size >= 6} onClick={() => set({ size: size + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A+</button>
-        {key !== "tout" && <>
-        {tog("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), { fontWeight: 900 })}
-        {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" })}
-        {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" })}
-        {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a })))}
-        {team && (key === "equipe" || key === "numero") && <>
-          <button type="button" aria-label="Monter" onClick={() => set({ dy: (cur.dy ?? 0) - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬆</button>
-          <button type="button" aria-label="Descendre" onClick={() => set({ dy: (cur.dy ?? 0) + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬇</button></>}
-        </>}
-        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir</button>
-      </div>
-      {key !== "tout" && <div className="mt-1 flex flex-wrap items-center gap-1" role="group" aria-label="Couleur du texte">
-        <span className="text-xs font-bold text-ink">Couleur :</span>
-        {FMT_COLORS.map(([c, n]) => <button key={c} type="button" aria-label={n} aria-pressed={cur.color === c} title={n} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`h-7 w-7 rounded-full border-2 ${cur.color === c ? "border-ink ring-2 ring-champagne" : "border-white shadow"}`} />)}
-      </div>}
-      {key === "tout" && <p className="m-0 mt-1 text-xs text-muted">Agrandit ou réduit tous les textes ensemble. Si tu agrandis trop, le bas peut être coupé.</p>}
-    </details>
-  );
-}
+const eventFmtItems = (team: boolean, hasPartners: boolean): FmtItem[] => [
+  { key: "entete", label: "Nom du club (bandeau)" }, { key: "type", label: "Pastille du type" },
+  { key: "titre", label: "Titre" },
+  ...(team ? [{ key: "equipe", label: "Catégorie de l'équipe" }, { key: "numero", label: "Numéro de l'équipe" }] : []),
+  { key: "accroche", label: "Phrase sous le titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
+  { key: "pied", label: "Inscriptions (bas)" }, { key: "mail", label: "E-mail (bas)" },
+  ...(hasPartners ? [{ key: "partenaires", label: "Mot « partenaires »" }] : []),
+  { key: "tout", label: "Tous les textes", sizeOnly: true },
+];
 
 // ───────────── Affiche d'un événement : on remplit les infos à gauche, l'aperçu se met à jour à droite ─────────────
 function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
@@ -1130,6 +1106,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const holder = useRef<HTMLDivElement>(null);
   const fmtKey = `cc-affiche-mise-en-forme-${e.id}`;
   const [fmt, setFmtState] = useState<PosterFmt>(() => { try { return JSON.parse(localStorage.getItem(fmtKey) || "{}"); } catch { return {}; } });
+  const [fsel, setFsel] = useState("titre");
   const setFmt = (v: PosterFmt) => { setFmtState(v); try { localStorage.setItem(fmtKey, JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const { w, h } = SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
@@ -1174,7 +1151,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
           <BgPicker bg={bg} onChange={setBg} extra={<Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>} />
-          <FormatPanel fmt={fmt} onChange={setFmt} team={e.kind === "EQUIPES"} />
+          <FmtPanel items={eventFmtItems(e.kind === "EQUIPES", partners.length > 0)} fmt={fmt} onChange={setFmt as (f: Fmts) => void} selected={fsel} onSelect={setFsel} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
               ? <AnimationForm tournoi={isTournoi(e.kind)} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
@@ -1184,8 +1161,9 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
           </div>
         </div>
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
+          <SelOutline sel={fsel} />
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>
+            <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster onPick={setFsel} e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1281,8 +1259,9 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState("");
-  const [mfmt, setMfmtState] = useState<MonthFmt>(() => { try { return JSON.parse(localStorage.getItem("cc-affiche-mois-taille") || "{}"); } catch { return {}; } });
-  const setMfmt = (v: MonthFmt) => { setMfmtState(v); try { localStorage.setItem("cc-affiche-mois-taille", JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
+  const [mfmt, setMfmtState] = useState<Fmts>(() => { try { return JSON.parse(localStorage.getItem("cc-affiche-mois-mise-en-forme") || "{}"); } catch { return {}; } });
+  const [msel, setMsel] = useState("entete");
+  const setMfmt = (v: Fmts) => { setMfmtState(v); try { localStorage.setItem("cc-affiche-mois-mise-en-forme", JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
   const [scale, setScale] = useState(0.5);
@@ -1323,19 +1302,10 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
       </div>
       <BgPicker bg={bg} onChange={setBg} />
-      <details className="mb-2 rounded-lg border border-line bg-white p-2">
-        <summary className="cursor-pointer text-xs font-extrabold text-ink">🔤 Taille des textes (plus gros, plus petit)</summary>
-        <p className="mb-1 mt-1 text-xs text-muted">Chaque cran change la taille de 8 %. Si tu agrandis trop, le bas de l'affiche peut être coupé : regarde l'aperçu. Réglages gardés dans ce navigateur.</p>
-        <div className="grid gap-1">
-          <SizeStepper label="Tous les textes" value={mfmt.tout ?? 0} onChange={(n) => setMfmt({ ...mfmt, tout: n })} />
-          <SizeStepper label="Titre du mois" value={mfmt.entete ?? 0} onChange={(n) => setMfmt({ ...mfmt, entete: n })} />
-          {model === "liste" && <SizeStepper label="À ne pas manquer" value={mfmt.cartes ?? 0} onChange={(n) => setMfmt({ ...mfmt, cartes: n })} />}
-          {model === "liste" && <SizeStepper label="Et aussi ce mois-ci" value={mfmt.liste ?? 0} onChange={(n) => setMfmt({ ...mfmt, liste: n })} />}
-          <button type="button" onClick={() => setMfmt({})} className="min-h-8 w-fit rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir les tailles</button>
-        </div>
-      </details>
+      <FmtPanel items={monthFmtItems(model === "liste")} fmt={mfmt} onChange={setMfmt} selected={msel} onSelect={setMsel} />
+      <SelOutline sel={msel} />
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
+        <div className="pf-prev" ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster onPick={setMsel} events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
