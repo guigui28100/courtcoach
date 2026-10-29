@@ -37,17 +37,21 @@ export class ClubService {
     return out;
   }
 
-  // Les événements où le nom de cette personne est coché (prénom, « prénom nom » ou « prénom (moi) ») : seulement ceux qui ne sont pas finis. Aucun autre détail du planning.
+  // Les événements où cette personne est cochée dans « Qui s'en occupe ? » : l'événement ne garde que des NOMS, on reconnaît donc « prénom », « prénom nom » ou « prénom (moi) » (sans tenir compte des accents ni des majuscules) ;
+  // si le compte n'a pas de nom de famille, « prénom + quelque chose » est aussi accepté. Seulement les événements pas encore finis, et rien d'autre du planning.
   async mine(userId: string) {
     const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
-    const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+    const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[-\s]+/g, " ");
     const first = norm(u?.firstName ?? ""), last = norm(u?.lastName ?? "");
     if (!first) return [];
-    const names = new Set([first, `${first} (moi)`, ...(last ? [`${first} ${last}`] : [])]);
+    const same = (w: string) => { const n = norm(w); return n === first || n === `${first} (moi)` || (!!last && n === `${first} ${last}`) || (!last && n.startsWith(`${first} `)); };
     const today = nowParis().date;
     const events = await this.prisma.clubEvent.findMany({ where: { endDate: { gte: today } }, orderBy: [{ startDate: "asc" }, { position: "asc" }] });
-    return events.filter((e) => e.who.some((w) => names.has(norm(w)))).map((e) => ({ id: e.id, kind: e.kind, title: e.title, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, time: e.time, place: e.place, audience: e.audience, note: e.note }));
+    return events.filter((e) => e.who.some(same)).map((e) => ({ id: e.id, kind: e.kind, title: e.title, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, time: e.time, place: e.place, audience: e.audience, note: e.note }));
   }
+
+  // Pour le coach et le président : les événements d'un prof (affichés dans le « Planning des profs »)
+  async eventsOf(userId: string) { await this.staffOrFail(userId); return this.mine(userId); }
 
   // Jours de cours habituels de la personne (gardés dans les réglages, une ligne par personne)
   async mySchedule(userId: string) {
@@ -57,8 +61,8 @@ export class ClubService {
 
   // Les personnes dont le coach ou le président peut placer les cours du club (prénom seulement, pas d'e-mail)
   async staff() {
-    const users = await this.prisma.user.findMany({ where: { role: { in: ["TRAINER", "COACH"] }, deletedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, firstName: true, role: true } });
-    return users.map((u) => ({ id: u.id, firstName: u.firstName ?? "", role: u.role }));
+    const users = await this.prisma.user.findMany({ where: { role: { in: ["TRAINER", "COACH"] }, deletedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, firstName: true, lastName: true, role: true } });
+    return users.map((u) => ({ id: u.id, firstName: u.firstName ?? "", lastName: u.lastName ?? "", role: u.role }));
   }
 
   async scheduleOf(userId: string) { await this.staffOrFail(userId); return this.mySchedule(userId); }

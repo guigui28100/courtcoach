@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
 import { adultName, Lesson, todayIso } from "../types";
+import { ClubEvent, colorOf, kindOf as evKind, titleOf } from "../clubPlan";
 import { check, clashing, CourseKind, DAY_END, DAY_START, DURATION, endOf, hm, hmFull, PlanBlock, snap, STEP, toMin, toTime } from "../weekPlan";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
@@ -42,6 +43,9 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
   const [monday, setMonday] = useState(() => mondayOf(todayIso()));
   const [priv, setPriv] = useState<Lesson[]>([]);
   useEffect(() => { get<Lesson[]>("/lessons").then((all) => setPriv(all.filter((l) => l.profId === id && l.finalSlot && (l.status === "BOOKED" || l.status === "ACCEPTED")))).catch(() => setPriv([])); }, [id]);
+  // Événements du planning du club où ce prof est affecté : montrés au-dessus de chaque jour concerné (lecture seule : ils se gèrent dans « Planning du club »)
+  const [evs, setEvs] = useState<ClubEvent[]>([]);
+  useEffect(() => { get<ClubEvent[]>(`/club/events-of/${id}`).then(setEvs).catch(() => setEvs([])); }, [id]);
   const weekDates = Array.from({ length: 7 }, (_, i) => addD(monday, i));
   const privBlocks = priv.filter((l) => weekDates.includes(l.finalSlot!.date)).map((l) => ({ l, weekday: weekDates.indexOf(l.finalSlot!.date), start: toMin(l.finalSlot!.time), end: toMin(l.finalSlot!.time) + PRIV_MIN }));
   const privClash = (b: PlanBlock) => privBlocks.find((p) => p.weekday === b.weekday && p.start < b.end && p.end > b.start);
@@ -151,6 +155,15 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
           <div className="min-w-[720px]" style={{ display: "grid", gridTemplateColumns: "3.6rem repeat(7, minmax(0, 1fr))", columnGap: 4 }}>
             <div />
             {DAYS.map((d, i) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-bold leading-tight text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span><small className="block font-normal opacity-80">{Number(weekDates[i].slice(8, 10))} {MONTHS[Number(weekDates[i].slice(5, 7)) - 1].slice(0, 4)}.</small></div>)}
+            <div className="self-center text-right text-[11px] font-bold leading-tight text-muted" title="Événements du club où ce prof est affecté" aria-hidden="true">🏆</div>
+            {weekDates.map((dt, i) => {
+              const here = evs.filter((e) => e.startDate <= dt && e.endDate >= dt);
+              return (
+                <div key={dt} className="grid min-h-8 content-start gap-0.5" aria-label={here.length ? `${DAYS[i]} : ${here.map((e) => titleOf(e)).join(", ")}` : undefined}>
+                  {here.map((e) => <span key={e.id} title={`${titleOf(e)}${e.time ? ` · ${e.time}` : ""}${e.place ? ` · ${e.place}` : ""}`} className="truncate rounded px-1 py-0.5 text-[11px] font-bold leading-tight text-white" style={{ background: colorOf(e) }}>{evKind(e.kind).icon} {titleOf(e)}</span>)}
+                </div>
+              );
+            })}
             {/* axe des heures : une graduation toutes les demi-heures, alignée sur les cours */}
             <div className="relative select-none" style={{ height: ROWS * ROW }} aria-hidden="true">
               {labels.map((m, i) => <span key={m} className={"absolute right-1 text-[11px] leading-none " + (m % 60 ? "text-muted" : "font-bold text-ink")} style={{ top: i * ROW - 5 }}>{hmFull(m)}</span>)}
