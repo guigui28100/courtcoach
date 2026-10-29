@@ -59,7 +59,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   const upcomingOf = (l: Lesson) => l.seriesId ? shown.filter((r) => r.seriesId === l.seriesId && r.finalSlot!.date >= today).length : 0;
   const lessonAt = (date: string, hour: number) => shown.find((l) => l.finalSlot!.date === date && Math.floor(mins(l.finalSlot!.time) / 60) === hour);
 
-  const clubAt = (date: string, hour: number) => club.find((c) => c.weekday === weekdayOf(date) && mins(c.start) <= hour * 60 && mins(c.end) >= (hour + 1) * 60 && !(skipHolidays && offDay(date)));
+  const clubAt = (date: string, hour: number) => club.find((c) => c.weekday === weekdayOf(date) && mins(c.start) < (hour + 1) * 60 && mins(c.end) > hour * 60 && !(skipHolidays && offDay(date))); // un cours de 1 h 30 qui commence à la demi-heure occupe les deux heures qu'il touche
   const eventsOn = (date: string) => evList.filter((e) => e.startDate <= date && e.endDate >= date);
   const free = (date: string, hour: number) => slots.some((s) => {
     const okDay = s.date ? s.date === date : s.weekday === weekdayOf(date) && !(skipHolidays && offDay(date));
@@ -156,7 +156,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
                   );
                 }
                 const cc = clubAt(d, h);
-                if (cc) return <div key={d + h} role="gridcell" className="agenda-lesson cursor-default" style={{ background: KIND_COLOR[cc.kind ?? ""] ?? "#4a4437", color: "#fff" }} aria-label={`${cc.label}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h`}><span className="min-w-0 text-left leading-tight"><b className="block truncate">{cc.label || "Cours du club"}</b><small className="block truncate">🎾 Club</small></span></div>;
+                if (cc) return <div key={d + h} role="gridcell" className="agenda-lesson cursor-default" style={{ background: KIND_COLOR[cc.kind ?? ""] ?? "#4a4437", color: "#fff" }} aria-label={`${cc.label}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h`}><span className="min-w-0 text-left leading-tight"><b className="block truncate">{cc.label || "Cours du club"}</b><small className="block truncate">🎾 {fmtTime(cc.start)} – {fmtTime(cc.end)}</small></span></div>;
                 return free(d, h)
                   ? <div key={d + h} role="gridcell" className="agenda-free" aria-label={`${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h : libre`}><span>libre</span></div>
                   : <div key={d + h} role="gridcell" className="agenda-off" aria-hidden />;

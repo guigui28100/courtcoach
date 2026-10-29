@@ -157,8 +157,12 @@ describe("Planning du club (réservé au coach)", () => {
     await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "18:00", end: "20:00", kind: "AUTRE" }] }).expect(400);
     expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body[0].kind).toBe("COMPETITION");
     await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 2, start: "14:00", end: "16:00", label: "École de tennis" }] }).expect(200);
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "09:30", end: "11:00", label: "Cours adultes", kind: "ADULTES" }, { weekday: 1, start: "11:00", end: "12:30", label: "École de tennis", kind: "ECOLE" }] }).expect(200); // demi-heure et bout à bout : permis
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "09:30", end: "11:00", kind: "ADULTES" }, { weekday: 1, start: "10:30", end: "12:00", kind: "ECOLE" }] }).expect(400); // chevauchement
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "09:10", end: "10:40", kind: "ADULTES" }] }).expect(400); // ni heure ni demi-heure
+    await A.coach.put(`/api/club/schedule/${tid}`).set(ORIGIN).send({ items: [{ weekday: 1, start: "09:30", end: "11:00", label: "Cours adultes", kind: "ADULTES" }, { weekday: 2, start: "09:30", end: "11:00", label: "Cours adultes", kind: "ADULTES" }] }).expect(200); // même heure, autre jour : permis
     await A.coach.put("/api/club/schedule/inconnu").set(ORIGIN).send({ items: [] }).expect(404);
-    expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(1);
+    expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(2);
     expect((await A.coach.get("/api/club/my-schedule").expect(200)).body).toHaveLength(0);
   });
 });
