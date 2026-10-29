@@ -179,9 +179,9 @@ const whenLines = (e: ClubEvent, short = false): string[] => {
   const mo = (x: string) => { const t = MONTHS[+x.slice(5, 7) - 1].toLowerCase(); return short ? abbr(t) : t; };
   const dn = (x: string) => (short ? `${DAYS[weekdayOf(x)].slice(0, 3).toLowerCase()}.` : lc(DAYS[weekdayOf(x)]));
   const d = (x: string, month: boolean) => `${dn(x)} ${dayNum(x)}${month ? " " + mo(x) : ""}`;
-  if (e.startDate === e.endDate) return [short ? `${dn(e.startDate).replace(/^./, (c) => c.toUpperCase())} ${dayNum(e.startDate)} ${mo(e.startDate)}` : `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)} ${mo(e.startDate)}`];
+  if (e.startDate === e.endDate) return [short ? `${dn(e.startDate).replace(/^./, (c) => c.toUpperCase())} ${dayNum(e.startDate)}` : `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)}`]; // le mois est écrit en haut de l'affiche : inutile de le répéter
   const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
-  return [`Du ${d(e.startDate, !same)}`, `au ${d(e.endDate, true)}`];
+  return [`Du ${d(e.startDate, !same)}`, `au ${d(e.endDate, !same)}`]; // le mois est déjà écrit en haut de l'affiche : on ne le répète que si la période change de mois
 };
 
 // « Et aussi ce mois-ci » : une frise verticale (la date à gauche, la puce SUR la ligne, l'événement à droite)
@@ -191,7 +191,7 @@ function ListModel({ m, list, showWho, withCards, z = 1 }: { m: string; list: Cl
   const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
   const half = two ? Math.ceil(shown.length / 2) : shown.length;
   const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
-  const dateW = two ? 112 : 230;
+  const dateW = two ? 96 : 170;
   const LH = "21px";
   const row = (e: ClubEvent) => {
     const k = kindOf(e.kind); const lines = whenLines(e, two);
