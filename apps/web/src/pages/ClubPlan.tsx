@@ -75,8 +75,9 @@ export function ClubPlan() {
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    get<any[]>("/profs/admin").then((l) => setProfs(l.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).filter(Boolean))).catch(() => {});
-  }, []);
+    // Toutes les personnes qui ont un compte (coach et entraîneurs), même sans « cours particuliers » : c'est ce nom que le site reconnaît ensuite pour les prévenir et remplir leur planning
+    get<any[]>("/club/staff").then((l) => setProfs(l.filter((p) => p.id !== me?.id).map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).filter(Boolean))).catch(() => {});
+  }, [me?.id]);
 
   // Toutes les personnes à affecter : le coach, les professeurs du site, puis les bénévoles et membres du bureau saisis dans « Mes personnes »
   const crew = useMemo(() => {

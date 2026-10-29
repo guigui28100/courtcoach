@@ -165,4 +165,22 @@ describe("Planning du club (réservé au coach)", () => {
     expect((await A.entraineur.get("/api/club/my-schedule").expect(200)).body).toHaveLength(2);
     expect((await A.coach.get("/api/club/my-schedule").expect(200)).body).toHaveLength(0);
   });
+
+  it("un événement où un prof est coché arrive dans son agenda et dans le « Planning des profs » (noms reconnus avec ou sans nom de famille, accents et majuscules ignorés)", async () => {
+    const tid = (await prisma.user.findFirstOrThrow({ where: { email: "entraineur@exemple.fr" } })).id;
+    await prisma.clubEvent.deleteMany();
+    await prisma.user.update({ where: { id: tid }, data: { firstName: "Théo", lastName: null } });
+    const mk = (who: string[], d: string) => A.coach.post("/api/club/events").set(ORIGIN).send({ kind: "ANIMATION", startDate: d, endDate: d, courts: [], who }).expect(201);
+    await mk(["THEO"], "2099-06-01"); await mk(["Théo Martin"], "2099-06-02"); await mk(["theo (moi)"], "2099-06-03"); await mk(["Marc Dupont"], "2099-06-04");
+    expect((await A.entraineur.get("/api/club/mine").expect(200)).body.map((e: any) => e.startDate)).toEqual(["2099-06-01", "2099-06-02", "2099-06-03"]);
+    await prisma.user.update({ where: { id: tid }, data: { lastName: "Durand" } });
+    expect((await A.entraineur.get("/api/club/mine").expect(200)).body.map((e: any) => e.startDate)).toEqual(["2099-06-01", "2099-06-03"]); // « Théo Martin » n'est pas lui
+    await mk(["Théo Durand"], "2099-06-05");
+    const forCoach = (await A.coach.get(`/api/club/events-of/${tid}`).expect(200)).body;
+    expect(forCoach.map((e: any) => e.startDate)).toEqual(["2099-06-01", "2099-06-03", "2099-06-05"]);
+    for (const k of ["adulte", "parent", "jeune", "entraineur"]) await A[k].get(`/api/club/events-of/${tid}`).expect(403);
+    await A.coach.get("/api/club/events-of/inconnu").expect(404);
+    expect((await A.coach.get("/api/club/staff").expect(200)).body.find((x: any) => x.id === tid)).toMatchObject({ firstName: "Théo", lastName: "Durand" });
+    await prisma.user.update({ where: { id: tid }, data: { firstName: "entraineur", lastName: null } });
+  });
 });
