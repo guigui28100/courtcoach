@@ -35,8 +35,8 @@ function dateBlock(e: ClubEvent) {
 
 type Row = { icon: string; title: string; text: string };
 
-export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte";
-export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right" };
+export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero";
+export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
 export { PHOTOS } from "./PosterBackdrop";
@@ -93,7 +93,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
   const [pt, pd, pi, pf, pn] = [pk("titre"), pk("date"), pk("infos"), pk("tarifs"), pk("texte")];
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const wt = (k: BlockKey, d: number) => (F(k).bold === undefined ? d : F(k).bold ? 900 : 400);
-  const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
+  const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, ...(F(k).color ? { color: F(k).color } : {}), ...(F(k).dy ? { transform: `translateY(${F(k).dy! * 8}px)` } : {}), fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
   const just = (k: BlockKey) => (F(k).align === "center" ? "center" : F(k).align === "right" ? "flex-end" : undefined);
   const hdH = sq ? 112 : 140, ftH = sq ? 112 : 148, px = sq ? 56 : 48;
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
@@ -144,8 +144,8 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0`, ...deco("titre") }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
         <div key={t}>
-          <div style={{ whiteSpace: "nowrap", fontWeight: 900, lineHeight: 1.05, color: NAVY, fontSize: `min(${pt(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)` }}>{cat}</div>
-          <div style={{ fontWeight: 800, lineHeight: 1.1, color: acc, fontSize: pt(sq ? 28 : 32), marginTop: pt(2) }}>{num}</div>
+          <div style={{ whiteSpace: "nowrap", fontWeight: wt("equipe", 900), lineHeight: 1.05, color: NAVY, fontSize: `min(${pk("equipe")(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)`, ...deco("equipe") }}>{cat}</div>
+          <div style={{ fontWeight: wt("numero", 900), lineHeight: 1.05, color: acc, fontSize: pk("numero")(sq ? 52 : 60), marginTop: pt(4), ...deco("numero") }}>{num}</div>
         </div>); })}
     </div>
   );

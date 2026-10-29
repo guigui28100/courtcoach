@@ -54,7 +54,7 @@ function MatchLines({ e, icon, rest }: { e: ClubEvent; icon?: string; rest?: boo
   return <>{e.teams.map((t, i) => { const [cat, num] = teamParts(t); return (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
       <span data-nw style={{ display: "block", whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
-      <span style={{ display: "block", fontWeight: 800, color: "#6b6557", fontSize: "0.82em", lineHeight: 1.2 }}>{num}</span>
+      <span style={{ display: "block", fontWeight: 900, color: "#b8471f", fontSize: "1.05em", lineHeight: 1.15 }}>{num}</span>
     </span>); })}{rest !== false && more.length > 0 ? <span style={{ display: "block", fontWeight: 700, fontSize: "0.9em", marginTop: 2 }}><Parts parts={more} /></span> : null}</>;
 }
 const dayNum = (d: string) => +d.slice(8, 10);

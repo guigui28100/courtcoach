@@ -1071,9 +1071,11 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
 const FMT_BLOCKS: { key: BlockKey; label: string }[] = [
   { key: "titre", label: "Titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
 ];
-function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFmt) => void }) {
+const FMT_COLORS = [["#17140f", "Noir"], ["#1b1863", "Bleu nuit"], ["#2E86C1", "Bleu"], ["#1E8449", "Vert"], ["#D35400", "Orange"], ["#C0392B", "Rouge"], ["#8E44AD", "Violet"], ["#B8860B", "Or"]];
+function FormatPanel({ fmt, onChange, team }: { fmt: PosterFmt; onChange: (f: PosterFmt) => void; team?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [key, setKey] = useState<BlockKey>("titre");
+  const [key, setKey] = useState<BlockKey>(team ? "numero" : "titre");
+  const blocks = team ? [{ key: "equipe" as BlockKey, label: "Catégorie de l'équipe" }, { key: "numero" as BlockKey, label: "Numéro de l'équipe" }, ...FMT_BLOCKS] : FMT_BLOCKS;
   const cur: BlockFmt = fmt[key] ?? {};
   const set = (patch: Partial<BlockFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
   const size = cur.size ?? 0;
@@ -1084,7 +1086,7 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
     <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-lg border border-line bg-white p-2">
       <summary className="cursor-pointer text-xs font-extrabold text-ink">🔤 Mise en forme du texte (taille, gras, souligné, centré…)</summary>
       <p className="mb-1 mt-1 text-xs text-muted">Choisis une partie, puis règle-la (réglages gardés dans ce navigateur).</p>
-      <div className="mb-1 flex flex-wrap gap-1">{FMT_BLOCKS.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
+      <div className="mb-1 flex flex-wrap gap-1">{blocks.map((b) => <Pill key={b.key} on={key === b.key} onClick={() => setKey(b.key)}>{b.label}{fmt[b.key] && Object.keys(fmt[b.key]!).length ? " ●" : ""}</Pill>)}</div>
       <div className="flex flex-wrap items-center gap-1">
         <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink">A−</button>
         <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
@@ -1093,9 +1095,15 @@ function FormatPanel({ fmt, onChange }: { fmt: PosterFmt; onChange: (f: PosterFm
         {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" })}
         {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" })}
         {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a })))}
+        {team && (key === "equipe" || key === "numero") && <>
+          <button type="button" aria-label="Monter" onClick={() => set({ dy: (cur.dy ?? 0) - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬆</button>
+          <button type="button" aria-label="Descendre" onClick={() => set({ dy: (cur.dy ?? 0) + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬇</button></>}
         <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir</button>
       </div>
-      
+      <div className="mt-1 flex flex-wrap items-center gap-1" role="group" aria-label="Couleur du texte">
+        <span className="text-xs font-bold text-ink">Couleur :</span>
+        {FMT_COLORS.map(([c, n]) => <button key={c} type="button" aria-label={n} aria-pressed={cur.color === c} title={n} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`h-7 w-7 rounded-full border-2 ${cur.color === c ? "border-ink ring-2 ring-champagne" : "border-white shadow"}`} />)}
+      </div>
     </details>
   );
 }
@@ -1161,7 +1169,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
           <BgPicker bg={bg} onChange={setBg} extra={<Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>} />
-          <FormatPanel fmt={fmt} onChange={setFmt} />
+          <FormatPanel fmt={fmt} onChange={setFmt} team={e.kind === "EQUIPES"} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
               ? <AnimationForm tournoi={isTournoi(e.kind)} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
