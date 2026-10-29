@@ -10,6 +10,9 @@ import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf
 export const POSTER_W = 794;
 export const POSTER_H = 1123;
 export type PosterModel = "liste" | "calendrier";
+// Réglage de la taille des textes (en crans : 0 = normal, 1 cran = 8 %) ; « tout » agrandit ou réduit l'ensemble
+export type MonthFmt = Partial<Record<"tout" | "entete" | "cartes" | "liste", number>>;
+export const stepZoom = (n?: number) => 1 + (n ?? 0) * 0.08;
 
 const SHORT = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
 const PRIORITY = ["FETE", "FETE_ECOLE", "JUMELAGE", "TOURNOI", "STAGE_ENFANTS", "STAGE_ADULTES", "ANIMATION", "EQUIPES", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS", "AG", "AGE"];
@@ -49,12 +52,14 @@ function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
   return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
 }
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
-function MatchLines({ e, icon, rest }: { e: ClubEvent; icon?: string; rest?: boolean }) {
+function MatchLines({ e, icon, rest, inline }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean }) {
   const more = labelParts(e).slice(2);
-  return <>{e.teams.map((t, i) => { const [cat, num] = teamParts(t); return (
+  return <>{e.teams.map((t, i) => { const [cat, num] = teamParts(t); return inline ? (
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
+  ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
       <span data-nw style={{ display: "block", whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
-      <span style={{ display: "block", fontWeight: 800, color: "#6b6557", fontSize: "0.82em", lineHeight: 1.2 }}>{num}</span>
+      <span style={{ display: "block", fontWeight: 900, color: "#b8471f", fontSize: "1.05em", lineHeight: 1.15 }}>{num}</span>
     </span>); })}{rest !== false && more.length > 0 ? <span style={{ display: "block", fontWeight: 700, fontSize: "0.9em", marginTop: 2 }}><Parts parts={more} /></span> : null}</>;
 }
 const dayNum = (d: string) => +d.slice(8, 10);
@@ -76,7 +81,7 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
   <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: color, WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
-function Header({ m }: { m: string }) {
+function Header({ m, z = 1 }: { m: string; z?: number }) {
   const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#2b261d 0%,#17140f 60%)", color: "#fff", overflow: "hidden", fontVariantNumeric: "lining-nums", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
@@ -84,7 +89,7 @@ function Header({ m }: { m: string }) {
         <CourtLines cx={397} y={24} h={228} netWidth={6} />
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
-      <div style={{ position: "absolute", left: 52, top: 40 }}>
+      <div style={{ position: "absolute", left: 52, top: 40, zoom: z }}>
         <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
         <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
@@ -122,43 +127,31 @@ function pickTop(list: ClubEvent[]): ClubEvent[] {
   const auto = [...list].filter((e) => PRIORITY.includes(e.kind) && !["INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"].includes(e.kind)).sort((a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind)).slice(0, 3).sort((a, b) => a.startDate.localeCompare(b.startDate));
   return list.some((e) => e.featured) ? starred : auto;
 }
-// Couleur plus foncée (0 = noir, 1 = inchangée)
-const shade = (hex: string, f: number) => { const n = parseInt(hex.slice(1), 16); const ch = (v: number) => Math.round(v * f).toString(16).padStart(2, "0"); return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`; };
-function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
+function Featured({ list, showWho, z = 1 }: { list: ClubEvent[]; showWho: boolean; z?: number }) {
   const top = pickTop(list);
   if (top.length === 0) return null;
   const MOIS = MONTHS.map((x) => x.toLowerCase());
   const lc = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   return (
-    <div style={{ padding: "0 40px", textAlign: "left" }}>
+    <div style={{ padding: "0 40px", textAlign: "left", zoom: z }}>
       <div style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
-        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
+        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
-              // Période : le carré est coupé en diagonale (bas gauche → haut droite) ; premier jour en haut à gauche, dernier jour en bas à droite
-              <div style={{ position: "relative", width: "31%", flex: "0 0 31%", minHeight: 225, color: "#fff", overflow: "hidden" }}>
-                <svg aria-hidden width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0 }}>
-                  <polygon points="0,0 100,0 0,100" fill={shade(c, 0.9)} />
-                  <polygon points="100,0 100,100 0,100" fill={shade(c, 0.62)} />
-                  <line x1="0" y1="100" x2="100" y2="0" stroke="#fff" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
-                </svg>
-                <div style={{ position: "absolute", left: 14, top: 10, textAlign: "left" }}>
-                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.startDate)]}</div>
-                  <div style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.startDate)}</div>
-                  <div style={line}>{MOIS[+e.startDate.slice(5, 7) - 1]}</div>
-                </div>
-                <div style={{ position: "absolute", right: 14, bottom: 10, textAlign: "right" }}>
-                  <div style={{ ...dayName, fontSize: 15, letterSpacing: "0.04em" }}>{DAYS[weekdayOf(e.endDate)]}</div>
-                  <div style={{ fontFamily: SERIF, fontSize: 40, fontWeight: 900, lineHeight: 1 }}>{dayNum(e.endDate)}</div>
-                  <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
-                </div>
+              // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
+              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "12px 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}>
+                <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
+                <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
+                <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
+                <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>au</div>
+                <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.endDate)])} {dayNum(e.endDate)}</div>
+                {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
-              <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
-              <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+              <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div>
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
@@ -178,62 +171,62 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   );
 }
 
-function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
+// Date d'un événement sur la frise : « Dimanche 8 novembre » ou, pour une période, deux lignes « Du lundi 23 » / « au mercredi 25 novembre »
+const whenLines = (e: ClubEvent, short = false): string[] => {
+  const lc = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
+  const abbr = (x: string) => (x.length <= 4 ? x : x === "juillet" ? "juil." : x === "septembre" ? "sept." : `${x.slice(0, 3)}.`);
+  const mo = (x: string) => { const t = MONTHS[+x.slice(5, 7) - 1].toLowerCase(); return short ? abbr(t) : t; };
+  const dn = (x: string) => (short ? `${DAYS[weekdayOf(x)].slice(0, 3).toLowerCase()}.` : lc(DAYS[weekdayOf(x)]));
+  const d = (x: string, month: boolean) => `${dn(x)} ${dayNum(x)}${month ? " " + mo(x) : ""}`;
+  if (e.startDate === e.endDate) return [short ? `${dn(e.startDate).replace(/^./, (c) => c.toUpperCase())} ${dayNum(e.startDate)}` : `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)}`]; // le mois est écrit en haut de l'affiche : inutile de le répéter
+  const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
+  return [`Du ${d(e.startDate, !same)}`, `au ${d(e.endDate, !same)}`]; // le mois est déjà écrit en haut de l'affiche : on ne le répète que si la période change de mois
+};
+
+// « Et aussi ce mois-ci » : une frise verticale (la date à gauche, la puce SUR la ligne, l'événement à droite)
+function ListModel({ m, list, showWho, withCards, z = 1 }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean; z?: number }) {
   const n = list.length;
-  if (withCards) {
-    // sous le grand bandeau : liste sobre et alignée (date complète à gauche, événement à droite)
-    const shown = list.slice(0, 10); const more = n - shown.length; const two = n > 6;
-    const when = (e: ClubEvent) => { const mo = MONTHS[+e.endDate.slice(5, 7) - 1].toLowerCase(); if (e.startDate === e.endDate) return `${DAYS[weekdayOf(e.startDate)]} ${dayNum(e.startDate)} ${mo}`; return e.startDate.slice(0, 7) === e.endDate.slice(0, 7) ? `Du ${DAYS[weekdayOf(e.startDate)].toLowerCase()} ${dayNum(e.startDate)} au ${DAYS[weekdayOf(e.endDate)].toLowerCase()} ${dayNum(e.endDate)} ${mo}` : fullRange(e); };
-    const cell = (e: ClubEvent) => { const k = kindOf(e.kind); return two ? (
-      <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", borderBottom: "1px solid #e3d7bf", padding: "7px 0", textAlign: "left" }}>
-        <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", marginTop: 5 }} />
-        <span><span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#17140f", lineHeight: 1.25 }}>{when(e)}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1.25, marginTop: 1 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</span>{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: "#4a4333", lineHeight: 1.25, marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
-      </div>
-    ) : (
-      <div key={e.id} style={{ display: "flex", gap: 12, alignItems: "baseline", borderBottom: "1px solid #e3d7bf", padding: "8px 0", textAlign: "left" }}>
-        <span aria-hidden style={{ width: 9, height: 9, borderRadius: 5, background: colorOf(e), flex: "0 0 9px", alignSelf: "center" }} />
-        <span style={{ width: 250, flex: "0 0 250px", fontSize: 15, fontWeight: 800, color: "#17140f", lineHeight: 1.25 }}>{when(e)}</span>
-        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}{e.kind === "EQUIPES" && detailParts(e, false).length ? <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "#4a4333", marginTop: 2 }}><Parts parts={detailParts(e, false)} /></span> : null}</span>
-      </div>
-    ); };
+  const cap = 12;
+  const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
+  const half = two ? Math.ceil(shown.length / 2) : shown.length;
+  const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
+  const dateW = two ? 96 : 170;
+  const LH = "21px";
+  const row = (e: ClubEvent) => {
+    const k = kindOf(e.kind); const lines = whenLines(e, two);
+    const det = e.kind === "EQUIPES" ? detailParts(e, false) : detailParts(e, showWho);
     return (
-      <div style={{ padding: "0 40px", marginTop: 20, textAlign: "left" }}>
-        {n > 0 ? (<>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>ET AUSSI CE MOIS-CI</div>
-          <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 28 }}>{shown.map(cell)}</div>
-          {more > 0 && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#6b6557", marginTop: 8 }}>… et {more} autre{more > 1 ? "s" : ""} événement{more > 1 ? "s" : ""} ce mois-ci</div>}
-        </>) : (
-          <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
-            <b style={{ color: "#17140f" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
+      <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px ${two ? 28 : 34}px 1fr`, padding: "8px 0", alignItems: "start", textAlign: "left" }}>
+        {lines.length === 2 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "auto auto", justifyContent: "end", columnGap: 8, fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH }}>
+            {lines.map((l, i) => <><span key={`a${i}`} style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span key={`b${i}`} style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></>)}
           </div>
-        )}
+        ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}
+        <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
+          {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
+          {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
+        </div>
       </div>
     );
-  }
-  const mode = n <= (withCards ? 3 : 6) ? "normal" : n <= (withCards ? 4 : 11) ? "dense" : "compact";
-  const roomy = mode === "compact" && n <= (withCards ? 14 : 18);
-  const side = false; // plus de petit calendrier « le mois d'un coup d'œil » : la liste prend toute la largeur
-  const rows = list.map((e) => { const c = colorOf(e); const k = kindOf(e.kind); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); return (
-    <div key={e.id} style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", borderRadius: 14, padding: mode === "normal" ? "9px 12px" : mode === "dense" ? "5px 10px" : roomy ? "7px 9px" : "3px 8px", border: "2px solid #eadfcb" }}>
-      <div style={{ minWidth: mode === "compact" ? 62 : 74, textAlign: "center", background: c, color: textOn(c), borderRadius: 10, padding: mode === "compact" ? "2px 0" : "4px 0", lineHeight: 1 }}>
-        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.08em" }}>{SHORT[weekdayOf(e.startDate)]}{multi ? `–${SHORT[weekdayOf(e.endDate)]}` : ""}</div>
-        <div style={{ fontFamily: SERIF, fontSize: mode === "compact" ? (roomy ? 20 : 17) : multi ? 21 : 27, fontWeight: 900 }}>{dayNum(e.startDate)}{multi ? `${same ? "–" : "→"}${dayNum(e.endDate)}` : ""}</div>
-      </div>
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontWeight: 900, fontSize: mode === "compact" ? (roomy ? 15 : 13.5) : mode === "dense" ? 15 : 17, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} /> : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
-        <div style={{ fontSize: mode === "compact" ? (roomy ? 11.5 : 10.5) : 12, color: "#6b6557", marginTop: 1, lineHeight: 1.2 }}><Parts parts={[fullRange(e), ...detailParts(e, showWho)]} /></div>
-        {e.note && <div style={{ fontSize: mode === "compact" ? 10.5 : 11.5, color: "#3a352c", marginTop: 2, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: mode === "normal" ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
-      </div>
-    </div>
-  ); });
+  };
   return (
-    <div style={{ padding: "0 40px", display: "grid", gridTemplateColumns: side ? "1fr 250px" : "1fr", gap: 22, marginTop: 18 }}>
-      {n > 0 && <div>
-        <div style={{ fontWeight: 900, color: "#7b5d2a", letterSpacing: "0.12em", fontSize: 15, marginBottom: 8 }}>{withCards ? "📅 ET AUSSI CE MOIS-CI" : "📅 TOUT LE PROGRAMME"}</div>
-        <div style={{ display: "grid", gridTemplateColumns: mode === "compact" ? "1fr 1fr" : "1fr", gap: mode === "normal" ? 10 : roomy ? 9 : 6, alignContent: "start" }}>{rows}</div>
-      </div>}
+    <div style={{ padding: "0 40px", marginTop: withCards ? 20 : 18, textAlign: "left", zoom: z }}>
+      {n > 0 ? (<>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>{withCards ? "ET AUSSI CE MOIS-CI" : "TOUT LE PROGRAMME"}</div>
+        <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 24, alignItems: "start" }}>
+          {cols.map((c, i) => (
+            <div key={i} style={{ position: "relative" }}>
+              <div aria-hidden style={{ position: "absolute", left: dateW + (two ? 13 : 15.5), top: 14, bottom: 14, width: 3, background: "#d9c6a3" }} />
+              {c.map(row)}
+            </div>
+          ))}
+        </div>
+        {more > 0 && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#6b6557", marginTop: 8 }}>… et {more} autre{more > 1 ? "s" : ""} événement{more > 1 ? "s" : ""} ce mois-ci</div>}
+      </>) : null}
       {(n === 0 || (n <= 9 && !withCards)) && (
-        <div style={{ background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
+        <div style={{ marginTop: n ? 14 : 0, background: "#f6efe3", border: "2px dashed #d9c6a3", borderRadius: 18, padding: "12px 16px", fontSize: 14, color: "#4a4333", lineHeight: 1.4 }}>
           <b style={{ color: "#17140f" }}>Envie de jouer ?</b> Renseignements et réservations auprès du club.
         </div>
       )}
@@ -280,7 +273,8 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
 
 // Zone libre entre l'en-tête et le bandeau bleu du bas (modèle « liste »).
 const BODY_TOP = 296, BODY_BOTTOM = 112, PARTNER_H = 78;
-function ListBody({ list, month, showWho, extra = 0 }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number }) {
+function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number; fmt?: MonthFmt }) {
+  const g = stepZoom(fmt?.tout), zc = stepZoom(fmt?.cartes), zl = stepZoom(fmt?.liste);
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
@@ -299,33 +293,34 @@ function ListBody({ list, month, showWho, extra = 0 }: { list: ClubEvent[]; mont
       let lo = 0.4, hi = cards ? 1.5 : 2;
       if (measure(hi) <= avail) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (measure(mid) <= avail) lo = mid; else hi = mid; }
       const used = measure(lo); const left = Math.max(0, avail - used); const hasA = cards && (refA.current?.offsetHeight ?? 0) > 0;
+      if (wrap.current) wrap.current.style.width = `${POSTER_W / (lo * g)}px`; // la largeur calculée par React peut être périmée : on la remet à jour tout de suite
       setFit({ scale: lo, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 / lo : 0 });
     };
     run();
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
     let live = true; fonts?.ready.then(() => { if (live) run(); });
     return () => { live = false; };
-  }, [list, month, showWho, cards, extra]);
+  }, [list, month, showWho, cards, extra, zc, zl, g]);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM - extra, overflow: "hidden" }}>
-      <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale})`, transformOrigin: "top left", width: POSTER_W / fit.scale }}>
-        <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
+      <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale * g})`, transformOrigin: "top left", width: POSTER_W / (fit.scale * g) }}>
+        <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} z={zc} />}</div>
         <div style={{ height: fit.gap }} />
-        <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>
+        <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} z={zl} /></div>
       </div>
     </div>
   );
 }
 
-export function ClubPoster({ events, month, model, showWho, partners, bg = "" }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string }) {
+export function ClubPoster({ events, month, model, showWho, partners, bg = "", fmt }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: MonthFmt }) {
   const list = monthEvents(events, month);
   const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
     <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
-      <Header m={month} />
+      <Header m={month} z={stepZoom(fmt?.entete) * stepZoom(fmt?.tout)} />
       <div style={{ marginTop: 6 }}>
-        {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}
+        {list.length === 0 ? <Empty /> : model === "liste" ? <ListBody list={list} month={month} showWho={showWho} extra={extra} fmt={fmt} /> : <CalendarModel m={month} list={list} showWho={showWho} extra={extra} />}
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 96, height: PARTNER_H, background: "#fff", borderTop: "3px solid #7b5d2a", display: "flex", alignItems: "center", gap: 16, padding: "0 40px" }}>

@@ -10,6 +10,8 @@ export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "S
 export const isAnimation = (kind: string) => kind === "ANIMATION";
 export const isTournoi = (kind: string) => kind === "TOURNOI";
 export const hasSimpleForm = (kind: string) => isAnimation(kind) || isTournoi(kind);
+// Types d'événements où personne ne paie ni ne s'inscrit : pas de « formules et prix » ni d'« inscriptions » dans leur formulaire d'affiche
+export const noPrice = (kind?: string) => !!kind && (kind === "EQUIPES" || kind === "TERRE_BATTUE" || kind === "DEBUT_COURS" || kind === "FIN_COURS" || kind === "AG" || kind === "AGE" || kind.startsWith("BULLE") || kind.startsWith("MAINT_"));
 const SUGGEST = ["Adhérent", "Non adhérent", "Journée", "Demi-journée", "Semaine complète", "1 enfant", "2e enfant"];
 // Les formules habituelles des stages enfants du club (les prix restent à écrire)
 export const KIDS_AUDIENCE = "Enfants et ados de 6 à 17 ans · mini tennis de 3 à 5 ans";
@@ -162,17 +164,17 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
         <label className="block text-sm font-bold text-ink">📍 Lieu
           <input aria-label="Lieu" maxLength={120} value={value.place} onChange={(e) => set({ place: e.target.value })} placeholder="Ex. Courts couverts, Houdan" className={inputCls} /></label>
       </div>
-      <label className="block text-sm font-bold text-ink">👥 Pour qui ? <small className="font-normal text-muted">(facultatif)</small>
-        <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. Ouvert à tous les adhérents" className={inputCls} /></label>
-      <div>
+      {kind !== "EQUIPES" && <label className="block text-sm font-bold text-ink">👥 Pour qui ? <small className="font-normal text-muted">(facultatif)</small>
+        <input aria-label="Pour qui" maxLength={120} value={value.audience} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. Ouvert à tous les adhérents" className={inputCls} /></label>}
+      {!noPrice(kind) && <div>
         <p className="m-0 mb-1.5 text-sm font-bold text-ink">💶 Formules et prix <small className="font-normal text-muted">(plusieurs possibles, {MAX_FORMULAS} au plus)</small></p>
         <Formulas value={value} onChange={onChange} stage={false} />
-      </div>
+      </div>}
       <label className="block text-sm font-bold text-ink">🎒 À prévoir <small className="font-normal text-muted">(facultatif)</small>
         <input aria-label="À prévoir" maxLength={160} value={value.bring} onChange={(e) => set({ bring: e.target.value })} placeholder="Ex. Tenue de sport, bouteille d'eau" className={inputCls} /></label>
-      <label className="block text-sm font-bold text-ink">✍️ Inscriptions
+      {!noPrice(kind) && <label className="block text-sm font-bold text-ink">✍️ Inscriptions
         <button type="button" className="mb-1 mt-1 rounded-full border-2 border-line bg-white px-2.5 py-1 text-xs font-bold text-ink hover:border-ink" onClick={() => set({ signup: SIGNUP_ONLINE })}>🌐 Inscriptions sur le site internet du club</button>
-        <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil, jusqu'au 20 octobre" className={inputCls} /></label>
+        <input aria-label="Inscriptions" maxLength={160} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. À l'accueil, jusqu'au 20 octobre" className={inputCls} /></label>}
     </div>
   );
 }
