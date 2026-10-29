@@ -72,6 +72,9 @@ export class ClubService {
     await this.staffOrFail(userId);
     const out = items.map((i) => ({ weekday: i.weekday, start: i.start, end: i.end, label: (i.label ?? "").trim().replace(/\s+/g, " "), ...(i.kind ? { kind: i.kind } : {}) }));
     if (out.some((i) => i.end <= i.start)) throw new BadRequestException("L'heure de fin doit être après l'heure de début.");
+    const m = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+    if (out.some((i) => "kind" in i && (m(i.start) % 30 || m(i.end) % 30))) throw new BadRequestException("Un cours du club commence et finit à l'heure ou à la demi-heure.");
+    for (const a of out) for (const b of out) if (a !== b && a.weekday === b.weekday && m(a.start) < m(b.end) && m(a.end) > m(b.start)) throw new BadRequestException("Deux cours se chevauchent ce jour-là : déplace ou supprime l'un des deux.");
     await this.prisma.clubSetting.upsert({ where: { key: `schedule:${userId}` }, update: { value: out }, create: { key: `schedule:${userId}`, value: out } });
     return out;
   }
