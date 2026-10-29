@@ -46,7 +46,7 @@ export async function photoFromFile(file: File): Promise<string> {
 // Photos par rangée selon leur nombre : la taille de chaque photo s'adapte (1 grande, 2 côte à côte, 3 = 1 + 2, 5 = 2 + 3…)
 export const PHOTO_ROWS: Record<number, number[]> = { 1: [1], 2: [2], 3: [1, 2], 4: [2, 2], 5: [2, 3], 6: [3, 3], 7: [3, 4], 8: [4, 4] };
 
-export function RecapPoster({ e, format, data, partners, bg = "", onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; onPan?: (i: number, x: number, y: number) => void }) {
+export function RecapPoster({ e, format, data, partners, bg = "", size = 0, onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; size?: number; onPan?: (i: number, x: number, y: number) => void }) {
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
@@ -61,7 +61,8 @@ export function RecapPoster({ e, format, data, partners, bg = "", onPan }: { e: 
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([e, format, data.headline, data.message, results, matches, photos.length, logos.length]);
+  const g = 1 + size * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
+  const sig = JSON.stringify([size, e, format, data.headline, data.message, results, matches, photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -73,7 +74,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", onPan }: { e: 
       }
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 12 && inner.scrollHeight > avail && kk > 0.45; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
-      inner.style.height = "100%"; setK(kk);
+      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
@@ -115,7 +116,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", onPan }: { e: 
         <div style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>BILAN</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
-      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k }}>
+      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k * g }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
             {data.headline.trim() && <div style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}

@@ -1,4 +1,5 @@
 import { BgPicker } from "./PosterBackdrop";
+import { SizeStepper } from "./TextSize";
 import { useEffect, useRef, useState } from "react";
 import { addDays, ClubEvent, mondayOf, opponentOf, TEAM_CATS, titleOf } from "../clubPlan";
 import { usePartnerLogos } from "../sponsors";
@@ -28,6 +29,8 @@ function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
 export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubEvent[]; onClose: () => void }) {
   const [format, setFormat] = useState<RecapFormat>("CARRE");
   const [bg, setBg] = useState("");
+  const [tsize, setTsize] = useState(() => { try { return +(localStorage.getItem("cc-affiche-bilan-taille") || 0) || 0; } catch { return 0; } });
+  const setSize = (n: number) => { setTsize(n); try { localStorage.setItem("cc-affiche-bilan-taille", String(n)); } catch { /* sans mémoire du navigateur */ } };
   const [d, setD] = useState<RecapData>(() => ({ ...emptyRecap(), matches: weekendMatches(e, events) }));
   const teamsMode = e.kind === "EQUIPES";
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement des photos et du texte
@@ -80,6 +83,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
               {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
             </div>
             <BgPicker bg={bg} onChange={setBg} />
+            <div className="mb-2 rounded-lg border border-line bg-white p-2"><SizeStepper label="🔤 Taille des textes" value={tsize} onChange={setSize} /><p className="m-0 mt-1 text-xs text-muted">Agrandit ou réduit tous les textes. Si tu agrandis trop, le bas peut être coupé : regarde l'aperçu.</p></div>
             <label className="text-sm font-bold text-ink">Titre en haut <span className="font-normal text-muted">(facultatif, ex. « Résultats du tournoi »)</span>
               <input aria-label="Titre en haut" className={`${field} mt-1`} maxLength={40} placeholder="Résultats du tournoi" value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
             <div className="rounded-2xl border-2 border-line bg-white p-3">
@@ -151,7 +155,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
           </div>
           <div className="min-w-0 md:sticky md:top-0 md:self-start">
             <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-              <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} onPan={(i, x, y) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; })} /></div>
+              <div ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} size={tsize} onPan={(i, x, y) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; })} /></div>
             </div>
             <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">

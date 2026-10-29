@@ -35,7 +35,7 @@ function dateBlock(e: ClubEvent) {
 
 type Row = { icon: string; title: string; text: string };
 
-export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero";
+export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero" | "tout";
 export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
@@ -69,6 +69,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
+  const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // « Tous les textes » : s'applique APRÈS l'ajustement automatique (sinon il serait annulé par lui)
   const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
@@ -82,7 +83,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       if (light) kk = Math.max(0.5, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
-      inner.style.height = "100%"; setK(kk);
+      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
@@ -164,7 +165,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         <div style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "9px 18px", fontWeight: 900, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap", flexShrink: 0 }}>{kd.icon} {tour ? "Tournoi" : kd.label}</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
-      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k }}>
+      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k * g }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{c}</div> : null))}</div>
       </div>
       {logos.length > 0 && (
