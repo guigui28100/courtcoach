@@ -136,7 +136,7 @@ function Featured({ list, showWho, z = 1 }: { list: ClubEvent[]; showWho: boolea
     <div style={{ padding: "0 40px", textAlign: "left", zoom: z }}>
       <div style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: 10 }}>
-        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const line = { fontSize: 14, fontWeight: 800, lineHeight: 1.25 } as const; const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
+        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
@@ -146,13 +146,12 @@ function Featured({ list, showWho, z = 1 }: { list: ClubEvent[]; showWho: boolea
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>au</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.endDate)])} {dayNum(e.endDate)}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+                {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
-              <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
-              <div style={line}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>
+              <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div>
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
