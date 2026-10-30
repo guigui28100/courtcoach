@@ -80,36 +80,47 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label="Affiche de bilan" onClick={(x) => x.stopPropagation()} className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-t-3xl bg-[#fbf8f2] p-5 shadow-2xl sm:rounded-3xl">
         <div className="mb-3 flex items-center justify-between gap-2"><h2 className="m-0 text-xl text-ink">📸 Affiche de bilan : {titleOf(e)}</h2><button type="button" className="btn-outline" onClick={onClose}>✕ Fermer</button></div>
-        <p role="note" className="mb-3 mt-0 rounded-xl bg-[#fff4cc] p-3 text-sm text-[#6b4e00]">
-          <b>⚠️ Avant de publier :</b> ne mets que des photos d'enfants dont les parents ont donné le <b>droit à l'image</b> (rubrique « Mes autorisations »), et pour les enfants écris seulement le prénom. <b>Rien n'est enregistré</b> : les photos et les noms restent dans cette fenêtre et ne sont envoyés nulle part ; si tu la fermes, il faudra tout refaire.
-        </p>
+        <details className="mb-3 rounded-xl bg-[#fff4cc] p-3 text-sm text-[#6b4e00]">
+          <summary role="note" className="cursor-pointer font-bold">⚠️ Avant de publier : seulement les photos d'enfants dont les parents ont donné le droit à l'image</summary>
+          <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Pour les enfants, écris seulement le prénom. <b>Rien n'est enregistré</b> : les photos et les noms restent dans cette fenêtre et ne sont envoyés nulle part ; si tu la fermes, il faudra tout refaire.</p>
+        </details>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <div className="grid min-w-0 content-start gap-3">
-            <div className="flex flex-wrap gap-2">
-              <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>⬜ Carré (Facebook, Instagram)</Pill>
-              <Pill on={format === "PORTRAIT"} onClick={() => setFormat("PORTRAIT")}>📱 Portrait 4:5</Pill>
-              {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
-            </div>
-            <BgPicker bg={bg} onChange={setBg} />
-            <FmtPanel items={recapFmtItems} fmt={rfmt} onChange={setRfmt} selected={rsel} onSelect={setRsel} />
-            <SelOutline sel={rsel} />
+            <section aria-label="Photos" className="rounded-2xl border-2 border-line bg-white p-3">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h3 className="m-0 text-base text-ink">📷 Mes photos</h3>
+                <span className="text-xs font-bold text-muted">{d.photos.length} sur {MAX_PHOTOS}</span>
+              </div>
+              {d.photos.length === 0 ? (
+                <label onDragOver={(ev) => ev.preventDefault()} onDrop={(ev) => { ev.preventDefault(); void addPhotos(ev.dataTransfer.files); }} className="grid cursor-pointer place-items-center gap-1 rounded-xl border-2 border-dashed border-line bg-[#fbf8f2] px-4 py-8 text-center hover:border-ink">
+                  <span className="text-3xl" aria-hidden>📷</span>
+                  <span className="text-base font-extrabold text-ink">Ajouter des photos</span>
+                  <span className="text-xs text-muted">Touche ici ou glisse tes photos (jusqu'à {MAX_PHOTOS})</span>
+                  <input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} />
+                </label>
+              ) : (
+                <>
+                  <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-4">
+                    {d.photos.map((s, i) => (
+                      <li key={i} className="group relative" draggable onDragStart={(ev) => ev.dataTransfer.setData("text/plain", String(i))} onDragOver={(ev) => ev.preventDefault()} onDrop={(ev) => { ev.preventDefault(); const f = ev.dataTransfer.getData("text/plain"); if (f !== "") move(Number(f), i); }}>
+                        <img src={s} alt={`Photo ${i + 1}`} className="aspect-square w-full cursor-grab rounded-lg object-cover" />
+                        <span aria-hidden className="absolute left-1 top-1 grid size-6 place-items-center rounded-full bg-ink text-xs font-bold text-white">{i + 1}</span>
+                        <span className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
+                          <button type="button" aria-label={`Avancer la photo ${i + 1}`} disabled={i === 0} className="grid h-8 min-w-8 place-items-center rounded-md bg-white/90 text-sm font-bold text-ink shadow disabled:opacity-30" onClick={() => move(i, i - 1)}>◀</button>
+                          <button type="button" aria-label={`Retirer la photo ${i + 1}`} className="grid h-8 min-w-8 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => remove(i)}>🗑️</button>
+                          <button type="button" aria-label={`Reculer la photo ${i + 1}`} disabled={i === d.photos.length - 1} className="grid h-8 min-w-8 place-items-center rounded-md bg-white/90 text-sm font-bold text-ink shadow disabled:opacity-30" onClick={() => move(i, i + 1)}>▶</button>
+                        </span>
+                      </li>))}
+                    {d.photos.length < MAX_PHOTOS && (
+                      <li><label className="grid aspect-square cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-2xl" aria-hidden>＋</span>Ajouter</span>
+                        <input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} /></label></li>)}
+                  </ul>
+                  <p className="m-0 mt-2 text-xs text-muted">👆 Pour <b>cadrer</b> une photo, glisse-la directement sur l'affiche. Pour changer l'<b>ordre</b>, utilise ◀ ▶ ou glisse une vignette.</p>
+                </>
+              )}
+            </section>
             <label className="text-sm font-bold text-ink">Titre en haut <span className="font-normal text-muted">(facultatif, ex. « Résultats du tournoi »)</span>
               <input aria-label="Titre en haut" className={`${field} mt-1`} maxLength={40} placeholder="Résultats du tournoi" value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
-            <div className="rounded-2xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-bold text-ink">📷 Photos <span className="font-normal text-muted">({d.photos.length} sur {MAX_PHOTOS})</span></p>
-              <p className="m-0 mb-2 text-xs text-muted">La taille des photos s'adapte à leur nombre. Change l'ordre avec ◀ ▶ (ou en glissant une vignette) ; sur l'affiche, glisse une photo pour choisir la partie visible.</p>
-              <div className="flex flex-wrap items-center gap-2">
-                {d.photos.map((s, i) => (
-                  <span key={i} className="relative grid gap-1" draggable onDragStart={(ev) => ev.dataTransfer.setData("text/plain", String(i))} onDragOver={(ev) => ev.preventDefault()} onDrop={(ev) => { ev.preventDefault(); move(Number(ev.dataTransfer.getData("text/plain")), i); }}>
-                    <img src={s} alt={`Photo ${i + 1}`} className="size-16 cursor-grab rounded-lg object-cover" />
-                    <button type="button" aria-label={`Retirer la photo ${i + 1}`} className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-ink text-xs text-white" onClick={() => remove(i)}>✕</button>
-                    <span className="flex justify-between">
-                      <button type="button" aria-label={`Avancer la photo ${i + 1}`} disabled={i === 0} className="rounded border border-line px-2 text-xs disabled:opacity-30" onClick={() => move(i, i - 1)}>◀</button>
-                      <button type="button" aria-label={`Reculer la photo ${i + 1}`} disabled={i === d.photos.length - 1} className="rounded border border-line px-2 text-xs disabled:opacity-30" onClick={() => move(i, i + 1)}>▶</button>
-                    </span></span>))}
-                {d.photos.length < MAX_PHOTOS && <label className="btn-outline cursor-pointer">＋ Ajouter des photos<input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} /></label>}
-              </div>
-            </div>
             {teamsMode ? (
               <div className="rounded-2xl border-2 border-line bg-white p-3">
                 <p className="m-0 mb-1 text-sm font-bold text-ink">🏆 Les rencontres du week-end</p>
@@ -161,8 +172,21 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
             )}
             <label className="text-sm font-bold text-ink">{lite ? "Texte de l'affiche" : "Un mot de remerciement"} <span className="font-normal text-muted">({lite ? "déroulement, remerciements…" : "facultatif"})</span>
               <textarea aria-label="Mot de remerciement" rows={lite ? 5 : 2} maxLength={lite ? 500 : 200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
+            <details className="rounded-2xl border-2 border-line bg-white p-3">
+              <summary className="cursor-pointer text-base font-extrabold text-ink">🎨 Fond et mise en forme du texte <span className="text-xs font-normal text-muted">(facultatif)</span></summary>
+              <div className="mt-3 grid gap-3">
+                <BgPicker bg={bg} onChange={setBg} />
+                <FmtPanel items={recapFmtItems} fmt={rfmt} onChange={setRfmt} selected={rsel} onSelect={setRsel} />
+                <SelOutline sel={rsel} />
+              </div>
+            </details>
           </div>
           <div className="min-w-0 md:sticky md:top-0 md:self-start">
+            <div className="mb-3 flex flex-wrap justify-center gap-2">
+              <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>⬜ Carré (Facebook, Instagram)</Pill>
+              <Pill on={format === "PORTRAIT"} onClick={() => setFormat("PORTRAIT")}>📱 Portrait 4:5</Pill>
+              {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
+            </div>
             <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
               <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} fmt={rfmt} onPick={setRsel} onPan={(i, x, y) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; })} /></div>
             </div>
