@@ -141,7 +141,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p data-fmt="texte" style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteEl = e.note && <p data-fmt="texte" style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", whiteSpace: "pre-line", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0` }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (

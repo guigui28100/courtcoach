@@ -88,7 +88,7 @@ function Program({ list, withWho }: { list: ClubEvent[]; withWho: boolean }) {
         <tr key={e.id} style={{ borderBottom: `1.5px solid ${LINE}`, verticalAlign: "top" }}>
           <td style={{ padding: "9px 8px 9px 0", fontWeight: 800, width: 132 }}>{dateLabel(e)}{e.featured ? " ⭐" : ""}</td>
           <td style={{ padding: "9px 8px", width: 108 }}><span style={{ background: k.color, color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>{k.group === "Compétition" ? "Compétition" : k.label.length > 16 ? k.label.slice(0, 15) + "…" : k.label}</span></td>
-          <td style={{ padding: "9px 8px" }}><b>{k.icon} {nameOf(e)}</b>{sub ? <div style={{ color: MUTED, fontSize: 12, marginTop: 1 }}><NoBreak text={sub} /></div> : null}{e.note ? <div style={{ color: "#3a352c", fontSize: 12, marginTop: 2, overflowWrap: "break-word" }}><NoBreak text={e.note.length > 240 ? e.note.slice(0, 239) + "…" : e.note} /></div> : null}</td>
+          <td style={{ padding: "9px 8px" }}><b>{k.icon} {nameOf(e)}</b>{sub ? <div style={{ color: MUTED, fontSize: 12, marginTop: 1 }}><NoBreak text={sub} /></div> : null}{e.note ? <div style={{ color: "#3a352c", fontSize: 12, marginTop: 2, overflowWrap: "break-word", whiteSpace: "pre-line" }}><NoBreak text={e.note.length > 240 ? e.note.slice(0, 239) + "…" : e.note} /></div> : null}</td>
           <td style={{ padding: "9px 0 9px 8px", width: 110, fontSize: 12, color: MUTED }}>{where(e)}</td>
         </tr>); })}</tbody>
     </table>
