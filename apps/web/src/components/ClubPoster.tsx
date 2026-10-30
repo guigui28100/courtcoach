@@ -1,7 +1,7 @@
 import { Backdrop } from "./PosterBackdrop";
 import { SERIF } from "./posterFonts";
 import { glue, teamParts } from "./posterCopy";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
 import { Fmts, FmtStyle, pickFmt, stepZoom } from "./posterFmt";
 import { CourtLines } from "./CourtLines";
@@ -198,7 +198,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
       <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px ${two ? 28 : 34}px 1fr`, padding: "8px 0", alignItems: "start", textAlign: "left" }}>
         <div data-fmt="ldate">{lines.length === 2 ? (
           <div style={{ display: "grid", gridTemplateColumns: "auto auto", justifyContent: "end", columnGap: 8, fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH }}>
-            {lines.map((l, i) => <><span key={`a${i}`} style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span key={`b${i}`} style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></>)}
+            {lines.map((l, i) => <Fragment key={i}><span style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></Fragment>)}
           </div>
         ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}</div>
         <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
