@@ -11,7 +11,7 @@ import { useAuth } from "../auth";
 import { homeFor } from "../components/Guard";
 import { BackLink, ClubLogo, Err, Page } from "../components/ui";
 import { CourtLines } from "../components/CourtLines";
-import { AnimationForm, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
+import { AnimationForm, DayTimes, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
 import { BgPicker } from "../components/PosterBackdrop";
@@ -700,7 +700,7 @@ const tourAudience = (keys: string[]) => {
   const detail = base === "Jeunes" ? teamCat(key)?.label ?? "" : key.startsWith("vet-") ? `+${key.split("-")[1]} ans` : "";
   return detail ? `${base} · ${detail}` : base;
 };
-function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; crew: { name: string; role: string }[]; onPeople: () => void }) {
+function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, start, end }: { start?: string; end?: string; onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; crew: { name: string; role: string }[]; onPeople: () => void }) {
   const [i, setI] = useState(0);
   const [type, setType] = useState<"" | "TMC" | "OPEN">("");
   const [pub, setPub] = useState<"jeunes" | "seniors">("seniors");
@@ -777,8 +777,10 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err }: {
   if (cur === "surface") return card("Sur quelle surface ?", <>
     <ChoiceField label="Surface" options={SURFACES} value={c.info.place} onChange={(v) => info({ place: v })} placeholder="Ex. Terre battue couverte" /><Nav skip /></>);
   if (cur === "when") return card("Horaires et finale", <>
-    <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
-      <input aria-label="Horaires des matchs" maxLength={80} value={c.info.time} onChange={(e) => info({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+    {start && end
+      ? <DayTimes start={start} end={end} value={c.info.time} onChange={(v) => info({ time: v })} />
+      : <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
+        <input aria-label="Horaires des matchs" maxLength={600} value={c.info.time} onChange={(e) => info({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>}
     <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
       <input aria-label="Finale" maxLength={120} value={c.info.signup} onChange={(e) => info({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
     <Nav skip /></>);
@@ -951,7 +953,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   );
   if (tourFlow && step === 2 && sel.TOURNOI?.on) return (
     <Modal bare title="Tournoi" onClose={onClose}>
-      <TournoiCards c={sel.TOURNOI} patch={(p) => patch("TOURNOI", p)} crew={crew} onPeople={onPeople}
+      <TournoiCards start={start} end={end} c={sel.TOURNOI} patch={(p) => patch("TOURNOI", p)} crew={crew} onPeople={onPeople}
         onExit={() => { setTourFlow(false); patch("TOURNOI", { on: false }); }} onSave={save} busy={busy || !chosen} err={err} />
     </Modal>
   );
@@ -1150,11 +1152,16 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
-          <BgPicker bg={bg} onChange={setBg} extra={<Pill on={light} onClick={() => setLight(!light)}>🔍 Cartes réduites (voir plus le fond)</Pill>} />
+          <BgPicker bg={bg} onChange={setBg} />
+          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Taille des cartes">
+            <span className="text-sm font-bold text-ink">🔍 Cartes :</span>
+            <Pill on={!light} onClick={() => setLight(false)}>Grandes cartes</Pill>
+            <Pill on={light} onClick={() => setLight(true)}>Petites cartes <small className="font-normal">(on voit plus le fond)</small></Pill>
+          </div>
           <FmtPanel items={eventFmtItems(e.kind === "EQUIPES", partners.length > 0)} fmt={fmt} onChange={setFmt as (f: Fmts) => void} selected={fsel} onSelect={setFsel} />
           <div className="rounded-xl border-2 border-line bg-white p-3">
             {hasSimpleForm(e.kind)
-              ? <AnimationForm tournoi={isTournoi(e.kind)} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
+              ? <AnimationForm tournoi={isTournoi(e.kind)} start={e.startDate} end={e.endDate} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
               : <><label className="mb-3 block text-sm font-bold text-ink">📝 Description (facultatif)
                   <textarea aria-label="Description de l'affiche" rows={2} maxLength={600} value={note} onChange={(x) => setNote(x.target.value)} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
                 <EventPosterFields kind={e.kind} value={info} onChange={setInfo} /></>}

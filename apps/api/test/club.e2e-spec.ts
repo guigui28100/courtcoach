@@ -107,7 +107,11 @@ describe("Planning du club (réservé au coach)", () => {
     const h = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: false }).expect(200)).body;
     expect(h.formulas).toHaveLength(2); expect(h.time).toBe("9 h – 18 h"); expect(h.audience).toBe("8 à 12 ans"); // un simple ⭐ ne supprime pas les infos de l'affiche
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", formulas: Array.from({ length: 9 }, (_, i) => ({ label: `F${i}`, price: "1 €" })) }).expect(400); // 8 au plus
-    await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", time: "x".repeat(81) }).expect(400);
+    await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", time: "x".repeat(601) }).expect(400);
+    // horaires jour par jour (une ligne par jour) : jusqu'à 600 caractères, les retours à la ligne sont gardés
+    const jj = "Samedi 14 : 9 h – 19 h\nDimanche 15 : 9 h – 18 h";
+    const j2 = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", time: jj }).expect(200)).body;
+    expect(j2.time).toBe(jj);
   });
 
   it("bulles : un décor qui ne gêne pas les événements ; la réfection de terre battue attend le démontage", async () => {

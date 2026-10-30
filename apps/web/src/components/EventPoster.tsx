@@ -59,7 +59,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
   if (ti?.bas && ti?.haut && !lede.text.replace(/\u00a0/g, " ").includes(`${ti.bas} à ${ti.haut}`)) rows.push({ icon: "📊", title: "Classements acceptés", text: `de ${ti.bas} à ${ti.haut}` });
   if (e.audience && e.kind !== "EQUIPES" && !lede.covers.audience) rows.push({ icon: tour ? "🏷️" : "👥", title: tour && TOURNOI_COLOR[tourBase(e.audience)] ? "Catégorie" : "Pour qui ?", text: tidy(e.audience.replace(" · ", " – ")) });
   if (e.place && tour && !lede.covers.surface) rows.push({ icon: "🎾", title: "Surface", text: tidy(e.place) });
-  if (e.time) rows.push({ icon: "🕒", title: tour ? "Les matchs" : "Horaires", text: tidy(e.time) });
+  if (e.time) rows.push({ icon: "🕒", title: tour ? "Les matchs" : "Horaires", text: e.time.includes("\n") ? e.time.split("\n").map((l) => tidy(l)).filter(Boolean).join("\n") : tidy(e.time) });
   if (e.signup && tour) rows.push({ icon: "🏆", title: "La finale", text: tidy(e.signup) });
   if (e.kind === "EQUIPES" && e.courts?.length) rows.push({ icon: "🏟️", title: "Terrains", text: courtsText(e.courts) });
   if (e.place && !tour && e.kind !== "EQUIPES") rows.push({ icon: "📍", title: "Où ?", text: tidy(e.place) });
@@ -119,7 +119,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       {rows.map((r) => (
         <div key={r.title} style={card}>
           <span aria-hidden style={{ flex: `0 0 ${pi(44)}`, width: pi(44), height: pi(44), borderRadius: 12, background: acc, display: "grid", placeItems: "center", fontSize: pi(23) }}>{r.icon}</span>
-          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word", textWrap: "balance" as any }}><NoBreak text={r.text} /></div></div>
+          <div style={{ minWidth: 0 }}><div style={{ fontSize: pi(12), fontWeight: 900, letterSpacing: "0.14em", color: acc, textTransform: "uppercase" }}>{r.title}</div><div style={{ fontSize: pi(20), fontWeight: wt("infos", 800), lineHeight: 1.2, color: NAVY, overflowWrap: "break-word", whiteSpace: "pre-line", textWrap: "balance" as any }}><NoBreak text={r.text} /></div></div>
         </div>))}
     </div>
   );
