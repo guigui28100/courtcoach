@@ -134,12 +134,12 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   return (
     <div style={{ padding: "0 40px", textAlign: "left" }}>
       <div data-fmt="titres" style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
-      <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gap: "calc(10px + var(--x, 0px) * 0.35)" }}>
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
-              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "12px 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate">
+              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
@@ -148,7 +148,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div></div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate">
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
@@ -286,11 +286,17 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
       if (wrap.current) wrap.current.style.width = `${POSTER_W / s}px`;
       // un titre qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
       for (const el of Array.from(wrap.current?.querySelectorAll("[data-nw]") ?? [])) { const card = el.closest("[data-card]"); if (card && el.getBoundingClientRect().right > card.getBoundingClientRect().right - 12 * s) return Infinity; }
+      // un jour (« dimanche ») ne doit jamais être coupé au milieu du mot : sinon on réduit
+      for (const el of Array.from(wrap.current?.querySelectorAll('[data-fmt="cdate"]') ?? [])) if (el.scrollWidth > el.clientWidth + 1) return Infinity;
       return ((refA.current?.offsetHeight ?? 0) + (refB.current?.offsetHeight ?? 0)) * s;
     };
     const run = () => {
-      let lo = 0.4, hi = cards ? 1.5 : 2;
+      let lo = 0.4, hi = 2.6;
       if (measure(hi) <= avail) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (measure(mid) <= avail) lo = mid; else hi = mid; }
+      wrap.current?.style.setProperty("--x", "0px");
+      const nTop = cards ? pickTop(list).length : 0;
+      // peu d'événements : les cartes s'allongent pour occuper la feuille (un peu plus de la moitié de la place libre), le reste est réparti autour
+      if (nTop > 0) { const free = avail - measure(lo); const x = Math.max(0, Math.min(free * 0.55 / lo / (nTop * 1.35), 110)); wrap.current?.style.setProperty("--x", `${x}px`); }
       const used = measure(lo); const left = Math.max(0, avail - used); const hasA = cards && (refA.current?.offsetHeight ?? 0) > 0;
       if (wrap.current) wrap.current.style.width = `${POSTER_W / (lo * g)}px`; // la largeur calculée par React peut être périmée : on la remet à jour tout de suite
       setFit({ scale: lo, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 / lo : 0 });
