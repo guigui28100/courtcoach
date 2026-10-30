@@ -134,12 +134,12 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
   return (
     <div style={{ padding: "0 40px", textAlign: "left" }}>
       <div data-fmt="titres" style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
-      <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gap: "calc(10px + var(--x, 0px) * 0.35)" }}>
         {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
-              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "12px 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate">
+              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
@@ -148,7 +148,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div></div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "10px 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate">
+            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
@@ -277,23 +277,39 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
   const cards = list.length <= 8 || list.some((e) => e.featured);
   const rest = cards ? list.filter((e) => !pickTop(list).includes(e)) : list;
   const refA = useRef<HTMLDivElement>(null); const refB = useRef<HTMLDivElement>(null);
-  const wrap = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, top: 0, gap: 0 });
-  // Le texte est agrandi ou réduit (le contenu se remet en page à la nouvelle taille) jusqu'à remplir la zone libre ; le reste est réparti également (haut, milieu, bas).
+  const wrapA = useRef<HTMLDivElement>(null); const wrapB = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ sA: 1, sB: 1, top: 0, gap: 0, hA: 0, hB: 0 });
+  // « À ne pas manquer » et « Et aussi ce mois-ci » ont CHACUN leur taille (le premier est limité par la largeur de ses dates, le second non) ;
+  // les deux sont agrandis au maximum puis réduits ensemble pour tenir, et la place qui reste est répartie également (haut, milieu, bas).
   useLayoutEffect(() => {
     const avail = POSTER_H - BODY_TOP - BODY_BOTTOM - extra - 16; // marge de 16 px au-dessus du bandeau bleu
-    const measure = (s: number) => {
-      if (wrap.current) wrap.current.style.width = `${POSTER_W / s}px`;
-      // un titre qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
-      for (const el of Array.from(wrap.current?.querySelectorAll("[data-nw]") ?? [])) { const card = el.closest("[data-card]"); if (card && el.getBoundingClientRect().right > card.getBoundingClientRect().right - 12 * s) return Infinity; }
-      return ((refA.current?.offsetHeight ?? 0) + (refB.current?.offsetHeight ?? 0)) * s;
+    const place = (sA: number, sB: number) => { if (wrapA.current) wrapA.current.style.width = `${POSTER_W / sA}px`; if (wrapB.current) wrapB.current.style.width = `${POSTER_W / sB}px`; };
+    const okA = () => {
+      // un titre ou un jour qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
+      for (const el of Array.from(wrapA.current?.querySelectorAll("[data-nw]") ?? [])) { const card = el.closest("[data-card]"); if (card && el.getBoundingClientRect().right > card.getBoundingClientRect().right - 12 * (el.getBoundingClientRect().width / ((el as HTMLElement).offsetWidth || 1))) return false; }
+      for (const el of Array.from(wrapA.current?.querySelectorAll('[data-fmt="cdate"]') ?? [])) if (el.scrollWidth > el.clientWidth + 1) return false;
+      return true;
     };
+    const total = (sA: number, sB: number) => { place(sA, sB); return (refA.current?.offsetHeight ?? 0) * sA + (refB.current?.offsetHeight ?? 0) * sB; };
     const run = () => {
-      let lo = 0.4, hi = cards ? 1.5 : 2;
-      if (measure(hi) <= avail) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (measure(mid) <= avail) lo = mid; else hi = mid; }
-      const used = measure(lo); const left = Math.max(0, avail - used); const hasA = cards && (refA.current?.offsetHeight ?? 0) > 0;
-      if (wrap.current) wrap.current.style.width = `${POSTER_W / (lo * g)}px`; // la largeur calculée par React peut être périmée : on la remet à jour tout de suite
-      setFit({ scale: lo, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 / lo : 0 });
+      wrapA.current?.style.setProperty("--x", "0px");
+      const hasA = cards && pickTop(list).length > 0;
+      let sA = 1;
+      if (hasA) { let lo = 0.4, hi = 1.7; place(hi, 1); if (okA()) lo = hi; else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; place(mid, 1); if (okA()) lo = mid; else hi = mid; } sA = lo; }
+      let sB = 2.2;
+      // trop de place prise : on réduit d'abord la liste du bas (sans la rendre plus petite que les cartes), puis les deux ensemble
+      if (hasA && total(sA, sB) > avail) { let lo = Math.min(sB, sA), hi = sB; if (total(sA, lo) > avail) sB = lo; else { for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (total(sA, mid) <= avail) lo = mid; else hi = mid; } sB = lo; } }
+      let f = 1;
+      if (total(sA, sB) > avail) { let lo = 0.2, hi = 1; for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; place(sA * mid, sB * mid); if (okA() && total(sA * mid, sB * mid) <= avail) lo = mid; else hi = mid; } f = lo; }
+      const a = sA * f, bb = sB * f;
+      let used = total(a, bb);
+      // peu d'événements : les cartes s'allongent un peu pour occuper la feuille
+      const nTop = hasA ? pickTop(list).length : 0;
+      if (nTop > 0) { const x = Math.max(0, Math.min((avail - used) * 0.4 / a / (nTop * 1.35), 90)); wrapA.current?.style.setProperty("--x", `${x}px`); used = total(a, bb); if (used > avail) { wrapA.current?.style.setProperty("--x", "0px"); used = total(a, bb); } }
+      const left = Math.max(0, avail - used);
+      place(a * g, bb * g);
+      const hA = (refA.current?.offsetHeight ?? 0) * a, hB = (refB.current?.offsetHeight ?? 0) * bb;
+      setFit({ sA: a, sB: bb, top: hasA ? left / 3 : left / 2, gap: hasA ? left / 3 : 0, hA, hB });
     };
     run();
     const fonts = (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts;
@@ -302,11 +318,14 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
   }, [list, month, showWho, cards, extra, g]);
   return (
     <div style={{ position: "absolute", left: 0, right: 0, top: BODY_TOP, height: POSTER_H - BODY_TOP - BODY_BOTTOM - extra, overflow: "hidden" }}>
-      <div ref={wrap} style={{ transform: `translateY(${fit.top}px) scale(${fit.scale * g})`, transformOrigin: "top left", width: POSTER_W / (fit.scale * g) }}>
+      <div style={{ height: fit.top }} />
+      <div style={{ height: fit.hA * g }}><div ref={wrapA} style={{ transform: `scale(${fit.sA * g})`, transformOrigin: "top left", width: POSTER_W / (fit.sA * g) }}>
         <div ref={refA} style={{ display: "flow-root" }}>{cards && <Featured list={list} showWho={showWho} />}</div>
-        <div style={{ height: fit.gap }} />
+      </div></div>
+      <div style={{ height: fit.gap }} />
+      <div style={{ height: fit.hB * g }}><div ref={wrapB} style={{ transform: `scale(${fit.sB * g})`, transformOrigin: "top left", width: POSTER_W / (fit.sB * g) }}>
         <div ref={refB} style={{ display: "flow-root" }}><ListModel m={month} list={rest} showWho={showWho} withCards={cards} /></div>
-      </div>
+      </div></div>
     </div>
   );
 }
