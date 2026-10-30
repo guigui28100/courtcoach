@@ -182,26 +182,34 @@ const whenLines = (e: ClubEvent, short = false): string[] => {
   return [`Du ${d(e.startDate, !same)}`, `au ${d(e.endDate, !same)}`]; // le mois est déjà écrit en haut de l'affiche : on ne le répète que si la période change de mois
 };
 
-// « Et aussi ce mois-ci » : une frise verticale (la date à gauche, la puce SUR la ligne, l'événement à droite)
+// Pastille de date : le jour (ou « Lun. → ven. ») en petit, le numéro (ou « 23 → 25 ») en gros ; le mois n'est écrit que si la période change de mois
+const pillDate = (e: ClubEvent, short: boolean): { top: string; big: string } => {
+  const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  const dn = (x: string, ab: boolean) => (ab ? `${DAYS[weekdayOf(x)].slice(0, 3)}.` : DAYS[weekdayOf(x)]);
+  if (e.startDate === e.endDate) return { top: dn(e.startDate, short), big: String(dayNum(e.startDate)) };
+  const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
+  const mo = (x: string) => MONTHS[+x.slice(5, 7) - 1].slice(0, 3).toLowerCase() + ".";
+  return { top: `${cap(dn(e.startDate, true))} → ${dn(e.endDate, true)}`, big: same ? `${dayNum(e.startDate)} → ${dayNum(e.endDate)}` : `${dayNum(e.startDate)} ${mo(e.startDate)} → ${dayNum(e.endDate)} ${mo(e.endDate)}` };
+};
+
+// « Et aussi ce mois-ci » : une liste de pastilles de date (la date à gauche, la puce SUR la ligne, l'événement à droite)
 function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
   const cap = 12;
   const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
   const half = two ? Math.ceil(shown.length / 2) : shown.length;
   const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
-  const dateW = two ? 96 : 170;
+  const dateW = two ? 94 : 118;
   const LH = "21px";
   const row = (e: ClubEvent) => {
-    const k = kindOf(e.kind); const lines = whenLines(e, two);
+    const k = kindOf(e.kind); const pill = pillDate(e, two); const pc = colorOf(e);
     const det = e.kind === "EQUIPES" ? detailParts(e, false) : detailParts(e, showWho);
     return (
-      <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px ${two ? 28 : 34}px 1fr`, padding: "8px 0", alignItems: "start", textAlign: "left" }}>
-        <div data-fmt="ldate">{lines.length === 2 ? (
-          <div style={{ display: "grid", gridTemplateColumns: "auto auto", justifyContent: "end", columnGap: 8, fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH }}>
-            {lines.map((l, i) => <Fragment key={i}><span style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></Fragment>)}
-          </div>
-        ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}</div>
-        <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
+      <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px 1fr`, columnGap: two ? 10 : 16, padding: two ? "6px 0" : "8px 0", alignItems: "start", textAlign: "left" }}>
+        <div data-fmt="ldate" style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
+          <div style={{ fontSize: two ? 9.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.04em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
+          <div style={{ fontSize: two ? 17 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
+        </div>
         <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
           <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
@@ -217,7 +225,6 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
         <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 24, alignItems: "start" }}>
           {cols.map((c, i) => (
             <div key={i} style={{ position: "relative" }}>
-              <div aria-hidden style={{ position: "absolute", left: dateW + (two ? 13 : 15.5), top: 14, bottom: 14, width: 3, background: "#d9c6a3" }} />
               {c.map(row)}
             </div>
           ))}
