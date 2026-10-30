@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 // Fonds possibles d'une affiche : « Classique » (neutre, sans fond) ou une photo du club (déposée dans apps/web/public).
@@ -29,60 +29,77 @@ export function Backdrop({ bg, w, h, veil = "normal" }: { bg: PosterBg; w: numbe
 // Choix du fond (le même pour toutes les affiches) : un bouton qui montre le fond actuel et ouvre une galerie de vignettes rangées par thème
 export function BgPicker({ bg, onChange, extra }: { bg: PosterBg; onChange: (b: PosterBg) => void; extra?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
   const cur = PHOTOS.find((p) => p.url === bg);
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Fond de l'affiche">
       <span className="text-sm font-bold text-ink">🖼️ Fond :</span>
-      <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" className="flex items-center gap-2 rounded-xl border-2 border-line bg-white px-2 py-1.5 text-sm font-bold text-ink hover:border-ink">
+      <button ref={btn} type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open} className="flex items-center gap-2 rounded-xl border-2 border-line bg-white px-2 py-1.5 text-sm font-bold text-ink hover:border-ink">
         {cur ? <img src={cur.thumb} alt="" className="h-10 w-8 rounded object-cover" /> : <span aria-hidden className="grid h-10 w-8 place-items-center rounded border border-line bg-white text-xs text-muted">∅</span>}
         <span>{cur ? cur.label : "Classique (sans fond)"}</span>
-        <span className="text-xs text-muted">▾ Choisir un autre fond ({PHOTOS.length})</span>
+        <span className="text-xs text-muted">▾ {PHOTOS.length} fonds</span>
       </button>
       {bg !== "" && <button type="button" onClick={() => onChange("")} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink">✕ Sans fond</button>}
       {bg !== "" && extra}
-      {open && <BgGallery bg={bg} onPick={(b) => { onChange(b); setOpen(false); }} onClose={() => setOpen(false)} />}
+      {open && <BgGallery bg={bg} anchor={btn.current} onPick={onChange} onClose={() => setOpen(false)} />}
     </div>
   );
 }
 
-function BgGallery({ bg, onPick, onClose }: { bg: PosterBg; onPick: (b: PosterBg) => void; onClose: () => void }) {
+// Petite fenêtre de choix, posée juste sous le bouton (elle ne cache pas l'affiche) : vignettes serrées, thèmes en haut ; un clic applique le fond tout de suite
+// et la fenêtre RESTE ouverte pour comparer ; elle se ferme par « Terminé », Échap ou un clic à côté.
+function BgGallery({ bg, anchor, onPick, onClose }: { bg: PosterBg; anchor: HTMLElement | null; onPick: (b: PosterBg) => void; onClose: () => void }) {
   const curCat = PHOTOS.find((p) => p.url === bg)?.cat ?? null;
   const [cat, setCat] = useState<PhotoCat | "tous">(curCat ?? "tous");
+  const [hover, setHover] = useState<string | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 420, maxH: 460 });
+  useLayoutEffect(() => {
+    const place = () => {
+      if (!anchor) return;
+      const r = anchor.getBoundingClientRect();
+      const width = Math.min(window.innerWidth - 16, 440);
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+      const top = r.bottom + 6;
+      setPos({ top, left, width, maxH: Math.max(260, window.innerHeight - top - 12) });
+    };
+    place();
+    window.addEventListener("resize", place); window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, [anchor]);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", k);
-    const old = document.body.style.overflow; document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", k); document.body.style.overflow = old; };
-  }, [onClose]);
+    const d = (e: MouseEvent) => { const t = e.target as Node; if (box.current && !box.current.contains(t) && !anchor?.contains(t)) onClose(); };
+    window.addEventListener("keydown", k); document.addEventListener("mousedown", d);
+    return () => { window.removeEventListener("keydown", k); document.removeEventListener("mousedown", d); };
+  }, [onClose, anchor]);
   const list = PHOTOS.filter((p) => cat === "tous" || p.cat === cat);
+  const shown = PHOTOS.find((p) => p.url === (hover ?? bg));
   const chip = (on: boolean, label: string, f: () => void, key: string) => (
-    <button key={key} type="button" aria-pressed={on} onClick={f} className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{label}</button>
+    <button key={key} type="button" aria-pressed={on} onClick={f} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{label}</button>
+  );
+  const tile = (on: boolean, label: string, f: () => void, key: string, img?: string) => (
+    <button key={key} type="button" aria-pressed={on} aria-label={label} title={label} onClick={f} onMouseEnter={() => setHover(key === "none" ? "" : key)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(key === "none" ? "" : key)} onBlur={() => setHover(null)}
+      className={`relative block overflow-hidden rounded-lg border-2 bg-white ${on ? "border-ink ring-2 ring-champagne" : "border-line hover:border-ink"}`}>
+      {img ? <img src={img} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" /> : <span aria-hidden className="grid aspect-[3/4] w-full place-items-center text-xl text-muted">∅</span>}
+      {on && <span aria-hidden className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink text-[11px] font-black text-white">✓</span>}
+    </button>
   );
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label="Choisir un fond" className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onClick={onClose}>
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl bg-paper shadow-2xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between gap-3 border-b border-line bg-white px-4 py-3">
-          <h2 className="m-0 text-lg font-extrabold text-ink">🖼️ Choisis un fond</h2>
-          <button type="button" onClick={onClose} className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-sm font-bold text-ink hover:border-ink">✕ Fermer</button>
+    <div ref={box} role="dialog" aria-label="Choisir un fond" style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxH }} className="z-[90] flex flex-col overflow-hidden rounded-xl border border-line bg-paper shadow-2xl">
+      <div className="flex flex-wrap gap-1 border-b border-line bg-white px-2.5 py-2" role="group" aria-label="Thèmes de fonds">
+        {chip(cat === "tous", `Tous ${PHOTOS.length}`, () => setCat("tous"), "tous")}
+        {PHOTO_CATS.map((c) => chip(cat === c.key, `${c.label} ${PHOTOS.filter((p) => p.cat === c.key).length}`, () => setCat(c.key), c.key))}
+      </div>
+      <div className="overflow-y-auto p-2.5">
+        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+          {tile(bg === "", "Classique (sans fond)", () => onPick(""), "none")}
+          {list.map((p) => tile(bg === p.url, p.label, () => onPick(p.url), p.url, p.thumb))}
         </div>
-        <div className="flex flex-wrap gap-1.5 border-b border-line bg-white px-4 py-2" role="group" aria-label="Thèmes de fonds">
-          {chip(cat === "tous", `Tous (${PHOTOS.length})`, () => setCat("tous"), "tous")}
-          {PHOTO_CATS.map((c) => chip(cat === c.key, `${c.label} (${PHOTOS.filter((p) => p.cat === c.key).length})`, () => setCat(c.key), c.key))}
-        </div>
-        <div className="overflow-y-auto p-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            <button type="button" aria-pressed={bg === ""} onClick={() => onPick("")} className={`flex flex-col overflow-hidden rounded-xl border-2 bg-white text-left ${bg === "" ? "border-ink ring-2 ring-champagne" : "border-line hover:border-ink"}`}>
-              <span aria-hidden className="grid aspect-[3/4] w-full place-items-center bg-white text-3xl text-muted">∅</span>
-              <span className="px-2 py-1.5 text-xs font-bold text-ink">{bg === "" ? "✔ " : ""}Classique (sans fond)</span>
-            </button>
-            {list.map((p) => (
-              <button key={p.url} type="button" aria-pressed={bg === p.url} onClick={() => onPick(p.url)} className={`flex flex-col overflow-hidden rounded-xl border-2 bg-white text-left ${bg === p.url ? "border-ink ring-2 ring-champagne" : "border-line hover:border-ink"}`}>
-                <img src={p.thumb} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" />
-                <span className="px-2 py-1.5 text-xs font-bold text-ink">{bg === p.url ? "✔ " : ""}{p.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2 border-t border-line bg-white px-2.5 py-1.5">
+        <span className="min-w-0 truncate text-xs font-bold text-ink" aria-live="polite">{(hover ?? bg) === "" ? "Classique (sans fond)" : shown?.label ?? ""}</span>
+        <button type="button" onClick={onClose} className="shrink-0 rounded-lg bg-ink px-3 py-1 text-xs font-bold text-white">Terminé</button>
       </div>
     </div>,
     document.body,
