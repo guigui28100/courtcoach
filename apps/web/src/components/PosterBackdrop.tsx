@@ -17,11 +17,11 @@ export const PHOTOS = [
 ];
 const VEILS = { light: "rgba(255,255,255,.04) 0%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.4) 100%", normal: "rgba(255,255,255,.14) 0%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.6) 100%", strong: "rgba(255,255,255,.45) 0%,rgba(255,255,255,.58) 50%,rgba(255,255,255,.76) 100%" };
 // Le fond et son voile blanc (le voile garde le texte lisible) ; sans fond choisi (« Classique »), rien n'est dessiné
-export function Backdrop({ bg, w, h, veil = "normal" }: { bg: PosterBg; w: number; h: number; veil?: "light" | "normal" | "strong" }) {
+export function Backdrop({ bg, w, h, veil = "normal", pos = "center" }: { bg: PosterBg; w: number; h: number; veil?: "light" | "normal" | "strong"; pos?: string }) {
   if (!bg) return null;
   if (PHOTOS.find((p) => p.url === bg)?.dark) veil = veil === "light" ? "normal" : "strong";
   return (<>
-    {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
+    {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: pos }} />}
     <div aria-hidden style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,${VEILS[veil]})` }} />
   </>);
 }
