@@ -17,11 +17,11 @@ export const PHOTOS = [
 ];
 const VEILS = { light: "rgba(255,255,255,.04) 0%,rgba(255,255,255,.14) 50%,rgba(255,255,255,.4) 100%", normal: "rgba(255,255,255,.14) 0%,rgba(255,255,255,.3) 50%,rgba(255,255,255,.6) 100%", strong: "rgba(255,255,255,.45) 0%,rgba(255,255,255,.58) 50%,rgba(255,255,255,.76) 100%" };
 // Le fond et son voile blanc (le voile garde le texte lisible) ; sans fond choisi (« Classique »), rien n'est dessiné
-export function Backdrop({ bg, w, h, veil = "normal" }: { bg: PosterBg; w: number; h: number; veil?: "light" | "normal" | "strong" }) {
+export function Backdrop({ bg, w, h, veil = "normal", pos = "center" }: { bg: PosterBg; w: number; h: number; veil?: "light" | "normal" | "strong"; pos?: string }) {
   if (!bg) return null;
   if (PHOTOS.find((p) => p.url === bg)?.dark) veil = veil === "light" ? "normal" : "strong";
   return (<>
-    {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" }} />}
+    {bg.startsWith("/") && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: pos }} />}
     <div aria-hidden style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,${VEILS[veil]})` }} />
   </>);
 }
@@ -35,11 +35,11 @@ export function BgPicker({ bg, onChange, extra }: { bg: PosterBg; onChange: (b: 
     <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Fond de l'affiche">
       <span className="text-sm font-bold text-ink">🖼️ Fond :</span>
       <button ref={btn} type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open} className="flex items-center gap-2 rounded-xl border-2 border-line bg-white px-2 py-1.5 text-sm font-bold text-ink hover:border-ink">
-        {cur ? <img src={cur.thumb} alt="" className="h-10 w-8 rounded object-cover" /> : <span aria-hidden className="grid h-10 w-8 place-items-center rounded border border-line bg-white text-xs text-muted">∅</span>}
-        <span>{cur ? cur.label : "Classique (sans fond)"}</span>
+        {cur ? <img src={cur.thumb} alt="" className="h-10 w-8 rounded object-cover" /> : <span aria-hidden className="grid h-10 w-8 place-items-center rounded border-2 text-[9px] font-black" style={{ background: "#fbf8f2", borderColor: "#b8975a", color: "#8a6a2f" }}>TCH</span>}
+        <span>{cur ? cur.label : "Élégant (ivoire, sans photo)"}</span>
         <span className="text-xs text-muted">▾ {PHOTOS.length} fonds</span>
       </button>
-      {bg !== "" && <button type="button" onClick={() => onChange("")} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink">✕ Sans fond</button>}
+      {bg !== "" && <button type="button" onClick={() => onChange("")} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink">✨ Retour à l’élégant</button>}
       {bg !== "" && extra}
       {open && <BgGallery bg={bg} anchor={btn.current} onPick={onChange} onClose={() => setOpen(false)} />}
     </div>
@@ -81,7 +81,7 @@ function BgGallery({ bg, anchor, onPick, onClose }: { bg: PosterBg; anchor: HTML
   const tile = (on: boolean, label: string, f: () => void, key: string, img?: string) => (
     <button key={key} type="button" aria-pressed={on} aria-label={label} title={label} onClick={f} onMouseEnter={() => setHover(key === "none" ? "" : key)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(key === "none" ? "" : key)} onBlur={() => setHover(null)}
       className={`relative block overflow-hidden rounded-lg border-2 bg-white ${on ? "border-ink ring-2 ring-champagne" : "border-line hover:border-ink"}`}>
-      {img ? <img src={img} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" /> : <span aria-hidden className="grid aspect-[3/4] w-full place-items-center text-xl text-muted">∅</span>}
+      {img ? <img src={img} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" /> : <span aria-hidden className="grid aspect-[3/4] w-full place-items-center text-center text-[10px] font-black leading-tight" style={{ background: "#fbf8f2", outline: "2px solid #b8975a", outlineOffset: -6, color: "#8a6a2f" }}>Élégant<br />sans photo</span>}
       {on && <span aria-hidden className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-ink text-[11px] font-black text-white">✓</span>}
     </button>
   );
@@ -93,12 +93,12 @@ function BgGallery({ bg, anchor, onPick, onClose }: { bg: PosterBg; anchor: HTML
       </div>
       <div className="overflow-y-auto p-2.5">
         <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
-          {tile(bg === "", "Classique (sans fond)", () => onPick(""), "none")}
+          {tile(bg === "", "Élégant (ivoire, sans photo)", () => onPick(""), "none")}
           {list.map((p) => tile(bg === p.url, p.label, () => onPick(p.url), p.url, p.thumb))}
         </div>
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-line bg-white px-2.5 py-1.5">
-        <span className="min-w-0 truncate text-xs font-bold text-ink" aria-live="polite">{(hover ?? bg) === "" ? "Classique (sans fond)" : shown?.label ?? ""}</span>
+        <span className="min-w-0 truncate text-xs font-bold text-ink" aria-live="polite">{(hover ?? bg) === "" ? "Élégant (ivoire, sans photo)" : shown?.label ?? ""}</span>
         <button type="button" onClick={onClose} className="shrink-0 rounded-lg bg-ink px-3 py-1 text-xs font-bold text-white">Terminé</button>
       </div>
     </div>,
