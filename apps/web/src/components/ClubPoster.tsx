@@ -153,7 +153,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
             )}
-            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte">
+            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte" data-ev={e.id}>
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
@@ -202,7 +202,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
           </div>
         ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}</div>
         <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
-        <div style={{ minWidth: 0 }}><div data-fmt="ltexte">
+        <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
           <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
           {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
@@ -330,11 +330,13 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
   );
 }
 
-export function ClubPoster({ events, month, model, showWho, partners, bg = "", fmt, onPick }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+export type EvText = Record<string, { title?: string; note?: string }>;
+export function ClubPoster({ events: rawEvents, month, model, showWho, partners, bg = "", fmt, onPick, evText, onPickEv }: { evText?: EvText; onPickEv?: (id: string) => void; events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+  const events = evText ? rawEvents.map((e) => { const o = evText[e.id]; return o ? { ...e, title: o.title ?? e.title, note: o.note ?? e.note } : e; }) : rawEvents;
   const list = monthEvents(events, month);
   const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
-    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => { const el = (ev.target as HTMLElement).closest?.("[data-ev]"); if (el && onPickEv) { onPickEv(el.getAttribute("data-ev") ?? ""); return; } pickFmt(ev, onPick); }} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
       <Header m={month} z={stepZoom(fmt?.tout?.size)} />

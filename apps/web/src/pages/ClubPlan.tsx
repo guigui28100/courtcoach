@@ -3,7 +3,7 @@ import { RANKINGS } from "../types";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { ClubPoster, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
+import { ClubPoster, EvText, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
 import { FmtPanel, FmtItem, SelOutline } from "../components/FmtPanel";
 import { Fmts } from "../components/posterFmt";
 import { del, get, post, put } from "../api";
@@ -1261,6 +1261,10 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [bg, setBg] = useState("");
   const [mfmt, setMfmtState] = useState<Fmts>(() => { try { return JSON.parse(localStorage.getItem("cc-affiche-mois-mise-en-forme") || "{}"); } catch { return {}; } });
   const [msel, setMsel] = useState("entete");
+  // texte d'un événement réécrit directement depuis l'affiche (titre et description), gardé dans le navigateur
+  const [evText, setEvTextState] = useState<EvText>(() => { try { return JSON.parse(localStorage.getItem("cc-affiche-mois-textes") || "{}"); } catch { return {}; } });
+  const [selEv, setSelEv] = useState("");
+  const setEvText = (v: EvText) => { setEvTextState(v); try { localStorage.setItem("cc-affiche-mois-textes", JSON.stringify(v)); } catch { /* sans mémoire du navigateur */ } };
   const setMfmt = (v: Fmts) => { setMfmtState(v); try { localStorage.setItem("cc-affiche-mois-mise-en-forme", JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
@@ -1302,10 +1306,31 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
         {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
       </div>
       <BgPicker bg={bg} onChange={setBg} />
-      <FmtPanel items={monthFmtItems(model === "liste")} fmt={mfmt} onChange={setMfmt} selected={msel} onSelect={setMsel} />
-      <SelOutline sel={msel} />
+      {(() => {
+        const ev = events.find((x) => x.id === selEv);
+        if (!ev || !/^[a-z0-9-]+$/i.test(selEv)) return null;
+        const o = evText[ev.id] ?? {};
+        const put = (patch: { title?: string; note?: string }) => setEvText({ ...evText, [ev.id]: { ...o, ...patch } });
+        return (
+          <div className="mb-2 rounded-lg border-2 border-clay bg-white p-3">
+            <p className="m-0 mb-2 text-sm font-extrabold text-ink">✏️ Texte de cet événement sur l'affiche <span className="font-normal text-muted">({fmtRange(ev.startDate, ev.endDate)})</span></p>
+            <label className="block text-xs font-extrabold text-ink">Titre
+              <textarea aria-label="Titre de l'événement sur l'affiche" rows={2} value={o.title ?? titleOf(ev)} onChange={(x) => put({ title: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
+            <label className="mt-2 block text-xs font-extrabold text-ink">Description (Entrée = nouvelle ligne)
+              <textarea aria-label="Description de l'événement sur l'affiche" rows={3} value={o.note ?? ev.note ?? ""} onChange={(x) => put({ note: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {evText[ev.id] && <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { const n = { ...evText }; delete n[ev.id]; setEvText(n); }}>↺ Remettre les textes d'origine</button>}
+              <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setSelEv("")}>Terminé</button>
+            </div>
+            <p className="m-0 mt-1 text-xs text-muted">Cela ne change que l'affiche (pas le planning). Gardé dans ce navigateur.</p>
+          </div>
+        );
+      })()}
+      <FmtPanel items={monthFmtItems(model === "liste")} fmt={mfmt} onChange={setMfmt} selected={msel} onSelect={(k) => { setSelEv(""); setMsel(k); }} />
+      <SelOutline sel={selEv ? "" : msel} />
+      {/^[a-z0-9-]+$/i.test(selEv) && <style>{`.pf-prev [data-ev="${selEv}"]{outline:3px solid #e11d48;outline-offset:3px}`}</style>}
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div className="pf-prev" ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster onPick={setMsel} events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
+        <div className="pf-prev" ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster onPick={(k) => { setSelEv(""); setMsel(k); }} onPickEv={setSelEv} evText={evText} events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
@@ -1314,7 +1339,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} evText={evText} /></div>, document.body)}
     </Modal>
   );
 }
