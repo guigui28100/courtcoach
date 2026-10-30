@@ -9,7 +9,7 @@ export const SelOutline = ({ sel }: { sel: string }) => (
 export type FmtItem = { key: string; label: string; move?: boolean; sizeOnly?: boolean; edit?: boolean };
 
 // Panneau « Mise en forme du texte » : on choisit une partie (ou on touche le texte sur l'affiche), puis on règle taille, gras, italique, souligné, alignement, couleur, position.
-export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "🔤 Mise en forme du texte (taille, gras, couleur…)", hint }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; onSelect: (k: string) => void; title?: string; hint?: string }) {
+export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "🔤 Textes : réécrire, taille, couleur…", hint }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; onSelect: (k: string) => void; title?: string; hint?: string }) {
   const [open, setOpen] = useState(false);
   const first = useRef(true);
   useEffect(() => { if (first.current) { first.current = false; return; } if (selected) setOpen(true); }, [selected]); // toucher un texte sur l'affiche ouvre le panneau
@@ -18,48 +18,52 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
   const cur: ElFmt = fmt[key] ?? {};
   const set = (patch: Partial<ElFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
   const size = cur.size ?? 0;
-  const tog = (label: string, on: boolean | undefined, f: () => void, st?: React.CSSProperties, name?: string) => (
-    <button type="button" aria-label={name} aria-pressed={!!on} onClick={f} style={st} className={`min-h-8 min-w-8 rounded-md border px-2 text-sm ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{label}</button>
-  );
   const used = (k: string) => (fmt[k] && Object.values(fmt[k]!).some((v) => v !== undefined && v !== 0) ? " ●" : "");
+  const live = typeof document !== "undefined" ? document.querySelector(`.pf-prev [data-fmt="${key}"]`)?.textContent ?? "" : "";
+  const btn = (label: React.ReactNode, on: boolean | undefined, f: () => void, name: string, st?: React.CSSProperties, off?: boolean) => (
+    <button type="button" aria-label={name} title={name} aria-pressed={on === undefined ? undefined : !!on} disabled={off} onClick={f} style={st} className={`grid h-10 min-w-10 place-items-center rounded-lg border-2 px-2 text-base font-bold disabled:opacity-35 ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{label}</button>
+  );
+  const row = (label: string, children: React.ReactNode) => (
+    <div className="grid items-center gap-2 sm:grid-cols-[88px_1fr]"><span className="text-xs font-extrabold uppercase tracking-wide text-muted">{label}</span><div className="flex flex-wrap items-center gap-1.5">{children}</div></div>
+  );
   return (
-    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-lg border border-line bg-white p-2">
-      <summary className="cursor-pointer text-xs font-extrabold text-ink">{title}</summary>
-      <p className="mb-1 mt-1 text-xs text-muted">{hint ?? "Touche un texte sur l'affiche (il s'entoure en rouge) ou choisis-le dans la liste, puis règle-le. Réglages gardés dans ce navigateur."}</p>
-      <div className="mb-1 flex flex-wrap gap-1">
-        {items.map((b) => (
-          <button key={b.key} type="button" aria-pressed={key === b.key} onClick={() => onSelect(b.key)} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${key === b.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink"}`}>{b.label}{used(b.key)}</button>
-        ))}
-      </div>
-      <p className="m-0 mb-1 text-xs font-extrabold text-ink">Texte choisi : {item.label}</p>
+    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-2xl border-2 border-line bg-white p-3">
+      <summary className="cursor-pointer text-base font-extrabold text-ink">{title}</summary>
+      <p className="mb-2 mt-2 text-xs text-muted">{hint ?? "Touche un texte sur l'affiche (il s'entoure en rouge), ou choisis-le ci-dessous. Gardé dans ce navigateur."}</p>
+      <label className="block text-xs font-extrabold uppercase tracking-wide text-muted">1 · Quel texte ?
+        <select aria-label="Quel texte régler" value={key} onChange={(x) => onSelect(x.target.value)} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal text-ink">
+          {items.map((b) => <option key={b.key} value={b.key}>{b.label}{used(b.key)}</option>)}
+        </select>
+      </label>
       {item.edit && (
-        <label className="mb-2 block text-xs font-extrabold text-ink">✏️ Écrire ce texte (Entrée = nouvelle ligne)
-          <textarea aria-label={`Texte : ${item.label}`} rows={3} value={cur.text ?? (typeof document !== "undefined" ? document.querySelector(`.pf-prev [data-fmt="${key}"]`)?.textContent ?? "" : "")} onChange={(x) => set({ text: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" />
-          {cur.text !== undefined && <button type="button" onClick={() => { const { text: _t, ...rest } = cur; const n = { ...fmt }; if (Object.keys(rest).length) n[key] = rest; else delete n[key]; onChange(n); }} className="mt-1 rounded-md border border-line bg-white px-2 py-1 text-xs font-bold text-ink">↺ Remettre le texte d'origine</button>}
+        <label className="mt-3 block text-xs font-extrabold uppercase tracking-wide text-muted">2 · Écrire ce texte <span className="font-normal normal-case tracking-normal">(Entrée = nouvelle ligne)</span>
+          <textarea aria-label={`Texte : ${item.label}`} rows={3} value={cur.text ?? live} onChange={(x) => set({ text: x.target.value })} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink" />
+          {cur.text !== undefined && <button type="button" onClick={() => { const { text: _t, ...rest } = cur; const n = { ...fmt }; if (Object.keys(rest).length) n[key] = rest; else delete n[key]; onChange(n); }} className="mt-1 rounded-lg border-2 border-line bg-white px-2 py-1 text-xs font-bold normal-case tracking-normal text-ink hover:border-ink">↺ Remettre le texte d'origine</button>}
         </label>
       )}
-      <div className="flex flex-wrap items-center gap-1">
-        <button type="button" aria-label="Plus petit" disabled={size <= -4} onClick={() => set({ size: size - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink disabled:opacity-40">A−</button>
-        <span className="min-w-14 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
-        <button type="button" aria-label="Plus grand" disabled={size >= 8} onClick={() => set({ size: size + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm font-extrabold text-ink disabled:opacity-40">A+</button>
+      <div className="mt-3 grid gap-2 rounded-xl bg-[#fbf8f2] p-3">
+        <p className="m-0 text-xs font-extrabold uppercase tracking-wide text-muted">{item.edit ? "3" : "2"} · Mise en forme <span className="font-normal normal-case tracking-normal">: {item.label}</span></p>
+        {row("Taille", <>
+          {btn("A−", undefined, () => set({ size: size - 1 }), "Plus petit", undefined, size <= -4)}
+          <span className="min-w-16 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
+          {btn("A+", undefined, () => set({ size: size + 1 }), "Plus grand", undefined, size >= 8)}
+        </>)}
         {!item.sizeOnly && <>
-          {tog("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), { fontWeight: 900 }, "Gras")}
-          {tog("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), { fontStyle: "italic" }, "Italique")}
-          {tog("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), { textDecoration: "underline" }, "Souligné")}
-          {(["left", "center", "right"] as const).map((a, i) => tog(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a }), undefined, ["À gauche", "Centré", "À droite"][i]))}
-          <button type="button" aria-label="Monter" onClick={() => set({ dy: (cur.dy ?? 0) - 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬆</button>
-          <button type="button" aria-label="Descendre" onClick={() => set({ dy: (cur.dy ?? 0) + 1 })} className="min-h-8 min-w-8 rounded-md border border-line bg-white text-sm text-ink">⬇</button>
+          {row("Style", <>
+            {btn("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), "Gras", { fontWeight: 900 })}
+            {btn("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), "Italique", { fontStyle: "italic" })}
+            {btn("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), "Souligné", { textDecoration: "underline" })}
+          </>)}
+          {row("Alignement", (["left", "center", "right"] as const).map((a, i) => <span key={a}>{btn(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a }), ["À gauche", "Centré", "À droite"][i])}</span>))}
+          {row("Position", <>{btn("⬆", undefined, () => set({ dy: (cur.dy ?? 0) - 1 }), "Monter")}{btn("⬇", undefined, () => set({ dy: (cur.dy ?? 0) + 1 }), "Descendre")}</>)}
+          {row("Couleur", <span className="flex flex-wrap gap-1.5" role="group" aria-label="Couleur du texte">{FMT_COLORS.map(([c, n]) => <button key={c} type="button" aria-label={n} aria-pressed={cur.color === c} title={n} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`size-8 rounded-full border-2 ${cur.color === c ? "border-ink ring-2 ring-champagne" : "border-line shadow"}`} />)}</span>)}
         </>}
-        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Rétablir ce texte (et sa mise en forme)</button>
-        <button type="button" onClick={() => onChange({})} className="min-h-8 rounded-md border border-line bg-white px-2 text-xs font-bold text-ink">↺ Tout rétablir</button>
+        {item.sizeOnly && <p className="m-0 text-xs text-muted">Agrandit ou réduit tous les textes ensemble. Si tu agrandis trop, le bas peut être coupé : regarde l'aperçu.</p>}
       </div>
-      {!item.sizeOnly && (
-        <div className="mt-1 flex flex-wrap items-center gap-1" role="group" aria-label="Couleur du texte">
-          <span className="text-xs font-bold text-ink">Couleur :</span>
-          {FMT_COLORS.map(([c, n]) => <button key={c} type="button" aria-label={n} aria-pressed={cur.color === c} title={n} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`h-7 w-7 rounded-full border-2 ${cur.color === c ? "border-ink ring-2 ring-champagne" : "border-line shadow"}`} />)}
-        </div>
-      )}
-      {item.sizeOnly && <p className="m-0 mt-1 text-xs text-muted">Agrandit ou réduit tous les textes ensemble. Si tu agrandis trop, le bas peut être coupé : regarde l'aperçu.</p>}
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink">↺ Rétablir ce texte</button>
+        <button type="button" onClick={() => onChange({})} className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink">↺ Tout rétablir</button>
+      </div>
     </details>
   );
 }

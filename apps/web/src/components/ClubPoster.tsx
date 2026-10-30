@@ -81,7 +81,7 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
 );
 
 function Header({ m, z = 1 }: { m: string; z?: number }) {
-  const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
+  const s = seasonOf(`${m}-01`);
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#2b261d 0%,#17140f 60%)", color: "#fff", overflow: "hidden", fontVariantNumeric: "lining-nums", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#c9ad77" strokeWidth="4">
@@ -89,10 +89,10 @@ function Header({ m, z = 1 }: { m: string; z?: number }) {
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40, zoom: z }}><div data-fmt="entete">
-        <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
-        <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 8, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
+        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "0.22em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
+        <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 700, fontStyle: "italic", marginTop: 6, opacity: 0.95, letterSpacing: "0.02em" }}>{/^[aeiouhéèô]/i.test(MONTHS[+m.slice(5, 7) - 1]) ? "Programme d'" : "Programme de"}</div>
+        <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 2, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
-          <span style={{ background: "#c9ad77", color: "#17140f", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
           <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1}</span>
         </div>
       </div></div>
@@ -153,7 +153,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
             )}
-            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte">
+            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte" data-ev={e.id}>
               {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
@@ -182,27 +182,35 @@ const whenLines = (e: ClubEvent, short = false): string[] => {
   return [`Du ${d(e.startDate, !same)}`, `au ${d(e.endDate, !same)}`]; // le mois est déjà écrit en haut de l'affiche : on ne le répète que si la période change de mois
 };
 
-// « Et aussi ce mois-ci » : une frise verticale (la date à gauche, la puce SUR la ligne, l'événement à droite)
+// Pastille de date : le jour (ou « Lun. → ven. ») en petit, le numéro (ou « 23 → 25 ») en gros ; le mois n'est écrit que si la période change de mois
+const pillDate = (e: ClubEvent, short: boolean): { top: string; big: string } => {
+  const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+  const dn = (x: string, ab: boolean) => (ab ? `${DAYS[weekdayOf(x)].slice(0, 3)}.` : DAYS[weekdayOf(x)]);
+  if (e.startDate === e.endDate) return { top: dn(e.startDate, short), big: String(dayNum(e.startDate)) };
+  const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7);
+  const mo = (x: string) => MONTHS[+x.slice(5, 7) - 1].slice(0, 3).toLowerCase() + ".";
+  return { top: `${cap(dn(e.startDate, true))} → ${dn(e.endDate, true)}`, big: same ? `${dayNum(e.startDate)} → ${dayNum(e.endDate)}` : `${dayNum(e.startDate)} ${mo(e.startDate)} → ${dayNum(e.endDate)} ${mo(e.endDate)}` };
+};
+
+// « Et aussi ce mois-ci » : une liste de pastilles de date (la date à gauche, la puce SUR la ligne, l'événement à droite)
 function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
   const cap = 12;
   const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
   const half = two ? Math.ceil(shown.length / 2) : shown.length;
   const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
-  const dateW = two ? 96 : 170;
+  const dateW = two ? 94 : 118;
   const LH = "21px";
   const row = (e: ClubEvent) => {
-    const k = kindOf(e.kind); const lines = whenLines(e, two);
+    const k = kindOf(e.kind); const pill = pillDate(e, two); const pc = colorOf(e);
     const det = e.kind === "EQUIPES" ? detailParts(e, false) : detailParts(e, showWho);
     return (
-      <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px ${two ? 28 : 34}px 1fr`, padding: "8px 0", alignItems: "start", textAlign: "left" }}>
-        <div data-fmt="ldate">{lines.length === 2 ? (
-          <div style={{ display: "grid", gridTemplateColumns: "auto auto", justifyContent: "end", columnGap: 8, fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH }}>
-            {lines.map((l, i) => <Fragment key={i}><span style={{ fontSize: "0.8em", fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7b5d2a", textAlign: "left" }}>{i ? "au" : "du"}</span><span style={{ textAlign: "left", whiteSpace: "nowrap" }}>{l.replace(/^(Du|au) /, "")}</span></Fragment>)}
-          </div>
-        ) : <div style={{ textAlign: "right", fontSize: two ? 13 : 15, fontWeight: 800, color: "#17140f", lineHeight: LH, whiteSpace: "nowrap" }}>{lines[0]}</div>}</div>
-        <div aria-hidden style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}><span style={{ width: 16, height: 16, borderRadius: 8, background: colorOf(e), boxShadow: "0 0 0 4px #fbf5ea", position: "relative", zIndex: 1 }} /></div>
-        <div style={{ minWidth: 0 }}><div data-fmt="ltexte">
+      <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px 1fr`, columnGap: two ? 10 : 16, padding: two ? "6px 0" : "8px 0", alignItems: "start", textAlign: "left" }}>
+        <div data-fmt="ldate" style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
+          <div style={{ fontSize: two ? 9.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.04em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
+          <div style={{ fontSize: two ? 17 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
+        </div>
+        <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
           <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
           {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
@@ -217,7 +225,6 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
         <div style={{ display: "grid", gridTemplateColumns: two ? "1fr 1fr" : "1fr", columnGap: 24, alignItems: "start" }}>
           {cols.map((c, i) => (
             <div key={i} style={{ position: "relative" }}>
-              <div aria-hidden style={{ position: "absolute", left: dateW + (two ? 13 : 15.5), top: 14, bottom: 14, width: 3, background: "#d9c6a3" }} />
               {c.map(row)}
             </div>
           ))}
@@ -330,11 +337,13 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
   );
 }
 
-export function ClubPoster({ events, month, model, showWho, partners, bg = "", fmt, onPick }: { events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+export type EvText = Record<string, { title?: string; note?: string }>;
+export function ClubPoster({ events: rawEvents, month, model, showWho, partners, bg = "", fmt, onPick, evText, onPickEv }: { evText?: EvText; onPickEv?: (id: string) => void; events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+  const events = evText ? rawEvents.map((e) => { const o = evText[e.id]; return o ? { ...e, title: o.title ?? e.title, note: o.note ?? e.note } : e; }) : rawEvents;
   const list = monthEvents(events, month);
   const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
   return (
-    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => { const el = (ev.target as HTMLElement).closest?.("[data-ev]"); if (el && onPickEv) { onPickEv(el.getAttribute("data-ev") ?? ""); return; } pickFmt(ev, onPick); }} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
       <Header m={month} z={stepZoom(fmt?.tout?.size)} />
