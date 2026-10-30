@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
 import { FmtStyle, pickFmt, txt } from "./posterFmt";
+import { EventPosterClassic } from "./EventPosterClassic";
 import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
@@ -69,7 +70,7 @@ export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 export { PHOTOS } from "./PosterBackdrop";
 export type { PosterBg } from "./PosterBackdrop";
 
-export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light = false, onPick }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void }) {
+function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light = false, onPick }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
@@ -219,4 +220,11 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       </div>
     </div>
   );
+}
+
+// Deux dispositions au choix : « elegant » (ivoire, filets dorés, QR code) ou « classique » (l'ancienne : bandeau bleu nuit, cartes)
+export type PosterLayout = "elegant" | "classique";
+export function EventPoster(p: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void; layout?: PosterLayout }) {
+  const { layout = "elegant", ...rest } = p;
+  return layout === "classique" ? <EventPosterClassic {...rest} /> : <EventPosterElegant {...rest} />;
 }

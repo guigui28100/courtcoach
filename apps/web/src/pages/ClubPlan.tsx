@@ -15,7 +15,7 @@ import { AnimationForm, DayTimes, ChoiceField, emptyInfo, SURFACES, EventPosterF
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
 import { BgPicker } from "../components/PosterBackdrop";
-import { EventPoster, PosterBg, PosterFormat, SIZES, PosterFmt } from "../components/EventPoster";
+import { EventPoster, PosterLayout, PosterBg, PosterFormat, SIZES, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
@@ -1096,6 +1096,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState<PosterBg>("");
+  const [layout, setLayout] = useState<PosterLayout>("elegant"); // disposition de l'affiche : élégante ou classique (l'ancienne)
   const [light, setLight] = useState(false); // cartes réduites pour mieux voir le fond
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
@@ -1152,6 +1153,11 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
             {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
             {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
           </div>
+          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Disposition de l'affiche">
+            <span className="text-sm font-bold text-ink">🎨 Disposition :</span>
+            <Pill on={layout === "elegant"} onClick={() => setLayout("elegant")}>✨ Élégante (ivoire, QR code)</Pill>
+            <Pill on={layout === "classique"} onClick={() => setLayout("classique")}>🏷️ Classique (bandeau bleu nuit)</Pill>
+          </div>
           <BgPicker bg={bg} onChange={setBg} />
           <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Taille des cartes">
             <span className="text-sm font-bold text-ink">🔍 Cartes :</span>
@@ -1170,7 +1176,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
         <div className="min-w-0 md:sticky md:top-0 md:self-start">
           <SelOutline sel={fsel} />
           <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster onPick={setFsel} e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>
+            <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster onPick={setFsel} e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} /></div>
           </div>
           <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
         </div>
@@ -1183,7 +1189,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
       <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} /></div>, document.body)}
+      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} /></div>, document.body)}
     </Modal>
   );
 }
