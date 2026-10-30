@@ -196,7 +196,7 @@ const pillDate = (e: ClubEvent, short: boolean): { top: string; big: string } =>
 function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent[]; showWho: boolean; withCards: boolean }) {
   const n = list.length;
   const cap = 12;
-  const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 8;
+  const shown = list.slice(0, cap); const more = n - shown.length; const two = n > 6;
   const half = two ? Math.ceil(shown.length / 2) : shown.length;
   const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
   const dateW = two ? 94 : 118;

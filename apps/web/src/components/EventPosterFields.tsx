@@ -1,9 +1,54 @@
 import { useState } from "react";
-import { Formula, Kind } from "../clubPlan";
+import { addDays, DAYS, Formula, Kind, MONTHS, weekdayOf } from "../clubPlan";
 
 export interface PosterInfo { time: string; place: string; signup: string; formulas: Formula[]; audience: string; bring: string }
 export const emptyInfo = (): PosterInfo => ({ time: "", place: "", signup: "", formulas: [], audience: "", bring: "" });
 export const MAX_FORMULAS = 8;
+
+// Horaires des matchs JOUR PAR JOUR : les jours viennent des dates du planning (jamais d'autres), on choisit seulement l'horaire dans un menu.
+// Gardé dans le champ `time` sous la forme « Samedi 7 : 9 h – 19 h » (une ligne par jour avec un horaire) ; un jour sans horaire = pas de match.
+export const DAY_HOURS = ["9 h – 12 h", "9 h – 13 h", "9 h – 17 h", "9 h – 18 h", "9 h – 19 h", "9 h – 20 h", "10 h – 18 h", "14 h – 18 h", "14 h – 19 h"];
+export const tournamentDays = (start: string, end: string): { date: string; label: string }[] => {
+  const out: { date: string; label: string }[] = [];
+  const multiMonth = start.slice(0, 7) !== end.slice(0, 7);
+  for (let d = start, i = 0; d <= end && i < 31; d = addDays(d, 1), i++) {
+    const mo = MONTHS[+d.slice(5, 7) - 1].toLowerCase();
+    out.push({ date: d, label: `${DAYS[weekdayOf(d)]} ${+d.slice(8, 10)}${multiMonth ? ` ${mo.length > 5 ? mo.slice(0, 4) + "." : mo}` : ""}` });
+  }
+  return out;
+};
+const parseDayTimes = (value: string, days: { label: string }[]): { map: Record<string, string>; rest: string } => {
+  const map: Record<string, string> = {}; const rest: string[] = [];
+  for (const line of value.split("\n").map((l) => l.trim()).filter(Boolean)) {
+    const i = line.indexOf(" : ");
+    const lab = i > 0 ? line.slice(0, i).trim() : "";
+    if (lab && days.some((d) => d.label === lab)) map[lab] = line.slice(i + 3).trim(); else rest.push(line);
+  }
+  return { map, rest: rest.join(" · ") };
+};
+export function DayTimes({ start, end, value, onChange }: { start: string; end: string; value: string; onChange: (v: string) => void }) {
+  const days = tournamentDays(start, end);
+  const { map, rest } = parseDayTimes(value, days);
+  const write = (m: Record<string, string>) => onChange(days.filter((d) => (m[d.label] ?? "").trim()).map((d) => `${d.label} : ${m[d.label].trim()}`).join("\n"));
+  const first = days.map((d) => map[d.label]).find((x) => x?.trim());
+  const filled = days.filter((d) => map[d.label]?.trim()).length;
+  return (
+    <div className="text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif : « Pas de match » pour un jour sans match)</small>
+      <ul className="m-0 mt-1 grid list-none gap-1.5 p-0">
+        {days.map((d) => (
+          <li key={d.date} className="grid grid-cols-[120px_1fr] items-start gap-2">
+            <span className="pt-2 text-sm font-extrabold text-ink">{d.label}</span>
+            <ChoiceField label={`Horaires du ${d.label}`} first="Pas de match ce jour-là" options={DAY_HOURS} value={map[d.label] ?? ""} onChange={(v) => write({ ...map, [d.label]: v.slice(0, 30) })} placeholder="Ex. 9 h – 19 h" />
+          </li>))}
+      </ul>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        {first && filled < days.length && <button type="button" className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink" onClick={() => write(Object.fromEntries(days.map((d) => [d.label, first])))}>📋 Mêmes horaires tous les jours</button>}
+        {filled > 0 && <button type="button" className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink" onClick={() => onChange("")}>🧹 Tout vider</button>}
+      </div>
+      {rest && <p className="m-0 mt-1.5 rounded-lg bg-[#fff4cc] px-2 py-1 text-xs font-normal text-[#6b4e00]">Ancien texte (ne correspond à aucun jour du planning) : « {rest} ». Il sera effacé si tu modifies un horaire.</p>}
+    </div>
+  );
+}
 export const CLUB_SITE = "https://tennisclubhoudan78.jimdofree.com/"; // site internet du club (simple texte sur l'affiche, rien n'est chargé)
 export const SIGNUP_ONLINE = "Sur le site internet du club : tennisclubhoudan78.jimdofree.com";
 export const isStage = (kind: string) => kind === "STAGE_ENFANTS" || kind === "STAGE_ADULTES";
@@ -180,7 +225,7 @@ export function EventPosterFields({ value, onChange, kind }: { value: PosterInfo
 }
 
 // Formulaire SIMPLE d'une animation ou d'un tournoi : nom, pour qui, ce qu'il va se passer, horaires, (lieu), tarif, (à prévoir), où s'inscrire (la date vient du planning).
-export function AnimationForm({ value, onChange, title, onTitle, note, onNote, tournoi }: { value: PosterInfo; onChange: (v: PosterInfo) => void; title?: string; onTitle?: (t: string) => void; note: string; onNote: (t: string) => void; tournoi?: boolean }) {
+export function AnimationForm({ value, onChange, title, onTitle, note, onNote, tournoi, start, end }: { start?: string; end?: string; value: PosterInfo; onChange: (v: PosterInfo) => void; title?: string; onTitle?: (t: string) => void; note: string; onNote: (t: string) => void; tournoi?: boolean }) {
   const set = (p: Partial<PosterInfo>) => onChange({ ...value, ...p });
   const first = value.formulas[0];
   const setPrices = (p: { price?: string; priceMember?: string }) => {
@@ -203,8 +248,10 @@ export function AnimationForm({ value, onChange, title, onTitle, note, onNote, t
           </div></div>
         <div className="text-sm font-bold text-ink">🎾 Surface
           <div className="mt-1"><ChoiceField label="Surface" options={SURFACES} value={value.place} onChange={(v) => set({ place: v })} placeholder="Ex. Terre battue couverte" /></div></div>
-        <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour
-          <input aria-label="Horaires des matchs" maxLength={80} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className={inputCls} /></label>
+        {start && end
+          ? <DayTimes start={start} end={end} value={value.time} onChange={(v) => set({ time: v })} />
+          : <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour
+            <input aria-label="Horaires des matchs" maxLength={600} value={value.time} onChange={(e) => set({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className={inputCls} /></label>}
         <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale
           <input aria-label="Finale" maxLength={120} value={value.signup} onChange={(e) => set({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className={inputCls} /></label>
         <label className="block text-sm font-bold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
