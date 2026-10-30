@@ -46,7 +46,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const [scale, setScale] = useState(0.4); const [msg, setMsg] = useState("");
   const holder = useRef<HTMLDivElement>(null);
   const { w, h } = RECAP_SIZES[format];
-  useEffect(() => { const f = () => setScale(Math.min(0.5, (window.innerWidth < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => { window.removeEventListener("resize", f); window.removeEventListener("keydown", k); }; }, [w, onClose]);
+  useEffect(() => { const f = () => setScale(Math.min(0.5, (window.innerWidth < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w, window.innerWidth < 768 ? 9 : (window.innerHeight - 260) / h)); f(); window.addEventListener("resize", f); const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => { window.removeEventListener("resize", f); window.removeEventListener("keydown", k); }; }, [w, onClose]);
   const set = (p: Partial<RecapData>) => setD((o) => ({ ...o, ...p }));
   const move = (from: number, to: number) => setD((o) => {
     if (from === to || from < 0 || to < 0 || from >= o.photos.length || to >= o.photos.length) return o;

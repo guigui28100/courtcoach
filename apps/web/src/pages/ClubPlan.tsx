@@ -1109,7 +1109,7 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [fsel, setFsel] = useState("titre");
   const setFmt = (v: PosterFmt) => { setFmtState(v); try { localStorage.setItem(fmtKey, JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const { w, h } = SIZES[format];
-  useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
+  useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w, window.innerWidth < 768 ? 9 : (window.innerHeight - 240) / h)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
   const draft: ClubEvent = { ...e, title, note, ...cleanInfo(info) };
   const save = async () => {
     await put(`/club/events/${e.id}`, { kind: e.kind, title: title.trim() || undefined, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, who: e.who, note: note.trim() || undefined, featured: !!e.featured, ...cleanInfo(info), allowConflict: true });
@@ -1254,7 +1254,7 @@ function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; 
 }
 
 // ───────────── Affiche du mois ─────────────
-function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; initialMonth: string; onClose: () => void }) {
+export function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; initialMonth: string; onClose: () => void }) {
   const [month, setMonth] = useState(initialMonth);
   const [model, setModel] = useState<PosterModel>("liste");
   const [showWho, setShowWho] = useState(false);
@@ -1271,7 +1271,7 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
   const [scale, setScale] = useState(0.5);
   const [msg, setMsg] = useState("");
   const holder = useRef<HTMLDivElement>(null);
-  useEffect(() => { const f = () => setScale(Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / POSTER_W)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  useEffect(() => { const f = () => setScale(window.innerWidth < 768 ? Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / POSTER_W) : Math.min(0.75, 460 / POSTER_W, (window.innerHeight - 190) / POSTER_H)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   const shift = (n: number) => setMonth(addDays(`${month}-01`, n < 0 ? -1 : 32).slice(0, 7));
   const print = () => {
     const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:0}";
@@ -1293,7 +1293,9 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
     catch { setMsg("Impossible de faire le PDF sur cet appareil : utilise plutôt « Imprimer »."); }
   };
   return (
-    <Modal title="🖨️ Affiche du mois" onClose={onClose}>
+    <Modal wide title="🖨️ Affiche du mois" onClose={onClose}>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+      <div className="grid min-w-0 content-start gap-0">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" aria-label="Mois précédent" onClick={() => shift(-1)}>‹</button>
         <b className="min-w-[9rem] text-center text-ink">{MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)}</b>
@@ -1329,16 +1331,20 @@ function PosterModal({ events, initialMonth, onClose }: { events: ClubEvent[]; i
       <FmtPanel items={monthFmtItems(model === "liste")} fmt={mfmt} onChange={setMfmt} selected={msel} onSelect={(k) => { setSelEv(""); setMsel(k); }} />
       <SelOutline sel={selEv ? "" : msel} />
       {/^[a-z0-9-]+$/i.test(selEv) && <style>{`.pf-prev [data-ev="${selEv}"]{outline:3px solid #e11d48;outline-offset:3px}`}</style>}
+      </div>
+      <div className="min-w-0 md:sticky md:top-0 md:self-start">
       <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
         <div className="pf-prev" ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster onPick={(k) => { setSelEv(""); setMsel(k); }} onPickEv={setSelEv} evText={evText} events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="btn-clay" onClick={pdf}>📄 Enregistrer en PDF (haute qualité)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={png}>💾 Enregistrer en image (PNG)</button>
+        <button type="button" className="btn-clay" onClick={pdf}>📄 PDF</button>
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={png}>💾 Image (PNG)</button>
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={print}>🖨️ Imprimer</button>
       </div>
       {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
-      <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF ». Rien n'est envoyé sur Internet. Aucun nom d'élève sur l'affiche.</p>
+      <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet. Aucun nom d'élève.</p>
+      </div>
+      </div>
       {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} evText={evText} /></div>, document.body)}
     </Modal>
   );
