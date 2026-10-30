@@ -81,7 +81,7 @@ const PosterLogo = ({ size, color = "#fff", style }: { size: number; color?: str
 );
 
 function Header({ m, z = 1 }: { m: string; z?: number }) {
-  const year = +m.slice(0, 4); const s = seasonOf(`${m}-01`);
+  const s = seasonOf(`${m}-01`);
   return (
     <div style={{ position: "relative", height: 290, background: "linear-gradient(135deg,#2b261d 0%,#17140f 60%)", color: "#fff", overflow: "hidden", fontVariantNumeric: "lining-nums", clipPath: "polygon(0 0,100% 0,100% 88%,0 100%)" }}>
       <svg aria-hidden="true" width="794" height="290" viewBox="0 0 794 290" style={{ position: "absolute", inset: 0, opacity: 0.22 }} fill="none" stroke="#c9ad77" strokeWidth="4">
@@ -93,7 +93,6 @@ function Header({ m, z = 1 }: { m: string; z?: number }) {
         <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 700, fontStyle: "italic", marginTop: 6, opacity: 0.95, letterSpacing: "0.02em" }}>{/^[aeiouhéèô]/i.test(MONTHS[+m.slice(5, 7) - 1]) ? "Programme d'" : "Programme de"}</div>
         <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 2, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
-          <span style={{ background: "#c9ad77", color: "#17140f", fontWeight: 900, fontSize: 24, borderRadius: 999, padding: "2px 18px" }}>{year}</span>
           <span style={{ fontWeight: 700, fontSize: 19, opacity: 0.95 }}>Saison {s} – {s + 1}</span>
         </div>
       </div></div>
