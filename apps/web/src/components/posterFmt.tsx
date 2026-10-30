@@ -1,10 +1,12 @@
 // Mise en forme du texte des affiches : chaque texte d'une affiche est repéré par un nom (`data-fmt="titre"`…).
 // Le coach touche un texte sur l'aperçu (ou le choisit dans la liste) puis règle sa taille, son gras, sa couleur, sa position…
 // Les réglages deviennent de simples règles de style écrites DANS l'affiche : l'aperçu, l'image PNG, le PDF et l'impression sont identiques.
-export type ElFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number };
+export type ElFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number; text?: string };
 export type Fmts = Record<string, ElFmt>;
 
 export const FMT_COLORS: [string, string][] = [["#17140f", "Noir"], ["#1b1863", "Bleu nuit"], ["#2E86C1", "Bleu"], ["#1E8449", "Vert"], ["#D35400", "Orange"], ["#C0392B", "Rouge"], ["#8E44AD", "Violet"], ["#B8860B", "Or"], ["#ffffff", "Blanc"]];
+// Texte réécrit par le coach (sinon le texte d'origine)
+export const txt = (f: unknown, k: string, d: string): string => { const t = (f as Record<string, { text?: string } | undefined> | undefined)?.[k]?.text; return typeof t === "string" ? t : d; };
 export const stepZoom = (n?: number) => 1 + (n ?? 0) * 0.08;
 
 // `noZoom` : les parties dont la taille est déjà gérée par l'affiche elle-même (pas de zoom en plus)

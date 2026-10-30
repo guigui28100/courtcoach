@@ -1080,11 +1080,11 @@ const monthFmtItems = (liste: boolean): FmtItem[] => [
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
 const eventFmtItems = (team: boolean, hasPartners: boolean): FmtItem[] => [
-  { key: "entete", label: "Nom du club (bandeau)" }, { key: "type", label: "Pastille du type" },
-  { key: "titre", label: "Titre" },
+  { key: "entete", label: "Nom du club (bandeau)", edit: true }, { key: "type", label: "Pastille du type", edit: true },
+  { key: "titre", label: "Titre", edit: true },
   ...(team ? [{ key: "equipe", label: "Catégorie de l'équipe" }, { key: "numero", label: "Numéro de l'équipe" }] : []),
-  { key: "accroche", label: "Phrase sous le titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
-  { key: "pied", label: "Inscriptions (bas)" }, { key: "mail", label: "E-mail (bas)" },
+  { key: "accroche", label: "Phrase sous le titre", edit: true }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description", edit: true },
+  { key: "pied", label: "Inscriptions (bas)" }, { key: "mail", label: "E-mail (bas)", edit: true },
   ...(hasPartners ? [{ key: "partenaires", label: "Mot « partenaires »" }] : []),
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
