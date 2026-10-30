@@ -13,7 +13,7 @@ const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 );
 const slug = (e: ClubEvent) => titleOf(e).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const MAX_PHOTOS = 8, MAX_RESULTS = 10;
-const QUICK = [["🥇 Vainqueur", ""], ["🥈 Finaliste", ""], ["Demi-finalistes", ""], ["Match par équipes", "Victoire 4 – 2"]];
+const QUICK = [["🥇 Vainqueur", ""], ["🥈 Finaliste", ""], ["Demi-finalistes", ""], ["👏 Bravo à", ""], ["Match par équipes", "Victoire 4 – 2"]];
 
 // Fenêtre de l'affiche de bilan : on choisit des photos, on écrit les résultats et le déroulement ; RIEN n'est enregistré ni envoyé.
 // Matchs par équipes du même week-end (lundi au dimanche de l'événement) : une rencontre par équipe, le club adverse déjà noté est repris
@@ -162,7 +162,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                 {d.results.map((r, i) => (
                   <div key={i} className="flex gap-2">
                     <input aria-label={`Résultat ${i + 1} : quoi`} className={field} maxLength={40} placeholder="Quoi (ex. Finale)" value={r.what} onChange={(x) => set({ results: d.results.map((o, j) => (j === i ? { ...o, what: x.target.value } : o)) })} />
-                    <input aria-label={`Résultat ${i + 1} : résultat`} className={field} maxLength={60} placeholder="Résultat (ex. Paul, 6-4 6-3)" value={r.result} onChange={(x) => set({ results: d.results.map((o, j) => (j === i ? { ...o, result: x.target.value } : o)) })} />
+                    <input aria-label={`Résultat ${i + 1} : résultat`} className={field} maxLength={120} placeholder={r.what.includes("Bravo") ? "Les prénoms (ex. Paul, Léa et Tom)" : "Résultat (ex. Paul, 6-4 6-3)"} value={r.result} onChange={(x) => set({ results: d.results.map((o, j) => (j === i ? { ...o, result: x.target.value } : o)) })} />
                     <button type="button" className="btn-outline" aria-label={`Retirer le résultat ${i + 1}`} onClick={() => set({ results: d.results.filter((_, j) => j !== i) })}>🗑️</button>
                   </div>))}
                 {d.results.length < MAX_RESULTS && (
