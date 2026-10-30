@@ -89,7 +89,7 @@ function Header({ m, z = 1 }: { m: string; z?: number }) {
       </svg>
       <PosterLogo size={150} style={{ position: "absolute", right: 30, top: 24, filter: "drop-shadow(0 6px 8px rgba(0,0,0,.3))" }} />
       <div style={{ position: "absolute", left: 52, top: 40, zoom: z }}><div data-fmt="entete">
-        <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "0.32em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
+        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "0.22em", opacity: 0.95 }}>TENNIS CLUB HOUDAN</div>
         <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 700, fontStyle: "italic", marginTop: 6, opacity: 0.95, letterSpacing: "0.02em" }}>{/^[aeiouhéèô]/i.test(MONTHS[+m.slice(5, 7) - 1]) ? "Programme d'" : "Programme de"}</div>
         <div style={{ fontFamily: SERIF, fontSize: MONTHS[+m.slice(5, 7) - 1].length > 7 ? 68 : 84, fontWeight: 900, lineHeight: 1, letterSpacing: "0.02em", marginTop: 2, textShadow: "0 4px 0 rgba(0,0,0,.18)" }}>{MONTHS[+m.slice(5, 7) - 1].toUpperCase()}</div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}>
