@@ -248,7 +248,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                       <li key={e.id}>
                         <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
                           <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
                         </button>
                       </li>
                     ))}
@@ -370,7 +370,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                   <span className="min-w-0 flex-1">
                     <b className="block text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
                     {e.who.length > 0 && <span className="block text-sm text-muted">👤 {e.who.join(", ")}</span>}
-                    {e.note && <span className="mt-0.5 block text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
+                    {e.note && <span className="mt-0.5 block whitespace-pre-line text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
                   </span>
                 </button>
               </li>))}
@@ -980,7 +980,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#fff6f0] p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
-              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
+              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block whitespace-pre-line text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
               <button type="button" className="btn-outline" aria-label={`Gérer ${titleOf(e)}`} onClick={() => onEvent(e)}>Gérer ›</button>
             </li>))}
           </ul>
@@ -1080,11 +1080,11 @@ const monthFmtItems = (liste: boolean): FmtItem[] => [
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
 const eventFmtItems = (team: boolean, hasPartners: boolean): FmtItem[] => [
-  { key: "entete", label: "Nom du club (bandeau)" }, { key: "type", label: "Pastille du type" },
-  { key: "titre", label: "Titre" },
+  { key: "entete", label: "Nom du club (bandeau)", edit: true }, { key: "type", label: "Pastille du type", edit: true },
+  { key: "titre", label: "Titre", edit: true },
   ...(team ? [{ key: "equipe", label: "Catégorie de l'équipe" }, { key: "numero", label: "Numéro de l'équipe" }] : []),
-  { key: "accroche", label: "Phrase sous le titre" }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description" },
-  { key: "pied", label: "Inscriptions (bas)" }, { key: "mail", label: "E-mail (bas)" },
+  { key: "accroche", label: "Phrase sous le titre", edit: true }, { key: "date", label: "Date" }, { key: "infos", label: "Cartes d'infos" }, { key: "tarifs", label: "Tarifs" }, { key: "texte", label: "Description", edit: true },
+  { key: "pied", label: "Inscriptions (bas)" }, { key: "mail", label: "E-mail (bas)", edit: true },
   ...(hasPartners ? [{ key: "partenaires", label: "Mot « partenaires »" }] : []),
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
@@ -1188,7 +1188,7 @@ function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, onRecap,
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
       <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
-      {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
+      {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
       {!readOnly && <div className="mt-3 grid gap-2">
         <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>
         <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>

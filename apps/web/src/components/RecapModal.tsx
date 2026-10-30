@@ -28,9 +28,9 @@ function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
 }
 
 const recapFmtItems: FmtItem[] = [
-  { key: "entete", label: "Nom du club (bandeau)" }, { key: "type", label: "Pastille « Bilan »" }, { key: "surtitre", label: "Titre en haut" }, { key: "titre", label: "Nom de l'événement" },
-  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date" }, { key: "rencontres", label: "Rencontres (scores)" }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement" },
-  { key: "partenaires", label: "Mot « partenaires »" }, { key: "pied", label: "« Merci à tous ! » (bas)" }, { key: "mail", label: "E-mail (bas)" },
+  { key: "entete", label: "Nom du club (bandeau)", edit: true }, { key: "type", label: "Pastille « Bilan »", edit: true }, { key: "surtitre", label: "Titre en haut", edit: true }, { key: "titre", label: "Nom de l'événement", edit: true },
+  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date" }, { key: "rencontres", label: "Rencontres (scores)" }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement", edit: true },
+  { key: "partenaires", label: "Mot « partenaires »" }, { key: "pied", label: "« Merci à tous ! » (bas)", edit: true }, { key: "mail", label: "E-mail (bas)", edit: true },
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
 export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubEvent[]; onClose: () => void }) {

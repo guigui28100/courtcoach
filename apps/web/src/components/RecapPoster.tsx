@@ -1,5 +1,5 @@
 import { Backdrop } from "./PosterBackdrop";
-import { Fmts, FmtStyle, pickFmt } from "./posterFmt";
+import { Fmts, FmtStyle, pickFmt, txt } from "./posterFmt";
 import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -114,15 +114,15 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH + partH - 40, fontSize: 420, lineHeight: 1, opacity: 0.06, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 36, height: hdH - 36, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
-        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>BILAN</div>
+        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div></div>
+        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{txt(fmt, "type", "BILAN")}</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k * g }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
-            {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{data.headline.trim().toUpperCase()}</div>}
-            <div data-fmt="titre" role="heading" aria-level={1} style={title}>{name}</div>
+            {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
+            <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
             {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
             <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
           </div>
@@ -154,7 +154,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
               </div>
             </div>
           )}
-          {data.message.trim() && <p data-fmt="texte" style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(data.message.trim())} /></p>}
+          {txt(fmt, "texte", data.message.trim()) && <p data-fmt="texte" style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(txt(fmt, "texte", data.message.trim()))} /></p>}
         </div>
       </div>
       {logos.length > 0 && (
@@ -166,8 +166,8 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
         </div>
       )}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: ftH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: `0 ${px}px` }}>
-        <div data-fmt="pied" style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.04em" }}>Merci à tous !</div>
-        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, whiteSpace: "nowrap" }}>tennisclubhoudan@gmail.com</div>
+        <div data-fmt="pied" style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.04em" }}>{txt(fmt, "pied", "Merci à tous !")}</div>
+        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "tennisclubhoudan@gmail.com")}</div>
         <span aria-hidden style={{ display: "inline-block", width: 60, height: 60, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
     </div>

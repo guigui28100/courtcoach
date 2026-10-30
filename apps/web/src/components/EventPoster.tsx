@@ -5,7 +5,7 @@ import { Backdrop, PosterBg } from "./PosterBackdrop";
 import type { CSSProperties, ReactNode } from "react";
 import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from "../clubPlan";
 import { fullRange, label } from "./ClubPoster";
-import { FmtStyle, pickFmt } from "./posterFmt";
+import { FmtStyle, pickFmt, txt } from "./posterFmt";
 import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
@@ -37,7 +37,7 @@ function dateBlock(e: ClubEvent) {
 type Row = { icon: string; title: string; text: string };
 
 export type BlockKey = "titre" | "date" | "infos" | "tarifs" | "texte" | "equipe" | "numero" | "tout" | "entete" | "type" | "accroche" | "pied" | "mail" | "partenaires";
-export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number };
+export type BlockFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number; text?: string };
 export type PosterFmt = Partial<Record<BlockKey, BlockFmt>>;
 
 export { PHOTOS } from "./PosterBackdrop";
@@ -141,7 +141,8 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
         </div>))}
     </div>
   );
-  const noteEl = e.note && <p data-fmt="texte" style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(e.note)} /></p>;
+  const noteText = txt(fmt, "texte", e.note ?? "");
+  const noteEl = noteText && <p data-fmt="texte" style={{ margin: 0, borderLeft: `5px solid ${acc}`, paddingLeft: pn(16), ...HALO, fontSize: pn(19), lineHeight: 1.4, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 400), overflowWrap: "break-word", whiteSpace: "pre-line", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(noteText)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0` }}>
       {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
@@ -152,7 +153,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const glow: CSSProperties = bg !== "" ? { textShadow: "0 0 10px rgba(255,255,255,.95), 0 0 22px rgba(255,255,255,.9), 0 1px 2px rgba(255,255,255,.9)" } : {}; // pas de carte : un halo blanc fait ressortir le texte posé directement sur le fond
-  const titleEl = <div style={glow}><h1 data-fmt="titre" style={title}>{name.replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{lede.text && <p data-fmt="accroche" style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{lede.text.split("\n").map((l, i) => i === 0 && lede.text.includes("\n") ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const titleEl = <div style={glow}><h1 data-fmt="titre" style={title}>{txt(fmt, "titre", name).replace(/ · /g, "\u00a0· ")}</h1><div style={{ width: pt(120), height: pt(9), background: acc, borderRadius: 6, marginTop: pt(14), marginLeft: F("titre").align === "center" ? "auto" : F("titre").align === "right" ? "auto" : undefined, marginRight: F("titre").align === "center" ? "auto" : undefined }} />{teamsEl}{txt(fmt, "accroche", lede.text) && <p data-fmt="accroche" style={{ margin: `${pt(14)} 0 0`, fontSize: pt(sq ? 24 : 27), lineHeight: 1.3, fontWeight: 600, color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{txt(fmt, "accroche", lede.text).split("\n").map((l, i) => i === 0 && lede.text.includes("\n") && fmt?.accroche?.text === undefined ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 900 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(16);
   return (
@@ -163,8 +164,8 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH - 40, fontSize: sq ? 420 : 520, lineHeight: 1, opacity: 0.07, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 40, height: hdH - 40, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>TENNIS CLUB HOUDAN</div></div>
-        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "9px 18px", fontWeight: 900, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap", flexShrink: 0 }}>{kd.icon} {tour ? "Tournoi" : kd.label}</div>
+        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div></div>
+        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "9px 18px", fontWeight: 900, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap", flexShrink: 0 }}>{txt(fmt, "type", `${kd.icon} ${tour ? "Tournoi" : kd.label}`)}</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k * g }}>
@@ -183,7 +184,7 @@ export function EventPoster({ e, format, showWho, fmt, partners, bg = "", light 
           <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", color: GOLD }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
           <div style={{ fontSize: Math.min(sq ? 22 : 25, Math.floor((w - px * 2 - 64 - 48 - 250) / (Math.max(longestLink(inscription), 1) * 0.62))), fontWeight: 900, lineHeight: 1.2, marginTop: 4, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
         </div>
-        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>✉️ tennisclubhoudan@gmail.com</div>
+        <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, textAlign: "right", whiteSpace: "nowrap", flexShrink: 0 }}>{txt(fmt, "mail", "✉️ tennisclubhoudan@gmail.com")}</div>
         <span aria-hidden style={{ display: "inline-block", width: 64, height: 64, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
     </div>
