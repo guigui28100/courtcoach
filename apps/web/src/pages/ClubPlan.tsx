@@ -380,15 +380,18 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
             <div key={d} data-cell={d} onClick={() => { if (justDragged.current) return; click(d); }}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 max-sm:p-1 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black max-sm:min-h-9 ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
-              <span className="grid gap-1">
+              <span className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
                 {(laneRows.get(d) ?? []).map((seg, li) => {
                   if (!seg) return <span key={"sp" + li} aria-hidden className="block h-6 max-sm:h-9" />;
-                  if (seg.skip) return <span key={seg.e.id + li} aria-hidden className="block h-6 max-sm:h-9" />;
                   const e = seg.e; const n = seg.n; const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null;
+                  const lbl = `${e.tentative ? "⏳" : ""}${e.featured ? "⭐" : ""}${kindOf(e.kind).icon}`;
+                  // Un morceau DANS chaque case (la barre ne traverse jamais les bordures), toujours sur la même ligne ; le titre est répété dans chaque morceau
                   return <button key={e.id + d} type="button" title={titleOf(e) + (e.tentative ? " (prévisionnel)" : "")} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                     {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
-                    className={"relative z-10 block h-6 max-sm:h-9 select-none truncate rounded-md px-1 text-left text-xs font-bold leading-6 max-sm:leading-9 max-sm:text-base sm:px-1.5 underline-offset-2 hover:underline hover:brightness-95 w-[calc(var(--n)*100%+(var(--n)-1)*30px)] max-sm:w-[calc(var(--n)*100%+(var(--n)-1)*22px)] " + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
-                    style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>{e.tentative ? "⏳" : ""}{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className={n > 1 ? "" : "hidden sm:inline"}> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>;
+                    className={"relative block h-6 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-xs font-bold leading-6 max-sm:leading-9 max-sm:text-base sm:px-1.5 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                    style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
+                    <span className="block truncate">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></span>
+                  </button>;
                 })}
                 {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-extrabold text-ink">+{hiddenCount.get(d)} autres</span>}
               </span>
