@@ -977,6 +977,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
   const already = events.filter((e) => e.startDate <= end && e.endDate >= start);
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
+  // « Un autre » du même type le même jour : on repart d'une fiche vide (l'événement déjà placé reste tel quel)
+  const addAnother = (k: string) => { setSel((x) => ({ ...x, [k]: { on: true, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() } })); if (k === "TOURNOI") setTourFlow(true); if (k === "EQUIPES") setMatchFlow(true); };
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
   const noName = sel.AUTRE?.on && !(sel.AUTRE.title ?? "").trim() ? "Écris le nom de ton événement (ex. Repas des bénévoles)." : "";
@@ -1075,6 +1077,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 </button>
               ); })}
             </div>
+            {gk.filter((k) => !!sel[k.key]?.id).map((k) => (
+              <button key={`more-${k.key}`} type="button" className="btn-outline mt-2 bg-white hover:bg-ink hover:text-white" onClick={() => addAnother(k.key)}>＋ Ajouter un autre {k.label.toLowerCase()} le même jour</button>))}
             {on.map((k) => {
               const c = sel[k.key];
               return (
