@@ -112,6 +112,13 @@ describe("Planning du club (réservé au coach)", () => {
     expect(pv2.tentative).toBe(true); // une autre modification (⭐) ne le valide pas par erreur
     const pv3 = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: false, tentative: false }).expect(200)).body;
     expect(pv3.tentative).toBe(false); // validé
+    // « du lundi au vendredi mais pas mercredi ni jeudi » : jours sans événement, gardés dans la période, jamais tous les jours
+    const sk = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-09", endDate: "2026-11-13", skipDays: ["2026-11-11", "2026-11-12", "2026-11-30", "2026-11-11"] }).expect(200)).body;
+    expect(sk.skipDays).toEqual(["2026-11-11", "2026-11-12"]); // hors période ignoré, doublon retiré
+    const sk2 = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-09", endDate: "2026-11-13", featured: true }).expect(200)).body;
+    expect(sk2.skipDays).toEqual(["2026-11-11", "2026-11-12"]); // une autre modification ne les efface pas
+    await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-09", endDate: "2026-11-10", skipDays: ["2026-11-09", "2026-11-10"] }).expect(400); // pas tous les jours
+    await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", skipDays: [] }).expect(200);
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", formulas: Array.from({ length: 9 }, (_, i) => ({ label: `F${i}`, price: "1 €" })) }).expect(400); // 8 au plus
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", time: "x".repeat(601) }).expect(400);
     // horaires jour par jour (une ligne par jour) : jusqu'à 600 caractères, les retours à la ligne sont gardés

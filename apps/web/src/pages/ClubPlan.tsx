@@ -20,7 +20,7 @@ import { posterToPdf, posterToPng } from "../components/exportPoster";
 import { download, inPeriod, toIcs } from "../clubExport";
 import { buildDossier, DOSSIER_H, DOSSIER_W } from "../components/ClubDossier";
 import {
-  addDays, allClashes, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
+  addDays, allClashes, evOn, skipNote, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, teamLabel, teamCat, textOn, titleOf, todayParis,
   vacationWeeks, VENUE_AWAY, VENUE_HOME, weekdayOf,
 } from "../clubPlan";
@@ -29,7 +29,7 @@ const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "S
 type View = "annee" | "mois";
 const VIEWS: [View, string][] = [["annee", "📆 Vue année entière"], ["mois", "🗓️ Vue mois par mois"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
-const covers = (e: ClubEvent, d: string) => e.startDate <= d && d <= e.endDate;
+const covers = (e: ClubEvent, d: string) => evOn(e, d); // dans la période ET pas un « jour sans événement »
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
 
 // Planning du club (coach et président : gestion ; bureau : LECTURE SEULE) : tout se fait en cliquant, rien à écrire
@@ -412,7 +412,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 <button type="button" onClick={() => onEvent(e)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
                   <span aria-hidden className="mt-1 size-3 shrink-0 rounded-full" style={{ background: colorOf(e) }} />
                   <span className="min-w-0 flex-1">
-                    <b className="block text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
+                    <b className="block text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? ` (${skipNote(e)})` : ""}</span></b>
                     {e.who.length > 0 && <span className="block text-sm text-muted">👤 {e.who.join(", ")}</span>}
                     {e.note && <span className="mt-0.5 block whitespace-pre-line text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
                   </span>
@@ -496,7 +496,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, tentative: !!d.tentative, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, skipDays: (d.skipDays ?? []).filter((x) => x >= d.startDate && x <= d.endDate), bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, tentative: !!d.tentative, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -552,6 +552,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
       </details>
+      <SkipDays start={d.startDate} end={d.endDate} value={d.skipDays ?? []} onChange={(v) => set({ skipDays: v })} />
       <label className="mb-4 block font-bold text-ink">📝 Description (facultative, 600 caractères)
         <textarea aria-label="Description de l'événement" rows={3} maxLength={600} value={d.note} onChange={(e) => set({ note: e.target.value })}
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
@@ -936,10 +937,30 @@ function MatchWhere({ courts, onCourts, time, onTime }: { courts: number[]; onCo
 
 const infoOf = (e: ClubEvent): PosterInfo => ({ time: e.time ?? "", place: e.place ?? "", signup: e.signup ?? "", formulas: e.formulas ?? [], audience: e.audience ?? "", bring: e.bring ?? "" });
 const cleanInfo = (i: PosterInfo) => ({ time: i.time.trim(), place: i.place.trim(), signup: i.signup.trim(), audience: i.audience.trim(), bring: i.bring.trim(), formulas: i.formulas.filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()).map((f) => ({ label: f.label.trim(), price: f.price.trim(), priceMember: (f.priceMember ?? "").trim(), detail: (f.detail ?? "").trim(), group: (f.group ?? "").trim() })) });
+// « Jours où ça n'a PAS lieu » : une pastille par jour de la période ; on touche un jour pour le retirer (ex. du lundi au vendredi mais pas mercredi ni jeudi)
+function SkipDays({ start, end, value, onChange }: { start: string; end: string; value: string[]; onChange: (v: string[]) => void }) {
+  const days: string[] = []; for (let d = start; d <= end && days.length < 60; d = addDays(d, 1)) days.push(d);
+  if (days.length < 2) return null;
+  const off = value.filter((d) => d >= start && d <= end);
+  const toggle = (d: string) => { if (off.includes(d)) onChange(off.filter((x) => x !== d)); else if (off.length < days.length - 1) onChange([...off, d].sort()); };
+  return (
+    <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
+      <p className="m-0 mb-1 text-sm font-extrabold text-ink">🚫 Un jour sans l'événement ? <span className="font-normal text-muted">(facultatif)</span></p>
+      <p className="m-0 mb-2 text-xs text-muted">Touche les jours où il n'a PAS lieu : ils seront barrés et vides dans le calendrier.</p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Jours sans l'événement">
+        {days.map((d) => { const o = off.includes(d); return <button key={d} type="button" aria-pressed={o} onClick={() => toggle(d)} title={o ? "Pas d'événement ce jour-là (toucher pour remettre)" : "Toucher pour retirer ce jour"}
+          className={`min-h-9 rounded-lg border-2 px-2 py-1 text-xs font-bold ${o ? "border-dashed border-[#6b6558] bg-[#eceae4] text-muted line-through" : "border-line bg-white text-ink hover:border-ink"}`}>{DAYS[weekdayOf(d)].slice(0, 3)} {+d.slice(8, 10)}</button>; })}
+      </div>
+      {off.length > 0 && <p className="m-0 mt-2 text-xs font-bold text-ink">Pas d'événement : {skipNote({ skipDays: off }).replace("sauf ", "")}</p>}
+    </div>
+  );
+}
+
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: (created?: ClubEvent) => void }) {
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
+  const [skip, setSkip] = useState<string[]>(() => events.find((x) => x.startDate === day && x.endDate === (endInit ?? day))?.skipDays ?? []); // jours sans événement
   const [tourFlow, setTourFlow] = useState(false); // idem pour un tournoi
   const [matchFlow, setMatchFlow] = useState(false); // vrai quand on remplit un match par équipes carte par carte (la carte est alors seule à l'écran)
   const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
@@ -975,10 +996,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
         const c = sel[k.key]; const old = placed(k.key);
         if (c.on && !old && k.key === "EQUIPES" && c.teams.length > 1) {
           // plusieurs équipes le même jour : UNE LIGNE PAR ÉQUIPE (chacune avec sa catégorie), mêmes infos communes ; l'étoile seulement sur la première
-          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, tentative: !!c.tentative, ...cleanInfo({ ...c.info, audience: c.clubs?.[t] ?? c.info.audience }) });
+          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, skipDays: skip.filter((x) => x >= start && x <= end), bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, tentative: !!c.tentative, ...cleanInfo({ ...c.info, audience: c.clubs?.[t] ?? c.info.audience }) });
         }
-        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
-        else if (c.on && old && (c.star !== !!old.featured || !!c.tentative !== !!old.tentative || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info), allowConflict: true });
+        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, skipDays: skip.filter((x) => x >= start && x <= end), bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
+        else if (c.on && old && (c.star !== !!old.featured || !!c.tentative !== !!old.tentative || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, skipDays: skip.filter((x) => x >= start && x <= end), bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone(created);
@@ -1023,6 +1044,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
             </div>
           )}
           <p className="mb-3 mt-0 text-sm font-bold text-ink">{!chosen ? "👉 Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
+          {chosen && nbDays > 1 && <SkipDays start={start} end={end} value={skip} onChange={setSkip} />}
           <button type="button" className="btn-clay" disabled={!chosen} onClick={() => setStep(2)}>Valider la durée →</button>
         </div>
       ) : (<>
@@ -1252,7 +1274,7 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
       {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-bold text-ink">⏳ Prévisionnel : pas encore validé</p>}
       {!readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
-      <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}</p>
+      <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
       {!readOnly && <div className="mt-3 grid gap-2">

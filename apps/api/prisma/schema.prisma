@@ -650,6 +650,7 @@ model ClubEvent {
   who       String[] // profs ou responsables (prénoms)
   note      String   @default("")
   featured  Boolean  @default(false) // « ⭐ à mettre en avant » sur l'affiche du mois
+  skipDays  String[] @default([]) // jours de la période où l'événement n'a PAS lieu (« lundi au vendredi sauf mercredi et jeudi »)
   tentative Boolean  @default(false) // « ⏳ prévisionnel » : pas encore validé (affiché en gris)
   // Infos de l'affiche d'un événement (toutes facultatives)
   time      String   @default("") // horaires, ex. « 9 h – 12 h »

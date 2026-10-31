@@ -73,8 +73,8 @@ export const textOn = (bg: string) => (LIGHT.has(bg) ? "#10203a" : "#ffffff");
 
 // Une formule de l'affiche : « Adhérent » → « 60 € »
 export interface Formula { label: string; price: string; priceMember?: string; detail?: string; group?: string }
-export interface ClubEvent { id: string; position?: number; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
-export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
+export interface ClubEvent { id: string; position?: number; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; skipDays?: string[]; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
+export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; skipDays?: string[]; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
 export interface Clash { id: string; title: string; kind: string; why: string }
 
 // Couleur d'un événement : celle de sa catégorie si c'est un match par équipes (la première), sinon celle de son type
@@ -149,3 +149,8 @@ export function tourInfo(e: { kind: string; title: string }): { type: "TMC" | "O
   const type = m[1].toUpperCase() === "TMC" ? "TMC" : "OPEN";
   return { type, who: m[2].trim(), bas: type === "TMC" ? m[3] ?? "" : "", haut: type === "TMC" ? m[4] ?? "" : "" };
 }
+
+// Un événement a lieu ce jour-là : dans la période ET pas dans les « jours sans événement »
+export const evOn = (e: { startDate: string; endDate: string; skipDays?: string[] }, d: string) => e.startDate <= d && d <= e.endDate && !(e.skipDays ?? []).includes(d);
+// « sauf mercredi 11 et jeudi 12 » (vide s'il n'y a pas de jour sans événement)
+export const skipNote = (e: { skipDays?: string[] }) => { const l = (e.skipDays ?? []).map((d) => `${DAYS[weekdayOf(d)].toLowerCase()} ${+d.slice(8, 10)}`); return l.length ? `sauf ${l.length > 1 ? l.slice(0, -1).join(", ") + " et " + l[l.length - 1] : l[0]}` : ""; };

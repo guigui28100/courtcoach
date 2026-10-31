@@ -5,7 +5,7 @@ import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { NoBreak } from "./NoBreak";
 import { Fmts, FmtStyle, pickFmt, stepZoom } from "./posterFmt";
 import { CourtLines } from "./CourtLines";
-import { addDays, ClubEvent, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
+import { addDays, ClubEvent, evOn, colorOf, DAYS, kindOf, mondayOf, MONTHS, opponentOf, seasonOf, teamCat, teamLabel, textOn, titleOf, venueTag, weekdayOf } from "../clubPlan";
 
 // Affiche du mois (format A4 : 794 × 1123 px, tout est dessiné ici : aucune image ni police extérieure)
 export const POSTER_W = 794;
@@ -251,7 +251,7 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
         {DAYS.map((d) => <div key={d} style={{ textAlign: "center", fontWeight: 900, fontSize: 13, color: "#fff", background: "#17140f", borderRadius: 8, padding: "5px 0", letterSpacing: "0.08em" }}>{d.slice(0, 3).toUpperCase()}</div>)}
         {days.map((d) => {
-          const evs = list.filter((e) => e.startDate <= d && e.endDate >= d); const out = d.slice(0, 7) !== m;
+          const evs = list.filter((e) => evOn(e, d)); const out = d.slice(0, 7) !== m;
           return (
             <div key={d} style={{ height: cellH, background: out ? "#f3ede0" : "#fff", border: "2px solid #eadfcb", borderRadius: 10, padding: "3px 4px", overflow: "hidden", opacity: out ? 0.5 : 1 }}>
               <div style={{ fontFamily: SERIF, fontWeight: 900, fontSize: 16, color: "#17140f" }}>{dayNum(d)}</div>
