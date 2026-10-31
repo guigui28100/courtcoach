@@ -26,6 +26,7 @@ export class ClubEventDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(60, { each: true }) who?: string[];
   @IsOptional() @Transform(trim) @IsString() @MaxLength(600) note?: string; // description libre (affichée sur l'affiche)
   @IsOptional() @IsBoolean() featured?: boolean; // à mettre en avant sur l'affiche du mois
+  @IsOptional() @IsBoolean() tentative?: boolean; // prévisionnel : pas encore validé
   @IsOptional() @Transform(trim) @IsString() @MaxLength(600) time?: string; // horaires (affiche)
   @IsOptional() @Transform(trim) @IsString() @MaxLength(120) place?: string; // lieu (affiche)
   @IsOptional() @Transform(trim) @IsString() @MaxLength(160) signup?: string; // inscriptions (affiche)

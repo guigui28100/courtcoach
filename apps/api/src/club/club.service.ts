@@ -143,13 +143,13 @@ export class ClubService {
 
   async create(dto: ClubEventDto) {
     const ev = await this.clean(dto); await this.check(ev, dto);
-    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...this.posterData(dto) } });
+    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, tentative: dto.tentative === true, ...this.posterData(dto) } });
   }
 
   async update(id: string, dto: ClubEventDto) {
     if (!(await this.prisma.clubEvent.findUnique({ where: { id } }))) throw new NotFoundException("Événement introuvable");
     const ev = await this.clean(dto); await this.check(ev, dto, id);
-    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...this.posterData(dto) } });
+    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...(dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...this.posterData(dto) } });
   }
 
   async remove(id: string) {

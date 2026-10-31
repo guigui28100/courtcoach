@@ -73,12 +73,13 @@ export const textOn = (bg: string) => (LIGHT.has(bg) ? "#10203a" : "#ffffff");
 
 // Une formule de l'affiche : « Adhérent » → « 60 € »
 export interface Formula { label: string; price: string; priceMember?: string; detail?: string; group?: string }
-export interface ClubEvent { id: string; position?: number; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
-export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
+export interface ClubEvent { id: string; position?: number; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
+export interface Draft { id?: string; kind: Kind; title: string; startDate: string; endDate: string; bands: string[]; courts: number[]; teams: string[]; who: string[]; note: string; featured?: boolean; tentative?: boolean; time?: string; place?: string; signup?: string; formulas?: Formula[]; audience?: string; bring?: string }
 export interface Clash { id: string; title: string; kind: string; why: string }
 
 // Couleur d'un événement : celle de sa catégorie si c'est un match par équipes (la première), sinon celle de son type
-export const colorOf = (e: { kind: string; teams: string[] }) => (e.kind === "EQUIPES" && e.teams[0] ? teamCat(e.teams[0])?.color ?? kindOf(e.kind).color : kindOf(e.kind).color);
+export const TENTATIVE_COLOR = "#b9b3a6"; // gris : événement prévisionnel, pas encore validé
+export const colorOf = (e: { kind: string; teams: string[]; tentative?: boolean }) => e.tentative ? TENTATIVE_COLOR : (e.kind === "EQUIPES" && e.teams[0] ? teamCat(e.teams[0])?.color ?? kindOf(e.kind).color : kindOf(e.kind).color);
 // Match par équipes : le « club rencontré » est gardé dans la colonne `audience` (aucun changement du serveur)
 export const opponentOf = (e: { kind: string; audience?: string }) => (e.kind === "EQUIPES" ? (e.audience ?? "").trim() : "");
 // Match par équipes : à domicile ou en déplacement, gardé dans la colonne `place` (aucun changement du serveur)
