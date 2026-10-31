@@ -775,7 +775,13 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
   const words = catKeys.length > 1 ? (vets ? `vétérans${catKeys.every((k) => k.endsWith("-m")) ? " messieurs" : catKeys.every((k) => k.endsWith("-d")) ? " dames" : ""}` : "jeunes") : tourWord(catKey);
   const auto = type && catKey ? `${type === "TMC" ? "TMC" : "Tournoi open"} ${words}${range}` : "";
   const info = (p: Partial<PosterInfo>) => patch({ info: { ...c.info, ...p } });
-  useEffect(() => { if (!edited && auto && c.title !== auto) patch({ title: auto, info: { ...c.info, audience: tourAudience(catKeys) } }); });
+  // Le nom (tant qu'il n'est pas écrit à la main) ET les catégories gardées pour l'affiche suivent les choix : le nom court ne change pas quand on ajoute une catégorie, il faut donc comparer aussi les catégories
+  useEffect(() => {
+    if (!catKeys.length) return;
+    const aud = tourAudience(catKeys);
+    const newTitle = !edited && auto && c.title !== auto;
+    if (newTitle || c.info.audience !== aud) patch({ ...(newTitle ? { title: auto } : {}), info: { ...c.info, audience: aud } });
+  });
   const Nav = ({ ok = true, skip }: { ok?: boolean; skip?: boolean }) => (
     <div className="mt-3 flex flex-wrap gap-2">
       <button type="button" className="btn-clay" disabled={!ok} onClick={next}>Continuer →</button>
