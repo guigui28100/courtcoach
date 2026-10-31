@@ -72,6 +72,16 @@ export function tournoiPublic(audience: string): { text: string; fem: boolean } 
   if (/^Messieurs/i.test(base)) return { text: `aux joueurs${years}`, fem: false };
   if (/^Dames/i.test(base)) return { text: `aux joueuses${years}`, fem: true };
   if (/^Jeunes/i.test(base)) {
+    const ageTxt = (str: string) => { const l = [...new Set([...str.matchAll(/(\d+\/\d+)(?: (orange|vert))?/g)].map((m) => (m[2] ? `${m[1]} ans (balle ${m[2]})` : `${m[1]} ans`)))]; return l.length > 1 ? `${l.slice(0, -1).join(", ")} et ${l[l.length - 1]}` : l[0] ?? ""; };
+    // Nouveau format : « garçons 11/12, 13/14 · filles 11/12 » (une partie par sexe)
+    const segs = rest.map((r) => r.match(/^(gar[cç]ons|filles)\s+(.*)$/i)).filter((m): m is RegExpMatchArray => !!m);
+    if (segs.length) {
+      const g = segs.find((m) => /^gar/i.test(m[1])), f = segs.find((m) => /^fil/i.test(m[1]));
+      const ag = g ? ageTxt(g[2]) : "", af = f ? ageTxt(f[2]) : "";
+      if (g && f) return { text: ag === af ? `aux garçons et filles de ${ag}` : `aux garçons de ${ag} et aux filles de ${af}`, fem: false };
+      if (g) return { text: `aux garçons de ${ag}`, fem: false };
+      return { text: `aux filles de ${af}`, fem: true };
+    }
     const f = /filles/i.test(detail), g = /gar[cç]ons/i.test(detail);
     const sex = f && g ? "" : f ? "filles" : g ? "garçons" : "";
     const ageList = [...new Set([...detail.matchAll(/(\d+\/\d+)/g)].map((m) => m[1]))];

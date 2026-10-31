@@ -743,7 +743,10 @@ const tourAudience = (keys: string[]) => {
       const allM = keys.every((k) => k.endsWith("-m")), allD = keys.every((k) => k.endsWith("-d"));
       return `${allM ? "Messieurs (adultes)" : allD ? "Dames (adultes)" : "Vétérans"} · ${ages}`;
     }
-    return `Jeunes · ${d.length > 100 ? `${keys.length} catégories d'âge` : d}`;
+    // Jeunes : « garçons 11/12, 13/14 · filles 11/12 » (court, mais garde les sexes ET les âges : l'affiche les relit)
+    const seg = (pre: string, word: string) => { const l = keys.filter((k) => k.startsWith(pre)).map((k) => { const m = k.match(/^\w+-(\d+)-(\d+)(?:-(orange|vert))?$/); return m ? `${m[1]}/${m[2]}${m[3] ? ` ${m[3]}` : ""}` : ""; }).filter(Boolean); return l.length ? `${word} ${l.join(", ")}` : ""; };
+    const jd = [seg("gar-", "garçons"), seg("fil-", "filles")].filter(Boolean).join(" · ");
+    return `Jeunes · ${jd || d}`;
   }
   const key = keys[0] ?? "";
   const base = key.startsWith("gar-") || key.startsWith("fil-") ? "Jeunes" : key.endsWith("-m") ? "Messieurs (adultes)" : "Dames (adultes)";
