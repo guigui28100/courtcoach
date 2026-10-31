@@ -960,7 +960,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
-  const [skip, setSkip] = useState<string[]>(() => events.find((x) => x.startDate === day && x.endDate === (endInit ?? day))?.skipDays ?? []); // jours sans événement
+  const [skip, setSkip] = useState<string[]>([]); // jours sans événement
   const [tourFlow, setTourFlow] = useState(false); // idem pour un tournoi
   const [matchFlow, setMatchFlow] = useState(false); // vrai quand on remplit un match par équipes carte par carte (la carte est alors seule à l'écran)
   const [step, setStep] = useState<1 | 2>(1); // 1 = combien de jours ? · 2 = quel type d'événement ?
@@ -968,17 +968,15 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   const [chosen, setChosen] = useState(!ask); // en mode « ajouter », rien ne s'enregistre tant qu'aucune date n'est choisie
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, courts: e.courts, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, tentative: !!e.tentative, info: infoOf(e), id: e.id } : { on: false, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
+    // Toucher un jour crée toujours du NOUVEAU (rien n'est coché d'avance) ; un événement déjà placé se modifie par « Gérer »
+    for (const k of KINDS) m[k.key] = { on: false, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() };
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
   const already = events.filter((e) => e.startDate <= end && e.endDate >= start);
   const patch = (k: string, p: Partial<Sel>) => setSel((x) => ({ ...x, [k]: { ...x[k], ...p } }));
-  // « Un autre » du même type le même jour : on repart d'une fiche vide (l'événement déjà placé reste tel quel)
-  const addAnother = (k: string) => { setSel((x) => ({ ...x, [k]: { on: true, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() } })); if (k === "TOURNOI") setTourFlow(true); if (k === "EQUIPES") setMatchFlow(true); };
   const cats = TEAM_CATS.filter((c) => (counts[c.key] ?? c.def) > 0);
   const missing = sel.EQUIPES?.on && sel.EQUIPES.teams.length === 0 ? "Choisis au moins une équipe pour le match par équipes." : "";
   const noName = sel.AUTRE?.on && !(sel.AUTRE.title ?? "").trim() ? "Écris le nom de ton événement (ex. Repas des bénévoles)." : "";
@@ -1077,8 +1075,6 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 </button>
               ); })}
             </div>
-            {gk.filter((k) => !!sel[k.key]?.id).map((k) => (
-              <button key={`more-${k.key}`} type="button" className="btn-outline mt-2 bg-white hover:bg-ink hover:text-white" onClick={() => addAnother(k.key)}>＋ Ajouter un autre {k.label.toLowerCase()} le même jour</button>))}
             {on.map((k) => {
               const c = sel[k.key];
               return (
