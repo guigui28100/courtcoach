@@ -336,6 +336,37 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   const today = todayParis();
   const rows = days.slice(35).every((d) => d.slice(0, 7) !== month) ? days.slice(0, 35) : days;
+  // Chaque événement garde la MÊME ligne (« voie ») sur TOUS ses jours, d'une semaine à l'autre : une barre continue, qui ne se décale jamais à cause des autres événements.
+  // La voie est calculée une fois pour tout le mois affiché ; la barre est dessinée par semaine (elle s'arrête au dimanche et reprend le lundi, sur la même ligne).
+  // Les 3 premières voies sont montrées, le reste est compté « + N autres ».
+  type Seg = { e: ClubEvent; n: number; skip?: boolean };
+  const laneRows = new Map<string, (Seg | null)[]>();
+  const hiddenCount = new Map<string, number>();
+  const inGrid = events.filter((e) => rows.some((d) => covers(e, d)))
+    .map((e, i) => [e, i] as const)
+    .sort(([x, i], [y, j]) => (x.kind === "BULLE" ? 1 : 0) - (y.kind === "BULLE" ? 1 : 0) || x.startDate.localeCompare(y.startDate) || y.endDate.localeCompare(x.endDate) || (x.position ?? 0) - (y.position ?? 0) || i - j)
+    .map(([e]) => e);
+  const used: boolean[][] = []; // used[voie][jour de la grille]
+  const laneOfEv = new Map<string, number>();
+  for (const e of inGrid) {
+    const idx = rows.map((d, k) => (covers(e, d) ? k : -1)).filter((k) => k >= 0);
+    let l = 0; while ((used[l] ?? []).some((u, k) => u && idx.includes(k))) l++;
+    used[l] = used[l] ?? []; idx.forEach((k) => { used[l][k] = true; }); laneOfEv.set(e.id, l);
+  }
+  const nLanes = Math.min(3, used.length);
+  rows.forEach((d, g) => {
+    const k = g % 7; const wk = rows.slice(g - k, g - k + 7);
+    const row: (Seg | null)[] = [];
+    for (let l = 0; l < nLanes; l++) {
+      const e = inGrid.find((x) => laneOfEv.get(x.id) === l && covers(x, d));
+      if (!e) { row.push(null); continue; }
+      if (k > 0 && covers(e, wk[k - 1])) { row.push({ e, n: 1, skip: true }); continue; }
+      let n = 1; while (k + n < 7 && covers(e, wk[k + n])) n++;
+      row.push({ e, n });
+    }
+    laneRows.set(d, row);
+    hiddenCount.set(d, inGrid.filter((x) => (laneOfEv.get(x.id) ?? 0) >= 3 && covers(x, d)).length);
+  });
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#5e574a]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
@@ -349,12 +380,20 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
             <div key={d} data-cell={d} onClick={() => { if (justDragged.current) return; click(d); }}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 max-sm:p-1 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
               <button type="button" onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black max-sm:min-h-9 ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
-              <span className="grid gap-1">
-                {evs.slice(0, 3).map((e) => { const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
-                  {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
-                  className={"block w-full select-none rounded-md px-1 py-0.5 text-center max-sm:min-h-9 max-sm:text-base sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
-                  style={{ background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>{e.tentative ? "⏳" : ""}{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
-                {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
+              <span className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
+                {(laneRows.get(d) ?? []).map((seg, li) => {
+                  if (!seg) return <span key={"sp" + li} aria-hidden className="block h-9 max-sm:h-9" />;
+                  const e = seg.e; const n = seg.n; const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null;
+                  const lbl = `${e.tentative ? "⏳" : ""}${e.featured ? "⭐" : ""}${kindOf(e.kind).icon}`;
+                  // Un morceau DANS chaque case (la barre ne traverse jamais les bordures), toujours sur la même ligne ; le titre est répété dans chaque morceau
+                  return <button key={e.id + d} type="button" title={titleOf(e) + (e.tentative ? " (prévisionnel)" : "")} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
+                    {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
+                    className={"relative block h-9 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-[11px] font-bold leading-[14px] max-sm:leading-9 max-sm:text-base sm:px-1.5 py-[3px] max-sm:py-0 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                    style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
+                    <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></span>
+                  </button>;
+                })}
+                {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-extrabold text-ink">+{hiddenCount.get(d)} autres</span>}
               </span>
             </div>
           );
