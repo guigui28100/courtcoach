@@ -2,7 +2,7 @@ import { SERIF } from "./posterFonts";
 // Dossier de saison : un vrai document A4 (couverture, saison en un coup d'œil, une page par mois). Dessiné en HTML dans le navigateur, imprimé ou enregistré en PDF : rien n'est envoyé sur Internet.
 import type { CSSProperties, ReactNode } from "react";
 import { NoBreak } from "./NoBreak";
-import { addDays, ClubEvent, DAYS, kindOf, MONTHS, weekdayOf } from "../clubPlan";
+import { addDays, ClubEvent, evOn, DAYS, kindOf, MONTHS, weekdayOf } from "../clubPlan";
 import { inPeriod, nameOf } from "../clubExport";
 import { ClubLogo } from "./ui";
 
@@ -48,7 +48,7 @@ function Legend({ list }: { list: ClubEvent[] }) {
 function MiniMonth({ m, list }: { m: string; list: ClubEvent[] }) {
   const y = +m.slice(0, 4), mo = +m.slice(5, 7); const lead = weekdayOf(`${m}-01`); const nd = new Date(Date.UTC(y, mo, 0)).getUTCDate();
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: nd }, (_, i) => i + 1)]; while (cells.length % 7) cells.push(null);
-  const colorOf = (d: number) => { const ds = `${m}-${String(d).padStart(2, "0")}`; const e = list.find((x) => x.startDate <= ds && x.endDate >= ds && !kindOf(x.kind).key.startsWith("BULLE_")) ?? list.find((x) => x.startDate <= ds && x.endDate >= ds); return e ? kindOf(e.kind).color : ""; };
+  const colorOf = (d: number) => { const ds = `${m}-${String(d).padStart(2, "0")}`; const e = list.find((x) => evOn(x, ds) && !kindOf(x.kind).key.startsWith("BULLE_")) ?? list.find((x) => evOn(x, ds)); return e ? kindOf(e.kind).color : ""; };
   return (
     <div style={{ border: `2px solid ${LINE}`, borderRadius: 12, padding: "8px 10px", display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ fontSize: 13, fontWeight: 900, color: CLAY, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 3 }}>{monthLabel(m)}</div>
@@ -68,7 +68,7 @@ function BigMonth({ m, list }: { m: string; list: ClubEvent[] }) {
     <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gridTemplateRows: `auto repeat(${rows},minmax(0,1fr))`, border: `1.5px solid #ddd3c0` }}>
       {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => <div key={d} style={{ background: INK, color: "#fff", textAlign: "center", padding: 6, fontSize: 12, fontWeight: 800 }}>{d}</div>)}
       {cells.map((d, i) => {
-        const ds = d ? `${m}-${String(d).padStart(2, "0")}` : ""; const evs = d ? list.filter((e) => e.startDate <= ds && e.endDate >= ds && !kindOf(e.kind).key.startsWith("BULLE_")) : [];
+        const ds = d ? `${m}-${String(d).padStart(2, "0")}` : ""; const evs = d ? list.filter((e) => evOn(e, ds) && !kindOf(e.kind).key.startsWith("BULLE_")) : [];
         return (
           <div key={i} style={{ minHeight: 0, borderTop: `1.5px solid #ddd3c0`, borderLeft: i % 7 ? `1.5px solid #ddd3c0` : "none", padding: 4, background: !d ? "#f1ebdd" : i % 7 >= 5 ? "#faf6ee" : "#fff", overflow: "hidden", minWidth: 0 }}>
             {d && <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1 }}>{d}</div>}

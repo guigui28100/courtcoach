@@ -141,15 +141,23 @@ export class ClubService {
     return d;
   }
 
+  // jours sans événement : seulement des dates DANS la période, sans doublon, et jamais tous les jours
+  private skip(dto: ClubEventDto): string[] {
+    const all = [...new Set(dto.skipDays ?? [])].filter((d) => d >= dto.startDate && d <= dto.endDate).sort();
+    const nb = Math.round((Date.parse(dto.endDate) - Date.parse(dto.startDate)) / 86400000) + 1;
+    if (all.length >= nb) throw new BadRequestException("Il faut garder au moins un jour.");
+    return all;
+  }
+
   async create(dto: ClubEventDto) {
     const ev = await this.clean(dto); await this.check(ev, dto);
-    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, tentative: dto.tentative === true, ...this.posterData(dto) } });
+    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, tentative: dto.tentative === true, skipDays: this.skip(dto), ...this.posterData(dto) } });
   }
 
   async update(id: string, dto: ClubEventDto) {
     if (!(await this.prisma.clubEvent.findUnique({ where: { id } }))) throw new NotFoundException("Événement introuvable");
     const ev = await this.clean(dto); await this.check(ev, dto, id);
-    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...(dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...this.posterData(dto) } });
+    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...(dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...(dto.skipDays !== undefined ? { skipDays: this.skip(dto) } : {}), ...this.posterData(dto) } });
   }
 
   async remove(id: string) {
