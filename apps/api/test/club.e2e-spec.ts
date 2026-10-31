@@ -106,6 +106,12 @@ describe("Planning du club (réservé au coach)", () => {
     expect(g.formulas).toEqual([{ label: "Adhérent", price: "10 €", priceMember: "", detail: "repas compris", group: "6 à 17 ans" }, { label: "Non adhérent", price: "15 €", priceMember: "12 €", detail: "", group: "" }]); // la ligne vide est ignorée
     const h = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: false }).expect(200)).body;
     expect(h.formulas).toHaveLength(2); expect(h.time).toBe("9 h – 18 h"); expect(h.audience).toBe("8 à 12 ans"); // un simple ⭐ ne supprime pas les infos de l'affiche
+    const pv = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", tentative: true }).expect(200)).body;
+    expect(pv.tentative).toBe(true); // « ⏳ prévisionnel »
+    const pv2 = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: true }).expect(200)).body;
+    expect(pv2.tentative).toBe(true); // une autre modification (⭐) ne le valide pas par erreur
+    const pv3 = (await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", featured: false, tentative: false }).expect(200)).body;
+    expect(pv3.tentative).toBe(false); // validé
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", formulas: Array.from({ length: 9 }, (_, i) => ({ label: `F${i}`, price: "1 €" })) }).expect(400); // 8 au plus
     await A.coach.put(`/api/club/events/${d.id}`).set(ORIGIN).send({ kind: "TOURNOI", startDate: "2026-11-14", endDate: "2026-11-15", time: "x".repeat(601) }).expect(400);
     // horaires jour par jour (une ligne par jour) : jusqu'à 600 caractères, les retours à la ligne sont gardés

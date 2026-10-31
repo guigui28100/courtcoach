@@ -107,6 +107,11 @@ export function ClubPlan() {
     try { await put(`/club/events/${e.id}`, { kind: e.kind, title: e.title || undefined, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, who: e.who, note: e.note || undefined, featured: !e.featured, allowConflict: true }); await load(); } catch (x: any) { setErr(x.message || "Impossible de changer l'étoile."); }
   };
 
+  const toggleTentative = async (e: ClubEvent) => {
+    setErr("");
+    try { await put(`/club/events/${e.id}`, { kind: e.kind, title: e.title || undefined, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, who: e.who, note: e.note || undefined, featured: !!e.featured, tentative: !e.tentative, allowConflict: true }); setActionEv(null); await load(); } catch (x: any) { setErr(x.message || "Impossible de changer l'état."); }
+  };
+
   return (
     <Page>
       <div className="grid gap-3">
@@ -179,7 +184,7 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
       {recapEv && <RecapModal e={recapEv} events={events} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
@@ -248,7 +253,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                       <li key={e.id}>
                         <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
                           <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.tentative ? <small className="ml-1 font-normal text-muted">(prévisionnel)</small> : null}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
                         </button>
                       </li>
                     ))}
@@ -348,7 +353,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 {evs.slice(0, 3).map((e) => { const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null; return <button key={e.id} type="button" title={titleOf(e)} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                   {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
                   className={"block w-full select-none rounded-md px-1 py-0.5 text-center max-sm:min-h-9 max-sm:text-base sm:px-1.5 sm:text-left text-xs font-bold leading-tight underline-offset-2 hover:underline hover:brightness-95 [overflow-wrap:anywhere] " + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
-                  style={{ background: colorOf(e), color: textOn(colorOf(e)), boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
+                  style={{ background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>{e.tentative ? "⏳" : ""}{e.featured ? "⭐" : ""}{kindOf(e.kind).icon}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></button>; })}
                 {evs.length > 3 && <span className="text-xs font-extrabold text-ink">+{evs.length - 3} autres</span>}
               </span>
             </div>
@@ -368,7 +373,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 <button type="button" onClick={() => onEvent(e)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
                   <span aria-hidden className="mt-1 size-3 shrink-0 rounded-full" style={{ background: colorOf(e) }} />
                   <span className="min-w-0 flex-1">
-                    <b className="block text-ink [overflow-wrap:anywhere]">{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
+                    <b className="block text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span></b>
                     {e.who.length > 0 && <span className="block text-sm text-muted">👤 {e.who.join(", ")}</span>}
                     {e.note && <span className="mt-0.5 block whitespace-pre-line text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
                   </span>
@@ -452,7 +457,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
   };
   const save = async (allowConflict: boolean) => {
     setBusy(true); setErr("");
-    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
+    const body = { kind: d.kind, title: d.title.trim() || undefined, startDate: d.startDate, endDate: d.endDate, bands: d.bands, courts: d.courts, teams: d.teams, who: d.who, note: d.note.trim() || undefined, featured: !!d.featured, tentative: !!d.tentative, time: (d.time ?? "").trim(), place: (d.place ?? "").trim(), signup: (d.signup ?? "").trim(), formulas: (d.formulas ?? []).filter((f) => f.label.trim() || f.price.trim() || (f.priceMember ?? "").trim()), audience: (d.audience ?? "").trim(), bring: (d.bring ?? "").trim(), allowConflict };
     try { await (d.id ? put(`/club/events/${d.id}`, body) : post("/club/events", body)); onDone(); }
     catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
@@ -516,6 +521,10 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
+      </button>
+      <button type="button" role="checkbox" aria-checked={!!d.tentative} onClick={() => set({ tentative: !d.tentative })}
+        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>
+        <span aria-hidden className="text-lg">{d.tentative ? "⏳" : "✅"}</span> {d.tentative ? "Prévisionnel : pas encore validé (en gris)" : "Validé"}
       </button>
       {clashes.length > 0 && (
         <div role="alert" className="mb-3 rounded-xl border-2 border-[#C0392B] bg-[#fdecea] p-3 text-sm text-[#922b21]">
@@ -676,6 +685,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
+    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
@@ -795,6 +805,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
+    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
@@ -850,7 +861,7 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
 );
 }
 
-interface Sel { clubs?: Record<string, string>; title?: string; on: boolean; courts: number[]; who: string[]; teams: string[]; note: string; star: boolean; info: PosterInfo; id?: string }
+interface Sel { clubs?: Record<string, string>; title?: string; on: boolean; courts: number[]; who: string[]; teams: string[]; note: string; star: boolean; tentative?: boolean; info: PosterInfo; id?: string }
 // Match par équipes : deux gros boutons « à domicile » / « en déplacement » (on retouche pour effacer)
 function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -900,7 +911,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
   // Ce qui est coché au départ = les événements déjà placés exactement ce jour-là ; changer les dates NE touche PAS aux cases cochées
   const [sel, setSel] = useState<Record<string, Sel>>(() => {
     const m: Record<string, Sel> = {};
-    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, courts: e.courts, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, info: infoOf(e), id: e.id } : { on: false, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
+    for (const k of KINDS) { const e = events.find((x) => x.kind === k.key && x.startDate === day && x.endDate === (endInit ?? day)); m[k.key] = e ? { title: e.title ?? "", on: true, courts: e.courts, who: e.who, teams: e.teams, note: e.note ?? "", star: !!e.featured, tentative: !!e.tentative, info: infoOf(e), id: e.id } : { on: false, courts: [], who: [], teams: [], note: "", star: false, info: emptyInfo() }; }
     return m;
   });
   const placed = (k: string) => { const id = sel[k]?.id; return id ? events.find((x) => x.id === id) : undefined; };
@@ -925,10 +936,10 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
         const c = sel[k.key]; const old = placed(k.key);
         if (c.on && !old && k.key === "EQUIPES" && c.teams.length > 1) {
           // plusieurs équipes le même jour : UNE LIGNE PAR ÉQUIPE (chacune avec sa catégorie), mêmes infos communes ; l'étoile seulement sur la première
-          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, ...cleanInfo({ ...c.info, audience: c.clubs?.[t] ?? c.info.audience }) });
+          for (const [n, t] of c.teams.entries()) await post<ClubEvent>("/club/events", { kind: "EQUIPES", startDate: start, endDate: end, bands: [], courts: c.courts, teams: [t], who: c.who, note: c.note.trim() || undefined, featured: c.star && n === 0, tentative: !!c.tentative, ...cleanInfo({ ...c.info, audience: c.clubs?.[t] ?? c.info.audience }) });
         }
-        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
-        else if (c.on && old && (c.star !== !!old.featured || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, ...cleanInfo(c.info), allowConflict: true });
+        else if (c.on && !old) { const r = await post<ClubEvent>("/club/events", { kind: k.key, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: [], courts: k.key === "EQUIPES" ? c.courts : k.courts ?? [], teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info) }); if (!created && POSTER_KINDS.includes(k.key)) created = r; }
+        else if (c.on && old && (c.star !== !!old.featured || !!c.tentative !== !!old.tentative || (c.title ?? "").trim() !== (old.title ?? "").trim() || c.note.trim() !== (old.note ?? "").trim() || c.who.join() !== old.who.join() || c.teams.join() !== old.teams.join() || (k.key === "EQUIPES" && c.courts.join() !== old.courts.join()) || JSON.stringify(cleanInfo(c.info)) !== JSON.stringify(cleanInfo(infoOf(old))) || old.startDate !== start || old.endDate !== end)) await put(`/club/events/${old.id}`, { kind: old.kind, title: c.title?.trim() || undefined, startDate: start, endDate: end, bands: old.bands, courts: k.key === "EQUIPES" ? c.courts : old.courts, teams: c.teams, who: c.who, note: c.note.trim() || undefined, featured: c.star, tentative: !!c.tentative, ...cleanInfo(c.info), allowConflict: true });
         else if (!c.on && old) await del(`/club/events/${old.id}`);
       }
       onDone(created);
@@ -1010,6 +1021,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
+                    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
                     <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
                       className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
@@ -1195,10 +1207,12 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false }: { readOnly?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false }: { readOnly?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
+      {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-bold text-ink">⏳ Prévisionnel : pas encore validé</p>}
+      {!readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
       <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
