@@ -17,6 +17,7 @@ import { CourtLines } from "../components/CourtLines";
 import { AnimationForm, DayTimes, ChoiceField, emptyInfo, SURFACES, EventPosterFields, hasSimpleForm, isStage, isTournoi, PosterInfo } from "../components/EventPosterFields";
 import { usePartnerLogos } from "../sponsors";
 import { RecapModal } from "../components/RecapModal";
+import { ResultsModal } from "../components/ResultsModal";
 import { BgPicker } from "../components/PosterBackdrop";
 import { EventPoster, PosterLayout, PosterBg, PosterFormat, SIZES, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
@@ -58,6 +59,7 @@ export function ClubPlan() {
   const [askNew, setAskNew] = useState(false); // « Ajouter un événement » : on demande d'abord la date
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const nav = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -160,6 +162,7 @@ export function ClubPlan() {
           <div className="grid gap-2">
             {[
               ...([{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
+              ...([{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
               ...([{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
               ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
@@ -193,6 +196,7 @@ export function ClubPlan() {
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
       {exportOpen && <ExportModal events={events} season={season} month={month} onClose={() => setExportOpen(false)} />}
+      {resultsOpen && <ResultsModal events={events} onClose={() => setResultsOpen(false)} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
