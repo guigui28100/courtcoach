@@ -53,15 +53,17 @@ function BgGallery({ bg, anchor, onPick, onClose }: { bg: PosterBg; anchor: HTML
   const [cat, setCat] = useState<PhotoCat | "tous">(curCat ?? "tous");
   const [hover, setHover] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 420, maxH: 460 });
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width: number; maxH: number }>({ top: 0, left: 0, width: 420, maxH: 460 });
   useLayoutEffect(() => {
     const place = () => {
       if (!anchor) return;
       const r = anchor.getBoundingClientRect();
       const width = Math.min(window.innerWidth - 16, 440);
       const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
-      const top = r.bottom + 6;
-      setPos({ top, left, width, maxH: Math.max(260, window.innerHeight - top - 12) });
+      // Assez de place dessous : on s'ouvre dessous ; sinon on s'ouvre AU-DESSUS du bouton (jamais caché en bas de l'écran)
+      const below = window.innerHeight - r.bottom - 12, above = r.top - 12;
+      if (below >= 320 || below >= above) setPos({ top: r.bottom + 6, left, width, maxH: Math.max(200, below) });
+      else setPos({ bottom: window.innerHeight - r.top + 6, left, width, maxH: Math.max(200, above) });
     };
     place();
     window.addEventListener("resize", place); window.addEventListener("scroll", place, true);
@@ -86,7 +88,7 @@ function BgGallery({ bg, anchor, onPick, onClose }: { bg: PosterBg; anchor: HTML
     </button>
   );
   return createPortal(
-    <div ref={box} role="dialog" aria-label="Choisir un fond" style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxH }} className="z-[90] flex flex-col overflow-hidden rounded-xl border border-line bg-paper shadow-2xl">
+    <div ref={box} role="dialog" aria-label="Choisir un fond" style={{ position: "fixed", top: pos.top, bottom: pos.bottom, left: pos.left, width: pos.width, maxHeight: pos.maxH }} className="z-[90] flex flex-col overflow-hidden rounded-xl border border-line bg-paper shadow-2xl">
       <div className="flex flex-wrap gap-1 border-b border-line bg-white px-2.5 py-2" role="group" aria-label="Thèmes de fonds">
         {chip(cat === "tous", `Tous ${PHOTOS.length}`, () => setCat("tous"), "tous")}
         {PHOTO_CATS.map((c) => chip(cat === c.key, `${c.label} ${PHOTOS.filter((p) => p.cat === c.key).length}`, () => setCat(c.key), c.key))}
