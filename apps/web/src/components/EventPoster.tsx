@@ -143,7 +143,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const rowsEl = rows.length > 0 && (
-    <div data-fmt="infos" style={{ ...deco("infos"), display: "grid", gap: `${pi(18)} ${pi(40)}`, gridTemplateColumns: rows.length > 1 ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)", textAlign: F("infos").align ?? "left" }}>
+    <div data-fmt="infos" style={{ ...deco("infos"), display: "grid", gap: pi(22), gridTemplateColumns: "minmax(0,1fr)", textAlign: F("infos").align ?? "left" }}>
       {rows.map((r) => { const tb = tableOf(r.text); return (
         <div key={r.title} style={{ minWidth: 0, gridColumn: tb ? "1 / -1" : undefined, ...HALO }}>
           <div style={{ display: "flex", alignItems: "center", gap: pi(10), fontSize: pi(12), fontWeight: 800, letterSpacing: "0.2em", color: BRONZE, textTransform: "uppercase", borderBottom: `1px solid ${GOLDL}`, paddingBottom: pi(7) }}><Pic icon={r.icon} color={BRONZE} size={pi(24)} />{r.title}</div>
