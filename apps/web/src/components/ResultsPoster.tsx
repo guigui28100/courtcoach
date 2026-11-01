@@ -101,7 +101,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 </div>
                 <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "wrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4), flex: n > 0 && n <= 6 ? "1 1 40%" : "1 1 100%", minWidth: 0 }}>
+                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 40%" : "1 1 100%", minWidth: 0 }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
@@ -117,7 +117,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 {n > 0 && (() => {
                   const cols = colsOf(n); const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: n <= 6 ? "1 1 52%" : "1 1 100%", minWidth: 0, width: n <= 6 ? undefined : `calc(100% * var(--f))`, margin: "0 auto" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "1 1 52%", minWidth: 0, margin: "0 auto" }}>
                       {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}
