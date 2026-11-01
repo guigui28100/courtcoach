@@ -79,7 +79,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
 
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const hdH = big ? 112 : 96, ftH = big ? 96 : 84, partH = logos.length ? 84 : 0, px = big ? 56 : 44;
-  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, fontSize: `min(${p(big ? 84 : 66)}, ${Math.floor((w - px * 2 - 4) / (Math.max(...title.split(/\s+/).map((x) => x.length), 4) * 0.5))}px)` };
+  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, fontSize: `min(${p(big ? 54 : 44)}, ${Math.floor((w - px * 2 - 4) / (Math.max(...title.split(/\s+/).map((x) => x.length), 4) * 0.5))}px)` };
 
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } as CSSProperties}>
@@ -103,15 +103,15 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 </div>
                 <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "nowrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: n > 0 ? p(150) : 0 }}>
+                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: 0 }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
                       <div key={j}>
                         {newGroup && <div style={{ marginTop: j ? p(8) : 0, marginBottom: p(2), fontSize: p(17), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: c }}>{r.group}</div>}
-                        <div style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: j && !newGroup ? `1.5px solid ${LINE}` : "none", paddingTop: j && !newGroup ? p(4) : 0 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: p(14), borderTop: j && !newGroup ? `1.5px solid ${LINE}` : "none", paddingTop: j && !newGroup ? p(4) : 0 }}>
                           <span style={{ flex: "0 0 auto", minWidth: p(100), fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
-                          <b style={{ flex: "0 1 auto", fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
+                          <b style={{ flex: "1 1 auto", minWidth: 0, overflowWrap: "anywhere", fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
                         </div>
                       </div>); })}
                   </div>
@@ -119,7 +119,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 {n > 0 && (() => {
                   const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(56% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(40% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
                       {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", objectPosition: `${t.focus?.[j]?.[0] ?? 50}% ${t.focus?.[j]?.[1] ?? 50}%`, display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}
