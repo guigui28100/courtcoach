@@ -44,23 +44,6 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
     if (!confirm(`Supprimer « ${x.name} » ? Les photos enregistrées avec elle seront effacées de cet ordinateur.`)) return;
     try { await deleteDraft(x.id); if (draftId === x.id) setDraftId(null); void refreshDrafts(); } catch (e) { setMsg((e as Error).message); }
   };
-  // Passer d'un appareil à l'autre (téléphone ↔ ordinateur) : un fichier à s'envoyer soi-même (e-mail, WhatsApp…)
-  const exportDraft = (x: PosterDraft<Saved>) => {
-    const blob = new Blob([JSON.stringify({ courtcoach: "affiche-resultats", v: 1, name: x.name, data: x.data })], { type: "application/json" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `affiche-${x.name.replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40) || "resultats"}.courtcoach`;
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    setMsg("✔ Fichier enregistré dans tes téléchargements. Envoie-le-toi (e-mail, WhatsApp…), puis sur l'autre appareil : « Mes affiches enregistrées » › « Ouvrir un fichier ».");
-  };
-  const importDraft = async (file: File | undefined) => {
-    if (!file) return;
-    try {
-      const j = JSON.parse(await file.text());
-      if (j?.courtcoach !== "affiche-resultats" || !j.data?.d?.tournaments) throw new Error("Ce fichier n'est pas une affiche de résultats CourtCoach.");
-      const x = j.data as Saved; const name = String(j.name || "Affiche importée").slice(0, 80);
-      await saveDraft<Saved>({ id: newDraftId(), kind: "resultats", name, savedAt: Date.now(), data: x });
-      void refreshDrafts(); setMsg(`✔ « ${name} » est ajoutée à tes affiches enregistrées : touche « Reprendre ».`);
-    } catch (e) { setMsg((e as Error).message || "Fichier illisible."); }
-  };
   const planned = events.filter((e) => e.kind === "TOURNOI").sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 30);
   const setT = (i: number, p: Partial<ResultsTournament>) => setD((o) => ({ ...o, tournaments: o.tournaments.map((t, j) => (j === i ? { ...t, ...p } : t)) }));
   const addPhotos = async (i: number, files: FileList | null) => {
@@ -93,20 +76,17 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
             <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" aria-expanded={showDrafts} onClick={() => { setShowDrafts((o) => !o); void refreshDrafts(); }}>📂 Mes affiches enregistrées{drafts?.length ? ` (${drafts.length})` : ""}</button>
           </div>
           {draftId && <p className="m-0 text-xs font-bold text-ink">✏️ Tu travailles sur « {draftName} » : « Enregistrer » la met à jour.</p>}
-          {showDrafts && (<div>
-            <label className="btn-outline mb-2 inline-flex cursor-pointer items-center">📥 Ouvrir un fichier (venant d'un autre appareil)
-              <input type="file" accept=".courtcoach,application/json" className="sr-only" aria-label="Ouvrir un fichier d'affiche" onChange={(e) => { void importDraft(e.target.files?.[0]); e.target.value = ""; }} /></label>
+          {showDrafts && (
             <ul className="m-0 grid list-none gap-2 p-0">
               {drafts && drafts.length === 0 && <li className="text-sm text-muted">Aucune affiche enregistrée pour l'instant.</li>}
               {(drafts ?? []).map((x) => (
                 <li key={x.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-[#fbf8f2] p-2">
                   <span className="min-w-0 flex-1 [overflow-wrap:anywhere]"><b className="text-ink">{x.name}</b><br /><small className="text-muted">{x.data.d.tournaments.length} tournoi{x.data.d.tournaments.length > 1 ? "s" : ""} · {new Date(x.savedAt).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</small></span>
                   <button type="button" className="btn-clay" onClick={() => openDraft(x)}>Reprendre</button>
-                  <button type="button" className="btn-outline" aria-label={`Enregistrer ${x.name} dans un fichier`} onClick={() => exportDraft(x)}>📤 Fichier</button>
                   <button type="button" className="btn-outline" aria-label={`Supprimer ${x.name}`} onClick={() => void removeDraft(x)}>🗑️</button>
                 </li>))}
-            </ul></div>)}
-          <p className="m-0 text-xs text-muted">Gardé seulement dans ce navigateur, sur cet appareil (photos comprises) : rien n'est envoyé sur Internet, donc un travail fait sur le téléphone n'apparaît pas sur l'ordinateur. Pour le passer d'un appareil à l'autre : « 📤 Fichier », envoie-toi le fichier, puis « 📥 Ouvrir un fichier » sur l'autre appareil.</p>
+            </ul>)}
+          <p className="m-0 text-xs text-muted">Gardé seulement dans ce navigateur, sur cet ordinateur (photos comprises) : rien n'est envoyé sur Internet. Si tu effaces les données du navigateur ou si tu changes d'ordinateur, il faudra tout refaire.</p>
         </section>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <div className="grid min-w-0 content-start gap-3">
