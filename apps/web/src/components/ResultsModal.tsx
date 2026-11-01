@@ -10,12 +10,12 @@ import { deleteOnline, listOnline, loadOnline, OnlineInfo, saveOnline } from "./
 import { emptyResults, emptyTournament, MAX_PHOTOS_EACH, MAX_PHOTOS_TOTAL, MAX_RESULT_LINES, MAX_TOURNAMENTS, RESULTS_SIZES, ResultsData, ResultsFormat, ResultsPoster, ResultsTournament } from "./ResultsPoster";
 
 // Vignette « cadre » : la photo remplit le cadre, on la fait glisser pour montrer la partie qui manque (jamais de vide)
-function PhotoFrame({ src, alt, focus, onFocus }: { src: string; alt: string; focus: [number, number]; onFocus: (x: number, y: number) => void }) {
+function PhotoFrame({ src, alt, focus, zoom = 1, onFocus }: { src: string; alt: string; focus: [number, number]; zoom?: number; onFocus: (x: number, y: number) => void }) {
   const drag = useRef<{ x: number; y: number; fx: number; fy: number; ox: number; oy: number } | null>(null);
   const down = (e: React.PointerEvent<HTMLDivElement>) => {
     const box = e.currentTarget.getBoundingClientRect(), img = e.currentTarget.firstElementChild as HTMLImageElement;
     const iw = img.naturalWidth || 1, ih = img.naturalHeight || 1, k = Math.max(box.width / iw, box.height / ih);
-    drag.current = { x: e.clientX, y: e.clientY, fx: focus[0], fy: focus[1], ox: Math.max(1, iw * k - box.width), oy: Math.max(1, ih * k - box.height) };
+    drag.current = { x: e.clientX, y: e.clientY, fx: focus[0], fy: focus[1], ox: Math.max(1, iw * k * zoom - box.width), oy: Math.max(1, ih * k * zoom - box.height) };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -24,7 +24,7 @@ function PhotoFrame({ src, alt, focus, onFocus }: { src: string; alt: string; fo
   };
   return (
     <div role="img" aria-label={alt} className="aspect-[4/3] w-28 cursor-grab touch-none overflow-hidden rounded-lg active:cursor-grabbing" onPointerDown={down} onPointerMove={move} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
-      <img src={src} alt="" draggable={false} className="size-full select-none object-cover" style={{ objectPosition: `${focus[0]}% ${focus[1]}%` }} />
+      <img src={src} alt="" draggable={false} className="size-full select-none object-cover" style={{ objectPosition: `${focus[0]}% ${focus[1]}%`, transform: `scale(${zoom})`, transformOrigin: `${focus[0]}% ${focus[1]}%` }} />
     </div>
   );
 }
@@ -168,20 +168,26 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
                 </div>
                 <div>
                   <p className="m-0 mb-1 text-sm font-bold text-ink">📷 Photos de ce tournoi <span className="font-normal text-muted">({t.photos.length} sur {MAX_PHOTOS_EACH})</span></p>
-                  {t.photos.length > 0 && <p className="m-0 mb-2 text-xs text-muted">Une tête est coupée ? Fais glisser la photo avec le doigt ou la souris (vers le bas pour faire apparaître le haut), ou avec les flèches ◀ ▲ ▼ ▶ : elle reste toujours dans son cadre.</p>}
+                  {t.photos.length > 0 && <p className="m-0 mb-2 text-xs text-muted">Une tête est coupée ? Fais glisser la photo avec le doigt ou la souris (vers le bas pour faire apparaître le haut), ou avec les flèches ◀ ▲ ▼ ▶ : ➕ grossit la photo. Elle reste toujours dans son cadre.</p>}
                   <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
                     {t.photos.map((s, j) => { const fo = t.focus?.[j] ?? [50, 50]; const setFocus = (x: number, y: number) => { const f = t.photos.map((_, m) => t.focus?.[m] ?? [50, 50]); f[j] = [Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y))]; setT(i, { focus: f as [number, number][] }); };
                       // La photo reste toujours dans son cadre : on la FAIT GLISSER (au doigt, à la souris ou avec les flèches) pour montrer la partie qui manque
+                      const zo = t.zoom?.[j] ?? 1; const setZoom = (v: number) => { const z = t.photos.map((_, m) => t.zoom?.[m] ?? 1); z[j] = Math.max(1, Math.min(3, Math.round(v * 4) / 4)); setT(i, { zoom: z }); };
                       const slide = (dx: number, dy: number) => setFocus(fo[0] - dx, fo[1] - dy);
                       const B = "grid size-8 place-items-center rounded-md border border-line bg-white text-sm font-bold hover:bg-sand";
                       return (
-                      <li key={j} className="relative w-28"><PhotoFrame src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} focus={fo} onFocus={setFocus} />
-                        <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j), focus: (t.focus ?? []).filter((_, m) => m !== j) })}>🗑️</button>
+                      <li key={j} className="relative w-28"><PhotoFrame src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} focus={fo} zoom={zo} onFocus={setFocus} />
+                        <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j), focus: (t.focus ?? []).filter((_, m) => m !== j), zoom: (t.zoom ?? []).filter((_, m) => m !== j) })}>🗑️</button>
                         <div className="mt-1 flex justify-between" role="group" aria-label={`Faire glisser la photo ${j + 1}`}>
                           <button type="button" className={B} aria-label="Glisser la photo vers la gauche" onClick={() => slide(-12, 0)}>◀</button>
                           <button type="button" className={B} aria-label="Glisser la photo vers le haut" onClick={() => slide(0, -12)}>▲</button>
                           <button type="button" className={B} aria-label="Glisser la photo vers le bas" onClick={() => slide(0, 12)}>▼</button>
                           <button type="button" className={B} aria-label="Glisser la photo vers la droite" onClick={() => slide(12, 0)}>▶</button>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between" role="group" aria-label={`Taille de la photo ${j + 1}`}>
+                          <button type="button" className={B} aria-label="Réduire la photo" disabled={zo <= 1} onClick={() => setZoom(zo - 0.25)}>➖</button>
+                          <span className="text-xs text-muted">{zo === 1 ? "taille normale" : `×${zo}`}</span>
+                          <button type="button" className={B} aria-label="Grossir la photo" disabled={zo >= 3} onClick={() => setZoom(zo + 0.25)}>➕</button>
                         </div></li>); })}
                     {t.photos.length < MAX_PHOTOS_EACH && d.tournaments.reduce((a, x) => a + x.photos.length, 0) < MAX_PHOTOS_TOTAL && (
                       <li><label className="grid size-20 cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-xl" aria-hidden>📷</span>Ajouter</span>
