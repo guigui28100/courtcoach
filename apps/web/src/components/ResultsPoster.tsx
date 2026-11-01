@@ -99,17 +99,17 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                   <div style={{ fontFamily: SERIF, fontSize: p(big ? 42 : 36), fontWeight: 700, lineHeight: 1.05, color: c, overflowWrap: "break-word", minWidth: 0 }}>{t.name.trim() || "Tournoi"}</div>
                   {t.when.trim() && <div style={{ fontSize: p(19), fontWeight: 800, color: MUTED, whiteSpace: "nowrap" }}>{t.when.trim()}</div>}
                 </div>
-                <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "nowrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 40%" : "1 1 100%", minWidth: 0 }}>
+                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: n > 0 ? p(150) : 0 }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
                       <div key={j}>
                         {newGroup && <div style={{ marginTop: j ? p(8) : 0, marginBottom: p(2), fontSize: p(17), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: c }}>{r.group}</div>}
                         <div style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: j && !newGroup ? `1.5px solid ${LINE}` : "none", paddingTop: j && !newGroup ? p(4) : 0 }}>
-                          <span style={{ flex: "0 0 34%", fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
-                          <b style={{ flex: 1, fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
+                          <span style={{ flex: "0 0 auto", minWidth: p(100), fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
+                          <b style={{ flex: "0 1 auto", fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
                         </div>
                       </div>); })}
                   </div>
@@ -117,7 +117,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 {n > 0 && (() => {
                   const cols = colsOf(n); const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "1 1 52%", minWidth: 0, margin: "0 auto" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(60% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
                       {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}
