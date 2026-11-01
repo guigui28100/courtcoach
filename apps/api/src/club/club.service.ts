@@ -158,7 +158,11 @@ export class ClubService {
   async update(id: string, dto: ClubEventDto, bureau = false) {
     const cur = await this.prisma.clubEvent.findUnique({ where: { id } });
     if (!cur) throw new NotFoundException("Événement introuvable");
-    if (bureau && !cur.tentative) throw new ForbiddenException("Cet événement est validé : seuls le coach et le président peuvent le modifier.");
+    if (bureau && !cur.tentative) {
+      // événement validé : le bureau ne touche qu'aux textes de l'AFFICHE (nom, description, horaires, lieu, tarifs…), jamais aux dates ni au reste
+      if (dto.kind !== cur.kind || dto.startDate !== cur.startDate || dto.endDate !== cur.endDate) throw new ForbiddenException("Cet événement est validé : seuls le coach et le président peuvent changer ses dates.");
+      return this.prisma.clubEvent.update({ where: { id }, data: { title: (dto.title ?? "").trim(), note: dto.note ?? "", ...this.posterData(dto) } });
+    }
     const ev = await this.clean(dto); await this.check(ev, dto, id);
     return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: bureau ? cur.featured : dto.featured === true, ...(bureau ? { tentative: true } : dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...(dto.skipDays !== undefined ? { skipDays: this.skip(dto) } : {}), ...this.posterData(dto) } });
   }

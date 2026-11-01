@@ -1301,7 +1301,7 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>}
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>}
-        {readOnly && !e.tentative && <p className="m-0 text-sm text-muted">Cet événement est validé : seuls le coach et le président peuvent le modifier. Tu peux quand même créer son affiche.</p>}
+        {readOnly && !e.tentative && <p className="m-0 text-sm text-muted">Cet événement est validé : seuls le coach et le président changent ses dates. Tu peux modifier toutes les infos de son affiche.</p>}
       </div>
     </Modal>
   );

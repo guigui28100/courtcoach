@@ -81,7 +81,10 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
       expect(q.tentative).toBe(true); expect(q.featured).toBe(false);
       await A[k].delete(`/api/club/events/${p.id}`).set(ORIGIN).expect(200);
       // mais jamais toucher à un événement déjà validé
-      await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev()).expect(403);
+      await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ startDate: "2026-10-12", endDate: "2026-10-13" })).expect(403);
+      // ... sauf les textes de l'affiche, qu'il peut changer sur un événement validé (dates, validation et mise en avant restent intacts)
+      const af = (await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ title: "Tournoi du club (modifié)", time: "9 h – 18 h", tentative: true, featured: true })).expect(200)).body;
+      expect(af.time).toBe("9 h – 18 h"); expect(af.tentative).toBe(false); expect(af.featured).toBe(false); expect(af.startDate).toBe("2026-10-10");
       await A[k].delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(403);
       await A[k].put("/api/club/events-order").set(ORIGIN).send({ ids: [e.id, "x"] }).expect(403);
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
