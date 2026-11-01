@@ -31,6 +31,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   BUREAU: [
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
+    { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/mot-de-passe", label: "Mon mot de passe", short: "Mot de passe", icon: "shield" },
   ],
   ADULT: [{ to: "/espace", label: "Mon espace", icon: "home" }],

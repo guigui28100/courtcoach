@@ -26,8 +26,8 @@ describe("Partenaires du club : coach et président seulement", () => {
   });
   afterAll(async () => { await clean(); await app.close(); });
 
-  it("bureau, entraîneur, adulte et famille n'ont aucun accès", async () => {
-    for (const k of ["bureau", "adulte", "entraineur", "parent"]) {
+  it("entraîneur, adulte et famille n'ont aucun accès", async () => {
+    for (const k of ["adulte", "entraineur", "parent"]) {
       await A[k].get("/api/sponsors").expect(403);
       await A[k].post("/api/sponsors").set(ORIGIN).send({ name: "X" }).expect(403);
       await A[k].put("/api/sponsors/x").set(ORIGIN).send({ name: "X" }).expect(403);
@@ -78,7 +78,10 @@ describe("Partenaires du club : coach et président seulement", () => {
     // les formules de partenariat acceptent aussi les lignes libres
     const o = await A.coach.put("/api/sponsors/offer").set(ORIGIN).send({ intro: "Bonjour", facts: [], packs: [{ name: "Or", price: "", perks: ["BACHE", "X:Un tournoi à votre nom ", "X:Un tournoi à votre nom"] }] }).expect(200);
     expect(o.body.packs[0].perks).toEqual(["BACHE", "X:Un tournoi à votre nom"]);
-    // le bureau n'a toujours aucun accès
-    await A.bureau.post("/api/sponsors").set(ORIGIN).send({ name: "X", perks: ["X:test"] }).expect(403);
+    // le bureau a l'accès COMPLET aux partenaires (voir, créer, modifier, supprimer)
+    const b = (await A.bureau.post("/api/sponsors").set(ORIGIN).send({ name: "Garage du bureau", perks: ["X:test"] }).expect(201)).body;
+    await A.bureau.get("/api/sponsors").expect(200);
+    await A.bureau.put(`/api/sponsors/${b.id}`).set(ORIGIN).send({ name: "Garage du bureau 2", perks: ["X:test"] }).expect(200);
+    await A.bureau.delete(`/api/sponsors/${b.id}`).set(ORIGIN).expect(200);
   });
 });

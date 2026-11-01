@@ -161,7 +161,7 @@ export function ClubPlan() {
             {[
               ...([{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
-              ...(readOnly ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
+              ...([{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
               ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
             ].map((o) => (
               <button key={o.t} type="button" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 text-left hover:border-ink" onClick={() => { setMoreOpen(false); o.go(); }}>
