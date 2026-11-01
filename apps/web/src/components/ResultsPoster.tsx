@@ -119,7 +119,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 {n > 0 && (() => {
                   const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(50% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(40% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
                       {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", objectPosition: `${t.focus?.[j]?.[0] ?? 50}% ${t.focus?.[j]?.[1] ?? 50}%`, display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}

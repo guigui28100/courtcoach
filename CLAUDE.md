@@ -753,3 +753,5 @@
 - AFFICHE DE RÉSULTATS, LE TEXTE NE PASSE PLUS SOUS LES PHOTOS (1/11/2026, signalé par le coach : « le texte passe sous les photos, c'est mal organisé ») : la zone des photos prend 50 % de la largeur (avant 56 %) ; dans la colonne des résultats, la ligne « Vainqueur / nom » peut passer à la ligne (le nom passe sous le mot « Vainqueur » s'il est long) au lieu de déborder (`ResultsPoster.tsx`). Contrôlé avec un nom très long. Aucun changement du serveur.
 
 - AFFICHE DE RÉSULTATS, TITRE MOINS GROS (1/11/2026, demandé par le coach : « résultats des vacances ou du week-end est trop gros ») : le titre en haut passe de 84 à 54 px (portrait et carré) et de 66 à 44 px (A4) avant le réglage automatique (`titleStyle` dans `ResultsPoster.tsx`) ; la place gagnée va aux tournois. Aucun changement du serveur.
+
+- AFFICHE DE RÉSULTATS, PHOTOS PLUS PETITES (1/11/2026, demandé par le coach : « tu peux réduire la taille de la photo aussi ») : la zone des photos prend 40 % de la largeur (avant 50 %) ; elles restent toutes de la même taille (`ResultsPoster.tsx`). Aucun changement du serveur.
