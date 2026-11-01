@@ -126,10 +126,19 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
                 </div>
                 <div>
                   <p className="m-0 mb-1 text-sm font-bold text-ink">📷 Photos de ce tournoi <span className="font-normal text-muted">({t.photos.length} sur {MAX_PHOTOS_EACH})</span></p>
+                  {t.photos.length > 0 && <p className="m-0 mb-2 text-xs text-muted">Un visage est coupé ? Déplace la photo avec les flèches ◀ ▲ ▼ ▶ : la vignette montre ce qui apparaîtra sur l’affiche.</p>}
                   <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-                    {t.photos.map((s, j) => (
-                      <li key={j} className="relative"><img src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} className="size-20 rounded-lg object-cover" />
-                        <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j) })}>🗑️</button></li>))}
+                    {t.photos.map((s, j) => { const fo = t.focus?.[j] ?? [50, 50]; const move = (dx: number, dy: number) => { const f = t.photos.map((_, m) => t.focus?.[m] ?? [50, 50]); f[j] = [Math.max(0, Math.min(100, fo[0] + dx)), Math.max(0, Math.min(100, fo[1] + dy))]; setT(i, { focus: f as [number, number][] }); };
+                      const B = "grid size-8 place-items-center rounded-md border border-line bg-white text-sm font-bold hover:bg-sand";
+                      return (
+                      <li key={j} className="relative w-28"><img src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} className="aspect-[4/3] w-28 rounded-lg object-cover" style={{ objectPosition: `${fo[0]}% ${fo[1]}%` }} />
+                        <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j), focus: (t.focus ?? []).filter((_, m) => m !== j) })}>🗑️</button>
+                        <div className="mt-1 flex justify-between" role="group" aria-label={`Déplacer la photo ${j + 1}`}>
+                          <button type="button" className={B} aria-label="Montrer plus à gauche" onClick={() => move(-12, 0)}>◀</button>
+                          <button type="button" className={B} aria-label="Montrer plus en haut" onClick={() => move(0, -12)}>▲</button>
+                          <button type="button" className={B} aria-label="Montrer plus en bas" onClick={() => move(0, 12)}>▼</button>
+                          <button type="button" className={B} aria-label="Montrer plus à droite" onClick={() => move(12, 0)}>▶</button>
+                        </div></li>); })}
                     {t.photos.length < MAX_PHOTOS_EACH && d.tournaments.reduce((a, x) => a + x.photos.length, 0) < MAX_PHOTOS_TOTAL && (
                       <li><label className="grid size-20 cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-xl" aria-hidden>📷</span>Ajouter</span>
                         <input aria-label={`Ajouter des photos au tournoi ${i + 1}`} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(i, x.target.files); x.target.value = ""; }} /></label></li>)}
