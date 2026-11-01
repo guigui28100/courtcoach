@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Backdrop } from "./PosterBackdrop";
 import { SERIF } from "./posterFonts";
@@ -13,21 +13,46 @@ export interface ResultsTournament { name: string; when: string; results: { what
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
 export const emptyResults = (): ResultsData => ({ headline: "Résultats du week-end", tournaments: [emptyTournament()], message: "" });
-export const MAX_TOURNAMENTS = 6, MAX_PHOTOS_EACH = 3, MAX_RESULT_LINES = 14;
+export const MAX_TOURNAMENTS = 6, MAX_PHOTOS_EACH = 12, MAX_PHOTOS_TOTAL = 24, MAX_RESULT_LINES = 14;
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
 const NAVY = "#17140f", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a", ACC = "#8a5a1a";
 const COLORS = ["#8a5a1a", "#4a6d8f", "#3f7a56", "#6f5588", "#b3261e", "#1d2f55"];
 
+// Forme réelle de chaque photo (largeur / hauteur), pour l'afficher ENTIÈRE, sans la couper
+const aspectCache = new Map<string, number>();
+function useAspects(srcs: string[]): number[] {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    for (const src of srcs) {
+      if (aspectCache.has(src)) continue;
+      const i = new Image();
+      i.onload = () => { if (i.naturalWidth && i.naturalHeight) { aspectCache.set(src, i.naturalWidth / i.naturalHeight); if (alive) tick((n) => n + 1); } };
+      i.src = src;
+    }
+    return () => { alive = false; };
+  }, [srcs.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+  return srcs.map((x) => aspectCache.get(x) ?? 1.5);
+}
+
 export function ResultsPoster({ format, data, partners, bg = "" }: { format: ResultsFormat; data: ResultsData; partners?: string[]; bg?: string }) {
   const { w, h } = RESULTS_SIZES[format]; const big = w > 900;
   const list = data.tournaments.map((t) => ({ ...t, results: t.results.filter((r) => r.what.trim() || r.result.trim()) })).filter((t) => t.name.trim() || t.results.length || t.photos.length);
   const logos = partners ?? [];
+  const allPhotos = list.flatMap((t) => t.photos.slice(0, MAX_PHOTOS_EACH));
+  const aspects = useAspects(allPhotos);
+  let aIdx = 0;
+  // Beaucoup de photos : rangées de 4 au plus, rangées plus basses quand il y en a beaucoup (le texte garde sa taille)
+  const rowsOf = (n: number) => { const r = Math.max(1, Math.ceil(n / 4)), per = Math.ceil(n / r); return Array.from({ length: r }, (_, i) => Math.min(per, n - i * per)).filter((x) => x > 0); };
+  const totalRows = list.reduce((a, t) => a + (t.photos.length ? rowsOf(Math.min(t.photos.length, MAX_PHOTOS_EACH)).length : 0), 0);
+  const baseRow = big ? 300 : 230;
+  const maxRow = Math.max(80, Math.min(baseRow, Math.round(baseRow * 4 / Math.max(totalRows, 1))));
   const title = data.headline.trim() || "Résultats";
 
   // On mesure le contenu, puis on l'agrandit ou on le réduit pour remplir la place libre (comme les autres affiches)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
-  const sig = JSON.stringify([format, data, logos.length, bg]);
+  const sig = JSON.stringify([format, data, logos.length, bg, aspects.map((a) => Math.round(a * 100))]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -35,10 +60,10 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight; if (hh <= 0) break;
-        const next = Math.max(0.4, Math.min(1.5, kk * (avail * 0.96) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        const next = Math.max(0.3, Math.min(1.5, kk * (avail * 0.96) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
       el.style.setProperty("--k", String(kk));
-      for (let i = 0; i < 14 && inner.scrollHeight > avail && kk > 0.35; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
+      for (let i = 0; i < 14 && inner.scrollHeight > avail && kk > 0.25; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
       inner.style.height = "100%"; setK(kk);
     };
     run();
@@ -83,11 +108,21 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                       </div>); })}
                   </div>
                 )}
-                {n > 0 && (
-                  <div style={{ display: "grid", gap: p(8), gridTemplateColumns: `repeat(${n}, 1fr)`, height: p(big ? 190 : 150), borderRadius: 10, overflow: "hidden" }}>
-                    {t.photos.slice(0, n).map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />)}
-                  </div>
-                )}
+                {n > 0 && (() => {
+                  const asp = t.photos.slice(0, n).map(() => aspects[aIdx++] ?? 1.5);
+                  let at = 0;
+                  return (
+                    <div style={{ display: "grid", gap: p(8) }}>
+                      {rowsOf(n).map((cnt, r) => {
+                        const row = asp.slice(at, at + cnt), srcs = t.photos.slice(at, at + cnt); at += cnt;
+                        const sum = row.reduce((a, b) => a + b, 0);
+                        return (
+                          <div key={r} style={{ display: "flex", gap: p(8), justifyContent: "center", alignItems: "flex-start", width: `min(100%, calc(${maxRow}px * var(--k) * ${sum} + ${p(8)} * ${cnt - 1}))`, margin: "0 auto" }}>
+                            {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ flex: `${row[j]} 1 0`, minWidth: 0, aspectRatio: String(row[j]), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
+                          </div>);
+                      })}
+                    </div>);
+                })()}
               </div>);
           })}
           {data.message.trim() && <p style={{ margin: 0, flexShrink: 0, borderLeft: `6px solid ${ACC}`, paddingLeft: p(16), fontSize: p(22), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word", whiteSpace: "pre-line" }}>{glue(data.message.trim())}</p>}

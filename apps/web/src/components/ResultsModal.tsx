@@ -6,7 +6,7 @@ import { posterToPdf, posterToPng } from "./exportPoster";
 import { fullRange } from "./ClubPoster";
 import { photoFromFile } from "./RecapPoster";
 import { deleteDraft, listDrafts, newDraftId, PosterDraft, saveDraft } from "./posterDrafts";
-import { emptyResults, emptyTournament, MAX_PHOTOS_EACH, MAX_RESULT_LINES, MAX_TOURNAMENTS, RESULTS_SIZES, ResultsData, ResultsFormat, ResultsPoster, ResultsTournament } from "./ResultsPoster";
+import { emptyResults, emptyTournament, MAX_PHOTOS_EACH, MAX_PHOTOS_TOTAL, MAX_RESULT_LINES, MAX_TOURNAMENTS, RESULTS_SIZES, ResultsData, ResultsFormat, ResultsPoster, ResultsTournament } from "./ResultsPoster";
 
 const field = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal";
 const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -48,7 +48,7 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
   const setT = (i: number, p: Partial<ResultsTournament>) => setD((o) => ({ ...o, tournaments: o.tournaments.map((t, j) => (j === i ? { ...t, ...p } : t)) }));
   const addPhotos = async (i: number, files: FileList | null) => {
     if (!files) return; setMsg("");
-    try { const t = d.tournaments[i]; const room = MAX_PHOTOS_EACH - t.photos.length; const list = await Promise.all(Array.from(files).slice(0, room).map(photoFromFile)); setT(i, { photos: [...t.photos, ...list] }); if (files.length > room) setMsg(`${MAX_PHOTOS_EACH} photos au plus par tournoi.`); }
+    try { const t = d.tournaments[i]; const used = d.tournaments.reduce((a, x) => a + x.photos.length, 0); const room = Math.max(0, Math.min(MAX_PHOTOS_EACH - t.photos.length, MAX_PHOTOS_TOTAL - used)); const list = await Promise.all(Array.from(files).slice(0, room).map(photoFromFile)); setT(i, { photos: [...t.photos, ...list] }); if (files.length > room) setMsg(`${MAX_PHOTOS_EACH} photos au plus par tournoi et ${MAX_PHOTOS_TOTAL} sur toute l'affiche : les autres n'ont pas été ajoutées.`); }
     catch (x) { setMsg((x as Error).message); }
   };
   const save = async (kind: "png" | "pdf") => {
@@ -130,7 +130,7 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
                     {t.photos.map((s, j) => (
                       <li key={j} className="relative"><img src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} className="size-20 rounded-lg object-cover" />
                         <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j) })}>🗑️</button></li>))}
-                    {t.photos.length < MAX_PHOTOS_EACH && (
+                    {t.photos.length < MAX_PHOTOS_EACH && d.tournaments.reduce((a, x) => a + x.photos.length, 0) < MAX_PHOTOS_TOTAL && (
                       <li><label className="grid size-20 cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-xl" aria-hidden>📷</span>Ajouter</span>
                         <input aria-label={`Ajouter des photos au tournoi ${i + 1}`} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(i, x.target.files); x.target.value = ""; }} /></label></li>)}
                   </ul>
