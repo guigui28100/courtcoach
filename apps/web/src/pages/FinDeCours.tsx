@@ -3,9 +3,8 @@ import { Link } from "react-router-dom";
 import { del, get, put } from "../api";
 import { StarLine, StarLinesEditor, starItems, starLinesError, activeLines } from "../components/Stars";
 import { offDayReason } from "../schoolDays";
-import { parseDictation } from "../dictation";
 import { Avatar, BackLink, Empty, Err, Page, PageHead } from "../components/ui";
-import { CourseStar, QUALITIES, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
+import { CourseStar, currentSeason, fullName, Goal, goalApplies, Player, todayIso, trimesterOf } from "../types";
 
 type Row = { lines: StarLine[]; had: boolean; dirty?: boolean };
 const EMPTY: Row = { lines: [], had: false };
@@ -20,17 +19,6 @@ export default function FinDeCours() {
   const [sel, setSel] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [dict, setDict] = useState("");
-  const [awake, setAwake] = useState(false);
-  // Écran toujours allumé pendant le cours (si le téléphone le permet) ; il se remet en route quand on revient sur la page
-  useEffect(() => {
-    if (!awake) return;
-    let lock: { release: () => Promise<void> } | null = null, stop = false;
-    const ask = async () => { try { lock = await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }).wakeLock.request("screen"); if (stop) lock?.release(); } catch { /* refusé : tant pis */ } };
-    const back = () => { if (document.visibilityState === "visible") ask(); };
-    ask(); document.addEventListener("visibilitychange", back);
-    return () => { stop = true; document.removeEventListener("visibilitychange", back); lock?.release().catch(() => {}); };
-  }, [awake]);
   useEffect(() => { get<Player[]>("/players").then(setPlayers).catch(() => setPlayers([])); }, []);
   // On recharge ce qui a déjà été donné ce jour-là (pour pouvoir corriger) et les missions du trimestre de ce cours
   useEffect(() => {
@@ -73,33 +61,6 @@ export default function FinDeCours() {
       return true;
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); return false; } finally { setBusy(false); }
   }
-  const dictResults = (players ?? []).length && dict.trim() ? parseDictation(dict, (players ?? []).map((p) => ({ id: p.id, firstName: p.firstName })), (id) => goals[id] ?? []) : [];
-  const dictOk = dictResults.filter((x) => x.ok);
-  // Remplit les fiches avec ce que la dictée a compris (rien n'est enregistré avant « Enregistrer »)
-  function applyDict() {
-    setRows((all) => {
-      const next = { ...all };
-      for (const x of dictOk) {
-        const cur = next[x.playerId!] ?? EMPTY, l = x.line!, lines = [...cur.lines];
-        if (l.goalId) {
-          const g = (goals[x.playerId!] ?? []).find((y) => y.id === l.goalId)!;
-          const entry: StarLine = { stars: l.stars, reason: "", domain: g.axis.toLowerCase(), comment: l.comment, goalId: g.id };
-          const i = lines.findIndex((y) => y.goalId === g.id);
-          if (i >= 0) lines[i] = { ...lines[i], ...entry }; else lines.push(entry);
-        } else {
-          const q = QUALITIES.find((y) => y.key === l.quality)!;
-          const entry: StarLine = { stars: l.stars, reason: l.stars < 0 ? "neg-" + q.reason : q.reason, domain: q.domain, comment: l.comment };
-          const i = lines.findIndex((y) => !y.goalId && (y.reason === q.reason || y.reason === "neg-" + q.reason));
-          if (i >= 0) lines[i] = entry; else lines.push(entry);
-        }
-        next[x.playerId!] = { ...cur, lines, dirty: true };
-      }
-      return next;
-    });
-    const first = dictOk[0]?.playerId; if (first) setSel(first);
-    setDict("");
-    setMsg({ ok: true, text: `✍️ ${dictOk.length} ligne${dictOk.length > 1 ? "s" : ""} remplie${dictOk.length > 1 ? "s" : ""} : vérifie puis enregistre.` });
-  }
   const dirtyPlayers = (players ?? []).filter((p) => rows[p.id]?.dirty);
   const save = () => saveRows(dirtyPlayers);
 
@@ -113,30 +74,6 @@ export default function FinDeCours() {
         </div>
         {players === null && <div className="skeleton h-32" role="status" aria-label="Chargement en cours" />}
         {players && !players.length && <Empty>Aucun joueur pour l'instant.</Empty>}
-        {players && players.length > 0 && (
-          <details className="card grid gap-2" open={dict.length > 0}>
-            <summary className="cursor-pointer font-bold">✍️ Dictée rapide : une phrase par joueur</summary>
-            <p className="hint m-0">Écris, ou dicte avec le micro de ton clavier. Exemple : <em>« Léo revers plus deux, il a ouvert la raquette. Nina attitude +1. »</em> Le site remplit les fiches ; rien n'est enregistré tant que tu ne l'as pas décidé. Si une étoile est en moins, dis aussi pourquoi.</p>
-            <label className="sr-only" htmlFor="fc-dict">Dictée du cours</label>
-            <textarea id="fc-dict" className="input min-h-24" value={dict} onChange={(e) => setDict(e.target.value)} placeholder="Léo revers +2 bien placé. Nina service moins un, elle regarde ailleurs." />
-            {dictResults.length > 0 && (
-              <ul className="m-0 grid list-none gap-2 p-0" aria-live="polite">
-                {dictResults.map((x, i) => (
-                  <li key={i} className={"grid gap-0.5 rounded-xl border-2 p-3 " + (x.ok ? "border-line bg-white" : "border-[#e0b100] bg-[#fff3b0]")}>
-                    {x.ok ? <span className="font-bold">{x.playerName} · {x.label} · <span className={x.line!.stars < 0 ? "text-bad" : "text-ok"}>{x.line!.stars > 0 ? "+" : "−"}{Math.abs(x.line!.stars)} ⭐</span></span>
-                      : <span className="font-bold">⚠️ « {x.raw} »</span>}
-                    {x.ok && x.line!.comment && <small className="text-muted">💬 {x.line!.comment}</small>}
-                    {!x.ok && <small className="font-bold text-ink">{x.warn}</small>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-clay" disabled={!dictOk.length} onClick={applyDict}>{dictOk.length ? `Remplir ${dictOk.length} ligne${dictOk.length > 1 ? "s" : ""}${dictResults.length > dictOk.length ? " (les phrases en jaune sont laissées)" : ""}` : "Rien à remplir pour l'instant"}</button>
-              {"wakeLock" in navigator && <label className="flex min-h-11 items-center gap-2 font-bold"><input type="checkbox" checked={awake} onChange={(e) => setAwake(e.target.checked)} /> Garder l'écran allumé pendant le cours</label>}
-            </div>
-          </details>
-        )}
         {players && players.length > 0 && (
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Joueurs du cours">
             {players.map((p) => { const r = rows[p.id] ?? EMPTY; const on = (sel ?? players[0].id) === p.id; return (

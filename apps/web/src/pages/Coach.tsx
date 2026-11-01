@@ -1,6 +1,5 @@
 import { HOLIDAYS_WARN_DAYS, holidaysDaysLeft, holidaysLastDay } from "../schoolDays";
 import { ClubNotice } from "../components/MyClubEvents";
-import { QuickSearch } from "../components/QuickSearch";
 import { PendingReports } from "../components/TournamentReports";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -255,7 +254,6 @@ export function CoachHome() {
               <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
             </div>
           </header>
-          <QuickSearch players={d.players} />
           <ClubNotice />
           <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Chiffres du jour">
             {stat(todos.length, todos.length > 1 ? "À faire" : "À faire", "text-[#c9ad77]")}
