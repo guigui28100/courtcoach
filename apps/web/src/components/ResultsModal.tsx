@@ -11,6 +11,7 @@ const field = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm
 const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
   <button type="button" aria-pressed={on} onClick={onClick} className={`rounded-xl border-2 px-3 py-2 text-sm font-bold ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
 );
+const YOUTH = ["Garçons 8/10 ans", "Garçons 11/12 ans", "Garçons 13/14 ans", "Garçons 15/18 ans", "Filles 8/10 ans", "Filles 11/12 ans", "Filles 13/14 ans", "Filles 15/18 ans"];
 const QUICK = ["🥇 Vainqueur", "🥈 Finaliste", "Demi-finalistes", "👏 Bravo à"];
 
 // Fenêtre de l'affiche « Résultats de plusieurs tournois » : RIEN n'est enregistré ni envoyé, tout reste dans cette fenêtre.
@@ -68,11 +69,17 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
                 <div className="grid gap-2">
                   {t.results.map((r, j) => (
                     <div key={j} className="flex gap-2">
+                      {r.group && (j === 0 || t.results[j - 1].group !== r.group) && <span className="grid min-w-24 place-items-center rounded-xl bg-[#efe8da] px-2 text-center text-xs font-extrabold text-ink">{r.group}</span>}
                       <input aria-label={`Tournoi ${i + 1}, résultat ${j + 1} : quoi`} className={field} maxLength={40} placeholder="Quoi (ex. Finale)" value={r.what} onChange={(x) => setT(i, { results: t.results.map((o, m) => (m === j ? { ...o, what: x.target.value } : o)) })} />
                       <input aria-label={`Tournoi ${i + 1}, résultat ${j + 1} : résultat`} className={field} maxLength={120} placeholder={r.what.includes("Bravo") ? "Les prénoms" : "Résultat (ex. Paul, 6-4 6-3)"} value={r.result} onChange={(x) => setT(i, { results: t.results.map((o, m) => (m === j ? { ...o, result: x.target.value } : o)) })} />
                       <button type="button" className="btn-outline" aria-label={`Retirer le résultat ${j + 1}`} onClick={() => setT(i, { results: t.results.filter((_, m) => m !== j) })}>🗑️</button>
                     </div>))}
                   {t.results.length < MAX_RESULT_LINES && <div className="flex flex-wrap gap-2">{QUICK.map((a) => <button key={a} type="button" className="btn-outline" onClick={() => setT(i, { results: [...t.results, { what: a, result: "" }] })}>＋ {a}</button>)}<button type="button" className="btn-outline" onClick={() => setT(i, { results: [...t.results, { what: "", result: "" }] })}>＋ Autre ligne</button></div>}
+                  {t.results.length + 2 <= MAX_RESULT_LINES && (
+                    <select aria-label={`Tournoi ${i + 1} : ajouter une catégorie de jeunes avec vainqueur et finaliste`} className={field} value="" onChange={(x) => { const g = x.target.value; if (g) setT(i, { results: [...t.results, { what: "🥇 Vainqueur", result: "", group: g }, { what: "🥈 Finaliste", result: "", group: g }] }); }}>
+                      <option value="">＋ Une catégorie de jeunes (vainqueur et finaliste)…</option>
+                      {YOUTH.map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>)}
                 </div>
                 <div>
                   <p className="m-0 mb-1 text-sm font-bold text-ink">📷 Photos de ce tournoi <span className="font-normal text-muted">({t.photos.length} sur {MAX_PHOTOS_EACH})</span></p>

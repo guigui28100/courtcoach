@@ -9,11 +9,11 @@ import { NoBreak } from "./NoBreak";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type ResultsFormat = "PORTRAIT" | "CARRE" | "A4";
 export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { PORTRAIT: { w: 1080, h: 1350 }, CARRE: { w: 1080, h: 1080 }, A4: { w: 794, h: 1123 } };
-export interface ResultsTournament { name: string; when: string; results: { what: string; result: string }[]; photos: string[] }
+export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[] }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
 export const emptyResults = (): ResultsData => ({ headline: "", tournaments: [emptyTournament()], message: "" });
-export const MAX_TOURNAMENTS = 6, MAX_PHOTOS_EACH = 3, MAX_RESULT_LINES = 6;
+export const MAX_TOURNAMENTS = 6, MAX_PHOTOS_EACH = 3, MAX_RESULT_LINES = 14;
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
 const NAVY = "#17140f", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a", ACC = "#8a5a1a";
@@ -71,11 +71,16 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 </div>
                 {t.results.length > 0 && (
                   <div style={{ display: "grid", gap: p(4) }}>
-                    {t.results.map((r, j) => (
-                      <div key={j} style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: j ? `1.5px solid ${LINE}` : "none", paddingTop: j ? p(4) : 0 }}>
-                        <span style={{ flex: "0 0 34%", fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
-                        <b style={{ flex: 1, fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
-                      </div>))}
+                    {t.results.map((r, j) => {
+                      const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
+                      return (
+                      <div key={j}>
+                        {newGroup && <div style={{ marginTop: j ? p(8) : 0, marginBottom: p(2), fontSize: p(17), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: c }}>{r.group}</div>}
+                        <div style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: j && !newGroup ? `1.5px solid ${LINE}` : "none", paddingTop: j && !newGroup ? p(4) : 0 }}>
+                          <span style={{ flex: "0 0 34%", fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
+                          <b style={{ flex: 1, fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
+                        </div>
+                      </div>); })}
                   </div>
                 )}
                 {n > 0 && (
