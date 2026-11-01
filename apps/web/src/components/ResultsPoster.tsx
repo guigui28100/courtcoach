@@ -42,29 +42,34 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
   const logos = partners ?? [];
   const allPhotos = list.flatMap((t) => t.photos.slice(0, MAX_PHOTOS_EACH));
   const aspects = useAspects(allPhotos);
-  let aIdx = 0;
-  // Beaucoup de photos : rangées de 4 au plus, rangées plus basses quand il y en a beaucoup (le texte garde sa taille)
-  const rowsOf = (n: number) => { const r = Math.max(1, Math.ceil(n / 4)), per = Math.ceil(n / r); return Array.from({ length: r }, (_, i) => Math.min(per, n - i * per)).filter((x) => x > 0); };
-  const totalRows = list.reduce((a, t) => a + (t.photos.length ? rowsOf(Math.min(t.photos.length, MAX_PHOTOS_EACH)).length : 0), 0);
-  const baseRow = big ? 300 : 230;
-  const maxRow = Math.max(80, Math.min(baseRow, Math.round(baseRow * 4 / Math.max(totalRows, 1))));
+  // Toutes les photos ont la MÊME taille : une grille régulière, dont la forme suit la forme habituelle des photos (moins de découpe)
+  const sortedA = [...aspects].sort((x, y) => x - y);
+  const cellAsp = Math.max(0.8, Math.min(1.5, sortedA.length ? sortedA[Math.floor(sortedA.length / 2)] : 1.33));
+  const colsOf = (n: number) => (n <= 1 ? 1 : n === 2 || n === 4 ? 2 : n >= 10 ? 4 : 3);
   const title = data.headline.trim() || "Résultats";
 
   // On mesure le contenu, puis on l'agrandit ou on le réduit pour remplir la place libre (comme les autres affiches)
-  const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
+  const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1); const [f, setF] = useState(1);
   const sig = JSON.stringify([format, data, logos.length, bg, aspects.map((a) => Math.round(a * 100))]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
       const inner = el.firstElementChild as HTMLElement; if (!inner) return;
-      const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
-      for (let i = 0; i < 4; i++) {
-        el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight; if (hh <= 0) break;
-        const next = Math.max(0.3, Math.min(1.5, kk * (avail * 0.96) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
-      }
-      el.style.setProperty("--k", String(kk));
-      for (let i = 0; i < 14 && inner.scrollHeight > avail && kk > 0.25; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
-      inner.style.height = "100%"; setK(kk);
+      const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); inner.style.height = "auto";
+      const fitK = () => {
+        let kk = 1;
+        for (let i = 0; i < 4; i++) {
+          el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight; if (hh <= 0) break;
+          const next = Math.max(0.3, Math.min(1.5, kk * (avail * 0.96) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        }
+        el.style.setProperty("--k", String(kk));
+        for (let i = 0; i < 14 && inner.scrollHeight > avail && kk > 0.25; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
+        return kk;
+      };
+      // Photos d'abord à pleine largeur ; on ne les rétrécit que si le texte devenait trop petit
+      let ff = 1, kk = 1;
+      for (const cand of [1, 0.85, 0.7, 0.58, 0.46, 0.36]) { ff = cand; el.style.setProperty("--f", String(ff)); kk = fitK(); if (kk >= 0.8) break; }
+      inner.style.height = "100%"; setK(kk); setF(ff);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
@@ -83,7 +88,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
         <div style={{ marginLeft: "auto", background: ACC, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>RÉSULTATS</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${ACC},${GOLD})` }} />
-      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${big ? 24 : 18}px ${px}px ${big ? 20 : 14}px`, ["--k" as any]: k }}>
+      <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${big ? 24 : 18}px ${px}px ${big ? 20 : 14}px`, ["--k" as any]: k, ["--f" as any]: f }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(12) }}>
           <div style={{ flexShrink: 0 }}><div role="heading" aria-level={1} style={titleStyle}>{title}</div></div>
           {list.map((t, i) => {
@@ -94,35 +99,29 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                   <div style={{ fontFamily: SERIF, fontSize: p(big ? 42 : 36), fontWeight: 700, lineHeight: 1.05, color: c, overflowWrap: "break-word", minWidth: 0 }}>{t.name.trim() || "Tournoi"}</div>
                   {t.when.trim() && <div style={{ fontSize: p(19), fontWeight: 800, color: MUTED, whiteSpace: "nowrap" }}>{t.when.trim()}</div>}
                 </div>
+                <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "nowrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4) }}>
+                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: n > 0 ? p(150) : 0 }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
                       <div key={j}>
                         {newGroup && <div style={{ marginTop: j ? p(8) : 0, marginBottom: p(2), fontSize: p(17), fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: c }}>{r.group}</div>}
                         <div style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: j && !newGroup ? `1.5px solid ${LINE}` : "none", paddingTop: j && !newGroup ? p(4) : 0 }}>
-                          <span style={{ flex: "0 0 34%", fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
-                          <b style={{ flex: 1, fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
+                          <span style={{ flex: "0 0 auto", minWidth: p(100), fontSize: p(19), fontWeight: 800, color: MUTED }}>{r.what}</span>
+                          <b style={{ flex: "0 1 auto", fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
                         </div>
                       </div>); })}
                   </div>
                 )}
                 {n > 0 && (() => {
-                  const asp = t.photos.slice(0, n).map(() => aspects[aIdx++] ?? 1.5);
-                  let at = 0;
+                  const cols = colsOf(n); const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gap: p(8) }}>
-                      {rowsOf(n).map((cnt, r) => {
-                        const row = asp.slice(at, at + cnt), srcs = t.photos.slice(at, at + cnt); at += cnt;
-                        const sum = row.reduce((a, b) => a + b, 0);
-                        return (
-                          <div key={r} style={{ display: "flex", gap: p(8), justifyContent: "center", alignItems: "flex-start", width: `min(100%, calc(${maxRow}px * var(--k) * ${sum} + ${p(8)} * ${cnt - 1}))`, margin: "0 auto" }}>
-                            {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ flex: `${row[j]} 1 0`, minWidth: 0, aspectRatio: String(row[j]), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
-                          </div>);
-                      })}
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(60% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
+                      {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}
+                </div>
               </div>);
           })}
           {data.message.trim() && <p style={{ margin: 0, flexShrink: 0, borderLeft: `6px solid ${ACC}`, paddingLeft: p(16), fontSize: p(22), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word", whiteSpace: "pre-line" }}>{glue(data.message.trim())}</p>}
