@@ -17,7 +17,6 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
     { to: "/coach/club/partenaires", label: "Partenaires (sponsoring)", short: "Sponsors", icon: "star" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
-    { to: "/v2", label: "Essayer la V2 (aperçu)", short: "V2", icon: "star" },
   ],
   TRAINER: [
     { to: "/coach/centre", label: "Mes jeunes · Centre", short: "Jeunes", icon: "users" },
