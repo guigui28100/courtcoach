@@ -66,7 +66,7 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
     await A.coach.post("/api/club-access/invitations").set(ORIGIN).send({ email: "bureau@club.fr", role: "BUREAU" }).expect(409);
   });
 
-  it("le président gère le planning du club ; le bureau le voit sans rien pouvoir modifier", async () => {
+  it("le président gère le planning du club ; le bureau le voit et propose seulement des événements prévisionnels", async () => {
     const e = (await A.president.post("/api/club/events").set(ORIGIN).send(ev({ title: "Tournoi du club" })).expect(201)).body;
     await A.president.put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ title: "Tournoi du club (modifié)" })).expect(200);
     await A.president.put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(200);
@@ -74,8 +74,17 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
     for (const k of ["bureau", "bureau2"]) {
       const plan = (await A[k].get("/api/club/plan").expect(200)).body;
       expect(plan.events.map((x: { title: string }) => x.title)).toEqual(["Tournoi du club (modifié)"]);
-      await A[k].post("/api/club/events").set(ORIGIN).send(ev()).expect(403);
-      await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev()).expect(403);
+      // le bureau PROPOSE : tout ce qu'il place est prévisionnel, jamais mis en avant, même s'il essaie de le valider
+      const p = (await A[k].post("/api/club/events").set(ORIGIN).send(ev({ title: "Idée du bureau", tentative: false, featured: true, startDate: "2027-01-10", endDate: "2027-01-10" })).expect(201)).body;
+      expect(p.tentative).toBe(true); expect(p.featured).toBe(false);
+      const q = (await A[k].put(`/api/club/events/${p.id}`).set(ORIGIN).send(ev({ title: "Idée du bureau 2", tentative: false, featured: true, startDate: "2027-01-10", endDate: "2027-01-10" })).expect(200)).body;
+      expect(q.tentative).toBe(true); expect(q.featured).toBe(false);
+      await A[k].delete(`/api/club/events/${p.id}`).set(ORIGIN).expect(200);
+      // mais jamais toucher à un événement déjà validé
+      await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ startDate: "2026-10-12", endDate: "2026-10-13" })).expect(403);
+      // ... sauf les textes de l'affiche, qu'il peut changer sur un événement validé (dates, validation et mise en avant restent intacts)
+      const af = (await A[k].put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ title: "Tournoi du club (modifié)", time: "9 h – 18 h", tentative: true, featured: true })).expect(200)).body;
+      expect(af.time).toBe("9 h – 18 h"); expect(af.tentative).toBe(false); expect(af.featured).toBe(false); expect(af.startDate).toBe("2026-10-10");
       await A[k].delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(403);
       await A[k].put("/api/club/events-order").set(ORIGIN).send({ ids: [e.id, "x"] }).expect(403);
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);

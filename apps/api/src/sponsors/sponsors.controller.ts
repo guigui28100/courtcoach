@@ -4,8 +4,8 @@ import { Roles } from "../common/decorators";
 import { OfferDto, SponsorDto } from "./sponsors.dto";
 import { SponsorsService } from "./sponsors.service";
 
-// Partenaires du club : le coach et le président seulement (le bureau, les entraîneurs, les adultes et les familles : 403)
-@Roles(Role.COACH, Role.PRESIDENT)
+// Partenaires du club : le coach, le président et le bureau (accès complet) ; les entraîneurs, les adultes et les familles : 403)
+@Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU)
 @Controller("sponsors")
 export class SponsorsController {
   constructor(private readonly svc: SponsorsService) {}

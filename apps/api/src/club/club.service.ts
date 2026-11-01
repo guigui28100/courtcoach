@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { nowParis } from "../profs/planning";
 import { clashesWith, CLAY_COURTS, MAX_TEAMS, PlanEvent, TEAM_CATS } from "./club.constants";
@@ -149,18 +149,27 @@ export class ClubService {
     return all;
   }
 
-  async create(dto: ClubEventDto) {
+  // bureau : tout ce qu'il place est PRÉVISIONNEL et jamais « mis en avant » (le coach et le président valident)
+  async create(dto: ClubEventDto, bureau = false) {
     const ev = await this.clean(dto); await this.check(ev, dto);
-    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, tentative: dto.tentative === true, skipDays: this.skip(dto), ...this.posterData(dto) } });
+    return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: !bureau && dto.featured === true, tentative: bureau || dto.tentative === true, skipDays: this.skip(dto), ...this.posterData(dto) } });
   }
 
-  async update(id: string, dto: ClubEventDto) {
-    if (!(await this.prisma.clubEvent.findUnique({ where: { id } }))) throw new NotFoundException("Événement introuvable");
+  async update(id: string, dto: ClubEventDto, bureau = false) {
+    const cur = await this.prisma.clubEvent.findUnique({ where: { id } });
+    if (!cur) throw new NotFoundException("Événement introuvable");
+    if (bureau && !cur.tentative) {
+      // événement validé : le bureau ne touche qu'aux textes de l'AFFICHE (nom, description, horaires, lieu, tarifs…), jamais aux dates ni au reste
+      if (dto.kind !== cur.kind || dto.startDate !== cur.startDate || dto.endDate !== cur.endDate) throw new ForbiddenException("Cet événement est validé : seuls le coach et le président peuvent changer ses dates.");
+      return this.prisma.clubEvent.update({ where: { id }, data: { title: (dto.title ?? "").trim(), note: dto.note ?? "", ...this.posterData(dto) } });
+    }
     const ev = await this.clean(dto); await this.check(ev, dto, id);
-    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: dto.featured === true, ...(dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...(dto.skipDays !== undefined ? { skipDays: this.skip(dto) } : {}), ...this.posterData(dto) } });
+    return this.prisma.clubEvent.update({ where: { id }, data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: bureau ? cur.featured : dto.featured === true, ...(bureau ? { tentative: true } : dto.tentative !== undefined ? { tentative: dto.tentative } : {}), ...(dto.skipDays !== undefined ? { skipDays: this.skip(dto) } : {}), ...this.posterData(dto) } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, bureau = false) {
+    // bureau : seulement un événement encore prévisionnel
+    if (bureau) { const cur = await this.prisma.clubEvent.findUnique({ where: { id } }); if (cur && !cur.tentative) throw new ForbiddenException("Cet événement est validé : seuls le coach et le président peuvent le supprimer."); }
     const r = await this.prisma.clubEvent.deleteMany({ where: { id } });
     if (!r.count) throw new NotFoundException("Événement introuvable");
     return { deleted: true };

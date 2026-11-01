@@ -5,7 +5,7 @@ import { CurrentUser, Roles } from "../common/decorators";
 import { ClubEventDto, PeopleDto, ScheduleDto, ReorderDto, TeamCountsDto } from "./club.dto";
 import { ClubService } from "./club.service";
 
-// Planning du club : le coach et le président le gèrent ; les membres du bureau le VOIENT seulement (lecture) ; aucun accès pour les entraîneurs, les adultes ni les familles
+// Planning du club : le coach et le président le gèrent ; les membres du bureau le VOIENT et peuvent PROPOSER des événements, toujours « prévisionnels » (seuls le coach et le président valident) ; aucun accès pour les entraîneurs, les adultes ni les familles
 @Roles(Role.COACH, Role.PRESIDENT)
 @Controller("club")
 export class ClubController {
@@ -22,7 +22,7 @@ export class ClubController {
   @Put("teams") @HttpCode(200) teams(@Body() dto: TeamCountsDto) { return this.svc.setTeams(dto.counts); }
   @Put("people") @HttpCode(200) people(@Body() dto: PeopleDto) { return this.svc.setPeople(dto.people); }
   @Put("events-order") @HttpCode(200) reorder(@Body() dto: ReorderDto) { return this.svc.reorder(dto.ids); }
-  @Post("events") create(@Body() dto: ClubEventDto) { return this.svc.create(dto); }
-  @Put("events/:id") @HttpCode(200) update(@Param("id") id: string, @Body() dto: ClubEventDto) { return this.svc.update(id, dto); }
-  @Delete("events/:id") remove(@Param("id") id: string) { return this.svc.remove(id); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Post("events") create(@Body() dto: ClubEventDto, @CurrentUser() u: AuthUser) { return this.svc.create(dto, u.role === Role.BUREAU); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Put("events/:id") @HttpCode(200) update(@Param("id") id: string, @Body() dto: ClubEventDto, @CurrentUser() u: AuthUser) { return this.svc.update(id, dto, u.role === Role.BUREAU); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Delete("events/:id") remove(@Param("id") id: string, @CurrentUser() u: AuthUser) { return this.svc.remove(id, u.role === Role.BUREAU); }
 }
