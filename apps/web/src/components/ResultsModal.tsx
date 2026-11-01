@@ -5,6 +5,7 @@ import { usePartnerLogos } from "../sponsors";
 import { posterToPdf, posterToPng } from "./exportPoster";
 import { fullRange } from "./ClubPoster";
 import { photoFromFile } from "./RecapPoster";
+import { deleteDraft, listDrafts, newDraftId, PosterDraft, saveDraft } from "./posterDrafts";
 import { emptyResults, emptyTournament, MAX_PHOTOS_EACH, MAX_RESULT_LINES, MAX_TOURNAMENTS, RESULTS_SIZES, ResultsData, ResultsFormat, ResultsPoster, ResultsTournament } from "./ResultsPoster";
 
 const field = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal";
@@ -24,6 +25,25 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
   const holder = useRef<HTMLDivElement>(null);
   const { w, h } = RESULTS_SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.5, (window.innerWidth < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w, window.innerWidth < 768 ? 9 : (window.innerHeight - 260) / h)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w, h]);
+  // Brouillons : « Enregistrer mon travail » puis « Reprendre » plus tard (dans ce navigateur seulement)
+  type Saved = { d: ResultsData; format: ResultsFormat; bg: string; withPartners: boolean };
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [drafts, setDrafts] = useState<PosterDraft<Saved>[] | null>(null);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const refreshDrafts = async () => { try { setDrafts(await listDrafts<Saved>("resultats")); } catch (x) { setDrafts([]); setMsg((x as Error).message); } };
+  useEffect(() => { void refreshDrafts(); }, []);
+  const saveWork = async () => {
+    const name = draftName.trim() || d.headline.trim() || "Affiche de résultats";
+    const id = draftId ?? newDraftId();
+    try { await saveDraft<Saved>({ id, kind: "resultats", name, savedAt: Date.now(), data: { d, format, bg, withPartners } }); setDraftId(id); setDraftName(name); setMsg(`✔ « ${name} » est enregistrée sur cet ordinateur. Tu pourras la reprendre avec « Mes affiches enregistrées ».`); void refreshDrafts(); }
+    catch (x) { setMsg((x as Error).message); }
+  };
+  const openDraft = (x: PosterDraft<Saved>) => { setD(x.data.d); setFormat(x.data.format); setBg(x.data.bg); setWithPartners(x.data.withPartners); setDraftId(x.id); setDraftName(x.name); setShowDrafts(false); setMsg(`✔ « ${x.name} » est rouverte.`); };
+  const removeDraft = async (x: PosterDraft<Saved>) => {
+    if (!confirm(`Supprimer « ${x.name} » ? Les photos enregistrées avec elle seront effacées de cet ordinateur.`)) return;
+    try { await deleteDraft(x.id); if (draftId === x.id) setDraftId(null); void refreshDrafts(); } catch (e) { setMsg((e as Error).message); }
+  };
   const planned = events.filter((e) => e.kind === "TOURNOI").sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 30);
   const setT = (i: number, p: Partial<ResultsTournament>) => setD((o) => ({ ...o, tournaments: o.tournaments.map((t, j) => (j === i ? { ...t, ...p } : t)) }));
   const addPhotos = async (i: number, files: FileList | null) => {
@@ -49,6 +69,25 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
           <summary role="note" className="cursor-pointer font-bold">⚠️ Avant de publier : seulement les photos d'enfants dont les parents ont donné le droit à l'image</summary>
           <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Pour les enfants, écris seulement le prénom. <b>Rien n'est enregistré</b> : les photos et les noms restent dans cette fenêtre. Si tu la fermes, il faudra tout refaire.</p>
         </details>
+        <section aria-label="Enregistrer mon travail" className="mb-3 grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input aria-label="Nom de cette affiche" className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Nom pour la retrouver (ex. Résultats vacances de Toussaint)" value={draftName} onChange={(x) => setDraftName(x.target.value)} />
+            <button type="button" className="btn-clay" onClick={() => void saveWork()}>💾 Enregistrer mon travail</button>
+            <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" aria-expanded={showDrafts} onClick={() => { setShowDrafts((o) => !o); void refreshDrafts(); }}>📂 Mes affiches enregistrées{drafts?.length ? ` (${drafts.length})` : ""}</button>
+          </div>
+          {draftId && <p className="m-0 text-xs font-bold text-ink">✏️ Tu travailles sur « {draftName} » : « Enregistrer » la met à jour.</p>}
+          {showDrafts && (
+            <ul className="m-0 grid list-none gap-2 p-0">
+              {drafts && drafts.length === 0 && <li className="text-sm text-muted">Aucune affiche enregistrée pour l'instant.</li>}
+              {(drafts ?? []).map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-[#fbf8f2] p-2">
+                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]"><b className="text-ink">{x.name}</b><br /><small className="text-muted">{x.data.d.tournaments.length} tournoi{x.data.d.tournaments.length > 1 ? "s" : ""} · {new Date(x.savedAt).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</small></span>
+                  <button type="button" className="btn-clay" onClick={() => openDraft(x)}>Reprendre</button>
+                  <button type="button" className="btn-outline" aria-label={`Supprimer ${x.name}`} onClick={() => void removeDraft(x)}>🗑️</button>
+                </li>))}
+            </ul>)}
+          <p className="m-0 text-xs text-muted">Gardé seulement dans ce navigateur, sur cet ordinateur (photos comprises) : rien n'est envoyé sur Internet. Si tu effaces les données du navigateur ou si tu changes d'ordinateur, il faudra tout refaire.</p>
+        </section>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <div className="grid min-w-0 content-start gap-3">
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Titre de l'affiche : choix rapide">
@@ -100,10 +139,6 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
             {d.tournaments.length < MAX_TOURNAMENTS && <button type="button" className="btn-outline justify-self-start" onClick={() => setD({ ...d, tournaments: [...d.tournaments, emptyTournament()] })}>＋ Ajouter un tournoi</button>}
             <label className="text-sm font-bold text-ink">Un mot de remerciement <span className="font-normal text-muted">(facultatif)</span>
               <textarea aria-label="Mot de remerciement" rows={2} maxLength={200} className={`${field} mt-1`} value={d.message} onChange={(x) => setD({ ...d, message: x.target.value })} /></label>
-            <details className="rounded-2xl border-2 border-line bg-white p-3">
-              <summary className="cursor-pointer text-base font-extrabold text-ink">🎨 Fond <span className="text-xs font-normal text-muted">(facultatif)</span></summary>
-              <div className="mt-3"><BgPicker bg={bg} onChange={setBg} /></div>
-            </details>
           </div>
           <div className="min-w-0 md:sticky md:top-0 md:self-start">
             <div className="mb-3 flex flex-wrap justify-center gap-2">
@@ -112,6 +147,7 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
               <Pill on={format === "A4"} onClick={() => setFormat("A4")}>📄 A4 (à imprimer)</Pill>
               {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Remercier les partenaires</Pill>}
             </div>
+            <div className="mb-1 flex justify-center"><BgPicker bg={bg} onChange={setBg} /></div>
             <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
               <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><ResultsPoster format={format} data={d} partners={withPartners ? logos : []} bg={bg} /></div>
             </div>
