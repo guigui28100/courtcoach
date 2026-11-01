@@ -1,6 +1,9 @@
 import { YVELINES_CLUBS } from "../yvelinesClubs";
 import { RANKINGS } from "../types";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+
+// Membre du bureau : il PROPOSE des événements, toujours prévisionnels ; le coach et le président les valident (le serveur le garantit aussi)
+const BureauCtx = createContext(false);
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ClubPoster, EvText, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
@@ -35,7 +38,7 @@ const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
 // Planning du club (coach et président : gestion ; bureau : LECTURE SEULE) : tout se fait en cliquant, rien à écrire
 export function ClubPlan() {
   const { me } = useAuth();
-  const readOnly = me?.role === "BUREAU";
+  const readOnly = me?.role === "BUREAU"; // bureau : propose des événements prévisionnels, ne valide rien
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [people, setPeople] = useState<{ name: string; role: string }[]>([]);
@@ -114,6 +117,7 @@ export function ClubPlan() {
 
   return (
     <Page>
+      <BureauCtx.Provider value={readOnly}>
       <div className="grid gap-3">
         <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
         <section className="relative overflow-hidden rounded bg-ink px-5 py-5 text-white border-b-2 border-champagne">
@@ -127,8 +131,8 @@ export function ClubPlan() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              {!readOnly && <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
-              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "📤 Exporter" : "⋯ Affiche, export, réglages"}</button>
+              <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
+              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "🖨️ Affiches et export" : "⋯ Affiche, export, réglages"}</button>
             </div>
           </div>
         </section>
@@ -149,13 +153,13 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">👀 Tu peux consulter le planning ; seuls le coach et le président peuvent le modifier.</p>}
+        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls le coach et le président les valident.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
           <div className="grid gap-2">
             {[
-              ...(readOnly ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
+              ...([{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
               ...(readOnly ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
               ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
@@ -171,7 +175,7 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={readOnly ? setActionEv : openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { if (readOnly) return; setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { if (readOnly) return; setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -192,6 +196,7 @@ export function ClubPlan() {
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
+      </BureauCtx.Provider>
     </Page>
   );
 }
@@ -478,6 +483,7 @@ function MiniCalendar({ start, end, onPick }: { start: string; end: string; onPi
 }
 
 function EventModal({ initial, events, counts, names, onClose, onDone }: { initial: Draft; events: ClubEvent[]; counts: Record<string, number>; names: string[]; onClose: () => void; onDone: () => void }) {
+  const bureau = useContext(BureauCtx);
   const [d, setD] = useState<Draft>(initial);
   const [pickEnd, setPickEnd] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -558,11 +564,11 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
-      <button type="button" role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
+      <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
       </button>
-      <button type="button" role="checkbox" aria-checked={!!d.tentative} onClick={() => set({ tentative: !d.tentative })}
+      <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.tentative} onClick={() => set({ tentative: !d.tentative })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.tentative ? "⏳" : "✅"}</span> {d.tentative ? "Prévisionnel : pas encore validé (en gris)" : "Validé"}
       </button>
@@ -660,6 +666,7 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
 // Match par équipes : des CARTES qui s'ouvrent l'une après l'autre (une seule visible à la fois)
 const MATCH_HOURS = ["9 h", "10 h", "11 h", "14 h", "14 h 30", "15 h", "15 h 30", "16 h", "17 h", "18 h", "20 h"];
 function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit, onSave, busy, err }: { onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; cats: typeof TEAM_CATS; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; pastClubs: string[] }) {
+  const bureau = useContext(BureauCtx);
   const [i, setI] = useState(0);
   const [ti, setTi] = useState(0); // équipe dont on choisit le club adverse
   const away = c.info.place === VENUE_AWAY;
@@ -725,8 +732,8 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
@@ -754,6 +761,7 @@ const tourAudience = (keys: string[]) => {
   return detail ? `${base} · ${detail}` : base;
 };
 function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, start, end }: { start?: string; end?: string; onExit?: () => void; onSave?: () => void; busy?: boolean; err?: string; c: Sel; patch: (p: Partial<Sel>) => void; crew: { name: string; role: string }[]; onPeople: () => void }) {
+  const bureau = useContext(BureauCtx);
   const [i, setI] = useState(0);
   const [type, setType] = useState<"" | "TMC" | "OPEN">("");
   const [pub, setPub] = useState<"jeunes" | "seniors">("seniors");
@@ -854,8 +862,8 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
     <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
 }
@@ -966,6 +974,7 @@ function SkipDays({ start, end, value, onChange }: { start: string; end: string;
 }
 
 function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, onDone, onEvent }: { ask?: boolean; endInit?: string; onEvent: (e: ClubEvent) => void; day: string; events: ClubEvent[]; counts: Record<string, number>; crew: { name: string; role: string }[]; onPeople: () => void; onClose: () => void; onDone: (created?: ClubEvent) => void }) {
+  const bureau = useContext(BureauCtx);
   const [start, setStart] = useState(day);
   const [end, setEnd] = useState(endInit ?? day);
   const [pickEnd, setPickEnd] = useState(false);
@@ -1091,8 +1100,8 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
-                    <button type="button" role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-                    <button type="button" role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
+                    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+                    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
                       className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
@@ -1286,13 +1295,14 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
       <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
-      {!readOnly && <div className="mt-3 grid gap-2">
-        <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>
+      <div className="mt-3 grid gap-2">
+        {!readOnly && <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>}
         <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
-        <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>
-        <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>
-      </div>}
+        {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>}
+        {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>}
+        {readOnly && !e.tentative && <p className="m-0 text-sm text-muted">Cet événement est validé : seuls le coach et le président peuvent le modifier. Tu peux quand même créer son affiche.</p>}
+      </div>
     </Modal>
   );
 }
