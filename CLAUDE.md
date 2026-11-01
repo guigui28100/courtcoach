@@ -755,3 +755,5 @@
 - AFFICHE DE RÉSULTATS, TITRE MOINS GROS (1/11/2026, demandé par le coach : « résultats des vacances ou du week-end est trop gros ») : le titre en haut passe de 84 à 54 px (portrait et carré) et de 66 à 44 px (A4) avant le réglage automatique (`titleStyle` dans `ResultsPoster.tsx`) ; la place gagnée va aux tournois. Aucun changement du serveur.
 
 - AFFICHE DE RÉSULTATS, PHOTOS PLUS PETITES (1/11/2026, demandé par le coach : « tu peux réduire la taille de la photo aussi ») : la zone des photos prend 40 % de la largeur (avant 50 %) ; elles restent toutes de la même taille (`ResultsPoster.tsx`). Aucun changement du serveur.
+
+- AFFICHE DE RÉSULTATS, TITRE SUR UNE SEULE LIGNE (1/11/2026, demandé par le coach) : le titre du haut ne passe jamais à la ligne (`whiteSpace: nowrap`) ; sa taille s'adapte à sa longueur (jusqu'à 54 px, 44 px en A4, réduite si le titre est très long : `titleStyle` dans `ResultsPoster.tsx`). Contrôlé avec « Résultats des tournois des vacances de la Toussaint ». Aucun changement du serveur.
