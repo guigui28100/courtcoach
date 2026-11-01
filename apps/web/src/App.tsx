@@ -33,6 +33,7 @@ const YouthSpace = lazy(() => import("./pages/Youth"));
 const PlayerDetail = lazy(() => import("./pages/PlayerDetail"));
 const PresidentPage = lazy(() => import("./pages/President"));
 const SponsorsPage = lazy(() => import("./pages/Sponsors"));
+const V2Page = lazy(() => import("./pages/V2"));
 
 // Les parents voient l'espace sobre ; le jeune voit son univers « galaxie ».
 function Apercu() { const { id = "" } = useParams(); return <YouthSpace previewId={id} />; }
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/invitation/:token" element={<Invitation />} />
         <Route path="/confidentialite" element={<Privacy />} />
         <Route path="/autorisation" element={<Authorization />} />
+        <Route path="/v2" element={<Guard roles={["COACH"]}><V2Page /></Guard>} />
         <Route path="/coach" element={<Guard roles={["COACH"]}><CoachHome /></Guard>} />
         <Route path="/coach/adultes/apercu" element={<Guard roles={["COACH"]}><AdultPreview /></Guard>} />
         <Route path="/coach/adultes" element={<Guard roles={["COACH"]}><AdultsPage /></Guard>} />
