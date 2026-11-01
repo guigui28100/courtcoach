@@ -51,7 +51,11 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
         </details>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <div className="grid min-w-0 content-start gap-3">
-            <label className="text-sm font-bold text-ink">Titre de l'affiche <span className="font-normal text-muted">(ex. « Résultats du week-end »)</span>
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Titre de l'affiche : choix rapide">
+              <Pill on={d.headline === "Résultats du week-end"} onClick={() => setD({ ...d, headline: "Résultats du week-end" })}>Résultats du week-end</Pill>
+              <Pill on={d.headline === "Résultats des vacances"} onClick={() => setD({ ...d, headline: "Résultats des vacances" })}>Résultats des vacances</Pill>
+            </div>
+            <label className="text-sm font-bold text-ink">Titre de l'affiche <span className="font-normal text-muted">(ou écris le tien)</span>
               <input aria-label="Titre de l'affiche" className={`${field} mt-1`} maxLength={40} placeholder="Résultats" value={d.headline} onChange={(x) => setD({ ...d, headline: x.target.value })} /></label>
             {d.tournaments.map((t, i) => (
               <section key={i} aria-label={`Tournoi ${i + 1}`} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3">

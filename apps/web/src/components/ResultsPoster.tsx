@@ -12,7 +12,7 @@ export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { 
 export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[] }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
-export const emptyResults = (): ResultsData => ({ headline: "", tournaments: [emptyTournament()], message: "" });
+export const emptyResults = (): ResultsData => ({ headline: "Résultats du week-end", tournaments: [emptyTournament()], message: "" });
 export const MAX_TOURNAMENTS = 6, MAX_PHOTOS_EACH = 3, MAX_RESULT_LINES = 14;
 
 const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
