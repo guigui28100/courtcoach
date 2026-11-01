@@ -79,7 +79,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
 
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const hdH = big ? 112 : 96, ftH = big ? 96 : 84, partH = logos.length ? 84 : 0, px = big ? 56 : 44;
-  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, fontSize: `min(${p(big ? 84 : 66)}, ${Math.floor((w - px * 2 - 4) / (Math.max(...title.split(/\s+/).map((x) => x.length), 4) * 0.5))}px)` };
+  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, fontSize: `min(${p(big ? 54 : 44)}, ${Math.floor((w - px * 2 - 4) / (Math.max(...title.split(/\s+/).map((x) => x.length), 4) * 0.5))}px)` };
 
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } as CSSProperties}>
