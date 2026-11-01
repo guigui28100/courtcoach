@@ -5,8 +5,29 @@ import { usePartnerLogos } from "../sponsors";
 import { posterToPdf, posterToPng } from "./exportPoster";
 import { fullRange } from "./ClubPoster";
 import { photoFromFile } from "./RecapPoster";
-import { deleteDraft, listDrafts, newDraftId, PosterDraft, saveDraft } from "./posterDrafts";
+import { deleteDraft, listDrafts, PosterDraft } from "./posterDrafts";
+import { deleteOnline, listOnline, loadOnline, OnlineInfo, saveOnline } from "./posterOnline";
 import { emptyResults, emptyTournament, MAX_PHOTOS_EACH, MAX_PHOTOS_TOTAL, MAX_RESULT_LINES, MAX_TOURNAMENTS, RESULTS_SIZES, ResultsData, ResultsFormat, ResultsPoster, ResultsTournament } from "./ResultsPoster";
+
+// Vignette « cadre » : la photo remplit le cadre, on la fait glisser pour montrer la partie qui manque (jamais de vide)
+function PhotoFrame({ src, alt, focus, onFocus }: { src: string; alt: string; focus: [number, number]; onFocus: (x: number, y: number) => void }) {
+  const drag = useRef<{ x: number; y: number; fx: number; fy: number; ox: number; oy: number } | null>(null);
+  const down = (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect(), img = e.currentTarget.firstElementChild as HTMLImageElement;
+    const iw = img.naturalWidth || 1, ih = img.naturalHeight || 1, k = Math.max(box.width / iw, box.height / ih);
+    drag.current = { x: e.clientX, y: e.clientY, fx: focus[0], fy: focus[1], ox: Math.max(1, iw * k - box.width), oy: Math.max(1, ih * k - box.height) };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = drag.current; if (!g) return;
+    onFocus(g.fx - ((e.clientX - g.x) / g.ox) * 100, g.fy - ((e.clientY - g.y) / g.oy) * 100);
+  };
+  return (
+    <div role="img" aria-label={alt} className="aspect-[4/3] w-28 cursor-grab touch-none overflow-hidden rounded-lg active:cursor-grabbing" onPointerDown={down} onPointerMove={move} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
+      <img src={src} alt="" draggable={false} className="size-full select-none object-cover" style={{ objectPosition: `${focus[0]}% ${focus[1]}%` }} />
+    </div>
+  );
+}
 
 const field = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal";
 const Pill = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -25,24 +46,39 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
   const holder = useRef<HTMLDivElement>(null);
   const { w, h } = RESULTS_SIZES[format];
   useEffect(() => { const f = () => setScale(Math.min(0.5, (window.innerWidth < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w, window.innerWidth < 768 ? 9 : (window.innerHeight - 260) / h)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w, h]);
-  // Brouillons : « Enregistrer mon travail » puis « Reprendre » plus tard (dans ce navigateur seulement)
+  // Affiches enregistrées EN LIGNE : on les retrouve sur le téléphone comme sur l'ordinateur (coach, président et bureau seulement)
   type Saved = { d: ResultsData; format: ResultsFormat; bg: string; withPartners: boolean };
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
-  const [drafts, setDrafts] = useState<PosterDraft<Saved>[] | null>(null);
+  const [drafts, setDrafts] = useState<OnlineInfo[] | null>(null);
+  const [local, setLocal] = useState<PosterDraft<Saved>[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
-  const refreshDrafts = async () => { try { setDrafts(await listDrafts<Saved>("resultats")); } catch (x) { setDrafts([]); setMsg((x as Error).message); } };
+  const [busy, setBusy] = useState(false);
+  const refreshDrafts = async () => {
+    try { setDrafts(await listOnline()); } catch (x) { setDrafts([]); setMsg((x as Error).message); }
+    try { setLocal(await listDrafts<Saved>("resultats")); } catch { setLocal([]); }
+  };
   useEffect(() => { void refreshDrafts(); }, []);
   const saveWork = async () => {
     const name = draftName.trim() || d.headline.trim() || "Affiche de résultats";
-    const id = draftId ?? newDraftId();
-    try { await saveDraft<Saved>({ id, kind: "resultats", name, savedAt: Date.now(), data: { d, format, bg, withPartners } }); setDraftId(id); setDraftName(name); setMsg(`✔ « ${name} » est enregistrée sur cet ordinateur. Tu pourras la reprendre avec « Mes affiches enregistrées ».`); void refreshDrafts(); }
-    catch (x) { setMsg((x as Error).message); }
+    setBusy(true); setMsg("Enregistrement en ligne…");
+    try { const id = await saveOnline<Saved>(draftId, name, { d, format, bg, withPartners }, (n, t) => t && setMsg(`Envoi des photos : ${n} sur ${t}…`)); setDraftId(id); setDraftName(name); setMsg(`✔ « ${name} » est enregistrée en ligne. Tu la retrouveras sur ton téléphone comme sur l'ordinateur, avec « Mes affiches enregistrées ».`); void refreshDrafts(); }
+    catch (x) { setMsg((x as Error).message || "Impossible d'enregistrer pour l'instant."); } finally { setBusy(false); }
   };
-  const openDraft = (x: PosterDraft<Saved>) => { setD(x.data.d); setFormat(x.data.format); setBg(x.data.bg); setWithPartners(x.data.withPartners); setDraftId(x.id); setDraftName(x.name); setShowDrafts(false); setMsg(`✔ « ${x.name} » est rouverte.`); };
-  const removeDraft = async (x: PosterDraft<Saved>) => {
-    if (!confirm(`Supprimer « ${x.name} » ? Les photos enregistrées avec elle seront effacées de cet ordinateur.`)) return;
-    try { await deleteDraft(x.id); if (draftId === x.id) setDraftId(null); void refreshDrafts(); } catch (e) { setMsg((e as Error).message); }
+  const openDraft = async (x: OnlineInfo) => {
+    setBusy(true); setMsg("Ouverture…");
+    try { const r = await loadOnline<Saved>(x.id); setD(r.saved.d); setFormat(r.saved.format); setBg(r.saved.bg); setWithPartners(r.saved.withPartners); setDraftId(x.id); setDraftName(r.name); setShowDrafts(false); setMsg(`✔ « ${r.name} » est rouverte.`); }
+    catch (e) { setMsg((e as Error).message || "Impossible de rouvrir cette affiche."); } finally { setBusy(false); }
+  };
+  const removeDraft = async (x: OnlineInfo) => {
+    if (!confirm(`Supprimer « ${x.name} » ? Elle sera effacée du serveur avec ses photos.`)) return;
+    try { await deleteOnline(x.id); if (draftId === x.id) setDraftId(null); void refreshDrafts(); } catch (e) { setMsg((e as Error).message); }
+  };
+  // Anciennes affiches gardées seulement dans ce navigateur : on les met en ligne
+  const uploadLocal = async (x: PosterDraft<Saved>) => {
+    setBusy(true); setMsg("Mise en ligne…");
+    try { await saveOnline<Saved>(null, x.name, x.data); await deleteDraft(x.id); setMsg(`✔ « ${x.name} » est en ligne.`); void refreshDrafts(); }
+    catch (e) { setMsg((e as Error).message || "Impossible pour l'instant."); } finally { setBusy(false); }
   };
   const planned = events.filter((e) => e.kind === "TOURNOI").sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 30);
   const setT = (i: number, p: Partial<ResultsTournament>) => setD((o) => ({ ...o, tournaments: o.tournaments.map((t, j) => (j === i ? { ...t, ...p } : t)) }));
@@ -67,26 +103,32 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
         <div className="mb-3 flex items-center justify-between gap-2"><h2 className="m-0 text-xl text-ink">🏆 Affiche de résultats : plusieurs tournois</h2><button type="button" className="btn-outline" onClick={onClose}>✕ Fermer</button></div>
         <details className="mb-3 rounded-xl bg-[#fff4cc] p-3 text-sm text-[#6b4e00]">
           <summary role="note" className="cursor-pointer font-bold">⚠️ Avant de publier : seulement les photos d'enfants dont les parents ont donné le droit à l'image</summary>
-          <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Pour les enfants, écris seulement le prénom. <b>Rien n'est enregistré</b> : les photos et les noms restent dans cette fenêtre. Si tu la fermes, il faudra tout refaire.</p>
+          <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Pour les enfants, écris seulement le prénom. Elle n'est enregistrée sur le serveur du club que si tu touches « Enregistrer mon travail » (visible seulement par le coach, le président et le bureau).</p>
         </details>
         <section aria-label="Enregistrer mon travail" className="mb-3 grid gap-2 rounded-2xl border-2 border-line bg-white p-3">
           <div className="flex flex-wrap items-center gap-2">
             <input aria-label="Nom de cette affiche" className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Nom pour la retrouver (ex. Résultats vacances de Toussaint)" value={draftName} onChange={(x) => setDraftName(x.target.value)} />
-            <button type="button" className="btn-clay" onClick={() => void saveWork()}>💾 Enregistrer mon travail</button>
+            <button type="button" className="btn-clay" disabled={busy} onClick={() => void saveWork()}>💾 Enregistrer mon travail</button>
             <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" aria-expanded={showDrafts} onClick={() => { setShowDrafts((o) => !o); void refreshDrafts(); }}>📂 Mes affiches enregistrées{drafts?.length ? ` (${drafts.length})` : ""}</button>
           </div>
           {draftId && <p className="m-0 text-xs font-bold text-ink">✏️ Tu travailles sur « {draftName} » : « Enregistrer » la met à jour.</p>}
           {showDrafts && (
             <ul className="m-0 grid list-none gap-2 p-0">
-              {drafts && drafts.length === 0 && <li className="text-sm text-muted">Aucune affiche enregistrée pour l'instant.</li>}
+              {drafts && drafts.length === 0 && local.length === 0 && <li className="text-sm text-muted">Aucune affiche enregistrée pour l'instant.</li>}
               {(drafts ?? []).map((x) => (
                 <li key={x.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-[#fbf8f2] p-2">
-                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]"><b className="text-ink">{x.name}</b><br /><small className="text-muted">{x.data.d.tournaments.length} tournoi{x.data.d.tournaments.length > 1 ? "s" : ""} · {new Date(x.savedAt).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</small></span>
-                  <button type="button" className="btn-clay" onClick={() => openDraft(x)}>Reprendre</button>
+                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]"><b className="text-ink">{x.name}</b><br /><small className="text-muted">{x.photos} photo{x.photos > 1 ? "s" : ""} · {new Date(x.updatedAt).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}{x.authorName ? ` · ${x.authorName}` : ""}</small></span>
+                  <button type="button" className="btn-clay" disabled={busy} onClick={() => void openDraft(x)}>Reprendre</button>
                   <button type="button" className="btn-outline" aria-label={`Supprimer ${x.name}`} onClick={() => void removeDraft(x)}>🗑️</button>
                 </li>))}
+              {local.length > 0 && <li className="mt-1 text-sm font-bold text-ink">Gardées seulement sur cet appareil (pas encore en ligne) :</li>}
+              {local.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-line bg-white p-2">
+                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]"><b className="text-ink">{x.name}</b></span>
+                  <button type="button" className="btn-clay" disabled={busy} onClick={() => void uploadLocal(x)}>☁️ Mettre en ligne</button>
+                </li>))}
             </ul>)}
-          <p className="m-0 text-xs text-muted">Gardé seulement dans ce navigateur, sur cet ordinateur (photos comprises) : rien n'est envoyé sur Internet. Si tu effaces les données du navigateur ou si tu changes d'ordinateur, il faudra tout refaire.</p>
+          <p className="m-0 text-xs text-muted">Enregistrée sur le serveur du club (photos comprises) : visible seulement par le coach, le président et le bureau, jamais par les familles. Effacée automatiquement après 12 mois sans modification.</p>
         </section>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
           <div className="grid min-w-0 content-start gap-3">
@@ -126,18 +168,20 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
                 </div>
                 <div>
                   <p className="m-0 mb-1 text-sm font-bold text-ink">📷 Photos de ce tournoi <span className="font-normal text-muted">({t.photos.length} sur {MAX_PHOTOS_EACH})</span></p>
-                  {t.photos.length > 0 && <p className="m-0 mb-2 text-xs text-muted">Un visage est coupé ? Déplace la photo avec les flèches ◀ ▲ ▼ ▶ : la vignette montre ce qui apparaîtra sur l’affiche.</p>}
+                  {t.photos.length > 0 && <p className="m-0 mb-2 text-xs text-muted">Une tête est coupée ? Fais glisser la photo avec le doigt ou la souris (vers le bas pour faire apparaître le haut), ou avec les flèches ◀ ▲ ▼ ▶ : elle reste toujours dans son cadre.</p>}
                   <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-                    {t.photos.map((s, j) => { const fo = t.focus?.[j] ?? [50, 50]; const move = (dx: number, dy: number) => { const f = t.photos.map((_, m) => t.focus?.[m] ?? [50, 50]); f[j] = [Math.max(0, Math.min(100, fo[0] + dx)), Math.max(0, Math.min(100, fo[1] + dy))]; setT(i, { focus: f as [number, number][] }); };
+                    {t.photos.map((s, j) => { const fo = t.focus?.[j] ?? [50, 50]; const setFocus = (x: number, y: number) => { const f = t.photos.map((_, m) => t.focus?.[m] ?? [50, 50]); f[j] = [Math.max(0, Math.min(100, x)), Math.max(0, Math.min(100, y))]; setT(i, { focus: f as [number, number][] }); };
+                      // La photo reste toujours dans son cadre : on la FAIT GLISSER (au doigt, à la souris ou avec les flèches) pour montrer la partie qui manque
+                      const slide = (dx: number, dy: number) => setFocus(fo[0] - dx, fo[1] - dy);
                       const B = "grid size-8 place-items-center rounded-md border border-line bg-white text-sm font-bold hover:bg-sand";
                       return (
-                      <li key={j} className="relative w-28"><img src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} className="aspect-[4/3] w-28 rounded-lg object-cover" style={{ objectPosition: `${fo[0]}% ${fo[1]}%` }} />
+                      <li key={j} className="relative w-28"><PhotoFrame src={s} alt={`Photo ${j + 1} du tournoi ${i + 1}`} focus={fo} onFocus={setFocus} />
                         <button type="button" aria-label={`Retirer la photo ${j + 1}`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-md bg-white/90 text-sm shadow" onClick={() => setT(i, { photos: t.photos.filter((_, m) => m !== j), focus: (t.focus ?? []).filter((_, m) => m !== j) })}>🗑️</button>
-                        <div className="mt-1 flex justify-between" role="group" aria-label={`Déplacer la photo ${j + 1}`}>
-                          <button type="button" className={B} aria-label="Montrer plus à gauche" onClick={() => move(-12, 0)}>◀</button>
-                          <button type="button" className={B} aria-label="Montrer plus en haut" onClick={() => move(0, -12)}>▲</button>
-                          <button type="button" className={B} aria-label="Montrer plus en bas" onClick={() => move(0, 12)}>▼</button>
-                          <button type="button" className={B} aria-label="Montrer plus à droite" onClick={() => move(12, 0)}>▶</button>
+                        <div className="mt-1 flex justify-between" role="group" aria-label={`Faire glisser la photo ${j + 1}`}>
+                          <button type="button" className={B} aria-label="Glisser la photo vers la gauche" onClick={() => slide(-12, 0)}>◀</button>
+                          <button type="button" className={B} aria-label="Glisser la photo vers le haut" onClick={() => slide(0, -12)}>▲</button>
+                          <button type="button" className={B} aria-label="Glisser la photo vers le bas" onClick={() => slide(0, 12)}>▼</button>
+                          <button type="button" className={B} aria-label="Glisser la photo vers la droite" onClick={() => slide(12, 0)}>▶</button>
                         </div></li>); })}
                     {t.photos.length < MAX_PHOTOS_EACH && d.tournaments.reduce((a, x) => a + x.photos.length, 0) < MAX_PHOTOS_TOTAL && (
                       <li><label className="grid size-20 cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-xl" aria-hidden>📷</span>Ajouter</span>

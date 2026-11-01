@@ -45,4 +45,9 @@
 - Données : nom de l'entreprise, personne à contacter (nom, téléphone, e-mail professionnels, facultatifs), montant, dates du contrat, logo, note. Aucune donnée d'élève.
 - Accès : coach et président seulement (le bureau, les entraîneurs, les adultes et les familles n'y ont aucun accès). Le logo n'est envoyé nulle part ailleurs : il reste dans la base du club. Suppression possible à tout moment.
 
+## Affiches de résultats enregistrées en ligne (coach, président, bureau)
+- Finalité : préparer et reprendre sur n'importe quel appareil une affiche de résultats de tournois (texte, photos) pour le club et les réseaux sociaux.
+- Données : titre, noms des tournois, résultats (prénoms seulement pour les enfants), photos. Seulement des photos d'enfants dont les parents ont donné le droit à l'image.
+- Accès : coach, président et bureau (jamais les entraîneurs, familles, jeunes, adultes). Aucun service extérieur. Suppression à la main (🗑️) ou automatique après 12 mois sans modification (tâche nocturne).
+
 **Effacements automatiques (27/10/2026)** : tâche nocturne : vidéos de plus de 12 mois, journal de plus de 12 mois, programmations de tournoi de plus de 12 mois, demandes de cours particuliers 12 mois après le cours, jetons de connexion périmés, invitations périmées ou utilisées depuis plus de 30 jours.

@@ -23,6 +23,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
   app.use("/api/profs", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // pièces justificatives des professeurs (3 Mo maximum)
   app.use("/api/tournaments", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // documents de tournoi (3 Mo maximum)
+  app.use("/api/poster-drafts", raw({ type: "application/octet-stream", limit: 1_500_000 + 1024 })); // photos des affiches enregistrées (1,5 Mo au plus chacune)
   // Fermé par défaut : seul le site officiel (WEB_ORIGIN) peut appeler le serveur depuis un navigateur
   app.enableCors({ origin: process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN.replace(/\/$/, "")] : false, credentials: true, methods: ["GET", "POST", "PUT", "PATCH", "DELETE"] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
