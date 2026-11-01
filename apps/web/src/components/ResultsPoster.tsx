@@ -9,7 +9,7 @@ import { NoBreak } from "./NoBreak";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type ResultsFormat = "PORTRAIT" | "CARRE" | "A4";
 export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { PORTRAIT: { w: 1080, h: 1350 }, CARRE: { w: 1080, h: 1080 }, A4: { w: 794, h: 1123 } };
-export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[] }
+export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][] }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
 export const emptyResults = (): ResultsData => ({ headline: "Résultats du week-end", tournaments: [emptyTournament()], message: "" });
@@ -46,6 +46,8 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
   const sortedA = [...aspects].sort((x, y) => x - y);
   const cellAsp = Math.max(0.8, Math.min(1.5, sortedA.length ? sortedA[Math.floor(sortedA.length / 2)] : 1.33));
   const colsOf = (n: number) => (n <= 1 ? 1 : n === 2 || n === 4 ? 2 : n >= 10 ? 4 : 3);
+  // MÊME taille pour TOUTES les photos de l'affiche : le nombre de colonnes est choisi d'après le tournoi qui a le plus de photos
+  const cols = colsOf(Math.max(0, ...list.map((t) => Math.min(t.photos.length, MAX_PHOTOS_EACH))));
   const title = data.headline.trim() || "Résultats";
 
   // On mesure le contenu, puis on l'agrandit ou on le réduit pour remplir la place libre (comme les autres affiches)
@@ -115,10 +117,10 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                   </div>
                 )}
                 {n > 0 && (() => {
-                  const cols = colsOf(n); const srcs = t.photos.slice(0, n);
+                  const srcs = t.photos.slice(0, n);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(60% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
-                      {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", display: "block", borderRadius: 8 }} />)}
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(56% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
+                      {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", objectPosition: `${t.focus?.[j]?.[0] ?? 50}% ${t.focus?.[j]?.[1] ?? 50}%`, display: "block", borderRadius: 8 }} />)}
                     </div>);
                 })()}
                 </div>

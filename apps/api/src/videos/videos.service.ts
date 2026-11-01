@@ -508,6 +508,7 @@ export class VideosService {
     const a = await this.prisma.video.deleteMany({ where: { deleteAfter: { lt: now } } });
     const b = await this.prisma.video.deleteMany({ where: { complete: false, recordedAt: { lt: new Date(now.getTime() - STALE_UPLOAD_MS) } } });
     const d = await this.prisma.tournamentDoc.deleteMany({ where: { deleteAfter: { lt: now } } }); // programmations de tournoi : 12 mois aussi
+    const h = await this.prisma.posterDraft.deleteMany({ where: { updatedAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } } }); // affiches enregistrées en ligne (avec leurs photos) : 12 mois sans modification
     const c = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 365 * 24 * 3600 * 1000) } } }); // le journal est gardé 12 mois
     // Jetons de connexion périmés et invitations périmées (ou utilisées depuis plus de 30 jours) : elles contiennent une adresse e-mail et ne servent plus à rien
     const e = await this.prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } });
@@ -517,6 +518,6 @@ export class VideosService {
     const today = nowParis().date, yearAgo = new Date(Date.UTC(+today.slice(0, 4) - 1, +today.slice(5, 7) - 1, +today.slice(8, 10))).toISOString().slice(0, 10);
     const lessonIds = oldLessons.filter((l) => { const dt = (l.finalSlot as { date?: string } | null)?.date; return !dt || dt < yearAgo; }).map((l) => l.id);
     const g = lessonIds.length ? await this.prisma.lessonRequest.deleteMany({ where: { id: { in: lessonIds } } }) : { count: 0 };
-    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count };
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count, affiches: h.count };
   }
 }
