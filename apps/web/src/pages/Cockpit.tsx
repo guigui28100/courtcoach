@@ -33,7 +33,7 @@ function useSection<T>(path: string, empty: T): Section<T> & { loading: boolean 
 type Alert = { key: string; tone: "red" | "amber" | "blue"; text: string; to?: string; cta?: string };
 const TONE = { red: "border-[#b42318] bg-[#fdecea] text-[#7a1810]", amber: "border-[#c88a00] bg-[#fff6dd] text-[#5c4300]", blue: "border-[#3b6ea5] bg-[#eaf2fb] text-[#1d3c61]" };
 
-export default function Cockpit() {
+export default function Cockpit({ embedded = false }: { embedded?: boolean }) {
   const { me } = useAuth();
   const today = todayIso();
   const plan = useSection<{ events: ClubEvent[] }>("/club/plan", { events: [] });
@@ -79,8 +79,8 @@ export default function Cockpit() {
 
   return (
     <>
-      <PageHead eyebrow="Gestion du club" title="Cockpit · cette semaine" />
-      <Page>
+      {!embedded && <PageHead eyebrow="Gestion du club" title="Cockpit · cette semaine" />}
+      {(() => { const W = embedded ? (({ children }: { children: React.ReactNode }) => <div className="grid gap-6">{children}</div>) : Page; return <W>
         <p className="m-0 max-w-3xl text-sm text-muted">Tout ce qui demande ton attention, rassemblé. Rien n'est modifié ici : chaque ligne ouvre la page où agir.</p>
 
         <section aria-labelledby="ck-alertes" className="grid gap-3">
@@ -149,7 +149,7 @@ export default function Cockpit() {
             )}
           </div>
         </div>
-      </Page>
+      </W>; })()}
     </>
   );
 }
