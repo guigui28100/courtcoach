@@ -9,7 +9,7 @@ import { NoBreak } from "./NoBreak";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type ResultsFormat = "PORTRAIT" | "CARRE" | "A4";
 export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { PORTRAIT: { w: 1080, h: 1350 }, CARRE: { w: 1080, h: 1080 }, A4: { w: 794, h: 1123 } };
-export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][] }
+export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][]; zoom?: number[] }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
 export const emptyResults = (): ResultsData => ({ headline: "Résultats du week-end", tournaments: [emptyTournament()], message: "" });
@@ -79,7 +79,8 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
 
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const hdH = big ? 112 : 96, ftH = big ? 96 : 84, partH = logos.length ? 84 : 0, px = big ? 56 : 44;
-  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, fontSize: `min(${p(big ? 54 : 44)}, ${Math.floor((w - px * 2 - 4) / (Math.max(...title.split(/\s+/).map((x) => x.length), 4) * 0.5))}px)` };
+  // Le titre tient TOUJOURS sur une seule ligne : sa taille s'adapte à sa longueur
+  const titleStyle: CSSProperties = { margin: 0, fontFamily: SERIF, fontWeight: 600, lineHeight: 1, color: NAVY, whiteSpace: "nowrap", fontSize: `min(${p(big ? 54 : 44)}, ${Math.floor((w - px * 2 - 4) / (Math.max(title.length, 6) * 0.41))}px)` };
 
   return (
     <div style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" } as CSSProperties}>
@@ -120,7 +121,10 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                   const srcs = t.photos.slice(0, n);
                   return (
                     <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: p(8), flex: "0 0 auto", width: `calc(40% * var(--f))`, minWidth: 0, marginLeft: "auto" }}>
-                      {srcs.map((src, j) => <img key={j} src={src} alt="" draggable={false} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), objectFit: "cover", objectPosition: `${t.focus?.[j]?.[0] ?? 50}% ${t.focus?.[j]?.[1] ?? 50}%`, display: "block", borderRadius: 8 }} />)}
+                      {srcs.map((src, j) => { const z = Math.max(1, Math.min(3, t.zoom?.[j] ?? 1)), fx = t.focus?.[j]?.[0] ?? 50, fy = t.focus?.[j]?.[1] ?? 50;
+                        return (<div key={j} style={{ width: "100%", aspectRatio: String(cols === 1 ? Math.max(cellAsp, 1.3) : cellAsp), overflow: "hidden", borderRadius: 8 }}>
+                          <img src={src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${fx}% ${fy}%`, display: "block", transform: `scale(${z})`, transformOrigin: `${fx}% ${fy}%` }} />
+                        </div>); })}
                     </div>);
                 })()}
                 </div>

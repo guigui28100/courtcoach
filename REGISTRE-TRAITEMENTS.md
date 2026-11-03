@@ -46,7 +46,7 @@
 - Accès : coach et président seulement (le bureau, les entraîneurs, les adultes et les familles n'y ont aucun accès). Le logo n'est envoyé nulle part ailleurs : il reste dans la base du club. Suppression possible à tout moment.
 
 ## Affiches de résultats enregistrées en ligne (coach, président, bureau)
-- Finalité : préparer et reprendre sur n'importe quel appareil une affiche de résultats de tournois (texte, photos) pour le club et les réseaux sociaux.
+- Finalité : préparer et reprendre sur n'importe quel appareil une affiche de résultats de tournois ou un bilan d'événement (texte, photos) pour le club et les réseaux sociaux ; l'enregistrement est automatique pendant le travail dans le studio d'affiche.
 - Données : titre, noms des tournois, résultats (prénoms seulement pour les enfants), photos. Seulement des photos d'enfants dont les parents ont donné le droit à l'image.
 - Accès : coach, président et bureau (jamais les entraîneurs, familles, jeunes, adultes). Aucun service extérieur. Suppression à la main (🗑️) ou automatique après 12 mois sans modification (tâche nocturne).
 

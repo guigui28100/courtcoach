@@ -9,7 +9,7 @@ export const SelOutline = ({ sel }: { sel: string }) => (
 export type FmtItem = { key: string; label: string; move?: boolean; sizeOnly?: boolean; edit?: boolean };
 
 // Panneau « Mise en forme du texte » : on choisit une partie (ou on touche le texte sur l'affiche), puis on règle taille, gras, italique, souligné, alignement, couleur, position.
-export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "🔤 Textes : réécrire, taille, couleur…", hint }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; onSelect: (k: string) => void; title?: string; hint?: string }) {
+export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "🔤 Textes : réécrire, taille, couleur…", hint, flat = false }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; onSelect: (k: string) => void; title?: string; hint?: string; flat?: boolean }) {
   const [open, setOpen] = useState(false);
   const first = useRef(true);
   useEffect(() => { if (first.current) { first.current = false; return; } if (selected) setOpen(true); }, [selected]); // toucher un texte sur l'affiche ouvre le panneau
@@ -26,10 +26,8 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
   const row = (label: string, children: React.ReactNode) => (
     <div className="grid items-center gap-2 sm:grid-cols-[88px_1fr]"><span className="text-xs font-extrabold uppercase tracking-wide text-muted">{label}</span><div className="flex flex-wrap items-center gap-1.5">{children}</div></div>
   );
-  return (
-    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-2xl border-2 border-line bg-white p-3">
-      <summary className="cursor-pointer text-base font-extrabold text-ink">{title}</summary>
-      <p className="mb-2 mt-2 text-xs text-muted">{hint ?? "Touche un texte sur l'affiche (il s'entoure en rouge), ou choisis-le ci-dessous. Gardé dans ce navigateur."}</p>
+  const body = (
+    <>
       <label className="block text-xs font-extrabold uppercase tracking-wide text-muted">1 · Quel texte ?
         <select aria-label="Quel texte régler" value={key} onChange={(x) => onSelect(x.target.value)} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal text-ink">
           {items.map((b) => <option key={b.key} value={b.key}>{b.label}{used(b.key)}</option>)}
@@ -64,6 +62,47 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
         <button type="button" onClick={() => { const n = { ...fmt }; delete n[key]; onChange(n); }} className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink">↺ Rétablir ce texte</button>
         <button type="button" onClick={() => onChange({})} className="rounded-lg border-2 border-line bg-white px-3 py-1.5 text-xs font-bold text-ink hover:border-ink">↺ Tout rétablir</button>
       </div>
+
+    </>
+  );
+  if (flat) return <div>{body}</div>;
+  return (
+    <details open={open} onToggle={(x) => setOpen((x.target as HTMLDetailsElement).open)} className="mb-2 rounded-2xl border-2 border-line bg-white p-3">
+      <summary className="cursor-pointer text-base font-extrabold text-ink">{title}</summary>
+      <p className="mb-2 mt-2 text-xs text-muted">{hint ?? "Touche un texte sur l'affiche (il s'entoure en rouge), ou choisis-le ci-dessous. Gardé dans ce navigateur."}</p>
+      {body}
     </details>
+  );
+}
+
+// Petite barre posée juste à côté du texte touché sur l'affiche : réécrire (si court), taille, gras, italique, souligné, couleur, rétablir.
+export function FmtFloat({ items, fmt, onChange, selected, style, onClose }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; style: React.CSSProperties; onClose: () => void }) {
+  const item = items.find((i) => i.key === selected);
+  if (!item) return null;
+  const key = item.key;
+  const cur: ElFmt = fmt[key] ?? {};
+  const set = (patch: Partial<ElFmt>) => onChange({ ...fmt, [key]: { ...cur, ...patch } });
+  const size = cur.size ?? 0;
+  const live = document.querySelector(`.pf-prev [data-fmt="${key}"]`)?.textContent ?? "";
+  const short = (cur.text ?? live).length <= 80 && !(cur.text ?? "").includes("\n");
+  const b = (label: React.ReactNode, f: () => void, name: string, on?: boolean, st?: React.CSSProperties, off?: boolean) => (
+    <button type="button" aria-label={name} title={name} aria-pressed={on === undefined ? undefined : !!on} disabled={off} onClick={f} style={st} className={`grid h-9 min-w-9 place-items-center rounded-md px-2 text-sm font-bold disabled:opacity-35 ${on ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/25"}`}>{label}</button>
+  );
+  return (
+    <div role="toolbar" aria-label={`Régler : ${item.label}`} style={style} onPointerDown={(e) => e.stopPropagation()} className="absolute z-30 flex flex-nowrap items-center gap-1 whitespace-nowrap rounded-lg bg-ink p-1.5 text-white shadow-2xl">
+      {item.edit && short && <input aria-label={`Réécrire : ${item.label}`} value={cur.text ?? live} onChange={(x) => set({ text: x.target.value })} className="h-9 w-36 rounded-md border-0 bg-white px-2 text-sm text-ink" />}
+      {b("A−", () => set({ size: size - 1 }), "Plus petit", undefined, undefined, size <= -4)}
+      {b("A+", () => set({ size: size + 1 }), "Plus grand", undefined, undefined, size >= 8)}
+      {!item.sizeOnly && <>
+        {b("G", () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), "Gras", cur.bold, { fontWeight: 900 })}
+        {b("I", () => set({ italic: cur.italic ? undefined : true }), "Italique", cur.italic, { fontStyle: "italic" })}
+        {b("S", () => set({ underline: cur.underline ? undefined : true }), "Souligné", cur.underline, { textDecoration: "underline" })}
+        <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
+        {FMT_COLORS.slice(0, 5).map(([c, n]) => <button key={c} type="button" aria-label={n} title={n} aria-pressed={cur.color === c} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`size-6 rounded-full border-2 ${cur.color === c ? "border-white ring-2 ring-champagne" : "border-white/40"}`} />)}
+      </>}
+      <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
+      {b("↺", () => { const n = { ...fmt }; delete n[key]; onChange(n); }, "Rétablir ce texte")}
+      {b("✕", onClose, "Fermer la barre")}
+    </div>
   );
 }

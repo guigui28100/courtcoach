@@ -7,7 +7,8 @@ const BureauCtx = createContext(false);
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ClubPoster, EvText, monthEvents, POSTER_H, POSTER_W, PosterModel } from "../components/ClubPoster";
-import { FmtPanel, FmtItem, SelOutline } from "../components/FmtPanel";
+import { FmtItem } from "../components/FmtPanel";
+import { PosterStudio, Sec, Seg, StudioFormat, Toggle, useAutosave } from "../components/PosterStudio";
 import { Fmts } from "../components/posterFmt";
 import { del, get, post, put } from "../api";
 import { useAuth } from "../auth";
@@ -1187,7 +1188,7 @@ const eventFmtItems = (team: boolean, hasPartners: boolean): FmtItem[] => [
 ];
 
 // ───────────── Affiche d'un événement : on remplit les infos à gauche, l'aperçu se met à jour à droite ─────────────
-function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
+export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () => void; onSaved: () => void }) {
   const [format, setFormat] = useState<PosterFormat>("A4");
   const [showWho, setShowWho] = useState(false);
   const [bg, setBg] = useState<PosterBg>("");
@@ -1195,97 +1196,51 @@ function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClose: () =
   const [light, setLight] = useState(false); // cartes réduites pour mieux voir le fond
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
-  const [scale, setScale] = useState(0.5);
-  const [msg, setMsg] = useState("");
-  const [busy, setBusy] = useState(false);
   const [title, setTitle] = useState(e.title ?? "");
   const [note, setNote] = useState(e.note ?? "");
   const [info, setInfo] = useState<PosterInfo>(infoOf(e));
-  const holder = useRef<HTMLDivElement>(null);
   const fmtKey = `cc-affiche-mise-en-forme-${e.id}`;
   const [fmt, setFmtState] = useState<PosterFmt>(() => { try { return JSON.parse(localStorage.getItem(fmtKey) || "{}"); } catch { return {}; } });
   const [fsel, setFsel] = useState("titre");
   const setFmt = (v: PosterFmt) => { setFmtState(v); try { localStorage.setItem(fmtKey, JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
-  const { w, h } = SIZES[format];
-  useEffect(() => { const f = () => setScale(Math.min(0.62, (Math.min(window.innerWidth, 1000) < 900 ? Math.min(window.innerWidth, 720) - 56 : 400) / w, window.innerWidth < 768 ? 9 : (window.innerHeight - 240) / h)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, [w]);
   const draft: ClubEvent = { ...e, title, note, ...cleanInfo(info) };
-  const save = async () => {
-    await put(`/club/events/${e.id}`, { kind: e.kind, title: title.trim() || undefined, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, who: e.who, note: note.trim() || undefined, featured: !!e.featured, ...cleanInfo(info), allowConflict: true });
-    onSaved();
-  };
-  const run = async (fn: () => Promise<void> | void) => { setBusy(true); setMsg(""); try { await save(); await fn(); } catch (x: any) { setMsg(x?.message || "Impossible d'enregistrer."); } setBusy(false); };
-  const print = () => {
-    const st = document.createElement("style"); st.textContent = `@page{size:${w}px ${h}px;margin:0}`;
-    document.head.appendChild(st); document.body.classList.add("printing-affiche");
-    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
-    window.addEventListener("afterprint", done); window.print();
-  };
-  const png = async () => {
-    setMsg("Je prépare l'image…");
-    try {
-      const node = holder.current?.firstElementChild as HTMLElement;
-      const blob = await posterToPng(node, w, h);
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-      a.download = `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${format === "A4" ? "a4" : "carre"}.png`;
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
-    } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
-  };
-  const pdf = async () => {
-    setMsg("Je prépare le PDF…");
-    try {
-      const blob = await posterToPdf(holder.current?.firstElementChild as HTMLElement, w, h);
-      saveBlob(blob, `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${format === "A4" ? "a4" : "carre"}.pdf`); setMsg("✔ PDF enregistré dans tes téléchargements.");
-    } catch { setMsg("Impossible de faire le PDF sur cet appareil : utilise plutôt « Imprimer »."); }
-  };
+  const wasSaved = useRef(false);
+  // Les infos de l'affiche s'enregistrent TOUTES SEULES dans le planning, quelques instants après la dernière modification
+  const auto = useAutosave({
+    sig: JSON.stringify({ title, note, info }),
+    save: async () => {
+      await put(`/club/events/${e.id}`, { kind: e.kind, title: title.trim() || undefined, startDate: e.startDate, endDate: e.endDate, bands: e.bands, courts: e.courts, teams: e.teams, who: e.who, note: note.trim() || undefined, featured: !!e.featured, ...cleanInfo(info), allowConflict: true });
+      wasSaved.current = true;
+    },
+  });
+  const close = () => { void auto.flush().finally(() => { if (wasSaved.current) onSaved(); onClose(); }); };
+  const poster = (extra: object = {}) => <EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} {...extra} />;
+  const formats: StudioFormat[] = [{ id: "A4", label: "📄 A4 à imprimer", ...SIZES.A4 }, { id: "CARRE", label: "📱 Carré (WhatsApp, Facebook)", ...SIZES.CARRE }];
   return (
-    <Modal wide title={`🪧 Affiche : ${titleOf(draft)}`} onClose={onClose}>
-      <p className="mb-3 mt-0 text-sm text-muted">📅 {fmtRange(e.startDate, e.endDate)} <span className="text-xs">(les dates viennent du planning)</span></p>
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Pill on={format === "A4"} onClick={() => setFormat("A4")}>📄 A4 à imprimer</Pill>
-            <Pill on={format === "CARRE"} onClick={() => setFormat("CARRE")}>📱 Carré (WhatsApp, Facebook)</Pill>
-            {e.who.length > 0 && <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer qui s'en occupe</Pill>}
-            {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
-          </div>
-          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Disposition de l'affiche">
-            <span className="text-sm font-bold text-ink">🎨 Disposition :</span>
-            <Pill on={layout === "elegant"} onClick={() => setLayout("elegant")}>✨ Élégante (ivoire, QR code)</Pill>
-            <Pill on={layout === "classique"} onClick={() => setLayout("classique")}>🏷️ Classique (bandeau bleu nuit)</Pill>
-          </div>
-          <BgPicker bg={bg} onChange={setBg} />
-          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Taille des cartes">
-            <span className="text-sm font-bold text-ink">🔍 Cartes :</span>
-            <Pill on={!light} onClick={() => setLight(false)}>Grandes cartes</Pill>
-            <Pill on={light} onClick={() => setLight(true)}>Petites cartes <small className="font-normal">(on voit plus le fond)</small></Pill>
-          </div>
-          <FmtPanel items={eventFmtItems(e.kind === "EQUIPES", partners.length > 0)} fmt={fmt} onChange={setFmt as (f: Fmts) => void} selected={fsel} onSelect={setFsel} />
-          <div className="rounded-xl border-2 border-line bg-white p-3">
-            {hasSimpleForm(e.kind)
-              ? <AnimationForm tournoi={isTournoi(e.kind)} start={e.startDate} end={e.endDate} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
-              : <><label className="mb-3 block text-sm font-bold text-ink">📝 Description (facultatif)
-                  <textarea aria-label="Description de l'affiche" rows={2} maxLength={600} value={note} onChange={(x) => setNote(x.target.value)} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
-                <EventPosterFields kind={e.kind} value={info} onChange={setInfo} /></>}
-          </div>
-        </div>
-        <div className="min-w-0 md:sticky md:top-0 md:self-start">
-          <SelOutline sel={fsel} />
-          <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: w * scale, height: h * scale }}>
-            <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><EventPoster onPick={setFsel} e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} /></div>
-          </div>
-          <p className="mb-0 mt-2 text-center text-xs text-muted">L'aperçu change pendant que tu écris.</p>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="btn-clay" disabled={busy} onClick={() => run(pdf)}>📄 Enregistrer en PDF (haute qualité)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(png)}>💾 Enregistrer en image (PNG)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(print)}>🖨️ Imprimer</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" disabled={busy} onClick={() => run(() => { setMsg("✔ Infos de l'affiche enregistrées."); })}>✔ Enregistrer les infos</button>
-      </div>
-      {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
-      <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet : tu envoies toi-même l'image ou le PDF par ta messagerie. L'image est en haute qualité (prête à imprimer). Aucun nom d'élève sur l'affiche.</p>
-      {createPortal(<div className="affiche-print"><EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} /></div>, document.body)}
-    </Modal>
+    <PosterStudio
+      title={`🪧 ${titleOf(draft)}`} subtitle={`${fmtRange(e.startDate, e.endDate)} · dates prises dans le planning`} onClose={close}
+      formats={formats} format={format} onFormat={(f) => setFormat(f as PosterFormat)}
+      content={hasSimpleForm(e.kind)
+        ? <AnimationForm tournoi={isTournoi(e.kind)} start={e.startDate} end={e.endDate} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
+        : <><label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+            <textarea aria-label="Description de l'affiche" rows={2} maxLength={600} value={note} onChange={(x) => setNote(x.target.value)} className="mt-1 w-full rounded-md border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
+          <EventPosterFields kind={e.kind} value={info} onChange={setInfo} /></>}
+      look={<>
+        <Sec title="Modèle"><Seg label="Disposition de l'affiche" value={layout} options={[{ id: "elegant", label: "✨ Élégante" }, { id: "classique", label: "🏷️ Classique" }]} onChange={setLayout} />
+          <p className="mb-0 mt-1 text-xs text-muted">{layout === "elegant" ? "Ivoire, filets dorés, QR code." : "Bandeau bleu nuit et cartes."}</p></Sec>
+        <Sec title="Cartes d'information"><Seg label="Taille des cartes" value={light ? "petites" : "grandes"} options={[{ id: "grandes", label: "Grandes" }, { id: "petites", label: "Petites" }]} onChange={(v) => setLight(v === "petites")} />
+          <p className="mb-0 mt-1 text-xs text-muted">Petites : on voit davantage le fond.</p></Sec>
+        {e.who.length > 0 && <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="👤 Montrer qui s'en occupe" /></Sec>}
+      </>}
+      bg={bg} onBg={setBg}
+      partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
+      fmt={{ items: eventFmtItems(e.kind === "EQUIPES", partners.length > 0), value: fmt, onChange: setFmt as (f: Fmts) => void, selected: fsel, onSelect: setFsel }}
+      preview={({ pick }) => poster({ onPick: pick })}
+      printNode={poster()}
+      fileBase={(f) => `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${f === "A4" ? "a4" : "carre"}`}
+      save={auto.state.kind === "idle" ? { kind: "idle", text: "Se sauvegarde toute seule dans le planning" } : auto.state}
+      beforeDownload={auto.flush}
+    />
   );
 }
 
@@ -1379,47 +1334,8 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
   const setMfmt = (v: Fmts) => { setMfmtState(v); try { localStorage.setItem("cc-affiche-mois-mise-en-forme", JSON.stringify(v)); } catch { /* sans mémoire du navigateur : le réglage reste pour cette fenêtre */ } };
   const logos = usePartnerLogos("mois"); const [withPartners, setWithPartners] = useState(true);
   const partners = withPartners ? logos : [];
-  const [scale, setScale] = useState(0.5);
-  const [msg, setMsg] = useState("");
-  const holder = useRef<HTMLDivElement>(null);
-  useEffect(() => { const f = () => setScale(window.innerWidth < 768 ? Math.min(0.75, (Math.min(window.innerWidth, 720) - 48) / POSTER_W) : Math.min(0.75, 460 / POSTER_W, (window.innerHeight - 190) / POSTER_H)); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   const shift = (n: number) => setMonth(addDays(`${month}-01`, n < 0 ? -1 : 32).slice(0, 7));
-  const print = () => {
-    const st = document.createElement("style"); st.textContent = "@page{size:A4;margin:0}";
-    document.head.appendChild(st); document.body.classList.add("printing-affiche");
-    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); };
-    window.addEventListener("afterprint", done); window.print();
-  };
-  const png = async () => {
-    setMsg("Je prépare l'image…");
-    try {
-      const blob = await posterToPng(holder.current?.firstElementChild as HTMLElement, POSTER_W, POSTER_H);
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `affiche-${month}-${model}.png`;
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg("✔ Image enregistrée dans tes téléchargements.");
-    } catch { setMsg("Impossible de faire l'image sur cet appareil : utilise plutôt « Imprimer ou PDF »."); }
-  };
-  const pdf = async () => {
-    setMsg("Je prépare le PDF…");
-    try { saveBlob(await posterToPdf(holder.current?.firstElementChild as HTMLElement, POSTER_W, POSTER_H), `affiche-${month}-${model}.pdf`); setMsg("✔ PDF enregistré dans tes téléchargements."); }
-    catch { setMsg("Impossible de faire le PDF sur cet appareil : utilise plutôt « Imprimer »."); }
-  };
-  return (
-    <Modal wide title="🖨️ Affiche du mois" onClose={onClose}>
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
-      <div className="grid min-w-0 content-start gap-0">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <button type="button" className="btn-outline" aria-label="Mois précédent" onClick={() => shift(-1)}>‹</button>
-        <b className="min-w-[9rem] text-center text-ink">{MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)}</b>
-        <button type="button" className="btn-outline" aria-label="Mois suivant" onClick={() => shift(1)}>›</button>
-      </div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        <Pill on={model === "liste"} onClick={() => setModel("liste")}>📋 Modèle liste</Pill>
-        <Pill on={model === "calendrier"} onClick={() => setModel("calendrier")}>🗓️ Modèle calendrier</Pill>
-        <Pill on={showWho} onClick={() => setShowWho(!showWho)}>👤 Montrer les professeurs</Pill>
-        {logos.length > 0 && <Pill on={withPartners} onClick={() => setWithPartners(!withPartners)}>🤝 Montrer les partenaires</Pill>}
-      </div>
-      <BgPicker bg={bg} onChange={setBg} />
-      {(() => {
+  const evEditor = (() => {
         const ev = events.find((x) => x.id === selEv);
         if (!ev || !/^[a-z0-9-]+$/i.test(selEv)) return null;
         const o = evText[ev.id] ?? {};
@@ -1438,26 +1354,33 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
             <p className="m-0 mt-1 text-xs text-muted">Cela ne change que l'affiche (pas le planning). Gardé dans ce navigateur.</p>
           </div>
         );
-      })()}
-      <FmtPanel items={monthFmtItems(model === "liste")} fmt={mfmt} onChange={setMfmt} selected={msel} onSelect={(k) => { setSelEv(""); setMsel(k); }} />
-      <SelOutline sel={selEv ? "" : msel} />
-      {/^[a-z0-9-]+$/i.test(selEv) && <style>{`.pf-prev [data-ev="${selEv}"]{outline:3px solid #e11d48;outline-offset:3px}`}</style>}
-      </div>
-      <div className="min-w-0 md:sticky md:top-0 md:self-start">
-      <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: POSTER_W * scale, height: POSTER_H * scale }}>
-        <div className="pf-prev" ref={holder} style={{ width: POSTER_W, height: POSTER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}><ClubPoster onPick={(k) => { setSelEv(""); setMsel(k); }} onPickEv={setSelEv} evText={evText} events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} /></div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="btn-clay" onClick={pdf}>📄 PDF</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={png}>💾 Image (PNG)</button>
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={print}>🖨️ Imprimer</button>
-      </div>
-      {msg && <p className="mb-0 mt-2 text-sm font-bold text-ink" role="status">{msg}</p>}
-      <p className="mb-0 mt-2 text-xs text-muted">Rien n'est envoyé sur Internet. Aucun nom d'élève.</p>
-      </div>
-      </div>
-      {createPortal(<div className="affiche-print"><ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} evText={evText} /></div>, document.body)}
-    </Modal>
+  })();
+  const poster = (extra: object = {}) => <ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} evText={evText} {...extra} />;
+  return (
+    <PosterStudio
+      title="🖨️ Affiche du mois" subtitle={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onClose={onClose}
+      formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
+      content={<>
+        <Sec title="Quel mois ?">
+          <div className="flex items-center gap-2">
+            <button type="button" className="btn-outline" aria-label="Mois précédent" onClick={() => shift(-1)}>‹</button>
+            <b className="min-w-[9rem] text-center text-ink">{MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)}</b>
+            <button type="button" className="btn-outline" aria-label="Mois suivant" onClick={() => shift(1)}>›</button>
+          </div>
+          <p className="mb-0 mt-2 text-xs text-muted">L'affiche reprend les événements du planning de ce mois. Pour changer un texte, touche-le sur l'affiche.</p>
+        </Sec>
+        <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="👤 Montrer les professeurs" hint="Noms des personnes affectées aux événements" /></Sec>
+      </>}
+      look={<Sec title="Modèle"><Seg label="Modèle de l'affiche" value={model} options={[{ id: "liste", label: "📋 Liste" }, { id: "calendrier", label: "🗓️ Calendrier" }]} onChange={setModel} /></Sec>}
+      bg={bg} onBg={setBg}
+      partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
+      fmt={{ items: monthFmtItems(model === "liste"), value: mfmt, onChange: setMfmt, selected: selEv ? "" : msel, onSelect: (k) => { setSelEv(""); setMsel(k); } }}
+      textsExtra={<>{evEditor}{/^[a-z0-9-]+$/i.test(selEv) && <style>{`.pf-prev [data-ev="${selEv}"]{outline:3px solid #e11d48;outline-offset:3px}`}</style>}</>}
+      preview={({ pick, goTab }) => poster({ onPick: pick, onPickEv: (id: string) => { setSelEv(id); goTab("textes"); } })}
+      printNode={poster()}
+      fileBase={() => `affiche-${month}-${model}`}
+      save={{ kind: "local", text: "● Réglages de texte gardés sur cet appareil" }}
+    />
   );
 }
 
