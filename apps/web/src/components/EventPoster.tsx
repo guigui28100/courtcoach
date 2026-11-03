@@ -97,13 +97,15 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const dt = dateBlock(e);
 
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
-  const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
+  const body = useRef<HTMLDivElement>(null); const root = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
+  const FZ = ["titre", "date", "infos", "tarifs", "texte", "equipe", "numero", "type", "accroche"] as const; // tailles réglées à la main : le réglage automatique ne les compte pas (il ne les écrase jamais)
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // « Tous les textes » : s'applique APRÈS l'ajustement automatique (sinon il serait annulé par lui)
   const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
       const inner = el.firstElementChild as HTMLElement; if (!inner) return;
+      const rt = root.current; const saved = FZ.map((z) => rt?.style.getPropertyValue(`--fz-${z}`) ?? ""); FZ.forEach((z) => rt?.style.setProperty(`--fz-${z}`, "1")); // on mesure SANS les agrandissements manuels
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
@@ -112,25 +114,28 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
       if (light) kk = Math.max(0.3, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 24 && inner.scrollHeight > avail && kk > 0.3; i++) { kk = Math.max(0.3, kk * Math.max(0.8, Math.min(0.98, avail / inner.scrollHeight))); el.style.setProperty("--k", String(kk)); } // trop de texte : on réduit jusqu'à ce que tout tienne (plus de texte qui déborde sur le bas de l'affiche)
-      onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5);
-      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
+      FZ.forEach((z, i) => rt?.style.setProperty(`--fz-${z}`, saved[i])); // on remet les tailles choisies à la main
+      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%";
+      onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5); setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const F = (k: BlockKey): BlockFmt => fmt?.[k] ?? {};
-  const pk = (k: BlockKey) => { const f = 1 + (F(k).size ?? 0) * 0.08; return (n: number) => `calc(${n}px * var(--k) * ${f})`; };
-  const [pt, pd, pi, pf, pn] = [pk("titre"), pk("date"), pk("infos"), pk("tarifs"), pk("texte")];
+  const pk = (k: BlockKey) => (n: number) => `calc(${n}px * var(--k) * var(--fz-${k}, 1))`;
+  const fz = (k: BlockKey) => 1 + (F(k).size ?? 0) * 0.08;
+  const fzVars = Object.fromEntries(FZ.map((z) => [`--fz-${z}`, String(fz(z))])) as CSSProperties;
+  const [pt, pd, pi, pf, pn, pty, pac] = [pk("titre"), pk("date"), pk("infos"), pk("tarifs"), pk("texte"), pk("type"), pk("accroche")];
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const wt = (k: BlockKey, d: number) => (F(k).bold === undefined ? d : F(k).bold ? 900 : 400);
   const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, ...(F(k).color ? { color: F(k).color } : {}), ...(F(k).dy ? { transform: `translateY(${F(k).dy! * 8}px)` } : {}), fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
   const just = (k: BlockKey) => (F(k).align === "center" ? "center" : F(k).align === "right" ? "flex-end" : undefined);
   const onPhoto = bg !== ""; // sur une photo : la photo reste bien visible en haut, le reste est posé sur une feuille ivoire translucide (texte lisible)
-  const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 150 : 190, px = sq ? 72 : 84;
+  const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 190 : 235, px = sq ? 72 : 84;
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par le mot le plus long
-  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
+  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5) * Math.max(1, fz("titre")))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
   const HALO: CSSProperties = {};
   const typeLabel = tour ? (ti?.type === "TMC" ? "Tournoi multi-chances" : "Tournoi") : kd.label;
   const rule = <div aria-hidden style={{ width: p(64), height: 1.5, background: GOLDL, margin: `${pt(20)} auto` }} />;
@@ -184,13 +189,13 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
     </div>
   );
   const glow: CSSProperties = {};
-  const titleEl = <div style={{ ...glow, textAlign: F("titre").align ?? "center" }}><div data-fmt="type" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 600, fontSize: pt(sq ? 28 : 34), color: BRONZE, marginBottom: pt(8) }}>{txt(fmt, "type", typeLabel)}</div><h1 data-fmt="titre" style={title}>{txt(fmt, "titre", name).replace(/ · /g, "\u00a0· ")}</h1>{teamsEl}{txt(fmt, "accroche", lede.text) && <p data-fmt="accroche" style={{ margin: `${pt(16)} 0 0`, fontSize: pt(sq ? 22 : 24), lineHeight: 1.35, fontWeight: 500, letterSpacing: "0.02em", color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{txt(fmt, "accroche", lede.text).split("\n").map((l, i) => i === 0 && lede.text.includes("\n") && fmt?.accroche?.text === undefined ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 800 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
+  const titleEl = <div style={{ ...glow, textAlign: F("titre").align ?? "center" }}><div data-fmt="type" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 600, fontSize: pty(sq ? 28 : 34), color: BRONZE, marginBottom: pty(8) }}>{txt(fmt, "type", typeLabel)}</div><h1 data-fmt="titre" style={title}>{txt(fmt, "titre", name).replace(/ · /g, "\u00a0· ")}</h1>{teamsEl}{txt(fmt, "accroche", lede.text) && <p data-fmt="accroche" style={{ margin: `${pac(16)} 0 0`, fontSize: pac(sq ? 22 : 24), lineHeight: 1.35, fontWeight: 500, letterSpacing: "0.02em", color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{txt(fmt, "accroche", lede.text).split("\n").map((l, i) => i === 0 && lede.text.includes("\n") && fmt?.accroche?.text === undefined ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 800 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(18);
-  const qrSize = sq ? 104 : 120;
+  const qrSize = sq ? 128 : 148;
   return (
-    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: w, height: h, overflow: "hidden", background: IVORY, color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
-      <FmtStyle fmts={fmt} noZoom={["titre", "date", "infos", "tarifs", "texte", "equipe", "numero"]} />
+    <div ref={root} onClick={(ev) => pickFmt(ev, onPick)} style={{ ...fzVars, position: "relative", width: w, height: h, overflow: "hidden", background: IVORY, color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+      <FmtStyle fmts={fmt} noZoom={["titre", "date", "infos", "tarifs", "texte", "equipe", "numero", "type", "accroche"]} />
       <Backdrop bg={bg} w={w} h={h} veil="light" pos="center 72%" />
       {onPhoto && <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: hdH, background: "linear-gradient(180deg,rgba(15,12,8,.6),rgba(15,12,8,.05))" }} />}
       {onPhoto && <div aria-hidden style={{ position: "absolute", left: 24, right: 24, top: hdH, bottom: 24, background: `rgba(251,248,242,${light ? 0.74 : 0.93})`, borderTop: `1.5px solid ${GOLDL}` }} />}
@@ -211,11 +216,11 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
           </div>
         </div>
       )}
-      <div style={{ position: "absolute", left: px, right: px, bottom: 40, height: ftH - 56, borderTop: `1.5px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 24, ...HALO }}>
+      <div style={{ position: "absolute", left: px, right: px, bottom: 44, height: ftH - 64, borderTop: `1.5px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 36, ...HALO }}>
         <div data-fmt="pied" style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.22em", color: BRONZE }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
-          <div style={{ fontSize: Math.min(sq ? 21 : 23, Math.floor((w - px * 2 - qrSize - 48) / (Math.max(longestLink(inscription), 1) * 0.62))), fontWeight: 700, lineHeight: 1.25, marginTop: 5, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
-          <div data-fmt="mail" style={{ fontSize: 15, marginTop: 6, color: MUTED, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "✉️ tennisclubhoudan@gmail.com")}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.22em", color: BRONZE }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
+          <div style={{ fontSize: Math.min(sq ? 27 : 30, Math.floor((w - px * 2 - qrSize - 72) / (Math.max(longestLink(inscription), 1) * 0.6))), fontWeight: 700, lineHeight: 1.35, marginTop: 10, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
+          <div data-fmt="mail" style={{ fontSize: 19, marginTop: 12, color: MUTED, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "✉️ tennisclubhoudan@gmail.com")}</div>
         </div>
         <div style={{ flex: "none", border: `1px solid ${GOLDL}`, lineHeight: 0 }}><Qr text={SITE} color={NAVY} size={qrSize - 8} /></div>
       </div>
