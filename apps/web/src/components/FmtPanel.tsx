@@ -98,6 +98,9 @@ export function FmtFloat({ items, fmt, onChange, selected, style, onClose }: { i
         {b("I", () => set({ italic: cur.italic ? undefined : true }), "Italique", cur.italic, { fontStyle: "italic" })}
         {b("S", () => set({ underline: cur.underline ? undefined : true }), "Souligné", cur.underline, { textDecoration: "underline" })}
         <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
+        {b("⬆", () => set({ dy: (cur.dy ?? 0) - 1 }), "Monter ce texte")}
+        {b("⬇", () => set({ dy: (cur.dy ?? 0) + 1 }), "Descendre ce texte")}
+        <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
         {FMT_COLORS.slice(0, 5).map(([c, n]) => <button key={c} type="button" aria-label={n} title={n} aria-pressed={cur.color === c} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`size-6 rounded-full border-2 ${cur.color === c ? "border-white ring-2 ring-champagne" : "border-white/40"}`} />)}
       </>}
       <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
