@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { PageHead, Page } from "../components/ui";
@@ -8,6 +8,12 @@ import { put } from "../api";
 import Cockpit from "./Cockpit";
 
 // V2 (réservée au coach, essai) : un seul endroit pour les nouveautés. Rien n'est envoyé sur Internet ; aucune donnée d'élève.
+// Si un onglet plante, on affiche un message au lieu d'une page vide
+class Guarded extends Component<{ children: ReactNode }, { err: string }> {
+  state = { err: "" };
+  static getDerivedStateFromError(e: Error) { return { err: e.message || "erreur" }; }
+  render() { return this.state.err ? <p role="alert" className="m-0 border-l-4 border-[#b42318] bg-[#fdecea] p-3 text-sm text-[#7a1810]">Cet onglet a rencontré un problème : {this.state.err}. Dis-le moi avec ce message.</p> : this.props.children; }
+}
 const TABS: [string, string][] = [["cockpit", "📊 Cockpit"], ["planning", "🗓️ Planning à calques"], ["seance", "⏱️ Séance guidée"], ["comite", "🏛️ Comité · Ligue"], ["carnet", "📘 Carnet de saison"]];
 const addDays = (iso: string, n: number) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toLocaleDateString("sv-SE"); };
 const longDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -22,11 +28,13 @@ export default function V2() {
         <div role="tablist" aria-label="Rubriques de la V2" className="flex flex-wrap gap-2">
           {TABS.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} type="button" onClick={() => setSp({ onglet: k })} className={tab === k ? "btn-ink" : "btn-outline"}>{l}</button>)}
         </div>
+        <Guarded key={tab}>
         {tab === "cockpit" && <Cockpit embedded />}
         {tab === "planning" && <Layers />}
         {tab === "seance" && <Guided />}
         {tab === "comite" && <Comite />}
         {tab === "carnet" && <Carnet />}
+        </Guarded>
       </Page>
     </>
   );
@@ -39,7 +47,7 @@ function Layers() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showClub, setShowClub] = useState(true); const [showLessons, setShowLessons] = useState(true);
   const [days, setDays] = useState(14);
-  useEffect(() => { get<{ events: ClubEvent[] }>("/club/plan").then((d) => setEvents(d.events)).catch(() => {}); get<Lesson[]>("/lessons").then(setLessons).catch(() => {}); }, []);
+  useEffect(() => { get<{ events: ClubEvent[] }>("/club/plan").then((d) => setEvents(Array.isArray(d?.events) ? d.events : [])).catch(() => {}); get<Lesson[]>("/lessons").then((d) => setLessons(Array.isArray(d) ? d : [])).catch(() => {}); }, []);
   const list = useMemo(() => Array.from({ length: days }, (_, i) => addDays(today, i)).map((day) => ({
     day,
     ev: showClub ? events.filter((e) => evOn(e, day)) : [],
@@ -137,7 +145,7 @@ function Comite() {
   const [players, setPlayers] = useState<Player[] | null>(null);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
-  const load = () => { get<Player[]>("/players").then(setPlayers).catch((e) => { setPlayers([]); setErr((e as Error).message); }); get<Trainer[]>("/trainers").then(setTrainers).catch((e) => setErr((e as Error).message)); };
+  const load = () => { get<Player[]>("/players").then((d) => setPlayers(Array.isArray(d) ? d : [])).catch((e) => { setPlayers([]); setErr((e as Error).message); }); get<Trainer[]>("/trainers").then((d) => setTrainers(Array.isArray(d) ? d : [])).catch((e) => setErr((e as Error).message)); };
   useEffect(load, []);
   const club = trainers.filter((t) => t.kind === "CLUB"); const comite = trainers.filter((t) => t.kind !== "CLUB");
   const rows = (players ?? []).map((p) => ({ p, c: club.filter((t) => t.playerIds.includes(p.id)), m: comite.filter((t) => t.playerIds.includes(p.id)) }));
@@ -186,10 +194,10 @@ function Carnet() {
   const [id, setId] = useState(""); const [season, setSeason] = useState(currentSeason());
   const [data, setData] = useState<{ goals: Goal[]; evals: Evaluation[]; stars: CourseStar[] } | null>(null);
   const [err, setErr] = useState("");
-  useEffect(() => { get<Player[]>("/players").then(setPlayers).catch((e) => setErr((e as Error).message)); }, []);
+  useEffect(() => { get<Player[]>("/players").then((d) => setPlayers(Array.isArray(d) ? d : [])).catch((e) => setErr((e as Error).message)); }, []);
   useEffect(() => {
     setData(null); if (!id) return;
-    Promise.all([get<Goal[]>(`/players/${id}/goals`), get<Evaluation[]>(`/players/${id}/evaluations`), get<CourseStar[]>(`/players/${id}/stars`)]).then(([goals, evals, stars]) => setData({ goals, evals, stars })).catch((e) => setErr((e as Error).message));
+    Promise.all([get<Goal[]>(`/players/${id}/goals`), get<Evaluation[]>(`/players/${id}/evaluations`), get<CourseStar[]>(`/players/${id}/stars`)]).then(([goals, evals, stars]) => setData({ goals: Array.isArray(goals) ? goals : [], evals: Array.isArray(evals) ? evals : [], stars: Array.isArray(stars) ? stars : [] })).catch((e) => setErr((e as Error).message));
   }, [id]);
   const p = players.find((x) => x.id === id);
   const seasons = [currentSeason(new Date(Date.now() - 365 * 864e5)), currentSeason()];

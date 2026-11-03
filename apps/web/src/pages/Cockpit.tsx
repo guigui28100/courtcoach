@@ -37,14 +37,18 @@ export default function Cockpit({ embedded = false }: { embedded?: boolean }) {
   const { me } = useAuth();
   const today = todayIso();
   const plan = useSection<{ events: ClubEvent[] }>("/club/plan", { events: [] });
-  const sponsors = useSection<Sponsor[]>("/sponsors", []);
-  const lessons = useSection<Lesson[]>("/lessons", []);
-  const profs = useSection<ProfAdmin[]>("/profs/admin", []);
+  const sponsorsRaw = useSection<{ sponsors: Sponsor[] } | Sponsor[]>("/sponsors", []);
+  const sponsors = { ok: sponsorsRaw.ok, loading: sponsorsRaw.loading, data: Array.isArray(sponsorsRaw.data) ? sponsorsRaw.data : (sponsorsRaw.data?.sponsors ?? []) };
+  const lessonsRaw = useSection<Lesson[]>("/lessons", []);
+  const lessons = { ...lessonsRaw, data: Array.isArray(lessonsRaw.data) ? lessonsRaw.data : [] };
+  const profsRaw = useSection<ProfAdmin[]>("/profs/admin", []);
+  const profs = { ...profsRaw, data: Array.isArray(profsRaw.data) ? profsRaw.data : [] };
 
+  const events = Array.isArray(plan.data?.events) ? plan.data.events : [];
   const week = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(today, i)), [today]);
-  const eventsByDay = useMemo(() => week.map((d) => ({ day: d, events: plan.data.events.filter((e) => evOn(e, d)) })), [week, plan.data.events]);
+  const eventsByDay = useMemo(() => week.map((d) => ({ day: d, events: events.filter((e) => evOn(e, d)) })), [week, events]);
   const weekCount = new Set(eventsByDay.flatMap((x) => x.events.map((e) => e.id))).size;
-  const tentative = plan.data.events.filter((e) => e.tentative && e.endDate >= today);
+  const tentative = events.filter((e) => e.tentative && e.endDate >= today);
 
   const toConfirm = lessons.data.filter((l) => l.status === "BOOKED" && l.finalSlot && l.finalSlot.date >= today);
   const nextLessons = lessons.data.filter((l) => l.status === "ACCEPTED" && l.finalSlot && l.finalSlot.date >= today && l.finalSlot.date <= week[6]).sort((a, b) => (a.finalSlot!.date + a.finalSlot!.time).localeCompare(b.finalSlot!.date + b.finalSlot!.time));
@@ -60,7 +64,7 @@ export default function Cockpit({ embedded = false }: { embedded?: boolean }) {
     if (s.status === "RELANCE") alerts.push({ key: `rel-${s.id}`, tone: "blue", text: `${s.name} est à relancer.`, to: "/coach/club/partenaires", cta: "Ouvrir" });
   }
   for (const p of profs.data) {
-    const card = p.documents.find((d) => d.kind === "CARTE_PRO");
+    const card = (p.documents ?? []).find((d) => d.kind === "CARTE_PRO");
     const who = `${p.firstName}${p.lastName ? ` ${p.lastName}` : ""}`;
     if (p.status === "waiting") alerts.push({ key: `pw-${p.id}`, tone: "amber", text: `${who} attend ta validation pour donner des cours particuliers.`, to: me?.role === "PRESIDENT" ? "/president?onglet=profs" : "/coach/adultes?onglet=profs", cta: "Vérifier" });
     if (card?.validUntil) {
