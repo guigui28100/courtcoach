@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { get } from "../api";
 import { PageHead, Page } from "../components/ui";
 import { colorOf, evOn, kindOf, titleOf, ClubEvent } from "../clubPlan";
-import { Lesson, fmtSlot, todayIso } from "../types";
+import { Lesson, Player, Goal, Evaluation, CourseStar, STATUS, EVAL_AXES, goalApplies, currentSeason, starsByDomain, fmtSlot, todayIso } from "../types";
+import { put } from "../api";
 import Cockpit from "./Cockpit";
 
 // V2 (réservée au coach, essai) : un seul endroit pour les nouveautés. Rien n'est envoyé sur Internet ; aucune donnée d'élève.
@@ -130,32 +131,103 @@ function Guided() {
   );
 }
 
-// ───────── Comité · Ligue : pas encore actif (touche aux données de mineurs, décision à prendre ensemble) ─────────
+// ───────── Comité · Ligue : binôme (référent du club + entraîneur de comité) par jeune, accès donnés par le coach SEUL ─────────
+type Trainer = { id: string; email: string; firstName: string | null; kind?: "COMITE" | "CLUB"; playerIds: string[] };
 function Comite() {
+  const [players, setPlayers] = useState<Player[] | null>(null);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [err, setErr] = useState(""); const [msg, setMsg] = useState("");
+  const load = () => { get<Player[]>("/players").then(setPlayers).catch((e) => { setPlayers([]); setErr((e as Error).message); }); get<Trainer[]>("/trainers").then(setTrainers).catch((e) => setErr((e as Error).message)); };
+  useEffect(load, []);
+  const club = trainers.filter((t) => t.kind === "CLUB"); const comite = trainers.filter((t) => t.kind !== "CLUB");
+  const rows = (players ?? []).map((p) => ({ p, c: club.filter((t) => t.playerIds.includes(p.id)), m: comite.filter((t) => t.playerIds.includes(p.id)) }));
+  const full = rows.filter((r) => r.c.length && r.m.length).length;
+  const noComite = rows.filter((r) => !r.m.length).length; const noClub = rows.filter((r) => !r.c.length).length;
+  async function setAccess(t: Trainer, playerId: string, on: boolean) {
+    setErr(""); setMsg("");
+    const ids = on ? [...new Set([...t.playerIds, playerId])] : t.playerIds.filter((x) => x !== playerId);
+    try { await put(`/trainers/${t.id}/players`, { playerIds: ids }); setMsg("Accès enregistré."); load(); } catch (e) { setErr((e as Error).message); }
+  }
+  const nm = (t: Trainer) => t.firstName || t.email;
   return (
-    <section className="grid max-w-3xl gap-3" aria-labelledby="cl-h">
-      <h2 id="cl-h" className="m-0 font-display text-2xl">Comité · Ligue</h2>
-      <p className="m-0 border-l-4 border-[#c88a00] bg-[#fff6dd] p-3 text-sm text-[#5c4300]">🚧 Pas encore actif. Cette partie fait voir des jeunes à des personnes extérieures au club : je ne la branche pas sans ton accord écrit sur les règles ci-dessous.</p>
-      <ul className="m-0 grid gap-2 pl-5 text-sm">
-        <li><b>Binôme :</b> un référent du club + un entraîneur de comité par jeune.</li>
-        <li><b>Cloisonnement :</b> le comité ne voit QUE les jeunes que tu lui confies, un par un.</li>
-        <li><b>Validation :</b> bilans et bulletins validés par le binôme, jamais par le comité seul ; toi seul donnes les accès.</li>
-        <li><b>Tableau de bord :</b> chiffres anonymes seulement (pas de nom).</li>
-        <li><b>Familles :</b> un passage de relais d'un club à un autre demande l'accord des parents.</li>
-      </ul>
-      <p className="m-0 text-sm text-muted">Dis-moi « OK comité » avec les changements que tu veux, et je le construis avec la base de données et les tests de sécurité.</p>
+    <section className="grid gap-5" aria-labelledby="cl-h">
+      <h2 id="cl-h" className="m-0 font-display text-2xl">Comité · Ligue : les binômes</h2>
+      <p className="m-0 max-w-3xl text-sm text-muted">Chaque jeune a un <b>binôme</b> : un entraîneur <b>du club</b> (référent) et un entraîneur <b>de comité</b>. Un entraîneur ne voit que les jeunes que <b>toi seul</b> lui confies ici. Les comptes d'entraîneurs se créent dans Jeunes · Centre › 👥 Entraîneurs.</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[[rows.length, "jeunes suivis"], [full, "binômes complets"], [noClub, "sans référent club"], [noComite, "sans entraîneur de comité"]].map(([n, l]) => <div key={String(l)} className="border border-line bg-paper p-3"><b className="block font-display text-3xl">{n}</b><span className="text-sm text-muted">{l}</span></div>)}
+      </div>
+      <p className="m-0 text-xs text-muted">Ces quatre chiffres ne contiennent aucun nom : ils peuvent être montrés tels quels à la ligue ou au comité.</p>
+      {err && <p role="alert" className="m-0 text-sm text-[#b42318]">{err}</p>}{msg && <p role="status" className="m-0 text-sm text-[#1f7a45]">{msg}</p>}
+      {players === null ? <div className="skeleton h-24" role="status" aria-label="Chargement" /> : rows.length === 0 ? <p className="m-0 text-sm text-muted">Aucun joueur pour l'instant.</p> : (
+        <ul className="m-0 grid list-none gap-3 p-0">
+          {rows.map(({ p, c, m }) => (
+            <li key={p.id} className="grid gap-2 border border-line bg-paper p-3">
+              <div className="flex flex-wrap items-center gap-2"><b>{p.firstName} {p.lastName}</b>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${c.length && m.length ? "bg-[#e3f4e8] text-[#14532d]" : "bg-[#fff6dd] text-[#5c4300]"}`}>{c.length && m.length ? "✅ Binôme complet" : !c.length && !m.length ? "⚠ Aucun entraîneur" : !c.length ? "⚠ Manque le référent du club" : "⚠ Manque l'entraîneur de comité"}</span></div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([["🏠 Référent du club", club, c], ["🏛️ Entraîneur de comité", comite, m]] as const).map(([label, all, cur]) => (
+                  <div key={label} className="grid gap-1 text-sm"><span className="font-bold">{label}</span>
+                    {all.length === 0 ? <span className="text-muted">Aucun compte de ce type : crée-le dans « Entraîneurs ».</span> : all.map((t) => (
+                      <label key={t.id} className="flex items-center gap-2"><input type="checkbox" checked={cur.some((x) => x.id === t.id)} onChange={(e) => setAccess(t, p.id, e.target.checked)} /> {nm(t)}</label>))}
+                  </div>))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="m-0 text-sm text-muted">Règle d'or : seul le coach donne ou retire un accès. Chaque entraîneur voit uniquement ses jeunes cochés ; bilans et bulletins se saisissent déjà par le coach et les entraîneurs concernés, et tu les valides toi-même.</p>
     </section>
   );
 }
 
-// ───────── Carnet de saison : pointe vers ce qui existe déjà ─────────
+// ───────── Carnet de saison : la saison d'un joueur sur une page, à imprimer ou enregistrer en PDF ─────────
 function Carnet() {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [id, setId] = useState(""); const [season, setSeason] = useState(currentSeason());
+  const [data, setData] = useState<{ goals: Goal[]; evals: Evaluation[]; stars: CourseStar[] } | null>(null);
+  const [err, setErr] = useState("");
+  useEffect(() => { get<Player[]>("/players").then(setPlayers).catch((e) => setErr((e as Error).message)); }, []);
+  useEffect(() => {
+    setData(null); if (!id) return;
+    Promise.all([get<Goal[]>(`/players/${id}/goals`), get<Evaluation[]>(`/players/${id}/evaluations`), get<CourseStar[]>(`/players/${id}/stars`)]).then(([goals, evals, stars]) => setData({ goals, evals, stars })).catch((e) => setErr((e as Error).message));
+  }, [id]);
+  const p = players.find((x) => x.id === id);
+  const seasons = [currentSeason(new Date(Date.now() - 365 * 864e5)), currentSeason()];
   return (
-    <section className="grid max-w-3xl gap-3" aria-labelledby="cn-h">
-      <h2 id="cn-h" className="m-0 font-display text-2xl">Carnet de saison</h2>
-      <p className="m-0 border-l-4 border-[#c88a00] bg-[#fff6dd] p-3 text-sm text-[#5c4300]">🚧 Pas encore fait : le carnet qui réunit toute la saison d'un joueur en un seul PDF.</p>
-      <p className="m-0 text-sm text-muted">En attendant, chaque trimestre a déjà son bulletin imprimable (fiche du joueur › Bulletins).</p>
-      <Link to="/coach/centre?onglet=bulletins" className="text-sm font-bold underline">Ouvrir les bulletins →</Link>
+    <section className="grid gap-4" aria-labelledby="cn-h">
+      <div className="grid gap-3 print:hidden">
+        <h2 id="cn-h" className="m-0 font-display text-2xl">Carnet de saison</h2>
+        <p className="m-0 max-w-3xl text-sm text-muted">Choisis un joueur : tu obtiens toute sa saison sur une page (départ, missions de chaque trimestre, étoiles). Ensuite « Imprimer » → « Enregistrer en PDF ».</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 text-sm font-bold">Joueur<select value={id} onChange={(e) => setId(e.target.value)}><option value="">Choisir…</option>{players.map((x) => <option key={x.id} value={x.id}>{x.firstName} {x.lastName}</option>)}</select></label>
+          <label className="grid gap-1 text-sm font-bold">Saison<select value={season} onChange={(e) => setSeason(e.target.value)}>{seasons.map((x) => <option key={x}>{x}</option>)}</select></label>
+          <button type="button" className="btn-clay" disabled={!data} onClick={() => window.print()}>🖨️ Imprimer / PDF</button>
+        </div>
+        {err && <p role="alert" className="m-0 text-sm text-[#b42318]">{err}</p>}
+      </div>
+      {p && data && (() => {
+        const ev = data.evals.filter((e) => e.season === season);
+        const start = ev.find((e) => e.trimester === 0);
+        return (
+          <article className="grid gap-5 border border-line bg-white p-6 text-ink print:border-0 print:p-0">
+            <header className="border-b-2 border-ink pb-3"><p className="m-0 text-xs uppercase tracking-widest text-muted">Tennis Club Houdan · Carnet de saison {season}</p><h1 className="m-0 font-display text-4xl">{p.firstName} {p.lastName}</h1>
+              <p className="m-0 text-sm text-muted">{[p.ranking && `Classement ${p.ranking}`, p.targetRanking && `Objectif ${p.targetRanking}`].filter(Boolean).join(" · ") || "Classement non renseigné"}</p></header>
+            <section><h2 className="m-0 mb-1 font-display text-xl">📍 Point de départ</h2>
+              {start ? <div className="grid gap-1 text-sm">{start.strengths && <p className="m-0"><b>Points forts :</b> {start.strengths}</p>}{start.improve && <p className="m-0"><b>À progresser :</b> {start.improve}</p>}{start.appreciation && <p className="m-0"><b>Mot du coach :</b> {start.appreciation}</p>}{!start.strengths && !start.improve && !start.appreciation && <p className="m-0 text-muted">Bilan rempli, sans texte.</p>}</div> : <p className="m-0 text-sm text-muted">Pas de bilan de départ pour cette saison.</p>}</section>
+            {[1, 2, 3].map((t) => {
+              const goals = data.goals.filter((g) => g.season === season && goalApplies(g, t));
+              const e = ev.find((x) => x.trimester === t); const st = starsByDomain(data.stars, season, t);
+              return (
+                <section key={t} className="break-inside-avoid"><h2 className="m-0 mb-1 font-display text-xl">Trimestre {t}</h2>
+                  {goals.length === 0 ? <p className="m-0 text-sm text-muted">Aucune mission.</p> : <ul className="m-0 grid list-none gap-1 p-0 text-sm">{goals.map((g) => { const cp = g.checkpoints.find((c) => c.trimester === t); const s = cp ? STATUS[cp.status] : null; return <li key={g.id} className="flex flex-wrap gap-2"><span>•</span><span className="min-w-0 flex-1">{g.title}{cp?.comment ? <i className="text-muted"> — {cp.comment}</i> : null}</span>{s && <span className="font-bold">{s.emoji} {s.label}</span>}</li>; })}</ul>}
+                  <p className="m-0 mt-1 text-sm"><b>Étoiles :</b> {EVAL_AXES.map((a) => `${a.label} ${st[a.key]}`).join(" · ")}</p>
+                  {e?.appreciation && <p className="m-0 mt-1 text-sm"><b>Mot du coach :</b> {e.appreciation}</p>}
+                </section>);
+            })}
+            <footer className="mt-4 grid grid-cols-2 gap-8 border-t pt-3 text-xs text-muted"><span>Signature du coach</span><span>Signature des parents</span></footer>
+          </article>
+        );
+      })()}
     </section>
   );
 }
