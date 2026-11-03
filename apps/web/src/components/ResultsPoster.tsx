@@ -9,7 +9,7 @@ import { NoBreak } from "./NoBreak";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type ResultsFormat = "PORTRAIT" | "CARRE" | "A4";
 export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { PORTRAIT: { w: 1080, h: 1350 }, CARRE: { w: 1080, h: 1080 }, A4: { w: 794, h: 1123 } };
-export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][]; zoom?: number[] }
+export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][]; zoom?: number[]; dy?: number }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
 export const emptyResults = (): ResultsData => ({ headline: "Résultats du week-end", tournaments: [emptyTournament()], message: "" });
@@ -104,7 +104,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 </div>
                 <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "nowrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: 0 }}>
+                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: 0, marginTop: p(Math.max(0, Math.min(12, t.dy ?? 0)) * 8) }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
