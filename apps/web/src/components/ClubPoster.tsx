@@ -211,8 +211,8 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
           <div style={{ fontSize: two ? 17 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
         </div>
         <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
-          <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
-          {det.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={det} /></div>}
+          <div style={{ fontSize: two ? 14.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline rest={false} /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
+          {(() => { const sub = isMatch(e) ? [...labelParts(e).slice(2), ...det] : det; return sub.length > 0 && <div style={{ fontSize: two ? 12.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 }}><Parts parts={sub} /></div>; })()}
           {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
         </div></div>
       </div>
