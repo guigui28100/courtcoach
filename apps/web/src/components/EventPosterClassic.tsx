@@ -68,7 +68,7 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
-      const inner = el.firstElementChild as HTMLElement; if (!inner) return;
+      const inner = el.firstElementChild as HTMLElement; if (!inner) return; el.setAttribute("data-measuring", "1"); // on mesure sans les déplacements (sinon un texte descendu ferait croire que ça déborde)
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
@@ -78,7 +78,7 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
       el.style.setProperty("--k", String(kk));
       for (let i = 0; i < 24 && inner.scrollHeight > avail && kk > 0.3; i++) { kk = Math.max(0.3, kk * Math.max(0.8, Math.min(0.98, avail / inner.scrollHeight))); el.style.setProperty("--k", String(kk)); } // trop de texte : on réduit jusqu'à ce que tout tienne (plus de texte qui déborde sur le bas de l'affiche)
       onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5);
-      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
+      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; el.removeAttribute("data-measuring"); setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});

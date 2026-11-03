@@ -34,7 +34,7 @@ export function fmtCss(fmts: Fmts | undefined, noZoom: string[] = []): string {
 // Les règles de mise en forme, posées DANS l'affiche (donc reprises par l'image, le PDF et l'impression)
 export const FmtStyle = ({ fmts, noZoom }: { fmts?: Fmts; noZoom?: string[] }) => {
   const css = fmtCss(fmts, noZoom);
-  return css ? <style>{css}</style> : null;
+  return <style>{css + "[data-measuring] [data-fmt]{transform:none !important}"}</style>;
 };
 
 // Clic sur un texte de l'aperçu : on remonte jusqu'à la partie repérée la plus proche

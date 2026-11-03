@@ -104,7 +104,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
-      const inner = el.firstElementChild as HTMLElement; if (!inner) return;
+      const inner = el.firstElementChild as HTMLElement; if (!inner) return; el.setAttribute("data-measuring", "1"); // on mesure sans les déplacements (sinon un texte descendu ferait croire que ça déborde)
       const rt = root.current; const saved = FZ.map((z) => rt?.style.getPropertyValue(`--fz-${z}`) ?? ""); FZ.forEach((z) => rt?.style.setProperty(`--fz-${z}`, "1")); // on mesure SANS les agrandissements manuels
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
@@ -116,7 +116,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
       for (let i = 0; i < 24 && inner.scrollHeight > avail && kk > 0.3; i++) { kk = Math.max(0.3, kk * Math.max(0.8, Math.min(0.98, avail / inner.scrollHeight))); el.style.setProperty("--k", String(kk)); } // trop de texte : on réduit jusqu'à ce que tout tienne (plus de texte qui déborde sur le bas de l'affiche)
       FZ.forEach((z, i) => rt?.style.setProperty(`--fz-${z}`, saved[i])); // on remet les tailles choisies à la main
       el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%";
-      onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5); setK(kk);
+      onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5); el.removeAttribute("data-measuring"); setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
