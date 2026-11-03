@@ -544,7 +544,7 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 .affiche-print { display: none; }
 .affiche-print, .affiche-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 @media print {
-  body.printing-affiche #root { display: none !important; }
+  body.printing-affiche #root, body.printing-affiche .studio-root { display: none !important; }
   body.printing-affiche .affiche-print { display: block !important; }
   body.printing-affiche { margin: 0; background: #fff; }
 }
@@ -733,3 +733,6 @@ html[data-mode="light"] .prog-w, html[data-mode="light"] .prog-mobile { color: v
 .contract-body:hover, .contract-field:hover { background: rgba(201, 173, 119, 0.12); }
 .contract-field:focus { outline: 2px solid #c9ad77; outline-offset: 1px; background: rgba(201, 173, 119, 0.18); }
 @media print { .contract-body:hover, .contract-field:hover, .contract-field:focus { background: none; outline: none; } }
+
+/* Studio d'affiche : boutons « outline » plus discrets (il y en a beaucoup dans les formulaires) */
+.studio-root .btn-outline { padding: .4rem .75rem; font-size: .7rem; }

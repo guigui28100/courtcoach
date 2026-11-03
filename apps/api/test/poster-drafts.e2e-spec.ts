@@ -43,6 +43,11 @@ describe("Affiches enregistrées en ligne : coach, président, bureau seulement"
   it("enregistre, rouvre, met à jour (photos retirées effacées) et supprime", async () => {
     const c = await A.coach.post("/api/poster-drafts").set(ORIGIN).send({ kind: "resultats", name: "Vacances", data: JSON.stringify({ d: { tournaments: [] } }) }).expect(201);
     const id = c.body.id;
+    // une affiche de bilan est acceptée aussi, et la liste dit de quel type est chaque affiche
+    const bil = (await A.coach.post("/api/poster-drafts").set(ORIGIN).send({ kind: "bilan", name: "Bilan · Tournoi", data: JSON.stringify({ d: { photos: [] } }) }).expect(201)).body.id;
+    const all = (await A.coach.get("/api/poster-drafts").expect(200)).body as { id: string; kind: string }[];
+    expect(all.find((x) => x.id === bil)?.kind).toBe("bilan"); expect(all.find((x) => x.id === id)?.kind).toBe("resultats");
+    await A.coach.delete(`/api/poster-drafts/${bil}`).set(ORIGIN).expect(204);
     const p1 = (await A.coach.post(`/api/poster-drafts/${id}/photos`).set(ORIGIN).set("Content-Type", "application/octet-stream").send(JPG).expect(201)).body.id;
     const p2 = (await A.coach.post(`/api/poster-drafts/${id}/photos`).set(ORIGIN).set("Content-Type", "application/octet-stream").send(JPG).expect(201)).body.id;
     await A.coach.put(`/api/poster-drafts/${id}`).set(ORIGIN).send({ name: "Vacances", data: JSON.stringify({ d: { tournaments: [{ photos: [`srv:${p1}`] }] } }) }).expect(200);
