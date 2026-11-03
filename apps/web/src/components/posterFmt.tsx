@@ -24,7 +24,7 @@ export function fmtCss(fmts: Fmts | undefined, noZoom: string[] = []): string {
     if (kids.length) css += `${sel},${sel} *{${kids.join(";")}}`;
     const own: string[] = [];
     if (f.align) own.push(`justify-content:${f.align === "center" ? "center" : f.align === "right" ? "flex-end" : "flex-start"}`);
-    if (f.dy) own.push(`transform:translateY(${f.dy * 8}px)`);
+    if (f.dy) own.push(`transform:translateY(${f.dy * 16}px)`);
     if (f.size && !noZoom.includes(k) && k !== "tout") own.push(`zoom:${stepZoom(f.size)}`);
     if (own.length) css += `${sel}{${own.join(";")}}`;
   }

@@ -129,7 +129,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const [pt, pd, pi, pf, pn, pty, pac] = [pk("titre"), pk("date"), pk("infos"), pk("tarifs"), pk("texte"), pk("type"), pk("accroche")];
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const wt = (k: BlockKey, d: number) => (F(k).bold === undefined ? d : F(k).bold ? 900 : 400);
-  const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, ...(F(k).color ? { color: F(k).color } : {}), ...(F(k).dy ? { transform: `translateY(${F(k).dy! * 8}px)` } : {}), fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
+  const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, ...(F(k).color ? { color: F(k).color } : {}), ...(F(k).dy ? { transform: `translateY(${F(k).dy! * 16}px)` } : {}), fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
   const just = (k: BlockKey) => (F(k).align === "center" ? "center" : F(k).align === "right" ? "flex-end" : undefined);
   const onPhoto = bg !== ""; // sur une photo : la photo reste bien visible en haut, le reste est posé sur une feuille ivoire translucide (texte lisible)
   const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 250 : 300, px = sq ? 72 : 84;
