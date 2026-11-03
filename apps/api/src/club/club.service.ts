@@ -149,7 +149,7 @@ export class ClubService {
     return all;
   }
 
-  // bureau : tout ce qu'il place est PRÉVISIONNEL et jamais « mis en avant » (le coach et le président valident)
+  // bureau : tout ce qu'il place est PRÉVISIONNEL et jamais « mis en avant » (seul le coach valide)
   async create(dto: ClubEventDto, bureau = false) {
     const ev = await this.clean(dto); await this.check(ev, dto);
     return this.prisma.clubEvent.create({ data: { ...ev, title: ev.title ?? "", who: uniq(dto.who).map((s) => s.trim()).filter(Boolean), note: dto.note ?? "", featured: !bureau && dto.featured === true, tentative: bureau || dto.tentative === true, skipDays: this.skip(dto), ...this.posterData(dto) } });
@@ -169,7 +169,7 @@ export class ClubService {
 
   async remove(id: string, bureau = false) {
     // bureau : seulement un événement encore prévisionnel
-    if (bureau) { const cur = await this.prisma.clubEvent.findUnique({ where: { id } }); if (cur && !cur.tentative) throw new ForbiddenException("Cet événement est validé : seuls le coach et le président peuvent le supprimer."); }
+    if (bureau) { const cur = await this.prisma.clubEvent.findUnique({ where: { id } }); if (cur && !cur.tentative) throw new ForbiddenException("Cet événement est validé : seul le coach peut le supprimer."); }
     const r = await this.prisma.clubEvent.deleteMany({ where: { id } });
     if (!r.count) throw new NotFoundException("Événement introuvable");
     return { deleted: true };

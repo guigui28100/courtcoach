@@ -67,8 +67,14 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
   });
 
   it("le président gère le planning du club ; le bureau le voit et propose seulement des événements prévisionnels", async () => {
-    const e = (await A.president.post("/api/club/events").set(ORIGIN).send(ev({ title: "Tournoi du club" })).expect(201)).body;
-    await A.president.put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ title: "Tournoi du club (modifié)" })).expect(200);
+    // seul le coach valide : le président propose, comme le bureau (prévisionnel, jamais mis en avant)
+    const e = (await A.coach.post("/api/club/events").set(ORIGIN).send(ev({ title: "Tournoi du club" })).expect(201)).body;
+    await A.coach.put(`/api/club/events/${e.id}`).set(ORIGIN).send(ev({ title: "Tournoi du club (modifié)" })).expect(200);
+    const pp = (await A.president.post("/api/club/events").set(ORIGIN).send(ev({ title: "Idée du président", tentative: false, featured: true, startDate: "2027-02-10", endDate: "2027-02-10" })).expect(201)).body;
+    expect(pp.tentative).toBe(true); expect(pp.featured).toBe(false);
+    await A.president.delete(`/api/club/events/${pp.id}`).set(ORIGIN).expect(200);
+    await A.president.delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(403);
+    await A.president.post("/api/profs/inconnu/approval").set(ORIGIN).send({ approved: true }).expect(403);
     await A.president.put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(200);
     await A.president.put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(200);
     for (const k of ["bureau", "bureau2"]) {
@@ -90,7 +96,7 @@ describe("Accès du club : président (gestion) et bureau (lecture seule du plan
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
       await A[k].put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(403);
     }
-    await A.president.delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(200);
+    await A.coach.delete(`/api/club/events/${e.id}`).set(ORIGIN).expect(200);
   });
 
   it("le président voit les demandes de cours et toute l'activité des professeurs ; le bureau n'a rien de tout cela", async () => {

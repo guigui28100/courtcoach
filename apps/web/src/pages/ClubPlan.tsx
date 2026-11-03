@@ -2,7 +2,7 @@ import { YVELINES_CLUBS } from "../yvelinesClubs";
 import { RANKINGS } from "../types";
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-// Membre du bureau : il PROPOSE des événements, toujours prévisionnels ; le coach et le président les valident (le serveur le garantit aussi)
+// Membre du bureau : il PROPOSE des événements, toujours prévisionnels ; seul le coach les valide (le serveur le garantit aussi)
 const BureauCtx = createContext(false);
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -120,7 +120,7 @@ export function ClubPlan() {
 
   return (
     <Page>
-      <BureauCtx.Provider value={readOnly}>
+      <BureauCtx.Provider value={me?.role !== "COACH"}>
       <div className="grid gap-3">
         <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
         <section className="relative overflow-hidden rounded bg-ink px-5 py-5 text-white border-b-2 border-champagne">
@@ -156,7 +156,7 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls le coach et le président les valident.</p>}
+        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
@@ -192,7 +192,7 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} canValidate={me?.role === "COACH"} />}
       {recapEv && <RecapModal e={recapEv} events={events} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
@@ -1247,12 +1247,12 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false }: { readOnly?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false, canValidate = false }: { readOnly?: boolean; canValidate?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
       {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-bold text-ink">⏳ Prévisionnel : pas encore validé</p>}
-      {!readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
+      {canValidate && !readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
       <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
