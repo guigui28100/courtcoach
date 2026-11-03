@@ -23,7 +23,7 @@ const ProfSpace = named(() => import("./pages/Prof"), "ProfSpace");
 const Privacy = named(() => import("./pages/Static"), "Privacy");
 const Authorization = named(() => import("./pages/Static"), "Authorization");
 const Bulletin = lazy(() => import("./pages/Bulletin"));
-const Cockpit = lazy(() => import("./pages/Cockpit"));
+const Cockpit = lazy(() => import("./pages/V2"));
 const PlanningProfsPage = lazy(() => import("./pages/PlanningProfs"));
 const TournamentReportPrint = lazy(() => import("./pages/TournamentReportPrint"));
 const TrainerPreview = lazy(() => import("./pages/TrainerPreview"));
