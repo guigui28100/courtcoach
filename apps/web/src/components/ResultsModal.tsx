@@ -112,6 +112,13 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
               <input aria-label={`Tournoi ${i + 1}, résultat ${j + 1} : résultat`} className={field} maxLength={120} placeholder={r.what.includes("Bravo") ? "Les prénoms" : "Résultat (ex. Paul, 6-4 6-3)"} value={r.result} onChange={(x) => setT(i, { results: t.results.map((o, m) => (m === j ? { ...o, result: x.target.value } : o)) })} />
               <button type="button" className="btn-outline" aria-label={`Retirer le résultat ${j + 1}`} onClick={() => setT(i, { results: t.results.filter((_, m) => m !== j) })}>🗑️</button>
             </div>))}
+          {t.results.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label={`Tournoi ${i + 1} : décaler le texte des résultats dans la carte`}>
+              <span className="text-xs font-bold text-ink">↕ Décaler le texte vers le bas <small className="font-normal text-muted">(sans agrandir la carte : il s'arrête au bord, il faut des photos pour avoir de la place)</small></span>
+              <button type="button" className="btn-outline" aria-label="Remonter le texte" disabled={(t.dy ?? 0) <= 0} onClick={() => setT(i, { dy: Math.max(0, (t.dy ?? 0) - 1) })}>⬆</button>
+              <button type="button" className="btn-outline" aria-label="Descendre le texte" disabled={(t.dy ?? 0) >= 12} onClick={() => setT(i, { dy: Math.min(12, (t.dy ?? 0) + 1) })}>⬇</button>
+              {(t.dy ?? 0) > 0 && <button type="button" className="btn-outline" onClick={() => setT(i, { dy: 0 })}>↺ Remettre en haut</button>}
+            </div>)}
           {t.results.length < MAX_RESULT_LINES && <div className="flex flex-wrap gap-2">{QUICK.map((a) => <button key={a} type="button" className="btn-outline" onClick={() => setT(i, { results: [...t.results, { what: a, result: "" }] })}>＋ {a}</button>)}<button type="button" className="btn-outline" onClick={() => setT(i, { results: [...t.results, { what: "", result: "" }] })}>＋ Autre ligne</button></div>}
           {t.results.length + 2 <= MAX_RESULT_LINES && (
             <select aria-label={`Tournoi ${i + 1} : ajouter une catégorie de jeunes avec vainqueur et finaliste`} className={field} value="" onChange={(x) => { const g = x.target.value; if (g) setT(i, { results: [...t.results, { what: "🥇 Vainqueur", result: "", group: g }, { what: "🥈 Finaliste", result: "", group: g }] }); }}>

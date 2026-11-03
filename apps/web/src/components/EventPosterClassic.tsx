@@ -36,7 +36,7 @@ type Row = { icon: string; title: string; text: string };
 
 
 
-export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "", light = false, onPick }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void }) {
+export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "", light = false, onPick, onFit }: { e: ClubEvent; format: PosterFormat; showWho: boolean; fmt?: PosterFmt; partners?: string[]; bg?: PosterBg; light?: boolean; onPick?: (key: string) => void; onFit?: (tight: boolean) => void }) {
   const { w, h } = SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
@@ -72,11 +72,12 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
         el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight;
-        if (hh <= 0) break; const next = Math.max(0.55, Math.min(1.5, kk * (avail * 0.9) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
+        if (hh <= 0) break; const next = Math.max(0.3, Math.min(1.5, kk * (avail * 0.9) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
-      if (light) kk = Math.max(0.5, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
+      if (light) kk = Math.max(0.3, kk * 0.85); // « cartes réduites » (contenu groupé et centré, mêmes proportions) : le contenu rétrécit et laisse voir le fond
       el.style.setProperty("--k", String(kk));
-      for (let i = 0; i < 10 && inner.scrollHeight > avail && kk > 0.5; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
+      for (let i = 0; i < 24 && inner.scrollHeight > avail && kk > 0.3; i++) { kk = Math.max(0.3, kk * Math.max(0.8, Math.min(0.98, avail / inner.scrollHeight))); el.style.setProperty("--k", String(kk)); } // trop de texte : on réduit jusqu'à ce que tout tienne (plus de texte qui déborde sur le bas de l'affiche)
+      onFit?.(inner.scrollHeight > avail + 1 || kk < 0.5);
       el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
     };
     run();

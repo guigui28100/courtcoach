@@ -88,6 +88,7 @@ export interface StudioProps {
   topExtra?: ReactNode;                   // ex. « Mes affiches »
   noPrint?: boolean;
   intro?: ReactNode;                      // avertissement (droit à l'image…)
+  notice?: ReactNode;                     // alerte au-dessus de l'aperçu (ex. « trop de texte »)
 }
 
 export function PosterStudio(p: StudioProps) {
@@ -206,6 +207,7 @@ export function PosterStudio(p: StudioProps) {
             {p.formats.length > 1 && <Seg label="Format de l'affiche" value={p.format} options={p.formats.map((f) => ({ id: f.id, label: f.label }))} onChange={p.onFormat} />}
             <span className="rounded-full bg-white/70 px-3 py-1 text-xs text-muted">L'aperçu = exactement ce qui sera enregistré</span>
           </div>
+          {p.notice && <p role="alert" className="mx-3 mb-0 mt-2 shrink-0 rounded-md border border-[#e6d9a0] bg-[#fff4cc] px-3 py-2 text-center text-sm font-bold text-[#6b4e00]">{p.notice}</p>}
           <div ref={area} onPointerDown={(e) => { if (e.target === e.currentTarget) setBarOn(false); }} className="relative grid h-[58vh] min-h-[320px] place-items-center overflow-hidden md:h-auto md:min-h-0 md:flex-1">
             <SelOutline sel={textsShown && p.fmt ? p.fmt.selected : ""} />
             <div className="overflow-hidden rounded-sm border border-[#cfc7b2] bg-white shadow-[0_14px_40px_rgba(0,0,0,.3)]" style={{ width: w * scale, height: h * scale }}>
