@@ -132,7 +132,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const deco = (k: BlockKey): CSSProperties => ({ textDecoration: F(k).underline ? "underline" : undefined, textAlign: F(k).align, ...(F(k).color ? { color: F(k).color } : {}), ...(F(k).dy ? { transform: `translateY(${F(k).dy! * 8}px)` } : {}), fontStyle: F(k).italic === undefined ? undefined : F(k).italic ? "italic" : "normal" });
   const just = (k: BlockKey) => (F(k).align === "center" ? "center" : F(k).align === "right" ? "flex-end" : undefined);
   const onPhoto = bg !== ""; // sur une photo : la photo reste bien visible en haut, le reste est posé sur une feuille ivoire translucide (texte lisible)
-  const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 190 : 235, px = sq ? 72 : 84;
+  const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 250 : 300, px = sq ? 72 : 84;
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par le mot le plus long
   const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5) * Math.max(1, fz("titre")))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
@@ -192,7 +192,8 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const titleEl = <div style={{ ...glow, textAlign: F("titre").align ?? "center" }}><div data-fmt="type" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 600, fontSize: pty(sq ? 28 : 34), color: BRONZE, marginBottom: pty(8) }}>{txt(fmt, "type", typeLabel)}</div><h1 data-fmt="titre" style={title}>{txt(fmt, "titre", name).replace(/ · /g, "\u00a0· ")}</h1>{teamsEl}{txt(fmt, "accroche", lede.text) && <p data-fmt="accroche" style={{ margin: `${pac(16)} 0 0`, fontSize: pac(sq ? 22 : 24), lineHeight: 1.35, fontWeight: 500, letterSpacing: "0.02em", color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{txt(fmt, "accroche", lede.text).split("\n").map((l, i) => i === 0 && lede.text.includes("\n") && fmt?.accroche?.text === undefined ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 800 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(18);
-  const qrSize = sq ? 128 : 148;
+  const qrSize = sq ? 128 : 148; void qrSize;
+  const instrTxt = inscription.replace(/\s*:?\s*(https?:\/\/)?tennisclubhoudan78\.jimdofree\.com\/?/i, "").trim();
   return (
     <div ref={root} onClick={(ev) => pickFmt(ev, onPick)} style={{ ...fzVars, position: "relative", width: w, height: h, overflow: "hidden", background: IVORY, color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <FmtStyle fmts={fmt} noZoom={["titre", "date", "infos", "tarifs", "texte", "equipe", "numero", "type", "accroche"]} />
@@ -216,13 +217,16 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
           </div>
         </div>
       )}
-      <div style={{ position: "absolute", left: px, right: px, bottom: 44, height: ftH - 64, borderTop: `1.5px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 36, ...HALO }}>
-        <div data-fmt="pied" style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.22em", color: BRONZE }}>{inscription ? "INSCRIPTIONS" : "RENSEIGNEMENTS"}</div>
-          <div style={{ fontSize: Math.min(sq ? 27 : 30, Math.floor((w - px * 2 - qrSize - 72) / (Math.max(longestLink(inscription), 1) * 0.6))), fontWeight: 700, lineHeight: 1.35, marginTop: 10, overflowWrap: "break-word" }}><NoBreak text={inscription || "Au club ou par e-mail"} /></div>
-          <div data-fmt="mail" style={{ fontSize: 19, marginTop: 12, color: MUTED, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "✉️ tennisclubhoudan@gmail.com")}</div>
+      <div data-fmt="pied" style={{ position: "absolute", left: px, right: px, bottom: 40, height: ftH - 56, borderTop: `1.5px solid ${GOLDL}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: sq ? 8 : 12, textAlign: "center", ...HALO }}>
+        <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "0.22em", color: BRONZE }}>{inscription ? "COMMENT S'INSCRIRE ?" : "RENSEIGNEMENTS"}</div>
+        <div style={{ fontSize: Math.min(sq ? 26 : 30, Math.floor((w - px * 2) / (Math.max(longestLink(instrTxt), 1) * 0.6))), fontWeight: 700, lineHeight: 1.25, overflowWrap: "break-word", maxWidth: "100%" }}><NoBreak text={instrTxt || "Au club ou par e-mail"} /></div>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 14, width: "100%" }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ background: NAVY, color: "#fff", padding: "9px 8px", fontSize: sq ? 16 : 18, fontWeight: 700, whiteSpace: "nowrap" }}>🌐&nbsp;tennisclubhoudan78.jimdofree.com</div>
+            <div data-fmt="mail" style={{ background: BRONZE, color: "#fff", padding: "9px 8px", fontSize: sq ? 16 : 18, fontWeight: 700, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "✉ tennisclubhoudan@gmail.com")}</div>
+          </div>
+          <div style={{ flex: "none", border: `1px solid ${GOLDL}`, lineHeight: 0 }}><Qr text={SITE} color={NAVY} size={sq ? 78 : 88} /></div>
         </div>
-        <div style={{ flex: "none", border: `1px solid ${GOLDL}`, lineHeight: 0 }}><Qr text={SITE} color={NAVY} size={qrSize - 8} /></div>
       </div>
     </div>
   );
