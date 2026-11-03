@@ -1237,7 +1237,7 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
       partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
       fmt={{ items: eventFmtItems(e.kind === "EQUIPES", partners.length > 0), value: fmt, onChange: setFmt as (f: Fmts) => void, selected: fsel, onSelect: setFsel }}
       preview={({ pick }) => poster({ onPick: pick, onFit: setTight })}
-      notice={tight ? "⚠️ Il y a beaucoup de texte : il devient très petit pour tout faire tenir. Raccourcis la description, les horaires ou les formules." : undefined}
+      notice={tight ? "⚠️ Le texte est très grand ou très long : il déborde ou devient très petit. Raccourcis un texte ou réduis une taille (onglet Textes)." : undefined}
       printNode={poster()}
       fileBase={(f) => `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${f === "A4" ? "a4" : "carre"}`}
       save={auto.state.kind === "idle" ? { kind: "idle", text: "Se sauvegarde toute seule dans le planning" } : auto.state}

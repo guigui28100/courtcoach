@@ -42,9 +42,9 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
       <div className="mt-3 grid gap-2 rounded-xl bg-[#fbf8f2] p-3">
         <p className="m-0 text-xs font-extrabold uppercase tracking-wide text-muted">{item.edit ? "3" : "2"} · Mise en forme <span className="font-normal normal-case tracking-normal">: {item.label}</span></p>
         {row("Taille", <>
-          {btn("A−", undefined, () => set({ size: size - 1 }), "Plus petit", undefined, size <= -4)}
+          {btn("A−", undefined, () => set({ size: size - 1 }), "Plus petit", undefined, size <= -6)}
           <span className="min-w-16 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
-          {btn("A+", undefined, () => set({ size: size + 1 }), "Plus grand", undefined, size >= 8)}
+          {btn("A+", undefined, () => set({ size: size + 1 }), "Plus grand", undefined, size >= 30)}
         </>)}
         {!item.sizeOnly && <>
           {row("Style", <>
@@ -91,8 +91,8 @@ export function FmtFloat({ items, fmt, onChange, selected, style, onClose }: { i
   return (
     <div role="toolbar" aria-label={`Régler : ${item.label}`} style={style} onPointerDown={(e) => e.stopPropagation()} className="absolute z-30 flex flex-nowrap items-center gap-1 whitespace-nowrap rounded-lg bg-ink p-1.5 text-white shadow-2xl">
       {item.edit && short && <input aria-label={`Réécrire : ${item.label}`} value={cur.text ?? live} onChange={(x) => set({ text: x.target.value })} className="h-9 w-36 rounded-md border-0 bg-white px-2 text-sm text-ink" />}
-      {b("A−", () => set({ size: size - 1 }), "Plus petit", undefined, undefined, size <= -4)}
-      {b("A+", () => set({ size: size + 1 }), "Plus grand", undefined, undefined, size >= 8)}
+      {b("A−", () => set({ size: size - 1 }), "Plus petit", undefined, undefined, size <= -6)}
+      {b("A+", () => set({ size: size + 1 }), "Plus grand", undefined, undefined, size >= 30)}
       {!item.sizeOnly && <>
         {b("G", () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), "Gras", cur.bold, { fontWeight: 900 })}
         {b("I", () => set({ italic: cur.italic ? undefined : true }), "Italique", cur.italic, { fontStyle: "italic" })}
