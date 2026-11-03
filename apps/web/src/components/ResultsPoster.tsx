@@ -9,6 +9,18 @@ import { NoBreak } from "./NoBreak";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type ResultsFormat = "PORTRAIT" | "CARRE" | "A4";
 export const RESULTS_SIZES: Record<ResultsFormat, { w: number; h: number }> = { PORTRAIT: { w: 1080, h: 1350 }, CARRE: { w: 1080, h: 1080 }, A4: { w: 794, h: 1123 } };
+// Le texte descend DANS la carte sans jamais l'agrandir : le décalage s'arrête quand le texte touche le bas de la rangée (la place disponible vient des photos, plus hautes que le texte)
+function Shift({ dy, style, children }: { dy: number; style: CSSProperties; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [max, setMax] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current, row = el?.parentElement; if (!el || !row) return;
+    const spare = Math.max(0, Math.floor(row.clientHeight - el.offsetHeight));
+    setMax((m) => (Math.abs(m - spare) > 0.5 ? spare : m));
+  });
+  return <div ref={ref} style={{ ...style, position: "relative", top: dy ? `min(calc(${dy * 8}px * var(--k, 1)), ${max}px)` : undefined }}>{children}</div>;
+}
+
 export interface ResultsTournament { name: string; when: string; results: { what: string; result: string; group?: string }[]; photos: string[]; focus?: [number, number][]; zoom?: number[]; dy?: number }
 export interface ResultsData { headline: string; tournaments: ResultsTournament[]; message: string }
 export const emptyTournament = (): ResultsTournament => ({ name: "", when: "", results: [], photos: [] });
@@ -104,7 +116,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                 </div>
                 <div style={{ display: "flex", gap: p(22), alignItems: "flex-start", flexWrap: "nowrap" }}>
                 {t.results.length > 0 && (
-                  <div style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: 0, marginTop: p(Math.max(0, Math.min(12, t.dy ?? 0)) * 8) }}>
+                  <Shift dy={Math.max(0, Math.min(12, t.dy ?? 0))} style={{ display: "grid", gap: p(4), flex: n > 0 ? "1 1 0" : "1 1 100%", minWidth: 0 }}>
                     {t.results.map((r, j) => {
                       const newGroup = !!r.group && r.group !== t.results[j - 1]?.group;
                       return (
@@ -115,7 +127,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
                           <b style={{ flex: "1 1 auto", minWidth: 0, overflowWrap: "anywhere", fontSize: p(23), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
                         </div>
                       </div>); })}
-                  </div>
+                  </Shift>
                 )}
                 {n > 0 && (() => {
                   const srcs = t.photos.slice(0, n);
