@@ -175,6 +175,8 @@ const STATUS_BADGE: Record<ProfStatus, [string, string]> = {
 
 // Coach : tous les professeurs, leurs documents, validation
 export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
+  const { me: viewer } = useAuth();
+  const canApprove = viewer?.role === "COACH"; // seul le coach valide un professeur
   const [list, setList] = useState<ProfAdmin[] | null>(null);
   const [err, setErr] = useState("");
   const load = useCallback(() => { get<ProfAdmin[]>("/profs/admin").then(setList).catch((e) => { setList([]); setErr((e as Error).message); }); }, []);
@@ -207,8 +209,8 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
                 ); })}
               </ul>
               <div className="flex flex-wrap items-center gap-2">
-                {p.status === "waiting" && <button className="btn-clay btn-sm" onClick={() => approve(p, true)}>✅ J'ai vérifié : rendre visible</button>}
-                {(p.status === "visible" || p.status === "paused") && <button className="btn-outline btn-sm" onClick={() => approve(p, false)}>Retirer de la liste</button>}
+                {canApprove && p.status === "waiting" && <button className="btn-clay btn-sm" onClick={() => approve(p, true)}>✅ J'ai vérifié : rendre visible</button>}
+                {canApprove && (p.status === "visible" || p.status === "paused") && <button className="btn-outline btn-sm" onClick={() => approve(p, false)}>Retirer de la liste</button>}
                 {p.status === "missing" && <span className="hint">En attente des documents.</span>}
                 {p.status === "expired" && <span className="hint">Carte expirée : le professeur doit déposer la nouvelle.</span>}
               </div>

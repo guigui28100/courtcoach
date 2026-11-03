@@ -30,7 +30,7 @@ export class ProfsController {
 
   // Coach : tous les professeurs, leurs documents, validation
   @Roles(Role.COACH, Role.PRESIDENT) @Get("admin") adminList() { return this.svc.adminList(); }
-  @Roles(Role.COACH, Role.PRESIDENT) @Post(":id/approval") @HttpCode(200) approve(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: ApproveDto) { return this.svc.approve(u, id, dto.approved); }
+  @Roles(Role.COACH) @Post(":id/approval") @HttpCode(200) approve(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: ApproveDto) { return this.svc.approve(u, id, dto.approved); }
 
   // Document : le coach, ou le professeur pour SES propres documents
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get(":id/documents/:kind")

@@ -27,6 +27,7 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
     try { await post(`/lessons/${l.id}/answer`, { status: "REFUSED", reply: reply || undefined }); setAsk(null); onDone(); } catch (e) { setErr((e as Error).message); }
   }
   async function confirmBooking() { setErr(""); try { await post(`/lessons/${l.id}/confirm`); onDone(); } catch (e) { setErr((e as Error).message); } }
+  const { me: viewer } = useAuth();
   const serie = (l.seriesCount ?? 0) > 1 && !!l.finalSlot; // série « toute l'année »
   async function stopSeries() {
     if (!confirm("Arrêter toute la série ? Tous les cours à venir sont annulés, les créneaux sont libérés et l'adulte est prévenu.")) return;
@@ -56,7 +57,7 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
 
       {l.status !== "REFUSED" && (!ask ? (
         <div className="flex flex-wrap gap-2">
-          {l.status === "BOOKED" && <button className="btn-clay btn-sm !bg-ok !text-white" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
+          {l.status === "BOOKED" && viewer?.role !== "PRESIDENT" && <button className="btn-clay btn-sm !bg-ok !text-white" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
           <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
           {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>⛔ Arrêter la série</button>}
         </div>
@@ -227,7 +228,7 @@ export function CoachHome() {
   const Ico = ({ n, cls = "size-5" }: { n: string; cls?: string }) => <svg viewBox="0 0 24 24" className={cls + " shrink-0"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON[n].split(" M").map((d, i) => <path key={i} d={(i ? "M" : "") + d} />)}</svg>;
   const toDo = adultWait.length + d.booked.length + d.pending.length + d.profsWaiting;
   const homeInSidebar = useRegisterSubNav([["Donner des étoiles", "/coach/centre/fin-de-cours"], ["Bulletins", "/coach/centre?onglet=bulletins"], ["Vidéos et gestes", "/coach/centre?onglet=videos"]].map(([label, to]) => ({ key: to, label, to, active: false })));
-  const menu: [string, string, string][] = [["home", "Accueil", "/coach"], ["star", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["doc", "Bulletins", "/coach/centre?onglet=bulletins"], ["film", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["cal", "Planning du club", "/coach/club"], ["shield", "Sécurité", "/coach/securite"]];
+  const menu: [string, string, string][] = [["home", "Accueil", "/coach"], ["star", "Donner des étoiles", "/coach/centre/fin-de-cours"], ["doc", "Bulletins", "/coach/centre?onglet=bulletins"], ["film", "Vidéos et gestes", "/coach/centre?onglet=videos"], ["cal", "Planning du club", "/coach/club"], ["star", "✨ Cockpit V2 (essai)", "/coach/cockpit"], ["shield", "Sécurité", "/coach/securite"]];
   const dayLabel = (iso: string) => { const dt = new Date(`${iso}T12:00:00`); return dt.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }).replace(".", "").replace(/^./, (c) => c.toUpperCase()); };
   const byDay = week.reduce<{ day: string; items: typeof week }[]>((acc, x) => { const k = x.l.finalSlot!.date; const g = acc.find((y) => y.day === k); if (g) g.items.push(x); else acc.push({ day: k, items: [x] }); return acc; }, []);
   const spaceDot = { Adultes: "bg-[#c9ad77]", Jeunes: "bg-[#8fb89a]", Compte: "bg-[#d6cdbb]" };

@@ -108,6 +108,7 @@ export class LessonsService {
 
   // Le professeur (pour SES cours) ou le coach confirme un créneau réservé par l'adulte
   async confirm(user: AuthUser, id: string) {
+    if (user.role === Role.PRESIDENT) throw new ForbiddenException("Seul le coach peut valider à la place d'un professeur");
     if (!isManager(user)) await this.profs.assertProf(user.id);
     await expireStaleBookings(this.prisma);
     const l = await this.prisma.lessonRequest.findFirst({ where: { id, status: LessonStatus.BOOKED, ...(!isManager(user) ? { profId: user.id } : {}) } });
