@@ -10,6 +10,7 @@ type NavItem = { to: string; label: string; short?: string; icon: string };
 const NAV: Record<Role, NavItem[]> = {
   COACH: [
     { to: "/coach", label: "Accueil", icon: "home" },
+    { to: "/coach/cockpit", label: "✨ Cockpit V2 (essai)", short: "Cockpit", icon: "star" },
     { to: "/coach/adultes", label: "Adultes · Coaching", short: "Adultes", icon: "star" },
     { to: "/coach/centre", label: "Jeunes · Centre de compétition", short: "Jeunes", icon: "users" },
     { to: "/coach/prof", label: "Ton agenda", short: "Agenda", icon: "star" },
