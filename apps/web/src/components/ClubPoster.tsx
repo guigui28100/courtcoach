@@ -202,7 +202,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
   let half = shown.length;
   if (two) { let acc = 0; half = 0; for (const e of shown) { if (acc + weight(e) / 2 > total / 2 && half > 0) break; acc += weight(e); half++; } }
   const cols = two ? [shown.slice(0, half), shown.slice(half)] : [shown];
-  const dateW = two ? 82 : 118;
+  const dateW = two ? 68 : 118;
   const LH = "21px";
   const row = (e: ClubEvent) => {
     const k = kindOf(e.kind); const pill = pillDate(e, two); const pc = colorOf(e);
@@ -210,16 +210,20 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     return (
       <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px 1fr`, columnGap: two ? 8 : 16, padding: two ? "6px 0" : "8px 0", alignItems: "start", textAlign: "left" }}>
         <div data-fmt="ldate" style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
-          <div style={{ fontSize: two ? 9.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.04em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
-          <div style={{ fontSize: two ? 17 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
+          <div style={{ fontSize: two ? 8.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.02em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
+          <div style={{ fontSize: two ? 15 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
         </div>
         <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
           <div style={{ fontSize: two ? 13.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline rest={false} short={two} /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {(() => {
             const who = isMatch(e) ? labelParts(e).slice(2) : []; // club rencontré, domicile / déplacement
             const sub = isMatch(e) ? [...who, ...det] : det;
-            const st = { fontSize: two ? 11.5 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 } as const;
-            if (two && isMatch(e) && who.length && det.length) return <><div style={st}><Parts parts={who} /></div><div style={{ ...st, marginTop: 0 }}><Parts parts={det} /></div></>;
+            const st = { fontSize: two ? 11 : 14.5, fontWeight: 700, color: "#4a4333", lineHeight: 1.3, marginTop: 1 } as const;
+            if (two && isMatch(e)) { // 2 colonnes : le moins de lignes possible : tout dans un seul texte qui ne passe à la ligne qu'entre deux morceaux, en mots courts
+              const short = (x: string) => x.replace("à domicile", "domicile").replace("en déplacement", "déplacement").replace(/^🏟️ Courts? /, "C.").replace(/^🕒 /, "").replace(/^contre /, "vs ").replace(/(\d) et (\d)/, "$1-$2").replace(/, /g, "-");
+              const all = sub.map(short);
+              return all.length > 0 && <div style={st}><Parts parts={all} /></div>;
+            }
             return sub.length > 0 && <div style={st}><Parts parts={sub} /></div>;
           })()}
           {e.note && <div style={{ fontSize: two ? 12.5 : 13.5, color: "#3a352c", lineHeight: 1.3, marginTop: 2, whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><NoBreak text={glue(e.note)} /></div>}
