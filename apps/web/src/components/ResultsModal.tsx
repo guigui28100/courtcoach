@@ -40,6 +40,7 @@ type Saved = { d: ResultsData; format: ResultsFormat; bg: string; withPartners: 
 const resultsAccess: PhotoAccess<Saved> = {
   photos: (s) => s.d.tournaments.flatMap((t) => t.photos),
   remap: (s, f) => ({ ...s, d: { ...s.d, tournaments: s.d.tournaments.map((t) => ({ ...t, photos: t.photos.map(f) })) } }),
+  prune: (s) => ({ ...s, d: { ...s.d, tournaments: s.d.tournaments.map((t) => { const k = t.photos.map((p) => !!p); const f = <X,>(a?: X[]) => a?.filter((_, i) => k[i]); return { ...t, photos: t.photos.filter((_, i) => k[i]), focus: f(t.focus), zoom: f(t.zoom) }; }) } }),
 };
 const FORMATS: StudioFormat[] = [
   { id: "PORTRAIT", label: "📱 Portrait 4:5", ...RESULTS_SIZES.PORTRAIT }, { id: "CARRE", label: "⬜ Carré", ...RESULTS_SIZES.CARRE }, { id: "A4", label: "📄 A4", ...RESULTS_SIZES.A4 },
@@ -71,6 +72,7 @@ export function ResultsModal({ events, onClose }: { events: ClubEvent[]; onClose
     const r = await loadOnline<Saved>(x.id, resultsAccess);
     auto.skipNext(); idRef.current = x.id; setDraftId(x.id);
     setD(r.saved.d); setFormat(r.saved.format); setBg(r.saved.bg); setWithPartners(r.saved.withPartners); auto.setState({ kind: "saved" });
+    if (r.lost) setMsg(`${r.lost} photo${r.lost > 1 ? "s" : ""} de cette affiche ${r.lost > 1 ? "ont" : "a"} été perdue${r.lost > 1 ? "s" : ""} à l'ancien enregistrement : remets-${r.lost > 1 ? "les" : "la"} (l'affiche se réenregistre toute seule).`);
   };
   const planned = events.filter((e) => e.kind === "TOURNOI").sort((a, b) => b.startDate.localeCompare(a.startDate)).slice(0, 30);
   const setT = (i: number, p: Partial<ResultsTournament>) => setD((o) => ({ ...o, tournaments: o.tournaments.map((t, j) => (j === i ? { ...t, ...p } : t)) }));
