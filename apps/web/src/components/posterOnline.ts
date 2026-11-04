@@ -5,7 +5,7 @@ export interface OnlineInfo { id: string; kind: string; name: string; authorName
 export type PosterKind = "resultats" | "bilan";
 
 // Comment trouver (et remplacer) les photos dans les données d'une affiche
-export interface PhotoAccess<T> { photos(s: T): string[]; remap(s: T, f: (p: string) => string): T }
+export interface PhotoAccess<T> { photos(s: T): string[]; remap(s: T, f: (p: string) => string): T; prune?(s: T): T } // prune : retire les photos vides (perdues)
 
 const sent = new Map<string, string>(); // « affiche|photo (data:…) » → « srv:<identifiant> » : une photo déjà envoyée n'est pas renvoyée
 const REF = /^srv:([A-Za-z0-9]{8,40})$/;
@@ -49,15 +49,19 @@ export async function saveOnline<T>(kind: PosterKind, id: string | null, name: s
 }
 
 // Rouvre : le texte, puis les photos (rendues comme avant, en data:…)
-export async function loadOnline<T>(id: string, access: PhotoAccess<T>): Promise<{ name: string; saved: T }> {
+export async function loadOnline<T>(id: string, access: PhotoAccess<T>): Promise<{ name: string; saved: T; lost: number }> {
   const r = await get<{ name: string; data: string }>(`/poster-drafts/${id}`);
   const raw = JSON.parse(r.data) as T;
   const urls = new Map<string, string>();
+  let lost = 0;
   await Promise.all([...new Set(access.photos(raw))].map(async (p) => {
     const m = REF.exec(p); if (!m) return;
-    let blob: Blob;
-    try { blob = await apiBlob(`/poster-drafts/${id}/photos/${m[1]}`); } catch { throw new Error("Une photo de cette affiche n'a pas pu être rechargée (elle a peut-être été perdue à l'enregistrement)."); }
-    const url = await toDataUrl(blob); sent.set(`${id}|${url}`, p); urls.set(p, url);
+    try {
+      const url = await toDataUrl(await apiBlob(`/poster-drafts/${id}/photos/${m[1]}`));
+      sent.set(`${id}|${url}`, p); urls.set(p, url);
+    } catch { urls.set(p, ""); lost++; } // photo perdue : on rouvre quand même l'affiche, sans elle
   }));
-  return { name: r.name, saved: access.remap(raw, (p) => urls.get(p) ?? p) };
+  let saved = access.remap(raw, (p) => urls.get(p) ?? p);
+  if (lost && access.prune) saved = access.prune(saved);
+  return { name: r.name, saved, lost };
 }
