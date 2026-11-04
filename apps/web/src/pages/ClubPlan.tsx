@@ -28,6 +28,7 @@ import {
   addDays, allClashes, evOn, skipNote, BANDS, ClubEvent, clashesWith, colorOf, COURTS, CLAY_COURTS, DAYS, Draft, fmtDay, fmtRange, isVacation,
   Kind, KINDS, kindOf, MAX_TEAMS, MONTHS, mondayOf, proposedTitle, seasonOf, seasonStart, seasonWeeks, TEAM_CATS, teamLabel, teamCat, textOn, titleOf, todayParis,
   vacationWeeks, VENUE_AWAY, VENUE_HOME, weekdayOf,
+  tourInfo,
 } from "../clubPlan";
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
@@ -487,6 +488,61 @@ function MiniCalendar({ start, end, onPick }: { start: string; end: string; onPi
   );
 }
 
+// Modifier un tournoi déjà placé : type (TMC / open), écart de classements, adultes ou jeunes et catégories précises
+function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void }) {
+  const t0 = tourInfo({ kind: "TOURNOI", title: d.title });
+  const [type, setType] = useState<"TMC" | "OPEN" | "">(t0?.type ?? "");
+  const [bas, setBas] = useState(t0?.bas ?? "");
+  const [haut, setHaut] = useState(t0?.haut ?? "");
+  const [pub, setPub] = useState<"jeunes" | "seniors">(/^Jeunes/.test(d.audience ?? "") ? "jeunes" : "seniors");
+  const [catKeys, setCatKeys] = useState<string[]>(() => { const a = d.audience ?? ""; const k = TEAM_CATS.find((t) => tourAudience([t.key]) === a); return k ? [k.key] : []; });
+  const [touched, setTouched] = useState(false);
+  const isJ = (k: string) => k.startsWith("gar-") || k.startsWith("fil-"), isV = (k: string) => k.startsWith("vet-");
+  const multiOk = (k: string) => (isJ(k) && catKeys.every(isJ)) || (isV(k) && catKeys.every(isV));
+  const rankOk = !bas || !haut || RANKINGS.indexOf(bas) <= RANKINGS.indexOf(haut);
+  const words = (keys: string[]) => keys.length > 1 ? (keys.every((k) => k.startsWith("vet-")) ? `vétérans${keys.every((k) => k.endsWith("-m")) ? " messieurs" : keys.every((k) => k.endsWith("-d")) ? " dames" : ""}` : "jeunes") : tourWord(keys[0] ?? "");
+  const apply = (n: { type?: "TMC" | "OPEN" | ""; bas?: string; haut?: string; keys?: string[] }) => {
+    const ty = n.type ?? type, b = n.bas ?? bas, h = n.haut ?? haut, keys = n.keys ?? catKeys;
+    if (n.type !== undefined) setType(n.type); if (n.bas !== undefined) setBas(n.bas); if (n.haut !== undefined) setHaut(n.haut); if (n.keys) { setCatKeys(n.keys); setTouched(true); }
+    const who = keys.length ? words(keys) : t0?.who ?? "";
+    const okR = !b || !h || RANKINGS.indexOf(b) <= RANKINGS.indexOf(h);
+    const range = ty === "TMC" && b && h && okR ? ` de ${b} à ${h}` : "";
+    const patch: Partial<Draft> = {};
+    if (ty) patch.title = `${ty === "TMC" ? "TMC" : "Tournoi open"} ${who}${range}`.replace(/\s+/g, " ").trim();
+    if (keys.length && (n.keys || touched)) patch.audience = tourAudience(keys);
+    set(patch);
+  };
+  const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Séniors", "Séniors +35 / +45"];
+  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink";
+  return (
+    <section aria-label="Type et catégories du tournoi" className="mb-4 grid gap-3 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3">
+      <b className="text-ink">🏆 Type, classements et catégories</b>
+      <div className="grid grid-cols-2 gap-2">
+        {TOUR_TYPES.map((t) => <Pill key={t.key} on={type === t.key} onClick={() => apply({ type: t.key, ...(t.key === "OPEN" ? { bas: "", haut: "" } : {}) })}>{t.icon} {t.label}</Pill>)}
+      </div>
+      {type === "TMC" && <div className="grid gap-2 sm:grid-cols-2">
+        <label className="text-sm font-bold text-ink">⬇️ Classement le plus bas
+          <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => apply({ bas: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+        <label className="text-sm font-bold text-ink">⬆️ Classement le plus haut
+          <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => apply({ haut: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+        {!rankOk && <p role="alert" className="m-0 text-sm font-bold text-[#7a5a00] sm:col-span-2">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
+      </div>}
+      <div role="tablist" aria-label="Adultes ou jeunes" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
+        {([["seniors", "🎾 Adultes"], ["jeunes", "🧒 Jeunes"]] as const).map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+      </div>
+      {groups.map((g) => (
+        <div key={g}><b className="text-sm text-muted">{g}</b>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {TEAM_CATS.filter((t) => t.group === g).map((t) => (
+              <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => apply({ keys: multiOk(t.key) ? toggle(catKeys, t.key) : [t.key] })}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
+          </div></div>))}
+      {!catKeys.length && d.audience && <p className="m-0 text-xs text-muted">Catégorie actuelle : « {d.audience} ». Touche une catégorie pour la changer.</p>}
+      <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">🏷️ Nom du tournoi : {d.title || "—"}</p>
+    </section>
+  );
+}
+
 function EventModal({ initial, events, counts, names, onClose, onDone }: { initial: Draft; events: ClubEvent[]; counts: Record<string, number>; names: string[]; onClose: () => void; onDone: () => void }) {
   const bureau = useContext(BureauCtx);
   const [d, setD] = useState<Draft>(initial);
@@ -525,6 +581,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
           ))}
         </div>
       </Step>
+      {d.kind === "TOURNOI" && <TournoiEdit d={d} set={set} />}
       {d.kind === "EQUIPES" && (
         <Step n={2} title="Quelles équipes jouent ?">
           <TeamTabs cats={cats} counts={counts} teams={d.teams} onToggle={(t) => set({ teams: toggle(d.teams, t) })} />
