@@ -53,7 +53,7 @@ function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
 function MatchLines({ e, icon, rest, inline, short }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean; short?: boolean }) {
   const more = labelParts(e).slice(2);
-  return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = false; const fit = (short || !inline) && cat.length > 22 ? { fontSize: `${(22 / cat.length).toFixed(2)}em` } : {};  const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
+  return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = false; const fit = (short || !inline) && cat.length > 30 ? { fontSize: `${(30 / cat.length).toFixed(2)}em` } : {};  const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap", ...fit }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
   ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
@@ -135,11 +135,11 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
     <div style={{ padding: "0 40px", textAlign: "left" }}>
       <div data-fmt="titres" style={{ fontFamily: SERIF, fontWeight: 900, color: "#fff", background: "#7b5d2a", letterSpacing: "0.1em", fontSize: 22, marginBottom: 10, display: "inline-block", padding: "5px 18px", borderRadius: 999 }}>★ À NE PAS MANQUER</div>
       <div style={{ display: "grid", gap: "calc(10px + var(--x, 0px) * 0.35)" }}>
-        {top.map((e) => { const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
+        {top.map((e) => { const dw = e.kind === "EQUIPES" && e.teams.length > 0 && e.teams.every((t) => t.startsWith("vet-")) ? "21%" : "31%"; const k = kindOf(e.kind); const c = colorOf(e); const multi = e.startDate !== e.endDate; const same = e.startDate.slice(0, 7) === e.endDate.slice(0, 7); const dayName = { fontSize: 19, fontWeight: 900, lineHeight: 1.15, letterSpacing: "0.07em", textTransform: "uppercase" } as const; return (
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
-              <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
+              <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
@@ -148,7 +148,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div></div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: "31%", flex: "0 0 31%", padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
+            <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
