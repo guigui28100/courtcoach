@@ -53,11 +53,11 @@ function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
 function MatchLines({ e, icon, rest, inline, short }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean; short?: boolean }) {
   const more = labelParts(e).slice(2);
-  return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = cat.length > 26; const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
-    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: long ? "normal" : "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
+  return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = false; const fit = (short || !inline) && cat.length > 22 ? { fontSize: `${(22 / cat.length).toFixed(2)}em` } : {};  const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap", ...fit }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
   ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
-      <span data-nw style={{ display: "block", whiteSpace: long ? "normal" : "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
+      <span data-nw style={{ display: "block", whiteSpace: "nowrap", ...fit }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
       <span style={{ display: "block", fontWeight: 900, color: "#b8471f", fontSize: "1.05em", lineHeight: 1.15 }}>{num}</span>
     </span>); })}{rest !== false && more.length > 0 ? <span style={{ display: "block", fontWeight: 700, fontSize: "0.9em", marginTop: 2 }}><Parts parts={more} /></span> : null}</>;
 }

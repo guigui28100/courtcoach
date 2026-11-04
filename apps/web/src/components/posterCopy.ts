@@ -162,12 +162,15 @@ export const catPlain = (key: string) => CAT_TEXT(key);
 export const teamParts = (t: string): [string, string] => [CAT_TEXT(t.split("#")[0]), `Équipe ${t.split("#")[1] ?? "1"}`];
 
 // Match de séniors +35 / +45 ans : « +35 ans », « +45 ans » ou « +35 / +45 ans » (null si une équipe n'est pas de cette catégorie)
-export function vetTitle(teams: string[]): { text: string; single: boolean } | null {
+export function vetTitle(teams: string[]): { text: string; single: boolean; sex: string; full: string } | null {
   if (!teams.length) return null;
   const ages = new Set<string>();
   for (const t of teams) { const m = /^vet-(\d+)-/.exec(t.split("#")[0]); if (!m) return null; ages.add(m[1]); }
   const l = [...ages].sort();
-  return { text: `${l.map((a) => `+${a}`).join(" / ")} ans`, single: l.length === 1 };
+  const sexes = new Set(teams.map((t) => (t.split("#")[0].endsWith("-d") ? "dames" : "messieurs")));
+  const sex = sexes.size === 1 ? [...sexes][0] : "";
+  const text = `${l.map((a) => `+${a}`).join(" / ")} ans`;
+  return { text, single: l.length === 1, sex, full: `Match par équipes ${text}${sex ? ` ${sex}` : ""}` }; // « Match par équipes +35 ans messieurs » : toujours sur UNE ligne
 }
 
 // Terrains écrits comme on le dirait : « Court 1 », « Courts 1 et 2 », « Les 4 courts »
