@@ -48,13 +48,13 @@ const labelParts = (e: ClubEvent): string[] => (e.kind !== "EQUIPES" || e.title 
 const isMatch = (e: ClubEvent) => labelParts(e)[0] === "Match" && labelParts(e).length > 1;
 // Affiche les morceaux séparés par « · » ; le retour à la ligne ne peut se faire qu'entre deux morceaux
 function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
-  return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
+  return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: t.length <= 24 ? "nowrap" : "normal" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
 }
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
 function MatchLines({ e, icon, rest, inline, short }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean; short?: boolean }) {
   const more = labelParts(e).slice(2);
   return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = false; const fit = (short || !inline) && cat.length > 30 ? { fontSize: `${(30 / cat.length).toFixed(2)}em` } : {};  const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
-    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap", ...fit }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0, overflowWrap: "break-word" }}><span>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
   ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
       <span data-nw style={{ display: "block", whiteSpace: "nowrap", ...fit }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
