@@ -36,7 +36,7 @@ function detailParts(e: ClubEvent, showWho: boolean) {
   const parts: string[] = [];
   if (e.kind === "EQUIPES") { if (e.time) parts.push(`🕒 ${e.time}`); if (e.courts.length) parts.push(`🏟️ ${e.courts.length === 1 ? "Court" : "Courts"} ${e.courts.length > 1 ? e.courts.slice(0, -1).join(", ") + " et " + e.courts[e.courts.length - 1] : e.courts[0]}`); }
   if (e.kind === "EQUIPES" && e.teams.length && e.title) parts.push(teamsText(e)); // sans nom écrit à la main, catégorie et numéro sont déjà dans le titre
-  if (e.bands.length) parts.push(e.bands.map((b) => BAND_TXT[b]).join(" + "));
+  if (e.bands.length && !isEvening(e)) parts.push(e.bands.map((b) => BAND_TXT[b]).join(" + ")); // « soirée » est déjà écrit dans la date
   if (showWho && e.who.length) parts.push(`avec ${e.who.map((w) => w.replace(" (moi)", "")).join(", ")}`);
   return parts;
 }
@@ -49,6 +49,28 @@ const isMatch = (e: ClubEvent) => labelParts(e)[0] === "Match" && labelParts(e).
 // Affiche les morceaux séparés par « · » ; le retour à la ligne ne peut se faire qu'entre deux morceaux
 function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
   return <>{parts.map((t, i) => <span key={i}>{i > 0 ? <span aria-hidden> · </span> : null}<span style={{ whiteSpace: t.length <= 24 ? "nowrap" : "normal" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{t}</span></span>)}</>;
+}
+// Événement en soirée (et pas toute la journée) : la mention s'écrit dans la date, à gauche
+const isEvening = (e: ClubEvent) => (e.bands ?? []).includes("SOIR") && (e.bands ?? []).length < 3;
+const EveningTag = ({ size }: { size: number }) => <div style={{ fontSize: size, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 4, whiteSpace: "nowrap" }}>🌙 Soirée</div>;
+// Un titre sur UNE seule ligne : sa taille se réduit juste ce qu'il faut pour tenir dans la largeur (jamais en dessous de `min`, sinon il passe à la ligne)
+function FitLine({ children, min = 0.7 }: { children: React.ReactNode; min?: number }) {
+  const outer = useRef<HTMLSpanElement>(null); const meas = useRef<HTMLSpanElement>(null);
+  const [st, setSt] = useState<{ k: number; wrap: boolean }>({ k: 1, wrap: false });
+  useLayoutEffect(() => {
+    const o = outer.current, m = meas.current; if (!o || !m) return;
+    const run = () => {
+      const a = o.clientWidth, w = m.offsetWidth;
+      if (!a || !w) return;
+      const k = Math.min(1, a / w);
+      setSt((p) => (k < min ? (p.wrap && p.k === 1 ? p : { k: 1, wrap: true }) : Math.abs(p.k - k) < 0.005 && !p.wrap ? p : { k, wrap: false }));
+    };
+    run(); const ro = new ResizeObserver(run); ro.observe(o); return () => ro.disconnect();
+  });
+  return <span ref={outer} style={{ display: "block", minWidth: 0, position: "relative" }}>
+    <span ref={meas} aria-hidden style={{ position: "absolute", visibility: "hidden", whiteSpace: "nowrap", pointerEvents: "none" }}>{children}</span>
+    <span style={{ display: "block", whiteSpace: st.wrap ? "normal" : "nowrap", fontSize: `${st.k}em` }}>{children}</span>
+  </span>;
 }
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
 function MatchLines({ e, icon, rest, inline, short }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean; short?: boolean }) {
@@ -146,16 +168,18 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>au</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.endDate)])} {dayNum(e.endDate)}</div>
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
+                {isEvening(e) && <EveningTag size={14} />}
               </div></div>
             ) : (
             <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt={`evd-${e.id}`} style={{ overflowWrap: "normal", wordBreak: "normal" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
+              {isEvening(e) && <EveningTag size={15} />}
             </div></div>
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt={`ev-${e.id}`} data-ev={e.id}>
               {isMatch(e) && !e.teams.every((t) => t.startsWith("vet-")) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
-              <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
+              <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <FitLine>{k.icon} {labelParts(e)[0]}</FitLine>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", marginTop: 8 }}>
                   {[...(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)), ...detailParts(e, showWho)].map((t, i) => <span key={i} style={{ whiteSpace: "nowrap", background: "#f1ebdd", color: "#17140f", fontWeight: 800, fontSize: 16, borderRadius: 999, padding: "3px 12px" }}>{t}</span>)}
@@ -212,6 +236,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
         <div data-fmt={`evd-${e.id}`} style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
           <div style={{ fontSize: two ? 8.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.02em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
           <div style={{ fontSize: two ? 15 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
+          {isEvening(e) && <EveningTag size={two ? 8.5 : 11} />}
         </div>
         <div style={{ minWidth: 0 }}><div data-fmt={`ev-${e.id}`} data-ev={e.id}>
           <div style={{ fontSize: two ? 13.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline rest={false} short={two} /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
