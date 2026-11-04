@@ -35,7 +35,10 @@ const recapFmtItems: FmtItem[] = [
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
 type Saved = { d: RecapData; format: RecapFormat; bg: string; withPartners: boolean };
-const recapAccess: PhotoAccess<Saved> = { photos: (s) => s.d.photos, remap: (s, f) => ({ ...s, d: { ...s.d, photos: s.d.photos.map(f) } }) };
+const recapAccess: PhotoAccess<Saved> = {
+  photos: (s) => s.d.photos, remap: (s, f) => ({ ...s, d: { ...s.d, photos: s.d.photos.map(f) } }),
+  prune: (s) => { const k = s.d.photos.map((p) => !!p); return { ...s, d: { ...s.d, photos: s.d.photos.filter((_, i) => k[i]), focus: s.d.focus?.filter((_, i) => k[i]) } }; },
+};
 const FORMATS: StudioFormat[] = [{ id: "CARRE", label: "⬜ Carré", ...RECAP_SIZES.CARRE }, { id: "PORTRAIT", label: "📱 Portrait 4:5", ...RECAP_SIZES.PORTRAIT }];
 
 // Affiche de bilan dans le studio commun. Elle se sauvegarde toute seule en ligne (photos comprises) et se rouvre toute seule à la prochaine visite du même événement.
