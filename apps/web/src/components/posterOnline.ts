@@ -1,4 +1,4 @@
-import { del, get, post, put, api } from "../api";
+import { del, get, post, put, api, apiBlob } from "../api";
 
 // Affiches enregistrées EN LIGNE (coach, président, bureau) : le texte part en JSON, chaque photo est envoyée à part (une demande par photo).
 export interface OnlineInfo { id: string; kind: string; name: string; authorName: string | null; updatedAt: string; photos: number }
@@ -55,9 +55,9 @@ export async function loadOnline<T>(id: string, access: PhotoAccess<T>): Promise
   const urls = new Map<string, string>();
   await Promise.all([...new Set(access.photos(raw))].map(async (p) => {
     const m = REF.exec(p); if (!m) return;
-    const res = await fetch(`/api/poster-drafts/${id}/photos/${m[1]}`, { credentials: "same-origin" });
-    if (!res.ok) throw new Error("Une photo n'a pas pu être rechargée.");
-    const url = await toDataUrl(await res.blob()); sent.set(`${id}|${url}`, p); urls.set(p, url);
+    let blob: Blob;
+    try { blob = await apiBlob(`/poster-drafts/${id}/photos/${m[1]}`); } catch { throw new Error("Une photo de cette affiche n'a pas pu être rechargée (elle a peut-être été perdue à l'enregistrement)."); }
+    const url = await toDataUrl(blob); sent.set(`${id}|${url}`, p); urls.set(p, url);
   }));
   return { name: r.name, saved: access.remap(raw, (p) => urls.get(p) ?? p) };
 }

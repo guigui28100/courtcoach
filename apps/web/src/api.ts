@@ -62,6 +62,13 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   return parse(res) as Promise<T>;
 }
 
+// Télécharge un fichier (photo…) avec le même renouvellement de connexion que les autres demandes
+export async function apiBlob(path: string): Promise<Blob> {
+  let res = await raw(path);
+  if (res.status === 401) { await refreshOnce(); res = await raw(path); }
+  if (!res.ok) throw new ApiError(res.status, "Fichier introuvable.");
+  return res.blob();
+}
 export const get = <T = any>(p: string) => api<T>(p);
 export const post = <T = any>(p: string, body?: unknown) => api<T>(p, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 export const put = <T = any>(p: string, body: unknown) => api<T>(p, { method: "PUT", body: JSON.stringify(body) });
