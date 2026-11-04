@@ -8,7 +8,7 @@ import { ClubEvent, DAYS, kindOf, MONTHS, titleOf, tourInfo, weekdayOf } from ".
 import { fullRange, label } from "./ClubPoster";
 import { FmtStyle, pickFmt, txt } from "./posterFmt";
 import { EventPosterClassic } from "./EventPosterClassic";
-import { courtsText, glue, teamParts, ledeOf, priceText, signupText, tidy } from "./posterCopy";
+import { courtsText, glue, teamParts, vetTitle, ledeOf, priceText, signupText, tidy } from "./posterCopy";
 
 // Affiche d'UN événement (pour la pub auprès des adhérents) : A4 à imprimer ou carré pour WhatsApp / Facebook.
 // Même finition que le dossier de saison : bandeau bleu nuit, titre géant, date en bloc d'honneur, cartes, tableau de tarifs, pied « inscriptions ».
@@ -75,7 +75,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const tiName = tourInfo(e);
   const capw = (x: string) => x.replace(/(^|\s)(\p{L})/gu, (_m, a: string, b: string) => a + b.toUpperCase());
-  const name = tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${capw(tiName.who)}`.trim() : e.kind === "EQUIPES" && !e.title ? "Match par équipes" : titleOf(e).replace(/^\p{L}/u, (c) => c.toUpperCase()); // tournoi : le type et le public en titre, les classements dans leur carte
+  const name = tiName ? `${tiName.type === "TMC" ? "TMC" : "Tournoi open"} ${capw(tiName.who)}`.trim() : e.kind === "EQUIPES" && !e.title ? (vetTitle(e.teams) ? vetTitle(e.teams)!.full : "Match par équipes") : titleOf(e).replace(/^\p{L}/u, (c) => c.toUpperCase()); // tournoi : le type et le public en titre, les classements dans leur carte
   const formulas = (e.formulas ?? []).filter((f) => f.label || f.price || f.priceMember);
   const twoPrices = formulas.some((f) => f.priceMember && f.price);
   const tour = e.kind === "TOURNOI"; // tournoi : lieu = surface, horaires = matchs jour par jour, inscriptions = finale
@@ -134,8 +134,9 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const onPhoto = bg !== ""; // sur une photo : la photo reste bien visible en haut, le reste est posé sur une feuille ivoire translucide (texte lisible)
   const hdH = onPhoto ? (sq ? 210 : 340) : (sq ? 118 : 200), ftH = sq ? 250 : 300, px = sq ? 72 : 84;
   const logos = partners ?? []; const partH = logos.length ? (sq ? 92 : 104) : 0;
-  const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par le mot le plus long
-  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5) * Math.max(1, fz("titre")))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
+  const longest = e.kind === "EQUIPES" && !e.title && vetTitle(e.teams) ? name.length : Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par le mot le plus long
+  const vetOne = e.kind === "EQUIPES" && !e.title && !!vetTitle(e.teams); // « Match par équipes +35 ans messieurs » : toujours sur UNE ligne
+  const title: CSSProperties = { margin: 0, ...(vetOne ? { whiteSpace: "nowrap" as const } : {}), fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.5) * Math.max(1, fz("titre")))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
   const HALO: CSSProperties = {};
   const typeLabel = tour ? (ti?.type === "TMC" ? "Tournoi multi-chances" : "Tournoi") : kd.label;
   const rule = <div aria-hidden style={{ width: p(64), height: 1.5, background: GOLDL, margin: `${pt(20)} auto` }} />;
@@ -181,9 +182,9 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const noteEl = noteText && <p data-fmt="texte" style={{ margin: 0, textAlign: F("texte").align ?? "center", fontFamily: SERIF, ...HALO, fontSize: pn(25), lineHeight: 1.35, color: onPhoto ? NAVY : "#3a352c", fontStyle: "italic", fontWeight: wt("texte", 500), overflowWrap: "break-word", whiteSpace: "pre-line", textWrap: "pretty" as any, ...deco("texte") }}><NoBreak text={glue(noteText)} /></p>;
   const teamsEl = e.kind === "EQUIPES" && e.teams.length > 0 && (
     <div style={{ display: "grid", gap: pt(10), margin: `${pt(16)} 0 0` }}>
-      {e.teams.map((t) => { const [cat, num] = teamParts(t); return (
+      {e.teams.map((t) => { const [cat0, num] = teamParts(t); const vt = vetTitle(e.teams); const cat = vt?.single ? (vt.sex ? "" : cat0.replace(/^Séniors \+\d+ ans /, "").replace(/^./, (c) => c.toUpperCase())) : cat0; return (
         <div key={t}>
-          <div data-fmt="equipe" style={{ whiteSpace: "nowrap", fontWeight: wt("equipe", 700), lineHeight: 1.05, color: NAVY, fontSize: `min(${pk("equipe")(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)`, ...deco("equipe") }}>{cat}</div>
+          {cat && <div data-fmt="equipe" style={{ whiteSpace: "nowrap", fontWeight: wt("equipe", 700), lineHeight: 1.05, color: NAVY, fontSize: `min(${pk("equipe")(sq ? 40 : 46)}, ${Math.floor((w - px * 2) / (cat.length * 0.6))}px)`, ...deco("equipe") }}>{cat}</div>}
           <div data-fmt="numero" style={{ fontFamily: SERIF, fontWeight: wt("numero", 600), lineHeight: 1.05, color: BRONZE, fontSize: pk("numero")(sq ? 56 : 66), marginTop: pt(4), ...deco("numero") }}>{num}</div>
         </div>); })}
     </div>

@@ -595,11 +595,11 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
 }
 
 
-// Choix des équipes d'un match : rangées dans trois ONGLETS (jeunes de 8 à 18 ans · seniors · vétérans +35 / +45 ans), messieurs et dames dans chacun
+// Choix des équipes d'un match : rangées dans trois ONGLETS (jeunes de 8 à 18 ans · séniors · séniors +35 / +45 ans), messieurs et dames dans chacun
 const TEAM_TABS: { id: string; label: string; match: (g: string) => boolean }[] = [
   { id: "jeunes", label: "🧒 Jeunes de 8 à 18 ans", match: (g) => g.startsWith("Jeunes") },
-  { id: "seniors", label: "🎾 Seniors", match: (g) => g.startsWith("Seniors") },
-  { id: "veterans", label: "🏅 Vétérans +35 / +45 ans", match: (g) => g.startsWith("Vétérans") },
+  { id: "seniors", label: "🎾 Séniors", match: (g) => g === "Séniors" },
+  { id: "veterans", label: "🏅 Séniors +35 / +45 ans", match: (g) => g.startsWith("Séniors +") },
 ];
 function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; counts: Record<string, number>; teams: string[]; onToggle: (t: string) => void }) {
   const inTab = (id: string) => cats.filter((c) => TEAM_TABS.find((t) => t.id === id)!.match(c.group));
@@ -820,7 +820,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
           <b className="block text-lg">{t.icon} {t.label}</b><small className="block font-normal opacity-80">{t.sub}</small></button>))}
     </div></>);
   if (cur === "cat") {
-    const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Seniors", "Vétérans"];
+    const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Séniors", "Séniors +35 / +45"];
     return card("Pour quelle catégorie ?", <>
       <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
         {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
