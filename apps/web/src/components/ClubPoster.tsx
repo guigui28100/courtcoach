@@ -139,7 +139,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
           <div key={e.id} data-card style={{ display: "flex", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 6px 14px rgba(27,24,99,.16)", border: `3px solid ${c}` }}>
             {multi ? (
               // Période écrite en phrase : « Du samedi 7 au dimanche 15 novembre », deux jours de même taille, bien alignés
-              <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
+              <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(12px + var(--x, 0px) / 2) 14px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "stretch", textAlign: "center", lineHeight: 1.1 }}><div data-fmt={`evd-${e.id}`} style={{ overflowWrap: "normal", wordBreak: "normal" }}>
                 <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.22em", textTransform: "uppercase", opacity: 0.9 }}>Du</div>
                 <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 900, lineHeight: 1.05, marginTop: 2 }}>{lc(DAYS[weekdayOf(e.startDate)])} {dayNum(e.startDate)}{same ? "" : <span style={{ display: "block", fontFamily: "inherit", fontSize: 14, fontWeight: 800 }}>{MOIS[+e.startDate.slice(5, 7) - 1]}</span>}</div>
                 <div aria-hidden style={{ height: 2, background: "currentColor", opacity: 0.45, margin: "8px 22% 6px" }} />
@@ -148,12 +148,12 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
                 {!same && <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 6 }}>{MOIS[+e.endDate.slice(5, 7) - 1]}</div>}
               </div></div>
             ) : (
-            <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt="cdate" style={{ overflowWrap: "normal", wordBreak: "normal" }}>
+            <div style={{ background: c, color: textOn(c), width: dw, flex: `0 0 ${dw}`, padding: "calc(10px + var(--x, 0px) / 2) 16px", boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center" }}><div data-fmt={`evd-${e.id}`} style={{ overflowWrap: "normal", wordBreak: "normal" }}>
               <div style={dayName}>{DAYS[weekdayOf(e.startDate)]}</div>
               <div style={{ fontFamily: SERIF, fontSize: 54, fontWeight: 900, lineHeight: 1.05 }}>{dayNum(e.startDate)}</div>
             </div></div>
             )}
-            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte" data-ev={e.id}>
+            <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt={`ev-${e.id}`} data-ev={e.id}>
               {isMatch(e) && !e.teams.every((t) => t.startsWith("vet-")) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
@@ -209,11 +209,11 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
     const det = e.kind === "EQUIPES" ? detailParts(e, false) : detailParts(e, showWho);
     return (
       <div key={e.id} style={{ display: "grid", gridTemplateColumns: `${dateW}px 1fr`, columnGap: two ? 8 : 16, padding: two ? "6px 0" : "8px 0", alignItems: "start", textAlign: "left" }}>
-        <div data-fmt="ldate" style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
+        <div data-fmt={`evd-${e.id}`} style={{ background: pc, color: textOn(pc), borderRadius: two ? 10 : 14, textAlign: "center", padding: two ? "5px 3px" : "7px 4px", lineHeight: 1.05, alignSelf: "start", boxSizing: "border-box" }}>
           <div style={{ fontSize: two ? 8.5 : 12.5, fontWeight: 900, letterSpacing: two ? "0.02em" : "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{pill.top}</div>
           <div style={{ fontSize: two ? 15 : 25, fontWeight: 900, whiteSpace: "nowrap", marginTop: 2 }}>{pill.big}</div>
         </div>
-        <div style={{ minWidth: 0 }}><div data-fmt="ltexte" data-ev={e.id}>
+        <div style={{ minWidth: 0 }}><div data-fmt={`ev-${e.id}`} data-ev={e.id}>
           <div style={{ fontSize: two ? 13.5 : 17, fontWeight: 900, color: "#17140f", lineHeight: LH }}>{isMatch(e) ? <MatchLines e={e} icon={k.icon} inline rest={false} short={two} /> : two ? `${k.icon}\u00a0${labelParts(e).join(" · ")}` : <Parts icon={k.icon} parts={labelParts(e)} />}</div>
           {(() => {
             const who = isMatch(e) ? labelParts(e).slice(2) : []; // club rencontré, domicile / déplacement
@@ -234,7 +234,7 @@ function ListModel({ m, list, showWho, withCards }: { m: string; list: ClubEvent
   return (
     <div style={{ padding: "0 40px", marginTop: withCards ? 20 : 18, textAlign: "left" }}>
       {n > 0 ? (<>
-        <div data-fmt="titres" style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>{withCards ? "ET AUSSI CE MOIS-CI" : "TOUT LE PROGRAMME"}</div>
+        <div data-fmt="titres2" style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.3em", color: "#7b5d2a", marginBottom: 6 }}>{withCards ? "ET AUSSI CE MOIS-CI" : "TOUT LE PROGRAMME"}</div>
         <div style={{ display: "grid", gridTemplateColumns: two ? "minmax(0,1fr) minmax(0,1fr)" : "1fr", columnGap: two ? 14 : 24, alignItems: "start" }}>
           {cols.map((c, i) => (
             <div key={i} style={{ position: "relative" }}>
@@ -307,7 +307,7 @@ function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[];
     const okA = () => {
       // un titre ou un jour qui ne se coupe pas ne doit jamais dépasser de sa carte : sinon on réduit
       for (const el of Array.from(wrapA.current?.querySelectorAll("[data-nw]") ?? [])) { const card = el.closest("[data-card]"); if (card && el.getBoundingClientRect().right > card.getBoundingClientRect().right - 12 * (el.getBoundingClientRect().width / ((el as HTMLElement).offsetWidth || 1))) return false; }
-      for (const el of Array.from(wrapA.current?.querySelectorAll('[data-fmt="cdate"]') ?? [])) if (el.scrollWidth > el.clientWidth + 1) return false;
+      for (const el of Array.from(wrapA.current?.querySelectorAll('[data-card] [data-fmt^="evd-"]') ?? [])) if (el.scrollWidth > el.clientWidth + 1) return false;
       return true;
     };
     const total = (sA: number, sB: number) => { place(sA, sB); return (refA.current?.offsetHeight ?? 0) * sA + (refB.current?.offsetHeight ?? 0) * sB; };

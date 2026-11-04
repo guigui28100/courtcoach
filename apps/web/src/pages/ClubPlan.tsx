@@ -1168,11 +1168,12 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
 }
 
 // ───────────── Mise en forme du texte de l'affiche d'un événement : chaque texte se touche sur l'aperçu ou se choisit dans la liste ─────────────
-const monthFmtItems = (liste: boolean): FmtItem[] => [
+const monthFmtItems = (liste: boolean, evs: ClubEvent[] = []): FmtItem[] => [
   { key: "entete", label: "Mois et saison (en haut)" },
   ...(liste ? [
-    { key: "titres", label: "Titres « À ne pas manquer » / « Et aussi »" }, { key: "cdate", label: "Dates des grandes cartes" }, { key: "ctexte", label: "Textes des grandes cartes" },
-    { key: "ldate", label: "Dates de la liste" }, { key: "ltexte", label: "Textes de la liste" },
+    { key: "titres", label: "Titre « À ne pas manquer »" }, { key: "titres2", label: "Titre « Et aussi ce mois-ci »" },
+    // UN réglage par événement : le texte et la date de chacun se règlent seuls (centrer, couleur, taille…) sans toucher aux autres
+    ...evs.flatMap((e) => { const n = titleOf(e).slice(0, 34); return [{ key: `ev-${e.id}`, label: `${n} : texte` }, { key: `evd-${e.id}`, label: `${n} : date` }]; }),
   ] : []),
   { key: "pied", label: "Bas de page (club, e-mail)" }, { key: "legende", label: "Légende des couleurs" },
   { key: "tout", label: "Tous les textes", sizeOnly: true },
@@ -1376,9 +1377,9 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
       look={<Sec title="Modèle"><Seg label="Modèle de l'affiche" value={model} options={[{ id: "liste", label: "📋 Liste" }, { id: "calendrier", label: "🗓️ Calendrier" }]} onChange={setModel} /></Sec>}
       bg={bg} onBg={setBg}
       partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
-      fmt={{ items: monthFmtItems(model === "liste"), value: mfmt, onChange: setMfmt, selected: selEv ? "" : msel, onSelect: (k) => { setSelEv(""); setMsel(k); } }}
+      fmt={{ items: monthFmtItems(model === "liste", monthEvents(events, month)), value: mfmt, onChange: setMfmt, selected: selEv ? `ev-${selEv}` : msel, onSelect: (k) => { setSelEv(k.startsWith("ev-") ? k.slice(3) : ""); setMsel(k); } }}
       textsExtra={<>{evEditor}{/^[a-z0-9-]+$/i.test(selEv) && <style>{`.pf-prev [data-ev="${selEv}"]{outline:3px solid #e11d48;outline-offset:3px}`}</style>}</>}
-      preview={({ pick, goTab }) => poster({ onPick: pick, onPickEv: (id: string) => { setSelEv(id); goTab("textes"); } })}
+      preview={({ pick, goTab }) => poster({ onPick: pick, onPickEv: (id: string) => { setSelEv(id); setMsel(`ev-${id}`); goTab("textes"); } })}
       printNode={poster()}
       fileBase={() => `affiche-${month}-${model}`}
       save={{ kind: "local", text: "● Réglages de texte gardés sur cet appareil" }}
