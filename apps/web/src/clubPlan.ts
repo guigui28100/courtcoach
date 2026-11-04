@@ -59,12 +59,12 @@ export const TEAM_CATS: { key: string; group: string; label: string; color: stri
   { key: "fil-11-12", group: "Jeunes · filles", label: "11/12 ans filles", color: "#F5B7D5", def: 2 },
   { key: "fil-13-14", group: "Jeunes · filles", label: "13/14 ans filles", color: "#EC7FB5", def: 2 },
   { key: "fil-15-18", group: "Jeunes · filles", label: "15/18 ans filles", color: "#D6458F", def: 2 },
-  { key: "sen-m", group: "Seniors", label: "Seniors messieurs", color: "#1B4F72", def: 3 },
-  { key: "sen-d", group: "Seniors", label: "Seniors dames", color: "#A5276A", def: 3 },
-  { key: "vet-35-m", group: "Vétérans", label: "+35 ans messieurs", color: "#117A65", def: 2 },
-  { key: "vet-45-m", group: "Vétérans", label: "+45 ans messieurs", color: "#0B5345", def: 2 },
-  { key: "vet-35-d", group: "Vétérans", label: "+35 ans dames", color: "#884EA0", def: 2 },
-  { key: "vet-45-d", group: "Vétérans", label: "+45 ans dames", color: "#5B2C6F", def: 2 },
+  { key: "sen-m", group: "Séniors", label: "Séniors messieurs", color: "#1B4F72", def: 3 },
+  { key: "sen-d", group: "Séniors", label: "Séniors dames", color: "#A5276A", def: 3 },
+  { key: "vet-35-m", group: "Séniors +35 / +45", label: "+35 ans messieurs", color: "#117A65", def: 2 },
+  { key: "vet-45-m", group: "Séniors +35 / +45", label: "+45 ans messieurs", color: "#0B5345", def: 2 },
+  { key: "vet-35-d", group: "Séniors +35 / +45", label: "+35 ans dames", color: "#884EA0", def: 2 },
+  { key: "vet-45-d", group: "Séniors +35 / +45", label: "+45 ans dames", color: "#5B2C6F", def: 2 },
 ];
 export const teamCat = (key: string) => TEAM_CATS.find((c) => c.key === key.split("#")[0]);
 export const teamLabel = (t: string) => { const c = teamCat(t); return c ? `${c.label} · Éq. ${t.split("#")[1]}` : t; };

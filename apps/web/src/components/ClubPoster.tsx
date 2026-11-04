@@ -53,11 +53,11 @@ function Parts({ parts, icon }: { parts: string[]; icon?: string }) {
 // Match par équipes : la catégorie sur UNE ligne (« Vétérans +45 ans dames »), le numéro dessous (« Équipe 1 »), puis le club et le lieu
 function MatchLines({ e, icon, rest, inline, short }: { e: ClubEvent; icon?: string; rest?: boolean; inline?: boolean; short?: boolean }) {
   const more = labelParts(e).slice(2);
-  return <>{e.teams.map((t, i) => { const [cat, num0] = teamParts(t); const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
-    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
+  return <>{e.teams.map((t, i) => { const [cat0, num0] = teamParts(t); const cat = /^Séniors \+\d+ ans/.test(cat0) ? cat0.replace(/^Séniors /, "Match par équipes ") : cat0; const long = cat.length > 26; const num = short ? num0.replace(/^Équipe /, "Éq. ") : num0; return inline ? (
+    <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}><span style={{ whiteSpace: long ? "normal" : "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>{" "}<span style={{ whiteSpace: "nowrap", fontWeight: 900, color: "#b8471f" }}>· {num}</span></span>
   ) : (
     <span key={t} style={{ display: "block", marginTop: i ? 3 : 0 }}>
-      <span data-nw style={{ display: "block", whiteSpace: "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
+      <span data-nw style={{ display: "block", whiteSpace: long ? "normal" : "nowrap" }}>{i === 0 && icon ? `${icon}\u00a0` : ""}{cat}</span>
       <span style={{ display: "block", fontWeight: 900, color: "#b8471f", fontSize: "1.05em", lineHeight: 1.15 }}>{num}</span>
     </span>); })}{rest !== false && more.length > 0 ? <span style={{ display: "block", fontWeight: 700, fontSize: "0.9em", marginTop: 2 }}><Parts parts={more} /></span> : null}</>;
 }
@@ -154,7 +154,7 @@ function Featured({ list, showWho }: { list: ClubEvent[]; showWho: boolean }) {
             </div></div>
             )}
             <div style={{ padding: "10px 18px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}><div data-fmt="ctexte" data-ev={e.id}>
-              {isMatch(e) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
+              {isMatch(e) && !e.teams.every((t) => t.startsWith("vet-")) ? <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", color: "#6b6557", marginBottom: 2 }}>{k.icon} MATCH PAR ÉQUIPES</div> : null}
               <div style={{ fontWeight: 900, fontSize: 24, color: "#17140f", lineHeight: 1.15 }}>{isMatch(e) ? <MatchLines e={e} rest={false} /> : <>{k.icon} {labelParts(e)[0]}</>}</div>
               {(isMatch(e) ? labelParts(e).slice(2) : labelParts(e).slice(1)).length || detailParts(e, showWho).length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", marginTop: 8 }}>

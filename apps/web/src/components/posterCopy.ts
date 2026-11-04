@@ -153,13 +153,22 @@ const CAT_TEXT = (key: string): string => {
   const l = c.label.replace(/\s*·\s*/g, " ");
   const m = /^(.+?) (garçons|filles)$/.exec(l);
   if (m) return `${m[2] === "filles" ? "Filles" : "Garçons"} ${m[1]}`; // « 13/14 ans filles » → « Filles 13/14 ans »
-  if (/^\+\d+ ans/.test(l)) return `Vétérans ${l}`;
-  return l; // « Seniors messieurs »
+  if (/^\+\d+ ans/.test(l)) return `Séniors ${l}`;
+  return l; // « Séniors messieurs »
 };
 export const teamPlain = (t: string) => `${CAT_TEXT(t.split("#")[0])}, équipe ${t.split("#")[1] ?? "1"}`;
 export const catPlain = (key: string) => CAT_TEXT(key);
-// Une équipe en deux lignes : la catégorie (« Vétérans +45 ans dames »), puis le numéro (« Équipe 1 »)
+// Une équipe en deux lignes : la catégorie (« Séniors +45 ans dames »), puis le numéro (« Équipe 1 »)
 export const teamParts = (t: string): [string, string] => [CAT_TEXT(t.split("#")[0]), `Équipe ${t.split("#")[1] ?? "1"}`];
+
+// Match de séniors +35 / +45 ans : « +35 ans », « +45 ans » ou « +35 / +45 ans » (null si une équipe n'est pas de cette catégorie)
+export function vetTitle(teams: string[]): { text: string; single: boolean } | null {
+  if (!teams.length) return null;
+  const ages = new Set<string>();
+  for (const t of teams) { const m = /^vet-(\d+)-/.exec(t.split("#")[0]); if (!m) return null; ages.add(m[1]); }
+  const l = [...ages].sort();
+  return { text: `${l.map((a) => `+${a}`).join(" / ")} ans`, single: l.length === 1 };
+}
 
 // Terrains écrits comme on le dirait : « Court 1 », « Courts 1 et 2 », « Les 4 courts »
 export function courtsText(c: number[] | undefined): string {
