@@ -1329,9 +1329,11 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
 }
 
 // ───────────── Exporter le planning : tableau Excel, agenda, liste imprimable ─────────────
-function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; season: number; month: string; onClose: () => void }) {
+function ExportModal({ events: allEvents, season, month, onClose }: { events: ClubEvent[]; season: number; month: string; onClose: () => void }) {
   const [scope, setScope] = useState<"saison" | "mois">("saison");
   const [withWho, setWithWho] = useState(false);
+  const [onlyTour, setOnlyTour] = useState(false);
+  const events = useMemo(() => (onlyTour ? allEvents.filter((x) => x.kind === "TOURNOI") : allEvents), [allEvents, onlyTour]);
   const [cover, setCover] = useState(true);
   const [pageNo, setPageNo] = useState(0);
   const [scale, setScale] = useState(0.5);
@@ -1342,7 +1344,7 @@ function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; 
   const n = inPeriod(events, from, to).length;
   const pages = useMemo(() => buildDossier(events, { from, to, withWho, season: scope === "saison" ? season : undefined, cover: scope === "saison" && cover }), [events, from, to, withWho, scope, season, cover]);
   const idx = Math.min(pageNo, Math.max(0, pages.length - 1));
-  const tag = scope === "saison" ? `saison-${season}-${season + 1}` : month;
+  const tag = (scope === "saison" ? `saison-${season}-${season + 1}` : month) + (onlyTour ? "-tournois" : "");
   const print = () => {
     const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:0}";
     document.head.appendChild(st); document.body.classList.add("printing-affiche");
@@ -1360,6 +1362,7 @@ function ExportModal({ events, season, month, onClose }: { events: ClubEvent[]; 
       <p className="mb-1 text-sm font-extrabold text-ink">2. Options</p>
       <div className="mb-3 flex flex-wrap gap-2">
         {scope === "saison" && <Pill on={cover} onClick={() => { setCover(!cover); setPageNo(0); }}>📘 Avec la couverture</Pill>}
+        <Pill on={onlyTour} onClick={() => { setOnlyTour(!onlyTour); setPageNo(0); }}>🏆 Seulement les tournois (TMC et open)</Pill>
         <Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe »</Pill>
       </div>
       <p className="mb-1 text-sm font-extrabold text-ink">3. Le dossier de saison <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""} · {pages.length} page{pages.length > 1 ? "s" : ""})</span></p>
