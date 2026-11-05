@@ -153,7 +153,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <main id="contenu" className={"flex-1 " + (galaxy ? "galaxy-sky" : "")}><div key={pathname} className="page-in">{children}</div></main>
 
-      {me && <div aria-hidden className="h-[4.5rem] shrink-0 print:hidden md:hidden" />}
+      {me && <div aria-hidden className="h-[calc(4rem+env(safe-area-inset-bottom))] shrink-0 print:hidden md:hidden" />}
       {me && (
         <nav aria-label="Menu principal" className={"print:hidden fixed inset-x-0 bottom-0 z-40 grid border-t pb-[env(safe-area-inset-bottom)] md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
           {items.map((i) => (
