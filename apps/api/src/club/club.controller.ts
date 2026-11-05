@@ -10,7 +10,7 @@ import { ClubService } from "./club.service";
 @Controller("club")
 export class ClubController {
   constructor(private readonly svc: ClubService) {}
-  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Get("plan") plan() { return this.svc.plan(); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU, Role.TRAINER) @Get("plan") plan() { return this.svc.plan(); }
   // « Mes événements » : chaque personne du site (coach, entraîneur, président) ne voit que les événements où son nom est coché dans « Qui s'en occupe ? »
   @Roles(Role.COACH, Role.PRESIDENT, Role.TRAINER) @Get("mine") mine(@CurrentUser() u: AuthUser) { return this.svc.mine(u.id); }
   // Jours de cours habituels (jour + horaires) : chacun LIT les siens, mais seul le coach les place, pour lui-même ou pour un entraîneur

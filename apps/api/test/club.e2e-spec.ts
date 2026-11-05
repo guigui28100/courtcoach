@@ -27,9 +27,13 @@ describe("Planning du club (réservé au coach)", () => {
   });
   afterAll(async () => { await clean(); await app.close(); });
 
-  it("seul le coach ouvre le planning ; adultes, entraîneurs, familles et jeunes n'ont AUCUN accès", async () => {
+  it("un prof (entraîneur) LIT le planning mais ne change rien", async () => {
+    await A.entraineur.get("/api/club/plan").expect(200);
+  });
+
+  it("seul le coach gère le planning ; adultes, familles et jeunes n'ont AUCUN accès, le prof ne peut rien modifier", async () => {
     for (const k of ["adulte", "entraineur", "parent", "jeune"]) {
-      await A[k].get("/api/club/plan").expect(403);
+      if (k !== "entraineur") await A[k].get("/api/club/plan").expect(403);
       await A[k].post("/api/club/events").set(ORIGIN).send(ev()).expect(403);
       await A[k].put("/api/club/teams").set(ORIGIN).send({ counts: {} }).expect(403);
       await A[k].put("/api/club/people").set(ORIGIN).send({ people: [] }).expect(403);
