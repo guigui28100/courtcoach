@@ -153,8 +153,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <main id="contenu" className={"flex-1 " + (galaxy ? "galaxy-sky" : "")}><div key={pathname} className="page-in">{children}</div></main>
 
+      {me && <div aria-hidden className="h-[4.5rem] shrink-0 print:hidden md:hidden" />}
       {me && (
-        <nav aria-label="Menu principal" className={"print:hidden sticky bottom-0 z-40 grid border-t md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
+        <nav aria-label="Menu principal" className={"print:hidden fixed inset-x-0 bottom-0 z-40 grid border-t pb-[env(safe-area-inset-bottom)] md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
           {items.map((i) => (
             <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-bold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#c9ad77]" : "text-white/80") : (isActive ? "bg-champagne-soft text-ink" : "text-muted"))}>
               <Icon name={i.icon} />{i.short ?? i.label}
