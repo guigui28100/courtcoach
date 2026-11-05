@@ -798,3 +798,5 @@
 
 
 - EXPORT « SEULEMENT LES TOURNOIS » (5/11/2026, demandé par le coach) : dans « 📤 Exporter le planning » (`ExportModal`, `pages/ClubPlan.tsx`), une option « 🏆 Seulement les tournois (TMC et open) » ne garde que les événements de type tournoi (les TMC et les tournois open sont le même type) ; elle marche avec « toute la saison » comme avec « un mois seulement », pour le PDF et pour l'agenda (le nom du fichier se termine par `-tournois`). Aucun changement du serveur.
+
+- MAILS PERSONNALISÉS DES 4 PROFS (5/11/2026) : `MAILS-PROFS.md` (non publié, listé dans `.vercelignore`) contient un mail par enseignant (Maxence, Martin, Matthieu, Laurent), prénom déjà écrit, tiré de la section 4 de `MAILS-EXPLICATIFS.md` ; seul « [ton prénom] » reste à remplacer. Aucun mot de passe dans un mail. Pas de code touché.
