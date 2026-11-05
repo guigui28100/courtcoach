@@ -4,7 +4,7 @@ import { Backdrop } from "./PosterBackdrop";
 import { CourtLines } from "./CourtLines";
 import { SERIF } from "./posterFonts";
 import { POSTER_H, POSTER_W } from "./ClubPoster";
-import { PosterStudio, Sec, Toggle } from "./PosterStudio";
+import { PosterStudio, Sec, Seg, Toggle } from "./PosterStudio";
 
 // Affiche « Calendrier des tournois » sur plusieurs mois (A4). Simple : date, nom du tournoi, surface. Rien n'est enregistré : tout se calcule dans le navigateur.
 const monthOf = (d: string) => d.slice(0, 7);
@@ -16,6 +16,13 @@ export function tournoisInPeriod(events: ClubEvent[], from: string, to: string, 
   const a = `${from}-01`, b = `${to}-31`;
   return events.filter((e) => e.kind === "TOURNOI" && e.startDate <= b && e.endDate >= a && (withTentative || !e.tentative)).sort((x, y) => x.startDate.localeCompare(y.startDate));
 }
+// Tournoi de jeunes ? (le détail « Jeunes · … » est gardé dans `audience` ; repli sur les mots du titre pour les anciens tournois)
+export type Pub = "enfants" | "adultes";
+export const isKids = (e: ClubEvent) => {
+  const a = (e.audience ?? "").toLowerCase();
+  if (a) return a.startsWith("jeunes") || /\b(garçons?|filles?)\b|\d+\/\d+ ans/.test(a);
+  return /jeunes|garçons|filles|\d+\/\d+ ans/i.test(e.title ?? "");
+};
 const rangeShort = (e: ClubEvent) => {
   if (e.startDate === e.endDate) return { top: DAYS[weekdayOf(e.startDate)].slice(0, 3).toUpperCase() + ".", big: String(dayNum(e.startDate)) };
   return { top: `${DAYS[weekdayOf(e.startDate)].slice(0, 3)}. → ${DAYS[weekdayOf(e.endDate)].slice(0, 3)}.`.toUpperCase(), big: `${dayNum(e.startDate)}–${dayNum(e.endDate)}` };
@@ -24,7 +31,7 @@ const Logo = ({ size, color = "#fff", style }: { size: number; color?: string; s
   <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: color, WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
-export function TournoisPoster({ events, from, to, bg = "" }: { events: ClubEvent[]; from: string; to: string; bg?: string }) {
+export function TournoisPoster({ events, from, to, bg = "", pub = "adultes" }: { events: ClubEvent[]; from: string; to: string; bg?: string; pub?: Pub }) {
   const groups: { m: string; list: ClubEvent[] }[] = [];
   for (const e of events) { const m = monthOf(e.startDate < `${from}-01` ? `${from}-01` : e.startDate); const g = groups.find((x) => x.m === m); g ? g.list.push(e) : groups.push({ m, list: [e] }); }
   const n = events.length, HEAD = 230, FOOT = 96, avail = POSTER_H - HEAD - FOOT - 56;
@@ -48,7 +55,7 @@ export function TournoisPoster({ events, from, to, bg = "" }: { events: ClubEven
         <Logo size={130} style={{ position: "absolute", right: 34, top: 22 }} />
         <div style={{ position: "absolute", left: 52, top: 34 }}>
           <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "0.22em" }}>TENNIS CLUB HOUDAN</div>
-          <div style={{ fontFamily: SERIF, fontSize: 74, fontWeight: 900, lineHeight: 1, marginTop: 8 }}>Les tournois</div>
+          <div style={{ fontFamily: SERIF, fontSize: 74, fontWeight: 900, lineHeight: 1, marginTop: 8 }}>{pub === "enfants" ? "Tournois jeunes" : "Tournois adultes"}</div>
           <div style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 700, fontStyle: "italic", marginTop: 6, color: "#e8d9a8" }}>{period}</div>
         </div>
       </div>
@@ -95,15 +102,19 @@ export function TournoisModal({ events, onClose }: { events: ClubEvent[]; onClos
   const [from, setFrom] = useState(`${s + 1}-01`);
   const [to, setTo] = useState(`${s + 1}-04`);
   const [withTentative, setWithTentative] = useState(false);
+  const [pub, setPub] = useState<Pub>("enfants");
   const [bg, setBg] = useState("");
   const months = Array.from({ length: 12 }, (_, i) => addMonth(`${s}-09`, i));
-  const list = useMemo(() => tournoisInPeriod(events, from, to, withTentative), [events, from, to, withTentative]);
+  const list = useMemo(() => tournoisInPeriod(events, from, to, withTentative).filter((e) => (pub === "enfants") === isKids(e)), [events, from, to, withTentative, pub]);
   const sel = "w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm font-bold text-ink";
   return (
     <PosterStudio
-      title="🏆 Affiche des tournois" subtitle={`${from <= to ? mLabel(from) + " → " + mLabel(to) : "Choisis une période"} · ${list.length} tournoi${list.length > 1 ? "s" : ""}`} onClose={onClose}
+      title={pub === "enfants" ? "🏆 Affiche des tournois jeunes" : "🏆 Affiche des tournois adultes"} subtitle={`${from <= to ? mLabel(from) + " → " + mLabel(to) : "Choisis une période"} · ${list.length} tournoi${list.length > 1 ? "s" : ""}`} onClose={onClose}
       formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
       content={<>
+        <Sec title="Pour qui ?">
+          <Seg label="Public" value={pub} options={[{ id: "enfants", label: "🧒 Tournois jeunes" }, { id: "adultes", label: "🎾 Tournois adultes" }]} onChange={setPub} />
+        </Sec>
         <Sec title="Quelle période ?">
           <div className="grid grid-cols-2 gap-2">
             <label className="text-xs font-extrabold text-ink">Du mois de
@@ -111,15 +122,15 @@ export function TournoisModal({ events, onClose }: { events: ClubEvent[]; onClos
             <label className="text-xs font-extrabold text-ink">Au mois de
               <select className={sel} value={to} onChange={(e) => { setTo(e.target.value); if (e.target.value < from) setFrom(e.target.value); }}>{months.map((m) => <option key={m} value={m}>{mLabel(m)}</option>)}</select></label>
           </div>
-          <p className="mb-0 mt-2 text-xs text-muted">L'affiche reprend tous les tournois (TMC et open) du planning sur ces mois, rangés par date.</p>
+          <p className="mb-0 mt-2 text-xs text-muted">L'affiche reprend tous les tournois (TMC et open) du public choisi, pris dans le planning, sur ces mois, rangés par date.</p>
         </Sec>
         <Sec title="Tournois à confirmer"><Toggle on={withTentative} onChange={setWithTentative} label="⏳ Montrer aussi les prévisionnels" hint="Écrits « (à confirmer) » sur l'affiche" /></Sec>
         {list.length > 14 && <p className="rounded-md bg-[#fff3c4] p-2 text-xs font-bold text-ink">Il y a beaucoup de tournois : le texte est petit. Choisis moins de mois pour une affiche plus lisible.</p>}
       </>}
       bg={bg} onBg={setBg}
-      preview={() => <TournoisPoster events={list} from={from} to={to} bg={bg} />}
-      printNode={<TournoisPoster events={list} from={from} to={to} bg={bg} />}
-      fileBase={() => `affiche-tournois-${from}-${to}`}
+      preview={() => <TournoisPoster events={list} from={from} to={to} bg={bg} pub={pub} />}
+      printNode={<TournoisPoster events={list} from={from} to={to} bg={bg} pub={pub} />}
+      fileBase={() => `affiche-tournois-${pub}-${from}-${to}`}
       save={{ kind: "local", text: "● Rien à enregistrer : tout vient du planning" }}
     />
   );

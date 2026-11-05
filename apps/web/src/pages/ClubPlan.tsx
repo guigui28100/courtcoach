@@ -168,7 +168,7 @@ export function ClubPlan() {
           <div className="grid gap-2">
             {[
               ...(viewer ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
-              ...(viewer ? [] : [{ i: "🗓️", t: "Affiche des tournois", d: "Tous les tournois (TMC et open) de plusieurs mois sur une seule affiche, par exemple de janvier à avril.", go: () => setTournoisOpen(true) }]),
+              ...(viewer ? [] : [{ i: "🗓️", t: "Affiche des tournois", d: "Les tournois jeunes ou adultes (TMC et open) de plusieurs mois, pris dans le planning, par exemple de janvier à avril.", go: () => setTournoisOpen(true) }]),
               ...(viewer ? [] : [{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
               ...(viewer ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
