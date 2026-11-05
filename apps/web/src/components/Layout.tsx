@@ -20,7 +20,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   TRAINER: [
     { to: "/coach/centre", label: "Mes jeunes · Centre", short: "Jeunes", icon: "users" },
-    { to: "/prof", label: "Ton agenda", short: "Agenda", icon: "star" },
+    { to: "/coach/club", label: "Planning du club", short: "Club", icon: "home" },
     { to: "/coach/securite", label: "Sécurité", icon: "shield" },
   ],
   PRESIDENT: [

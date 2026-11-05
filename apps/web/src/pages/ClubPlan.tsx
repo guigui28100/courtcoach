@@ -41,7 +41,8 @@ const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
 // Planning du club (coach et président : gestion ; bureau : LECTURE SEULE) : tout se fait en cliquant, rien à écrire
 export function ClubPlan() {
   const { me } = useAuth();
-  const readOnly = me?.role === "BUREAU"; // bureau : propose des événements prévisionnels, ne valide rien
+  const viewer = me?.role === "TRAINER"; // prof : voit le planning, ne change rien
+  const readOnly = me?.role === "BUREAU" || viewer; // bureau : propose des événements prévisionnels, ne valide rien
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [people, setPeople] = useState<{ name: string; role: string }[]>([]);
@@ -135,8 +136,8 @@ export function ClubPlan() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>
-              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{readOnly ? "🖨️ Affiches et export" : "⋯ Affiche, export, réglages"}</button>
+              {!viewer && <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
+              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{viewer ? "📤 Exporter" : readOnly ? "🖨️ Affiches et export" : "⋯ Affiche, export, réglages"}</button>
             </div>
           </div>
         </section>
@@ -157,17 +158,18 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {readOnly && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
+        {viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">👀 Tu consultes le planning du club : pour ajouter ou changer un événement, demande au coach.</p>}
+        {readOnly && !viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
           <div className="grid gap-2">
             {[
-              ...([{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
-              ...([{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
+              ...(viewer ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
+              ...(viewer ? [] : [{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
-              ...([{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
-              ...(readOnly ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
+              ...(viewer ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
+              ...(readOnly || viewer ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
             ].map((o) => (
               <button key={o.t} type="button" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 text-left hover:border-ink" onClick={() => { setMoreOpen(false); o.go(); }}>
                 <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#f3efe6] text-2xl">{o.i}</span>
@@ -180,7 +182,7 @@ export function ClubPlan() {
       {loading ? <p className="text-muted">Chargement…</p> : (
         <>
           {view === "annee" && <YearView season={season} setSeason={setSeason} events={events} clashes={clashes} onOpen={readOnly ? setActionEv : openEdit} onMonth={(m) => { setMonth(m); setView("mois"); }} />}
-          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={(d) => { setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={(a, b) => { setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
+          {view === "mois" && <MonthView month={month} multi={multi} events={events} onDay={viewer ? () => {} : (d) => { setAskNew(false); setDay(d); setMenuEnd(null); setMenuDay(d); }} onRange={viewer ? () => {} : (a, b) => { setAskNew(false); setMulti(false); setDay(a); setMenuEnd(b); setMenuDay(a); }} onEvent={setActionEv} onReorder={readOnly ? undefined : reorder} />}
         </>
       )}
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
@@ -193,7 +195,7 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} canValidate={me?.role === "COACH"} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} viewer={viewer} canValidate={me?.role === "COACH"} />}
       {recapEv && <RecapModal e={recapEv} events={events} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
@@ -1305,7 +1307,7 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false, canValidate = false }: { readOnly?: boolean; canValidate?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false, viewer = false, canValidate = false }: { viewer?: boolean; readOnly?: boolean; canValidate?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
@@ -1314,14 +1316,14 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
       <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
-      <div className="mt-3 grid gap-2">
+      {!viewer && <div className="mt-3 grid gap-2">
         {!readOnly && <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>}
         <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>}
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>}
         {readOnly && !e.tentative && <p className="m-0 text-sm text-muted">Cet événement est validé : seuls le coach et le président changent ses dates. Tu peux modifier toutes les infos de son affiche.</p>}
-      </div>
+      </div>}
     </Modal>
   );
 }
