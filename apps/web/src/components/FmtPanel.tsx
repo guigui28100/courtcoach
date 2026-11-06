@@ -6,7 +6,7 @@ export const SelOutline = ({ sel }: { sel: string }) => (
   <style>{`.pf-prev [data-fmt]{cursor:pointer}.pf-prev [data-fmt]:hover{outline:2px dotted #b8471f;outline-offset:2px}${sel && /^[a-z0-9-]+$/i.test(sel) ? `.pf-prev [data-fmt="${sel}"]{outline:3px solid #e11d48;outline-offset:3px}` : ""}`}</style>
 );
 
-export type FmtItem = { key: string; label: string; move?: boolean; sizeOnly?: boolean; edit?: boolean };
+export type FmtItem = { key: string; label: string; move?: boolean; sizeOnly?: boolean; edit?: boolean; bar?: boolean };
 
 // Panneau « Mise en forme du texte » : on choisit une partie (ou on touche le texte sur l'affiche), puis on règle taille, gras, italique, souligné, alignement, couleur, position.
 export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "🔤 Textes : réécrire, taille, couleur…", hint, flat = false }: { items: FmtItem[]; fmt: Fmts; onChange: (f: Fmts) => void; selected: string; onSelect: (k: string) => void; title?: string; hint?: string; flat?: boolean }) {
@@ -41,13 +41,14 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
       )}
       <div className="mt-3 grid gap-2 rounded-xl bg-[#fbf8f2] p-3">
         <p className="m-0 text-xs font-extrabold uppercase tracking-wide text-muted">{item.edit ? "3" : "2"} · Mise en forme <span className="font-normal normal-case tracking-normal">: {item.label}</span></p>
-        {row("Taille", <>
+        {item.bar && row("Affichage", btn(cur.hide ? "Afficher le trait" : "Supprimer le trait", cur.hide, () => set({ hide: cur.hide ? undefined : true }), cur.hide ? "Afficher le trait" : "Supprimer le trait", { fontSize: 13 }))}
+        {!item.bar && row("Taille", <>
           {btn("A−", undefined, () => set({ size: size - 1 }), "Plus petit", undefined, size <= -6)}
           <span className="min-w-16 text-center text-sm font-bold text-ink">{size === 0 ? "normale" : size > 0 ? `+${size}` : size}</span>
           {btn("A+", undefined, () => set({ size: size + 1 }), "Plus grand", undefined, size >= 30)}
         </>)}
         {!item.sizeOnly && <>
-          {row("Style", <>
+          {!item.bar && row("Style", <>
             {btn("G", cur.bold, () => set({ bold: cur.bold === false ? undefined : cur.bold ? false : true }), "Gras", { fontWeight: 900 })}
             {btn("I", cur.italic, () => set({ italic: cur.italic ? undefined : true }), "Italique", { fontStyle: "italic" })}
             {btn("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), "Souligné", { textDecoration: "underline" })}
