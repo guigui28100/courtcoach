@@ -137,7 +137,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const longest = e.kind === "EQUIPES" && !e.title && vetTitle(e.teams) ? name.length : Math.max(...name.split(/\s+/).map((x) => x.length), 4); // un mot ne doit jamais être coupé : la taille du titre est plafonnée par le mot le plus long
   const vetOne = e.kind === "EQUIPES" && !e.title && !!vetTitle(e.teams); // « Match par équipes +35 ans messieurs » : toujours sur UNE ligne
   const title: CSSProperties = { margin: 0, ...(vetOne ? { whiteSpace: "nowrap" as const } : {}), fontFamily: SERIF, fontSize: `min(${pt(sq ? 84 : 112)}, ${Math.floor((w - px * 2 - 4) / (longest * (e.kind === "EQUIPES" && !e.title && vetTitle(e.teams) ? 0.43 : 0.5)) * Math.max(1, fz("titre")))}px)`, lineHeight: 0.98, fontWeight: wt("titre", 600), color: NAVY, ...deco("titre") };
-  const HALO: CSSProperties = {};
+  const HALO: CSSProperties = onPhoto ? { textShadow: "0 0 5px rgba(255,255,255,1), 0 0 12px rgba(255,255,255,.95), 0 0 24px rgba(255,255,255,.85), 0 0 40px rgba(255,255,255,.6)" } : {};
   const typeLabel = tour ? (ti?.type === "TMC" ? "Tournoi multi-chances" : "Tournoi") : kd.label;
   const rule = <div aria-hidden style={{ width: p(64), height: 1.5, background: GOLDL, margin: `${pt(20)} auto` }} />;
   const SPLIT = /^(.*?)[\s\u00a0]:[\s\u00a0](.*)$/; // « Samedi 7 : de 9 h à 19 h » (l'espace avant « : » est insécable après nettoyage)
@@ -189,7 +189,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
         </div>); })}
     </div>
   );
-  const glow: CSSProperties = {};
+  const glow: CSSProperties = HALO;
   const titleEl = <div style={{ ...glow, textAlign: F("titre").align ?? "center" }}>{!(e.kind === "EQUIPES" && !e.title && vetTitle(e.teams)) && <div data-fmt="type" style={{ fontFamily: SERIF, fontStyle: "italic", fontWeight: 600, fontSize: pty(sq ? 28 : 34), color: BRONZE, marginBottom: pty(8) }}>{txt(fmt, "type", typeLabel)}</div>}<h1 data-fmt="titre" style={title}>{txt(fmt, "titre", name).replace(/ · /g, "\u00a0· ")}</h1>{teamsEl}{txt(fmt, "accroche", lede.text) && <p data-fmt="accroche" style={{ margin: `${pac(16)} 0 0`, fontSize: pac(sq ? 22 : 24), lineHeight: 1.35, fontWeight: 500, letterSpacing: "0.02em", color: "#3a352c", overflowWrap: "break-word", textWrap: "balance" as any, ...deco("accroche") }}>{txt(fmt, "accroche", lede.text).split("\n").map((l, i) => i === 0 && lede.text.includes("\n") && fmt?.accroche?.text === undefined ? <b key={i} style={{ display: "block", color: NAVY, fontWeight: 800 }}>{l}</b> : <span key={i} style={{ display: "block" }}>{l}</span>)}</p>}</div>;
 
   const gap = p(18);
@@ -200,7 +200,6 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
       <FmtStyle fmts={fmt} noZoom={["titre", "date", "infos", "tarifs", "texte", "equipe", "numero", "type", "accroche"]} />
       <Backdrop bg={bg} w={w} h={h} veil="light" pos="center 72%" />
       {onPhoto && <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: hdH, background: "linear-gradient(180deg,rgba(15,12,8,.6),rgba(15,12,8,.05))" }} />}
-      {onPhoto && <div aria-hidden style={{ position: "absolute", left: 24, right: 24, top: hdH, bottom: 24, background: `rgba(251,248,242,${light ? 0.74 : 0.93})`, borderTop: `1.5px solid ${GOLDL}` }} />}
       <div aria-hidden style={{ position: "absolute", inset: 24, border: `1.5px solid ${GOLDL}`, pointerEvents: "none" }} />
       <div aria-hidden style={{ position: "absolute", inset: 32, border: `0.5px solid ${GOLDL}`, pointerEvents: "none" }} />
       <div style={{ position: "relative", height: hdH, display: "flex", flexDirection: sq ? "row" : "column", alignItems: "center", justifyContent: onPhoto && !sq ? "flex-start" : "center", gap: sq ? 22 : 12, paddingTop: sq ? 16 : 28 }}>
@@ -211,7 +210,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{i === 0 ? <>{c}{rule}</> : c}</div> : null))}</div>
       </div>
       {logos.length > 0 && (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, borderTop: `1px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px`, background: "rgba(251,248,242,.9)" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, borderTop: `1px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px`, background: onPhoto ? "transparent" : "rgba(251,248,242,.9)", ...HALO }}>
           <div data-fmt="partenaires" style={{ flex: "0 0 auto", fontSize: 12, fontWeight: 800, letterSpacing: "0.2em", color: BRONZE, lineHeight: 1.3 }}>NOS<br />PARTENAIRES</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 14, height: partH - 28 }}>
             {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 170, height: "100%", objectFit: "contain" }} />)}
