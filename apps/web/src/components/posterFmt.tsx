@@ -1,7 +1,7 @@
 // Mise en forme du texte des affiches : chaque texte d'une affiche est repéré par un nom (`data-fmt="titre"`…).
 // Le coach touche un texte sur l'aperçu (ou le choisit dans la liste) puis règle sa taille, son gras, sa couleur, sa position…
 // Les réglages deviennent de simples règles de style écrites DANS l'affiche : l'aperçu, l'image PNG, le PDF et l'impression sont identiques.
-export type ElFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number; text?: string; hide?: boolean };
+export type ElFmt = { size?: number; bold?: boolean; italic?: boolean; underline?: boolean; align?: "left" | "center" | "right"; color?: string; dy?: number; dx?: number; text?: string; hide?: boolean };
 export type Fmts = Record<string, ElFmt>;
 
 export const FMT_COLORS: [string, string][] = [["#17140f", "Noir"], ["#1b1863", "Bleu nuit"], ["#2E86C1", "Bleu"], ["#1E8449", "Vert"], ["#D35400", "Orange"], ["#C0392B", "Rouge"], ["#8E44AD", "Violet"], ["#B8860B", "Or"], ["#ffffff", "Blanc"]];
@@ -21,6 +21,7 @@ export function fmtCss(fmts: Fmts | undefined, noZoom: string[] = []): string {
       if (f.align) t.push(`margin-left:${f.align === "left" ? "0" : "auto"} !important`, `margin-right:${f.align === "right" ? "0" : "auto"} !important`);
       if (f.color && /^#[0-9a-f]{3,8}$/i.test(f.color)) t.push(`background:${f.color} !important`);
       if (f.dy) t.push(`transform:translateY(${f.dy * 16}px)`);
+      if (f.dx) t.push(`translate:${f.dx * 16}px 0`);
       if (t.length) css += `${sel}{${t.join(";")}}`;
       continue;
     }
@@ -34,6 +35,7 @@ export function fmtCss(fmts: Fmts | undefined, noZoom: string[] = []): string {
     const own: string[] = [];
     if (f.align) own.push(`justify-content:${f.align === "center" ? "center" : f.align === "right" ? "flex-end" : "flex-start"}`);
     if (f.dy) own.push(`transform:translateY(${f.dy * 16}px)`);
+    if (f.dx) own.push(`translate:${f.dx * 16}px 0`); // décalage de côté : propriété « translate », qui s'ajoute au « transform » du haut / bas
     if (f.size && !noZoom.includes(k) && k !== "tout") own.push(`zoom:${stepZoom(f.size)}`);
     if (own.length) css += `${sel}{${own.join(";")}}`;
   }
@@ -43,7 +45,7 @@ export function fmtCss(fmts: Fmts | undefined, noZoom: string[] = []): string {
 // Les règles de mise en forme, posées DANS l'affiche (donc reprises par l'image, le PDF et l'impression)
 export const FmtStyle = ({ fmts, noZoom }: { fmts?: Fmts; noZoom?: string[] }) => {
   const css = fmtCss(fmts, noZoom);
-  return <style>{css + "[data-measuring] [data-fmt]{transform:none !important}"}</style>;
+  return <style>{css + "[data-measuring] [data-fmt]{transform:none !important;translate:none !important}"}</style>;
 };
 
 // Clic sur un texte de l'aperçu : on remonte jusqu'à la partie repérée la plus proche
