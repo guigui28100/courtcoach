@@ -6,13 +6,14 @@ import { SERIF } from "./posterFonts";
 import { POSTER_H, POSTER_W } from "./ClubPoster";
 import { PosterStudio, Sec, Seg, Toggle } from "./PosterStudio";
 import { teamParts, tidy } from "./posterCopy";
+import { photoFromFile } from "./RecapPoster";
 
 // Deux affiches de RÉSULTATS des matchs par équipes : celle du WEEK-END (toutes les équipes) et celle des JEUNES.
 // Les rencontres viennent du planning (équipe, club rencontré, domicile ou déplacement) ; le coach écrit seulement les scores.
 // Rien n'est enregistré. Aucun nom d'élève : seulement le club rencontré.
 export type MatchMode = "weekend" | "jeunes";
 type Item = { key: string; day: string; e: ClubEvent };
-export type Score = { h: string; a: string; club: string };
+export type Score = { h: string; a: string; club: string; photo?: string }; // photo : photo de l'équipe (facultative), réduite dans le navigateur, jamais envoyée
 const mLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
 const addMonth = (m: string, n: number) => { const t = +m.slice(0, 4) * 12 + (+m.slice(5, 7) - 1) + n; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`; };
 const dn = (d: string) => (+d.slice(8, 10) === 1 ? "1er" : String(+d.slice(8, 10)));
@@ -49,6 +50,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
   const shown = list.filter((x) => resultOf(scores[x.key]) !== null);
   const days: { d: string; items: Item[] }[] = [];
   for (const x of shown) { const g = days.find((y) => y.d === x.day); g ? g.items.push(x) : days.push({ d: x.day, items: [x] }); }
+  const anyPhoto = shown.some((x) => !!scores[x.key].photo);
   const n = shown.length, HEAD = 230, FOOT = 96, avail = POSTER_H - HEAD - FOOT - 56;
   const wins = shown.filter((x) => resultOf(scores[x.key]) === "W").length, losses = shown.filter((x) => resultOf(scores[x.key]) === "L").length, draws = n - wins - losses;
   const sum = [wins && `${wins} victoire${wins > 1 ? "s" : ""}`, draws && `${draws} nul${draws > 1 ? "s" : ""}`, losses && `${losses} défaite${losses > 1 ? "s" : ""}`].filter(Boolean).join(" · ");
@@ -56,7 +58,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
   const [k, setK] = useState(1);
   const [tick, setTick] = useState(0);
   useEffect(() => { let on = true; (document as any).fonts?.ready?.then(() => { if (on) setTick((x) => x + 1); }); return () => { on = false; }; }, []);
-  const sig = shown.map((x) => x.key + JSON.stringify(scores[x.key])).join("|");
+  const sig = shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|");
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
     el.style.zoom = "1";
@@ -94,7 +96,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
               const verbe = r === "W" ? (club ? `TC Houdan bat ${club}` : "TC Houdan s'impose") : r === "L" ? (club ? `TC Houdan perd contre ${club}` : "TC Houdan s'incline") : (club ? `TC Houdan fait match nul contre ${club}` : "Match nul");
               return (
                 <div key={x.key} style={{ display: "flex", alignItems: "stretch", gap: 14, padding: "7px 0", borderBottom: "1px solid #e4dccb" }}>
-                  <div style={{ flex: "0 0 auto", width: 225, background: c, color: textOn(c), borderRadius: 8, padding: "7px 12px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div style={{ flex: "0 0 auto", width: anyPhoto ? 185 : 225, background: c, color: textOn(c), borderRadius: 8, padding: "7px 12px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     {parts.length ? parts.map(([cat, nm], i) => (
                       <div key={i} style={{ lineHeight: 1.1 }}>
                         <div style={{ fontSize: 19, fontWeight: 900 }}>{cat}</div>
@@ -103,11 +105,12 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
                     )) : <div style={{ fontSize: 19, fontWeight: 900 }}>{e.title || "Match par équipes"}</div>}
                   </div>
                   <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 5 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1.15 }}>{verbe}</div>
+                    <div style={{ fontSize: anyPhoto ? 20 : 22, fontWeight: 900, lineHeight: 1.15 }}>{verbe}</div>
                     {v && <div><span style={{ background: v === "home" ? "#2f6b4a" : "#4a6d8f", color: "#fff", fontSize: 12, fontWeight: 900, letterSpacing: "0.05em", textTransform: "uppercase", padding: "2px 8px", whiteSpace: "nowrap" }}>{v === "home" ? "À domicile" : "En déplacement"}</span></div>}
                   </div>
-                  <div style={{ flex: "0 0 auto", width: 128, background: RES[r].c, color: "#fff", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4px 6px" }}>
-                    <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap" }}>{num(sc.h)}–{num(sc.a)}</div>
+                  {sc.photo && <div style={{ flex: "0 0 auto", width: 118, minHeight: 78, borderRadius: 8, overflow: "hidden", background: `#e4dccb url(${sc.photo}) center / cover no-repeat` }} role="img" aria-label="Photo de l'équipe" />}
+                  <div style={{ flex: "0 0 auto", width: anyPhoto ? 112 : 128, background: RES[r].c, color: "#fff", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4px 6px" }}>
+                    <div style={{ fontFamily: SERIF, fontSize: anyPhoto ? 40 : 46, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap" }}>{num(sc.h)}–{num(sc.a)}</div>
                     <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", marginTop: 3 }}>{RES[r].t}</div>
                   </div>
                 </div>
@@ -153,6 +156,8 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const title = mode === "weekend" ? "Résultats du week-end" : "Résultats équipes jeunes";
   const sub = byWeekend ? wkLabel : period;
   const setS = (key: string, p: Partial<Score>) => setTyped((o) => ({ ...o, [key]: { ...scores[key], ...o[key], ...p } }));
+  const [msg, setMsg] = useState("");
+  const addPhoto = async (key: string, f: File) => { setMsg(""); try { setS(key, { photo: await photoFromFile(f) }); } catch (x) { setMsg((x as Error).message); } };
   const done = list.filter((x) => resultOf(scores[x.key]) !== null).length;
   const sel = "w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm font-bold text-ink";
   const arrow = "rounded-md border-2 border-line bg-white px-4 py-2 text-lg font-extrabold text-ink hover:border-ink";
@@ -192,6 +197,11 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
             <Seg label="Équipes" value={scope} options={[{ id: "tous", label: "Toutes" }, { id: "jeunes", label: "🧒 Jeunes" }, { id: "adultes", label: "🎾 Adultes" }]} onChange={setScope} />
           </Sec>
         )}
+        <details className="rounded-md bg-[#fff4cc] p-3 text-sm text-[#6b4e00]">
+          <summary role="note" className="cursor-pointer font-bold">⚠️ Photos d'équipes : seulement les enfants dont les parents ont donné le droit à l'image</summary>
+          <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Les photos restent dans cette fenêtre : elles ne sont ni envoyées ni enregistrées, il faudra les remettre si tu fermes.</p>
+        </details>
+        {msg && <p className="m-0 text-sm font-bold text-ink" role="status">{msg}</p>}
         <Sec title="Les scores">
           {list.length === 0 && <p className="m-0 rounded-md bg-[#fff3c4] p-2 text-xs font-bold text-ink">Aucun match par équipes sur cette période dans le planning. Vérifie les dates, ou ajoute les matchs au planning.</p>}
           <p className="mb-2 mt-0 text-xs text-muted">Écris le score de TC Houdan puis celui de l'adversaire. Un match sans score n'apparaît pas sur l'affiche.</p>
@@ -209,6 +219,14 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
                     <input className={inp} inputMode="numeric" aria-label="Score de l'adversaire" maxLength={2} value={sc.a} onChange={(ev) => setS(x.key, { a: ev.target.value.replace(/\D/g, "") })} />
                     <span className="text-xs font-bold text-muted">Adversaire</span>
                     {r && <span className="ml-auto text-[11px] font-black tracking-wider" style={{ color: RES[r].c }}>{RES[r].t}</span>}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    {sc.photo && <img src={sc.photo} alt="Photo de l'équipe" className="h-12 w-16 rounded object-cover" />}
+                    <label className="cursor-pointer rounded-md border-2 border-line bg-white px-3 py-2 text-xs font-extrabold text-ink hover:border-ink">
+                      📷 {sc.photo ? "Changer la photo" : "Ajouter la photo de l'équipe"}
+                      <input type="file" accept="image/*" className="sr-only" aria-label="Photo de l'équipe" onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) addPhoto(x.key, f); }} />
+                    </label>
+                    {sc.photo && <button type="button" className="text-xs font-bold text-muted underline" onClick={() => setS(x.key, { photo: "" })}>Retirer</button>}
                   </div>
                 </div>
               );
