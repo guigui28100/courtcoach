@@ -7,6 +7,8 @@ import { POSTER_H, POSTER_W } from "./ClubPoster";
 import { PosterStudio, Sec, Seg, Toggle } from "./PosterStudio";
 import { teamParts, tidy } from "./posterCopy";
 import { photoFromFile } from "./RecapPoster";
+import { FmtStyle, Fmts, pickFmt, txt } from "./posterFmt";
+import { FmtItem } from "./FmtPanel";
 
 // Deux affiches de RÉSULTATS des matchs par équipes : celle du WEEK-END (toutes les équipes) et celle des JEUNES.
 // Les rencontres viennent du planning (équipe, club rencontré, domicile ou déplacement) ; le coach écrit seulement les scores.
@@ -46,7 +48,8 @@ const Logo = ({ size, style }: { size: number; style?: React.CSSProperties }) =>
   <span aria-hidden style={{ display: "inline-block", width: size, height: size, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat", ...style }} />
 );
 
-export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; bg?: string }) {
+const safe = (s: string) => s.replace(/[^a-z0-9-]/gi, "-");
+export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onPick }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
   const shown = list.filter((x) => resultOf(scores[x.key]) !== null);
   const days: { d: string; items: Item[] }[] = [];
   for (const x of shown) { const g = days.find((y) => y.d === x.day); g ? g.items.push(x) : days.push({ d: x.day, items: [x] }); }
@@ -55,49 +58,54 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
   const wins = shown.filter((x) => resultOf(scores[x.key]) === "W").length, losses = shown.filter((x) => resultOf(scores[x.key]) === "L").length, draws = n - wins - losses;
   const sum = [wins && `${wins} victoire${wins > 1 ? "s" : ""}`, draws && `${draws} nul${draws > 1 ? "s" : ""}`, losses && `${losses} défaite${losses > 1 ? "s" : ""}`].filter(Boolean).join(" · ");
   const box = useRef<HTMLDivElement>(null);
+  const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille de « tous les textes » : appliquée APRÈS l'ajustement automatique
   const [k, setK] = useState(1);
   const [tick, setTick] = useState(0);
   useEffect(() => { let on = true; (document as any).fonts?.ready?.then(() => { if (on) setTick((x) => x + 1); }); return () => { on = false; }; }, []);
-  const sig = shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|");
+  const sig = shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|") + JSON.stringify(fmt);
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
-    el.style.zoom = "1";
+    el.style.zoom = "1"; el.setAttribute("data-measuring", ""); // pendant la mesure, les textes déplacés reviennent à leur place
     const h = el.scrollHeight;
     let nk = h > 0 ? Math.max(0.4, Math.min(n < 6 ? 1.7 : 1.4, (avail * 0.97) / h)) : 1;
     el.style.zoom = String(nk); // posé tout de suite : une 2e mesure ne doit pas laisser le zoom à 1
     // agrandi, le texte peut passer à la ligne : on vérifie la vraie hauteur et on réduit un peu tant que ça dépasse
     for (let i = 0; i < 14 && nk > 0.4 && el.getBoundingClientRect().height > avail * 0.97; i++) { nk *= 0.96; el.style.zoom = String(nk); }
+    el.removeAttribute("data-measuring");
+    el.style.zoom = String(nk * g);
     setK(nk);
-  }, [sig, avail, n, tick]);
+  }, [sig, avail, n, tick, g]);
   return (
-    <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf8f1", overflow: "hidden", fontFamily: "Archivo, 'Atkinson Hyperlegible', system-ui, sans-serif", color: "#17140f", fontVariantNumeric: "lining-nums" }}>
+    <div style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf8f1", overflow: "hidden", fontFamily: "Archivo, 'Atkinson Hyperlegible', system-ui, sans-serif", color: "#17140f", fontVariantNumeric: "lining-nums" }} onClick={(ev) => pickFmt(ev, onPick)}>
+      <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={POSTER_W} h={POSTER_H} veil="strong" />
       <div style={{ position: "relative", height: HEAD, background: "linear-gradient(135deg,#2b261d 0%,#17140f 60%)", color: "#fff", overflow: "hidden", clipPath: "polygon(0 0,100% 0,100% 90%,0 100%)" }}>
         <svg aria-hidden width={POSTER_W} height={HEAD} viewBox={`0 0 ${POSTER_W} ${HEAD}`} style={{ position: "absolute", inset: 0, opacity: 0.2 }} fill="none" stroke="#c9ad77" strokeWidth="4"><CourtLines cx={397} y={18} h={186} netWidth={6} /></svg>
         <Logo size={130} style={{ position: "absolute", right: 34, top: 22 }} />
         <div style={{ position: "absolute", left: 52, top: 30, right: 190 }}>
-          <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "0.22em" }}>TENNIS CLUB HOUDAN</div>
-          <div style={{ fontFamily: SERIF, fontSize: 56, fontWeight: 900, lineHeight: 1, marginTop: 10, whiteSpace: "nowrap" }}>{title}</div>
-          <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, fontStyle: "italic", marginTop: 6, color: "#e8d9a8", whiteSpace: "nowrap" }}>{sub}</div>
+          <div data-fmt="entete" style={{ fontSize: 24, fontWeight: 800, letterSpacing: "0.22em" }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div>
+          <div data-fmt="titre" style={{ fontFamily: SERIF, fontSize: 56, fontWeight: 900, lineHeight: 1, marginTop: 10, whiteSpace: "nowrap" }}>{txt(fmt, "titre", title)}</div>
+          <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, fontStyle: "italic", marginTop: 6, color: "#e8d9a8", whiteSpace: "nowrap" }}><span data-fmt="sous">{txt(fmt, "sous", sub)}</span></div>
         </div>
       </div>
-      <div style={{ position: "absolute", left: 44, right: 44, top: HEAD + 20, bottom: FOOT + 12, display: "flex", flexDirection: "column", justifyContent: "center" }}><div ref={box} style={{ zoom: k }}>
-        {sum && <div style={{ textAlign: "center", margin: "4px 0 2px" }}><span style={{ display: "inline-block", background: "#17140f", color: "#e8d9a8", fontSize: 18, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", padding: "6px 18px" }}>{sum}</span></div>}
-        {n === 0 && <p style={{ textAlign: "center", fontSize: 24, color: "#6b6558" }}>Écris les scores dans le menu de gauche : les résultats s'affichent ici.</p>}
+      <div style={{ position: "absolute", left: 44, right: 44, top: HEAD + 20, bottom: FOOT + 12, display: "flex", flexDirection: "column", justifyContent: "center" }}><div ref={box} style={{ zoom: k * g }}>
+        {sum && <div style={{ textAlign: "center", margin: "4px 0 2px" }}><span data-fmt="total" style={{ display: "inline-block", background: "#17140f", color: "#e8d9a8", fontSize: 18, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", padding: "6px 18px" }}>{txt(fmt, "total", sum)}</span></div>}
+        {n === 0 && <p data-fmt="vide" style={{ textAlign: "center", fontSize: 24, color: "#6b6558" }}>{txt(fmt, "vide", "Écris les scores dans le menu de gauche : les résultats s'affichent ici.")}</p>}
         {days.map((g) => (
           <section key={g.d}>
             <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "12px 0 6px" }}>
-              <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 900, letterSpacing: "0.04em", color: "#8a6a2c", whiteSpace: "nowrap" }}>{longDay(g.d).toUpperCase()}</span>
+              <span data-fmt={`jr-${g.d}`} style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 900, letterSpacing: "0.04em", color: "#8a6a2c", whiteSpace: "nowrap" }}>{txt(fmt, `jr-${g.d}`, longDay(g.d).toUpperCase())}</span>
               <span style={{ flex: 1, height: 2, background: "#c9ad77" }} />
             </div>
             {g.items.map((x) => {
               const e = x.e, sc = scores[x.key], r = resultOf(sc)!, c = colorOf({ ...e, tentative: false }), club = tidy(sc.club).replace(/^(TC|AS|US|CT|ASPTT|SC)\s/i, "$1\u00a0"), v = venueOf(e);
-              const parts = e.teams.map((t) => teamParts(t));
+              const parts = e.teams.map((t) => teamParts(t)), kk = safe(x.key), eqText = (fmt as Record<string, { text?: string } | undefined> | undefined)?.[`eq-${kk}`]?.text;
+              const scText = txt(fmt, `sc-${kk}`, `${num(sc.h)}–${num(sc.a)}`), scSize = Math.max(18, Math.round((anyPhoto ? 40 : 46) * Math.min(1, 6 / Math.max(1, scText.length))));
               const verbe = r === "W" ? (club ? `TC Houdan bat ${club}` : "TC Houdan s'impose") : r === "L" ? (club ? `TC Houdan perd contre ${club}` : "TC Houdan s'incline") : (club ? `TC Houdan fait match nul contre ${club}` : "Match nul");
               return (
                 <div key={x.key} style={{ display: "flex", alignItems: "stretch", gap: 14, padding: "7px 0", borderBottom: "1px solid #e4dccb" }}>
-                  <div style={{ flex: "0 0 auto", width: anyPhoto ? 185 : 225, background: c, color: textOn(c), borderRadius: 8, padding: "7px 12px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    {parts.length ? parts.map(([cat, nm], i) => (
+                  <div data-fmt={`eq-${kk}`} style={{ flex: "0 0 auto", width: anyPhoto ? 185 : 225, background: c, color: textOn(c), borderRadius: 8, padding: "7px 12px", display: "flex", flexDirection: "column", justifyContent: "center", whiteSpace: "pre-line" }}>
+                    {eqText !== undefined ? <div style={{ fontSize: 19, fontWeight: 900, lineHeight: 1.15 }}>{eqText}</div> : parts.length ? parts.map(([cat, nm], i) => (
                       <div key={i} style={{ lineHeight: 1.1 }}>
                         <div style={{ fontSize: 19, fontWeight: 900 }}>{cat}</div>
                         <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 900 }}>{nm}</div>
@@ -105,13 +113,13 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
                     )) : <div style={{ fontSize: 19, fontWeight: 900 }}>{e.title || "Match par équipes"}</div>}
                   </div>
                   <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 5 }}>
-                    <div style={{ fontSize: anyPhoto ? 20 : 22, fontWeight: 900, lineHeight: 1.15 }}>{verbe}</div>
-                    {v && <div><span style={{ background: v === "home" ? "#2f6b4a" : "#4a6d8f", color: "#fff", fontSize: 12, fontWeight: 900, letterSpacing: "0.05em", textTransform: "uppercase", padding: "2px 8px", whiteSpace: "nowrap" }}>{v === "home" ? "À domicile" : "En déplacement"}</span></div>}
+                    <div data-fmt={`ph-${kk}`} style={{ fontSize: anyPhoto ? 20 : 22, fontWeight: 900, lineHeight: 1.15 }}>{txt(fmt, `ph-${kk}`, verbe)}</div>
+                    {v && <div><span data-fmt={`ch-${kk}`} style={{ background: v === "home" ? "#2f6b4a" : "#4a6d8f", color: "#fff", fontSize: 12, fontWeight: 900, letterSpacing: "0.05em", textTransform: "uppercase", padding: "2px 8px", whiteSpace: "nowrap" }}>{txt(fmt, `ch-${kk}`, v === "home" ? "À domicile" : "En déplacement")}</span></div>}
                   </div>
                   {sc.photo && <div style={{ flex: "0 0 auto", width: 118, minHeight: 78, borderRadius: 8, overflow: "hidden", background: `#e4dccb url(${sc.photo}) center / cover no-repeat` }} role="img" aria-label="Photo de l'équipe" />}
                   <div style={{ flex: "0 0 auto", width: anyPhoto ? 112 : 128, background: RES[r].c, color: "#fff", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4px 6px" }}>
-                    <div style={{ fontFamily: SERIF, fontSize: anyPhoto ? 40 : 46, fontWeight: 900, lineHeight: 1, whiteSpace: "nowrap" }}>{num(sc.h)}–{num(sc.a)}</div>
-                    <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", marginTop: 3 }}>{RES[r].t}</div>
+                    <div data-fmt={`sc-${kk}`} style={{ fontFamily: SERIF, fontSize: scSize, fontWeight: 900, lineHeight: 1.05, textAlign: "center", overflowWrap: "anywhere", maxWidth: "100%" }}>{scText}</div>
+                    <div data-fmt={`rs-${kk}`} style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", marginTop: 3 }}>{txt(fmt, `rs-${kk}`, RES[r].t)}</div>
                   </div>
                 </div>
               );
@@ -122,10 +130,10 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "" }: { list
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: FOOT, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", gap: 14 }}>
         <Logo size={44} />
         <div style={{ whiteSpace: "nowrap" }}>
-          <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}>Tennis Club Houdan</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#dfcb98" }}>✉️ tennisclubhoudan@gmail.com</div>
+          <div data-fmt="club" style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.04em" }}>{txt(fmt, "club", "Tennis Club Houdan")}</div>
+          <div data-fmt="mail" style={{ fontSize: 14, fontWeight: 800, color: "#dfcb98" }}>{txt(fmt, "mail", "✉️ tennisclubhoudan@gmail.com")}</div>
         </div>
-        <div style={{ marginLeft: "auto", fontFamily: SERIF, fontStyle: "italic", fontSize: 22, color: "#e8d9a8", whiteSpace: "nowrap" }}>Bravo à tous nos joueurs !</div>
+        <div data-fmt="pied" style={{ marginLeft: "auto", fontFamily: SERIF, fontStyle: "italic", fontSize: 22, color: "#e8d9a8", whiteSpace: "nowrap" }}>{txt(fmt, "pied", "Bravo à tous nos joueurs !")}</div>
       </div>
     </div>
   );
@@ -144,6 +152,8 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const [to, setTo] = useState(cur);
   const [withTentative, setWithTentative] = useState(false);
   const [bg, setBg] = useState("");
+  const [fmt, setFmt] = useState<Fmts>({});
+  const [sel, setSel] = useState("titre");
   const [typed, setTyped] = useState<Record<string, Score>>({});
   const months = Array.from({ length: 12 }, (_, i) => addMonth(`${s}-09`, i));
   const list = useMemo(() => matchesFor(events, { mode, span: mode === "weekend" ? "weekend" : span, sat, from, to, scope, withTentative }), [events, mode, span, sat, from, to, scope, withTentative]);
@@ -158,8 +168,18 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const setS = (key: string, p: Partial<Score>) => setTyped((o) => ({ ...o, [key]: { ...scores[key], ...o[key], ...p } }));
   const [msg, setMsg] = useState("");
   const addPhoto = async (key: string, f: File) => { setMsg(""); try { setS(key, { photo: await photoFromFile(f) }); } catch (x) { setMsg((x as Error).message); } };
+  const shownList = list.filter((x) => resultOf(scores[x.key]) !== null);
+  const fmtItems: FmtItem[] = [
+    { key: "entete", label: "Nom du club (bandeau du haut)", edit: true }, { key: "titre", label: "Titre", edit: true }, { key: "sous", label: "Sous-titre (dates)", edit: true }, { key: "total", label: "Total des résultats", edit: true },
+    ...[...new Set(shownList.map((x) => x.day))].map((d) => ({ key: `jr-${d}`, label: `Jour : ${longDay(d)}`, edit: true })),
+    ...shownList.flatMap((x, i) => { const kk = safe(x.key), nm = `Match ${i + 1}`; return [
+      { key: `eq-${kk}`, label: `${nm} · équipe`, edit: true }, { key: `ph-${kk}`, label: `${nm} · phrase`, edit: true },
+      { key: `ch-${kk}`, label: `${nm} · domicile / déplacement`, edit: true }, { key: `sc-${kk}`, label: `${nm} · score`, edit: true }, { key: `rs-${kk}`, label: `${nm} · victoire / défaite`, edit: true },
+    ] as FmtItem[]; }),
+    { key: "pied", label: "Message du bas", edit: true }, { key: "club", label: "Nom du club (bas)", edit: true }, { key: "mail", label: "E-mail (bas)", edit: true }, { key: "tout", label: "Tous les textes", sizeOnly: true },
+  ];
   const done = list.filter((x) => resultOf(scores[x.key]) !== null).length;
-  const sel = "w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm font-bold text-ink";
+  const selCls = "w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm font-bold text-ink";
   const arrow = "rounded-md border-2 border-line bg-white px-4 py-2 text-lg font-extrabold text-ink hover:border-ink";
   const inp = "w-16 rounded-md border-2 border-line bg-white px-2 py-2 text-center text-lg font-extrabold text-ink";
   return (
@@ -186,9 +206,9 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
           <Sec title="Quelle période ?">
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs font-extrabold text-ink">Du mois de
-                <select className={sel} value={from} onChange={(e) => { setFrom(e.target.value); if (e.target.value > to) setTo(e.target.value); }}>{months.map((m) => <option key={m} value={m}>{mLabel(m)}</option>)}</select></label>
+                <select className={selCls} value={from} onChange={(e) => { setFrom(e.target.value); if (e.target.value > to) setTo(e.target.value); }}>{months.map((m) => <option key={m} value={m}>{mLabel(m)}</option>)}</select></label>
               <label className="text-xs font-extrabold text-ink">Au mois de
-                <select className={sel} value={to} onChange={(e) => { setTo(e.target.value); if (e.target.value < from) setFrom(e.target.value); }}>{months.map((m) => <option key={m} value={m}>{mLabel(m)}</option>)}</select></label>
+                <select className={selCls} value={to} onChange={(e) => { setTo(e.target.value); if (e.target.value < from) setFrom(e.target.value); }}>{months.map((m) => <option key={m} value={m}>{mLabel(m)}</option>)}</select></label>
             </div>
           </Sec>
         )}
@@ -237,8 +257,9 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
         {list.length > 10 && <p className="rounded-md bg-[#fff3c4] p-2 text-xs font-bold text-ink">Il y a beaucoup de matchs : le texte est petit. Choisis moins de matchs pour une affiche plus lisible.</p>}
       </>}
       bg={bg} onBg={setBg}
-      preview={() => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} />}
-      printNode={<MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} />}
+      fmt={{ items: fmtItems, value: fmt, onChange: setFmt, selected: sel, onSelect: setSel }}
+      preview={({ pick }) => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} />}
+      printNode={<MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} />}
       fileBase={() => (byWeekend ? `affiche-resultats-${mode === "jeunes" ? "jeunes-" : ""}weekend-${sat}` : `affiche-resultats-jeunes-${from}-${to}`)}
       save={{ kind: "local", text: "● Rien n'est enregistré : les scores restent dans cette fenêtre" }}
     />
