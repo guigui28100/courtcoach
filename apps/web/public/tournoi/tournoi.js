@@ -644,7 +644,7 @@
     c.appendChild(H("small",null,"💡 Notre conseil pour tenir dans ton temps"));
     var cur=S.opt[S.mode]===a.opt&&S.fmt===a.f&&S.classif===a.cl;
     c.appendChild(H("b",null,fname(a.f)+(a.cl==="oui"?" avec matchs de classement":"")+" · "+a.optName));
-    c.appendChild(H("span",null,a.count+" matchs · fin vers "+hhmm(startMin()+a.total)+(a.ok?" : c'est la formule la plus complète qui tient dans tes "+hm(S.avail*60)+".":" : rien ne tient dans ton temps, c'est la plus courte. Ajoute un terrain, avance l'heure ou joue moins de jeux.")));
+    c.appendChild(H("span",null,a.count+" matchs · fin vers "+hhmm(startMin()+a.total)+(a.ok?"":" · ne tient pas : ajoute un terrain ou du temps")));
     if(cur)c.appendChild(H("span","okmsg","✔ C'est déjà ta formule."));
     else c.appendChild(B("Prendre cette formule","big small",function(){S.opt[S.mode]=a.opt;S.durManual=null;S.fmt=a.f;S.classif=a.cl;upd();}));
     return c;
@@ -655,10 +655,9 @@
   function unpaired(){var used={};(S.pairs||[]).forEach(function(p){used[p[0]]=1;used[p[1]]=1;});var u=[];for(var i=0;i<S.n;i++)if(!used[i])u.push(i);return u;}
   function pairsComplete(){return S.pair!=="libre"||unpaired().length===0;}
   function drawTeams(card){
-    card.appendChild(H("p","wh","Comment veux-tu former les équipes de deux ?"));
     card.appendChild(tiles([{v:"hasard",l:"🎲 Au hasard",s:"tirage au sort"},{v:"equi",l:"⚖️ Équilibrées",s:"fort avec moins fort"},{v:"libre",l:"✋ Je choisis",s:"je fais mes paires"}],S.pair==="manuel"?"hasard":S.pair,function(v){
       S.pair=v;V.sel=null;if(v==="hasard"){newPerm();S.ver++;}else if(v==="libre"){S.pairs=[];applyPairs();}else{S.ver++;}upd();}));
-    if(S.pair==="equi")card.appendChild(H("p","wh","Les joueurs sont classés dans l'ordre de ta liste (le 1er est le mieux classé) : le 1er joue avec le dernier, le 2e avec l'avant-dernier…"));
+    if(S.pair==="equi")card.appendChild(H("p","wh","Le mieux classé joue avec le moins bien classé."));
     if(S.pair==="libre"){
       var un=unpaired();
       card.appendChild(H("p","wh",un.length?"Touche un joueur, puis touche son partenaire.":"✔ Toutes les équipes sont formées."));
@@ -696,7 +695,6 @@
     function body(card,k){
     if(k==="who"){
       if(savedObj&&savedObj.live){var rc=H("div","resume");rc.appendChild(H("b",null,"📂 Un tournoi est déjà en cours sur cet appareil"));rc.appendChild(B("Reprendre mon tournoi","big",function(){for(var kk in savedObj)S[kk]=savedObj[kk];S.nsig="";V.mode="live";V.tab="now";render();skin(true);scrollTop();}));card.appendChild(rc);}
-      card.appendChild(H("p","wh","Simple : 1 joueur contre 1. Double : deux équipes de 2 joueurs."));
       card.appendChild(tiles([{v:"s",l:"🎾 Simple",s:"1 contre 1"},{v:"d",l:"👥 Double",s:"2 contre 2"}],S.dbl?"d":"s",function(v){S.dbl=v==="d";if(S.dbl){S.n=Math.max(6,S.n%2?S.n+1:S.n);}S.perm=[];S.pairs=[];if(S.pair==="manuel")S.pair="hasard";upd();}));
       card.appendChild(H("h2","wsub","Combien de participants ?"+(S.dbl?" (joueurs, pas équipes)":"")));
       var nb=H("div","bign");nb.appendChild(B("−","nbtn",function(){setN(S.n-(S.dbl?2:1));upd();}));
@@ -713,13 +711,11 @@
       card.appendChild(H("h2","wsub","À quelle heure on commence ?"));
       var ti=document.createElement("input");ti.type="time";ti.className="bigtime";ti.value=S.start;ti.onchange=function(){S.start=ti.value||"14:00";upd();};card.appendChild(ti);
     }else if(k==="names"){
-      card.appendChild(H("p","wh","Écris les noms des "+S.n+" "+(S.dbl?"joueurs":"participants")+" (ou garde les exemples). "+(S.dbl?"Tu formeras les équipes à l'étape suivante.":"Du mieux classé au moins bien classé si tu connais le niveau.")));
       card.appendChild(AD.players);
     }else if(k==="teams"){
       drawTeams(card);
     }else if(k==="rules"){
       card.appendChild(adviceCard());
-      card.appendChild(H("p","wh","Ou choisis toi-même comment on joue (durée d'un match) :"));
       card.appendChild(AD.how);
     }else if(k==="format"){
       var list=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();}),R={};list.forEach(function(f){R[f[0]]=calc(f[0]);});
@@ -741,32 +737,30 @@
       if(S.fmt==="ladder"){card.appendChild(H("h2","wsub","Combien de tours ?"));card.appendChild(tiles([2,3,4,5,6,7,8].map(function(x){return {v:x,l:String(x)};}),S.rounds||autoRounds(),function(v){S.rounds=+v;upd();}));}
     }else{
       var cur=calc(S.fmt),ok=cur.total<=S.avail*60;
-      if(V.restored)card.appendChild(H("div","resume","📂 Ta préparation a été retrouvée : tu peux la modifier ou lancer le tournoi."));
-      card.appendChild(H("p","wh","💾 Tout ce que tu prépares est enregistré avec l'animation : tu peux fermer et revenir plus tard."));
+      if(V.restored)card.appendChild(H("div","resume","📂 Préparation retrouvée"));
       var rc2=H("div","recap");
       rc2.appendChild(H("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+S.courts+" terrain"+(S.courts>1?"s":"")));
       rc2.appendChild(H("span",null,fname(S.fmt)+(S.classif==="oui"?" + matchs de classement":"")+" · "+optLabel()));
       rc2.appendChild(H("span",null,cur.count+" matchs · "+S.dur+" min par tour · de "+hhmm(startMin())+" à "+hhmm(startMin()+cur.total)));
-      rc2.appendChild(H("span",null,"Règle : "+ruleText()));
       card.appendChild(rc2);
       if(!ok)card.appendChild(H("div","warnb","⚠️ C'est plus long que ton temps disponible. Reviens changer le format, ajoute un terrain ou raccourcis les matchs."));
       if(T){
         var I=T.B.info;
         if(I.type==="poules"){var pdt=document.createElement("details");pdt.className="fold";var psm=document.createElement("summary");psm.textContent="👥 Voir les poules";pdt.appendChild(psm);var pg=H("div","pgrid");I.groups.forEach(function(gr){var d=H("div","pgrp");d.appendChild(H("b",null,"Poule "+String.fromCharCode(65+gr.id)));gr.players.forEach(function(i){d.appendChild(H("span",null,T.E[i]));});pg.appendChild(d);});pdt.appendChild(pg);card.appendChild(pdt);}
-        var odt=document.createElement("details");odt.className="fold";var osm=document.createElement("summary");osm.textContent="📋 Voir tous les matchs dans l'ordre";odt.appendChild(osm);
+        var odt=document.createElement("details");odt.className="fold";var osm=document.createElement("summary");osm.textContent="📋 Tous les matchs";odt.appendChild(osm);
         var ol=H("div","olist");
         T.res.slots.forEach(function(sl,i){var h3=H("div","oh","Tour "+(i+1)+" · "+hhmm(startMin()+i*S.dur));ol.appendChild(h3);sl.forEach(function(m){ol.appendChild(H("div","om","Terrain "+T.court[m.id]+" : "+label(m.a)+" – "+label(m.b)));});});
         odt.appendChild(ol);card.appendChild(odt);
       }
       var fsec=H("div","fsec");fsec.appendChild(H("h2","wsub","Choisis ta formule"));
-      var adv=adviceCard();adv.firstChild.textContent="💡 Conseil (à titre indicatif) : la formule la plus complète qui tient dans ton temps";fsec.appendChild(adv);
+      var adv=adviceCard();adv.firstChild.textContent="💡 Conseil (indicatif)";fsec.appendChild(adv);
       var fl=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();});
       fsec.appendChild(tiles(fl.map(function(f){var r=calc(f[0]);return {v:f[0],l:f[1],s:r.count+" matchs · fin "+hhmm(startMin()+r.total)+(r.total<=S.avail*60?" ✔":" ⚠ trop long")};}),S.fmt,function(v){S.fmt=v;upd();}));
       var canC2=(S.fmt==="poules"&&n>5)||(S.fmt==="ko"&&n>=4);
       if(canC2){var kp=S.classif,a2,b3;S.classif="non";a2=calc(S.fmt);S.classif="oui";b3=calc(S.fmt);S.classif=kp;
         fsec.appendChild(tiles([{v:"non",l:"Sans matchs de classement"},{v:"oui",l:"Avec classement",s:"+"+(b3.count-a2.count)+" matchs"}],S.classif,function(v){S.classif=v;upd();}));}
       card.insertBefore(fsec,rc2);
-      [["names","✏️ Écrire les noms des joueurs"],S.dbl?["teams","👥 Former les équipes (tirage au sort par défaut)"]:null,["rules","⏱️ Durée des matchs (set, points, temps)"]].forEach(function(x){
+      [["names","✏️ Noms des joueurs"],S.dbl?["teams","👥 Équipes"]:null,["rules","⏱️ Durée des matchs"]].forEach(function(x){
         if(!x)return;var dt=document.createElement("details");dt.className="fold";if(V.open&&V.open[x[0]])dt.open=true;
         dt.ontoggle=function(){V.open=V.open||{};V.open[x[0]]=dt.open;};
         var sm=document.createElement("summary");sm.textContent=x[1];dt.appendChild(sm);var inner=H("div","foldin");
@@ -802,7 +796,7 @@
     if(!rd)c.appendChild(H("div","edm","En attente des résultats précédents"));
     else if(s&&s.a===s.b&&!isPoule(m))c.appendChild(H("div","edm bad","Il faut un vainqueur : rejoue un point décisif."));
     else if(done)c.appendChild(H("div","edm ok","Match terminé ✔"));
-    else c.appendChild(H("div","edm","Touche + et − pour écrire le score à la fin du match."));
+    else c.appendChild(H("div","edm",""));
     return c;
   }
   function counts(){var d=0;T.B.matches.forEach(function(m){if(fin(m))d++;});return {d:d,t:T.B.matches.length};}
@@ -840,11 +834,11 @@
     if(say.length&&!slotFin(sl)){
       var an=H("div","announce");an.appendChild(H("small",null,"📣 Matchs à lancer, dans cet ordre"));
       var ol=H("ol","launch");ord.forEach(function(m){if(ready(m))ol.appendChild(H("li",fin(m)?"done":null,"Terrain "+T.court[m.id]+" : "+label(m.a)+" contre "+label(m.b)+(fin(m)?" ✔ terminé":"")));});an.appendChild(ol);
-      an.appendChild(H("p","why","Les joueurs qui ont attendu le plus longtemps passent en premier : l'attente de chacun reste la plus courte possible."));
+      
       body.appendChild(an);}
     var early=(idx===auto)?freeSuggestions(idx):[];
     if(early.length){var fe=H("div","early");fe.appendChild(H("b",null,"🆓 Un terrain est libre : lance tout de suite"));
-      early.forEach(function(x){fe.appendChild(H("p",null,"Terrain "+x.court+" : "+label(x.m.a)+" contre "+label(x.m.b)+" — ils attendent depuis "+hm(x.wait*S.dur)+" ; ce match était prévu au tour "+(x.j+1)+", le lancer maintenant évite de les faire patienter."));});
+      early.forEach(function(x){fe.appendChild(H("p",null,"Terrain "+x.court+" : "+label(x.m.a)+" contre "+label(x.m.b)+" — attendent depuis "+hm(x.wait*S.dur)+"."));});
       body.appendChild(fe);early.forEach(function(x){body.appendChild(editor(x.m));});}
     ord.forEach(function(m){body.appendChild(editor(m));});
     var rt=$("rest"+idx);if(rt&&rt.textContent)body.appendChild(H("p","rest2","😴 "+rt.textContent));
