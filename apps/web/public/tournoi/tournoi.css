@@ -286,7 +286,7 @@ body[data-pr=poster] #printp,body[data-pr=poster] #posterwrap .hint,body[data-pr
 #tournoi-root .wready{display:flex;flex-direction:column}
 #tournoi-root .wready>*{order:2}
 #tournoi-root .wready>.wstep,#tournoi-root .wready>.wq,#tournoi-root .wready>.recap,#tournoi-root .wready>.warnb{order:0}
-#tournoi-root .wready>.go{order:1}
+#tournoi-root .wready>.go,#tournoi-root .wready>.fsec{order:1}
 #tournoi-root .foldin{padding:4px 14px 16px}
 
 /* Intégration au site : la barre du bas de l'assistant se pose au-dessus de la barre du téléphone, la page ne manque jamais de place en bas */

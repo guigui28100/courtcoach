@@ -691,7 +691,6 @@
     var dots=H("div","dots");ks.forEach(function(t,i){dots.appendChild(H("span","dot"+(i===st?" on":i<st?" ok":""),String(i+1)));});top.appendChild(dots);
     app.appendChild(top);
     var card=H("div","wcard");card.appendChild(H("div","wstep","Étape "+(st+1)+" sur "+ks.length));card.appendChild(H("h1","wq",TITLES[k]));
-    if(k==="ready"){var ak=[S.dbl,S.n,S.courts,S.avail,S.start].join("|");if(V.advKey!==ak){V.advKey=ak;var a1=advise();S.opt[S.mode]=a1.opt;S.durManual=null;S.fmt=a1.f;S.classif=a1.cl;S.dur=playMin()+BUF;}}
     if(k==="ready")card.className+=" wready";
     body(card,k);
     function body(card,k){
@@ -757,11 +756,19 @@
         T.res.slots.forEach(function(sl,i){var h3=H("div","oh","Tour "+(i+1)+" · "+hhmm(startMin()+i*S.dur));ol.appendChild(h3);sl.forEach(function(m){ol.appendChild(H("div","om","Terrain "+T.court[m.id]+" : "+label(m.a)+" – "+label(m.b)));});});
         odt.appendChild(ol);card.appendChild(odt);
       }
-      [["names","✏️ Écrire les noms des joueurs"],S.dbl?["teams","👥 Former les équipes (tirage au sort par défaut)"]:null,["format","⚙️ Changer la façon de jouer (format, durée)"]].forEach(function(x){
+      var fsec=H("div","fsec");fsec.appendChild(H("h2","wsub","Choisis ta formule"));
+      var adv=adviceCard();adv.firstChild.textContent="💡 Conseil (à titre indicatif) : la formule la plus complète qui tient dans ton temps";fsec.appendChild(adv);
+      var fl=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();});
+      fsec.appendChild(tiles(fl.map(function(f){var r=calc(f[0]);return {v:f[0],l:f[1],s:r.count+" matchs · fin "+hhmm(startMin()+r.total)+(r.total<=S.avail*60?" ✔":" ⚠ trop long")};}),S.fmt,function(v){S.fmt=v;upd();}));
+      var canC2=(S.fmt==="poules"&&n>5)||(S.fmt==="ko"&&n>=4);
+      if(canC2){var kp=S.classif,a2,b3;S.classif="non";a2=calc(S.fmt);S.classif="oui";b3=calc(S.fmt);S.classif=kp;
+        fsec.appendChild(tiles([{v:"non",l:"Sans matchs de classement"},{v:"oui",l:"Avec classement",s:"+"+(b3.count-a2.count)+" matchs"}],S.classif,function(v){S.classif=v;upd();}));}
+      card.insertBefore(fsec,rc2);
+      [["names","✏️ Écrire les noms des joueurs"],S.dbl?["teams","👥 Former les équipes (tirage au sort par défaut)"]:null,["rules","⏱️ Durée des matchs (set, points, temps)"]].forEach(function(x){
         if(!x)return;var dt=document.createElement("details");dt.className="fold";if(V.open&&V.open[x[0]])dt.open=true;
         dt.ontoggle=function(){V.open=V.open||{};V.open[x[0]]=dt.open;};
         var sm=document.createElement("summary");sm.textContent=x[1];dt.appendChild(sm);var inner=H("div","foldin");
-        if(x[0]==="format"){body(inner,"rules");body(inner,"format");}else body(inner,x[0]);
+        body(inner,x[0]);
         dt.appendChild(inner);card.appendChild(dt);});
       card.appendChild(B("🚀 Lancer le tournoi","big go",function(){if(n<3)return;if(S.dbl&&S.pair==="libre"&&unpaired().length)return;S.live=true;V.mode="live";V.tab="now";V.slot=null;refresh();skin(true);scrollTop();}));
     }
