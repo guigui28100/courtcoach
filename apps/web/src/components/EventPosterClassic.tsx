@@ -102,11 +102,13 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
 
   const dateEl = (
     <div data-fmt="date" style={{ display: "flex", justifyContent: just("date"), ...deco("date") }}><div style={{ display: "flex", borderRadius: 20, overflow: "hidden", fontVariantNumeric: "lining-nums", border: `2px solid ${acc}`, maxWidth: "100%" }}>
-      <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
+      {fmt?.date?.text !== undefined
+        ? <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, fontSize: pd(sq ? 34 : 40), fontWeight: wt("date", 900), lineHeight: 1.15, whiteSpace: "pre-line", overflowWrap: "break-word" }}>{fmt.date.text}</div>
+        : <div style={{ background: acc, color: "#fff", padding: `${pd(14)} ${pd(24)}`, flex: "0 0 auto" }}>
         <div style={{ fontSize: `min(${pd(sq ? 46 : 56)}, ${Math.floor((w - px * 2 - 76 - 10) / (dt.big.length * 0.56))}px)`, fontWeight: wt("date", 900), lineHeight: 1.05, whiteSpace: "nowrap" }}>{dt.big}</div>
         <div style={{ fontSize: pd(15), fontWeight: 800, letterSpacing: "0.14em", marginTop: pd(2) }}>{dt.month}</div>
-      </div>
-      {dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, textWrap: "pretty" as any }}>{dt.side}</div>}
+      </div>}
+      {fmt?.date?.text === undefined && dt.side && <div style={{ padding: `${pd(12)} ${pd(22)}`, display: "flex", alignItems: "center", fontSize: pd(sq ? 20 : 23), fontWeight: wt("date", 800), lineHeight: 1.25, color: NAVY, minWidth: 0, background: onPhoto ? "rgba(255,255,255,.22)" : "#fff", ...HALO, textWrap: "pretty" as any }}>{dt.side}</div>}
     </div></div>
   );
   const rowsEl = rows.length > 0 && (

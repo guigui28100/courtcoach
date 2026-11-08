@@ -145,8 +145,10 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
 
   const dateEl = (
     <div data-fmt="date" style={{ ...deco("date"), textAlign: F("date").align ?? "center", fontVariantNumeric: "lining-nums", ...HALO }}>
-      <div style={{ fontFamily: SERIF, fontWeight: wt("date", 600), lineHeight: 1.05, whiteSpace: "nowrap", fontSize: `min(${pd(sq ? 46 : 58)}, ${Math.floor((w - px * 2 - 8) / (dt.big.length * 0.46))}px)` }}>{dt.big}</div>
-      <div style={{ fontSize: pd(14), fontWeight: 800, letterSpacing: "0.3em", marginTop: pd(8), color: BRONZE }}>{dt.month}</div>
+      {fmt?.date?.text !== undefined
+        ? <div style={{ fontFamily: SERIF, fontWeight: wt("date", 600), lineHeight: 1.15, fontSize: pd(sq ? 40 : 50), whiteSpace: "pre-line", overflowWrap: "break-word" }}>{fmt.date.text}</div>
+        : <><div style={{ fontFamily: SERIF, fontWeight: wt("date", 600), lineHeight: 1.05, whiteSpace: "nowrap", fontSize: `min(${pd(sq ? 46 : 58)}, ${Math.floor((w - px * 2 - 8) / (dt.big.length * 0.46))}px)` }}>{dt.big}</div>
+      <div style={{ fontSize: pd(14), fontWeight: 800, letterSpacing: "0.3em", marginTop: pd(8), color: BRONZE }}>{dt.month}</div></>}
     </div>
   );
   const rowsEl = rows.length > 0 && (
