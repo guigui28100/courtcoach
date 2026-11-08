@@ -95,6 +95,14 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
     return () => { off = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const set = (p: Partial<RecapData>) => setD((o) => ({ ...o, ...p }));
+  // Une rencontre est dans le calendrier : sans jour propre, on reprend le jour de SON événement du planning (même équipe, même week-end), sinon celui de l'événement ouvert
+  const calDate = (m: RecapMatch) => {
+    if (m.date) return m.date;
+    const mon = mondayOf(e.startDate), sun = addDays(mon, 6);
+    const hit = events.find((x) => x.kind === "EQUIPES" && x.startDate >= mon && x.startDate <= sun && (m.team ? x.teams.includes(m.team) : true) && (!m.opponent.trim() || opponentOf(x) === m.opponent.trim()));
+    return hit?.startDate ?? e.startDate;
+  };
+  const dated: RecapData = { ...d, matches: d.matches.map((m) => ({ ...m, date: calDate(m) })) };
   const move = (from: number, to: number) => setD((o) => {
     if (from === to || from < 0 || to < 0 || from >= o.photos.length || to >= o.photos.length) return o;
     const ph = [...o.photos]; const f = [...(o.focus ?? [])]; while (f.length < ph.length) f.push([50, 50]); const z = [...(o.zoom ?? [])]; while (z.length < ph.length) z.push(1);
@@ -170,7 +178,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                   <button type="button" className="btn-outline" aria-label={`Retirer la rencontre ${i + 1}`} onClick={() => set({ matches: d.matches.filter((_, j) => j !== i) })}>🗑️</button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-sm font-bold text-ink">Jour du match <input type="date" aria-label={`Rencontre ${i + 1} : jour du match`} className={`${field} !w-auto`} value={m.date ?? ""} onChange={(x) => upd({ date: x.target.value || undefined })} /></label>
+                  <label className="text-sm font-bold text-ink">Jour du match <input type="date" aria-label={`Rencontre ${i + 1} : jour du match`} className={`${field} !w-auto`} value={calDate(m)} onChange={(x) => upd({ date: x.target.value || undefined })} /></label>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <input aria-label={`Rencontre ${i + 1} : club adverse`} className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Club adverse (ex. TC Guyancourt)" value={m.opponent} onChange={(x) => upd({ opponent: x.target.value })} />
@@ -190,7 +198,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                 {m.photo && <PhotoTuner withSize label={`rencontre ${i + 1}`} value={{ focus: m.focus, zoom: m.zoom, size: m.size }} onChange={(t) => upd(t)} />}
               </div>);
           })}
-          {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
+          {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "", date: e.startDate }] })}>＋ Ajouter une rencontre</button>}
         </div>
       </div>
     ) : e.kind !== "TOURNOI" ? null : (
@@ -211,7 +219,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
     <label className="text-sm font-bold text-ink">{lite ? "Texte de l'affiche" : "Un mot de remerciement"} <span className="font-normal text-muted">({lite ? "déroulement, remerciements…" : "facultatif"})</span>
       <textarea aria-label="Mot de remerciement" rows={lite ? 5 : 2} maxLength={lite ? 500 : 200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
   </>);
-  const poster = (extra: object = {}) => <RecapPoster e={e} format={format} data={d} partners={withPartners ? logos : []} bg={bg} fmt={rfmt} {...extra} />;
+  const poster = (extra: object = {}) => <RecapPoster e={e} format={format} data={dated} partners={withPartners ? logos : []} bg={bg} fmt={rfmt} {...extra} />;
   return (
     <PosterStudio
       title={`📸 Bilan : ${titleOf(e)}`} subtitle={draftId ? "enregistré en ligne" : "pas encore enregistré"} onClose={() => { void auto.flush().finally(onClose); }}

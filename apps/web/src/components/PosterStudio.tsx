@@ -126,9 +126,10 @@ export function PosterStudio(p: StudioProps) {
     const el = /^[a-z0-9-]+$/i.test(key) ? holder.current.querySelector<HTMLElement>(`[data-fmt="${key}"]`) : null;
     if (!el) { setBarPos(null); return; }
     const a = area.current.getBoundingClientRect(), r = el.getBoundingClientRect();
-    const top = r.top - a.top - 52 >= 4 ? r.top - a.top - 52 : Math.min(a.height - 52, r.bottom - a.top + 8);
-    const left = Math.max(6, Math.min(r.left - a.left, a.width - 540));
-    setBarPos({ top, left });
+    const bw = Math.min(540, a.width - 12), bh = a.width < 560 ? 100 : 52; // barre étroite : elle passe sur deux lignes, donc plus haute
+    const top = r.top - a.top - bh >= 4 ? r.top - a.top - bh : Math.max(4, Math.min(a.height - bh, r.bottom - a.top + 8));
+    const left = Math.max(6, Math.min(r.left - a.left, a.width - bw - 6));
+    setBarPos({ top, left, maxWidth: a.width - 12 });
   }, [barOn, tab, p.fmt, scale, p.format, box.w, box.h]);
 
   const download = async (kind: "pdf" | "png") => {

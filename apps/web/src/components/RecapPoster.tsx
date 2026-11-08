@@ -135,7 +135,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
             {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
             <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
             {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            {!(teamsMode && matches.some(({ m }) => m.date)) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
+            {!(teamsMode && matches.length > 0) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
           </div>
           {grid}
           {matches.length > 0 && (
@@ -146,19 +146,20 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const [cat, num] = m.team ? teamParts(m.team) : ["Rencontre", ""];
                 const ph = m.photo; const f0 = m.focus ?? [50, 50];
                 const phW = one ? 330 : many ? 150 : 215;
-                const dayTxt = m.date ? fmtDay(m.date).replace(/^./, (c) => c.toUpperCase()) : "";
+                const dayTxt = (m.date || e.startDate) ? fmtDay(m.date || e.startDate).replace(/^./, (c) => c.toUpperCase()) : "";
                 return (
                   <div key={i}>
                   {dayTxt && <div data-fmt={`dt-${i}`} style={{ fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
                   <div style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
                     {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
                       <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
+                      {num && <div data-fmt={`nu-${i}`} style={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", padding: `${p(18)} ${p(6)} ${p(6)}`, background: "linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.72))", color: "#fff", fontSize: p(one ? 24 : 20), fontWeight: 900, letterSpacing: "0.06em", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>{txt(fmt, `nu-${i}`, num)}</div>}
                     </div>}
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
                         <div style={{ lineHeight: 1.15, minWidth: 0, flex: 1 }}>
                           <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
-                          {num && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
+                          {num && !ph && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
                         </div>
                         {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
                       </div>

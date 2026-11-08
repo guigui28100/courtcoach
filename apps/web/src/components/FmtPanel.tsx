@@ -90,7 +90,7 @@ export function FmtFloat({ items, fmt, onChange, selected, style, onClose }: { i
     <button type="button" aria-label={name} title={name} aria-pressed={on === undefined ? undefined : !!on} disabled={off} onClick={f} style={st} className={`grid h-9 min-w-9 place-items-center rounded-md px-2 text-sm font-bold disabled:opacity-35 ${on ? "bg-white text-ink" : "bg-white/10 text-white hover:bg-white/25"}`}>{label}</button>
   );
   return (
-    <div role="toolbar" aria-label={`Régler : ${item.label}`} style={style} onPointerDown={(e) => e.stopPropagation()} className="absolute z-30 flex flex-nowrap items-center gap-1 whitespace-nowrap rounded-lg bg-ink p-1.5 text-white shadow-2xl">
+    <div role="toolbar" aria-label={`Régler : ${item.label}`} style={style} onPointerDown={(e) => e.stopPropagation()} className="absolute z-30 flex flex-wrap items-center gap-1 rounded-lg bg-ink p-1.5 text-white shadow-2xl">
       {item.edit && short && <input aria-label={`Réécrire : ${item.label}`} value={cur.text ?? live} onChange={(x) => set({ text: x.target.value })} className="h-9 w-36 rounded-md border-0 bg-white px-2 text-sm text-ink" />}
       {b("A−", () => set({ size: size - 1 }), "Plus petit", undefined, undefined, size <= -6)}
       {b("A+", () => set({ size: size + 1 }), "Plus grand", undefined, undefined, size >= 30)}
