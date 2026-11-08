@@ -202,7 +202,7 @@ export function ClubPlan() {
           </div>
         </Modal>
       )}
-      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} viewer={viewer} canValidate={me?.role === "COACH"} />}
+      {actionEv && <EventActions e={events.find((x) => x.id === actionEv.id) ?? actionEv} onClose={() => setActionEv(null)} onTentative={toggleTentative} onStar={toggleStar} onPoster={(e) => { setActionEv(null); setPosterEv(e); }} onRecap={(e) => { setActionEv(null); setRecapEv(e); }} onTournoi={(e) => nav(`/coach/club/tournoi/${e.id}`)} onEdit={(e) => { setActionEv(null); openEdit(e); }} onDelete={async (e) => { await removeEvent(e); setActionEv(null); }} readOnly={readOnly} viewer={viewer} canValidate={me?.role === "COACH"} />}
       {recapEv && <RecapModal e={recapEv} events={events} onClose={() => setRecapEv(null)} />}
       {placed && <PlacedModal e={placed} onLater={() => setPlaced(null)} onPoster={() => { setPosterEv(placed); setPlaced(null); }} />}
       {posterEv && <EventPosterModal e={events.find((x) => x.id === posterEv.id) ?? posterEv} onClose={() => setPosterEv(null)} onSaved={load} />}
@@ -1316,7 +1316,7 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
 }
 
 // ───────────── Un événement : voir, mettre en avant, modifier, annuler ─────────────
-function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, readOnly = false, viewer = false, canValidate = false }: { viewer?: boolean; readOnly?: boolean; canValidate?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
+function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPoster, onRecap, onTournoi, readOnly = false, viewer = false, canValidate = false }: { onTournoi: (e: ClubEvent) => void; viewer?: boolean; readOnly?: boolean; canValidate?: boolean; onPoster: (e: ClubEvent) => void; onRecap: (e: ClubEvent) => void; e: ClubEvent; onClose: () => void; onTentative: (e: ClubEvent) => void; onStar: (e: ClubEvent) => void; onEdit: (e: ClubEvent) => void; onDelete: (e: ClubEvent) => void }) {
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
@@ -1328,6 +1328,7 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
       {!viewer && <div className="mt-3 grid gap-2">
         {!readOnly && <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>}
         <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
+        {e.kind === "ANIMATION" && <button type="button" className="btn-clay" onClick={() => onTournoi(e)}>🏆 Organiser le tournoi pendant l'animation</button>}
         <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>}
         {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>}

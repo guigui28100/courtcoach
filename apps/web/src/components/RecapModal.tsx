@@ -53,9 +53,9 @@ const FORMATS: StudioFormat[] = [{ id: "CARRE", label: "⬜ Carré", ...RECAP_SI
 export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubEvent[]; onClose: () => void }) {
   const [format, setFormat] = useState<RecapFormat>("CARRE");
   const [bg, setBg] = useState("");
-  const [rfmt, setRfmtState] = useState<Fmts>(() => { try { return JSON.parse(localStorage.getItem("cc-affiche-bilan-mise-en-forme") || "{}"); } catch { return {}; } });
+  const [rfmt, setRfmtState] = useState<Fmts>(() => { try { return JSON.parse(localStorage.getItem(`cc-affiche-bilan-mise-en-forme-${e.id}`) || "{}"); } catch { return {}; } });
   const [rsel, setRsel] = useState("titre");
-  const setRfmt = (v: Fmts) => { setRfmtState(v); try { localStorage.setItem("cc-affiche-bilan-mise-en-forme", JSON.stringify(v)); } catch { /* sans mémoire du navigateur */ } };
+  const setRfmt = (v: Fmts) => { setRfmtState(v); try { localStorage.setItem(`cc-affiche-bilan-mise-en-forme-${e.id}`, JSON.stringify(v)); } catch { /* sans mémoire du navigateur */ } };
   const [d, setD] = useState<RecapData>(() => ({ ...emptyRecap(), matches: weekendMatches(e, events) }));
   const teamsMode = e.kind === "EQUIPES";
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement des photos et du texte

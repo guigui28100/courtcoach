@@ -24,6 +24,7 @@ const Privacy = named(() => import("./pages/Static"), "Privacy");
 const Authorization = named(() => import("./pages/Static"), "Authorization");
 const Bulletin = lazy(() => import("./pages/Bulletin"));
 const PlanningProfsPage = lazy(() => import("./pages/PlanningProfs"));
+const TournoiPage = lazy(() => import("./pages/Tournoi"));
 const TournamentReportPrint = lazy(() => import("./pages/TournamentReportPrint"));
 const TrainerPreview = lazy(() => import("./pages/TrainerPreview"));
 const FinDeCours = lazy(() => import("./pages/FinDeCours"));
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/coach/planning-profs" element={<Guard roles={["COACH"]}><PlanningProfsPage /></Guard>} />
         <Route path="/prof" element={<Guard roles={["TRAINER"]}><ProfSpace /></Guard>} />
         <Route path="/coach/club" element={<Guard roles={["COACH", "PRESIDENT", "BUREAU", "TRAINER"]}><ClubPlan /></Guard>} />
+        <Route path="/coach/club/tournoi/:id" element={<Guard roles={["COACH", "PRESIDENT", "BUREAU"]}><TournoiPage /></Guard>} />
         <Route path="/coach/club/partenaires" element={<Guard roles={["COACH", "PRESIDENT", "BUREAU"]}><SponsorsPage /></Guard>} />
         <Route path="/president" element={<Guard roles={["PRESIDENT"]}><PresidentPage /></Guard>} />
         <Route path="/president/apercu" element={<Guard roles={["PRESIDENT"]}><PresidentAdultPreview /></Guard>} />

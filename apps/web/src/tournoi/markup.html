@@ -1,0 +1,124 @@
+<div class="wrap"><div id="app"></div><div id="engine">
+  <header>
+    <div class="eyebrow">Animations du club</div>
+    <h1>Tournoi amical</h1>
+  </header>
+  <div class="sample" role="note"><b>Comment ça marche ?</b>
+    <ol style="margin:6px 0 0;padding-left:20px;display:grid;gap:2px"><li><b>Prépare</b> : joueurs, terrains, règle, format (4 questions).</li><li><b>Lance les matchs</b> : le bandeau noir te dit quoi annoncer ; tu écris les scores.</li><li><b>Regarde</b> le classement et imprime l'affiche.</li></ol>
+    <span class="rest">Tu n'as pas besoin de connaître le tennis. Les noms et joueurs ci-dessous sont des exemples.</span></div>
+
+  <nav class="toc" aria-label="Les 4 grandes étapes"><button type="button" data-t="p1">① Préparer</button><button type="button" data-t="p2">② Matchs</button><button type="button" data-t="p3">③ Résultats</button><button type="button" data-t="p4">④ Aide</button></nav>
+  <section class="card" aria-label="Enregistrer le tournoi" id="savecard">
+    <h2 style="display:none">Enregistrement</h2>
+    <p class="hint" id="savehint">✔ Enregistré tout seul avec l'animation du planning. Tu peux fermer la page et reprendre plus tard, sur n'importe quel appareil.</p>
+    <button type="button" class="btn" id="resume" hidden>📂 Reprendre le tournoi enregistré</button>
+    <button type="button" class="btn" id="newt">Recommencer à zéro</button>
+  </section>
+  <div class="part" id="p1"><b>① Je prépare mon tournoi</b><span>Réponds aux 4 questions, de haut en bas.</span></div>
+  <section class="card" aria-label="Mon tournoi">
+    <h2><span class="stepn">1</span> Mon tournoi</h2>
+    <div class="row">
+      <div class="field"><span class="lab">Simple ou double ?</span>
+        <div class="seg" role="group" aria-label="Simple ou double"><button type="button" id="b-simple" aria-pressed="true">Simple</button><button type="button" id="b-double" aria-pressed="false">Double</button></div>
+        <p class="hint">Simple : 1 joueur contre 1. Double : 2 joueurs contre 2 (par équipes de deux).</p></div>
+      <div class="field"><span class="lab">Nombre de joueurs</span>
+        <div class="step"><button type="button" id="n-" aria-label="Un joueur de moins">−</button><input type="number" id="n-out" min="3" step="1" value="11" aria-label="Nombre de joueurs" style="width:84px;text-align:center;font-size:18px;font-weight:800"><button type="button" id="n+" aria-label="Un joueur de plus">+</button></div></div>
+      <div class="field"><span class="lab">Terrains disponibles</span>
+        <div class="step"><button type="button" id="c-" aria-label="Un terrain de moins">−</button><output id="c-out" aria-live="polite">2</output><button type="button" id="c+" aria-label="Un terrain de plus">+</button></div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="avail">Temps disponible</label>
+        <select id="avail"><option value="1">1 h</option><option value="1.5">1 h 30</option><option value="2">2 h</option><option value="2.5">2 h 30</option><option value="3" selected>3 h</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option></select></div>
+      <div class="field"><label for="start">Heure de début</label><input type="time" id="start" value="14:00"></div>
+    </div>
+    <p class="hint" id="info"></p>
+    <div class="warn" id="warn" hidden></div>
+  </section>
+  <section class="card" aria-label="Les joueurs">
+    <h2 id="plh"><span class="stepn">2</span> Les joueurs</h2>
+    <p class="hint" id="plhint"></p>
+    <div class="field" id="pairwrap" hidden><span class="lab">Comment former les équipes de deux ?</span>
+      <div class="seg3" role="group" aria-label="Formation des équipes"><button type="button" id="p-manuel" aria-pressed="false">Je choisis<br><small>les paires</small></button><button type="button" id="p-hasard" aria-pressed="true">Tirage au sort<br><small>au hasard</small></button><button type="button" id="p-equi" aria-pressed="false">Paires équilibrées<br><small>fort avec moins fort</small></button><button type="button" id="p-libre" aria-pressed="false">Je compose<br><small>mes paires moi-même</small></button></div></div>
+    <div class="nlist" id="nlist"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn main" id="shuffle">🎲 Tirage au sort</button>
+      <button type="button" class="btn" id="clear">🧹 Effacer les noms d'exemple</button>
+    </div>
+    <details><summary>Coller une liste de noms</summary>
+      <p class="hint" style="margin:8px 0">Un nom par ligne. Utile pour recopier une liste d'inscrits.</p>
+      <textarea id="paste" aria-label="Liste de noms, un par ligne" spellcheck="false"></textarea>
+      <button type="button" class="btn" id="usepaste" style="margin-top:8px">Utiliser cette liste</button></details>
+  </section>
+  <section class="card" aria-label="Les équipes" id="teamscard" hidden>
+    <h2>Les équipes formées</h2>
+    <p class="hint" id="teamshint"></p>
+    <div class="teams" id="teams"></div>
+  </section>
+  <section class="card" aria-label="Comment on joue">
+    <h2><span class="stepn">3</span> Comment on joue ?</h2>
+    <div class="seg3" role="group" aria-label="Façon de jouer"><button type="button" id="m-jeux" aria-pressed="true">En jeux<br><small>sets et jeux (tennis classique)</small></button><button type="button" id="m-points" aria-pressed="false">Au nombre de points<br><small>le plus facile : 7, 8, 9 points…</small></button><button type="button" id="m-temps" aria-pressed="false">Au temps<br><small>le plus facile : 10, 15, 20 min…</small></button></div>
+    <div class="chips" id="opts" role="group" aria-label="Choix précis"></div>
+    <div class="rule" id="rule"></div>
+    <div class="row">
+      <div class="field"><span class="lab">Durée prévue d'un tour (minutes)</span>
+        <div class="step"><button type="button" id="d-" aria-label="Cinq minutes de moins">−</button><output id="d-out" aria-live="polite">38</output><button type="button" id="d+" aria-label="Cinq minutes de plus">+</button></div></div>
+      <p class="hint" id="durinfo" style="align-self:center"></p>
+    </div>
+  </section>
+  <section class="card" aria-label="Choix du format">
+    <h2><span class="stepn">4</span> Quel format ?</h2>
+    <div class="sample" id="advice" style="margin:0"></div>
+    <p class="hint">Les formats sont calculés pour ton nombre de joueurs, de terrains et ta façon de jouer. Touche celui que tu veux jouer.</p>
+    <div class="fmts" id="fmts"></div>
+    <div class="field" id="roundswrap" hidden><span class="lab">Nombre de tours (montante-descendante)</span>
+      <div class="step"><button type="button" id="r-" aria-label="Un tour de moins">−</button><output id="r-out" aria-live="polite">4</output><button type="button" id="r+" aria-label="Un tour de plus">+</button></div></div>
+      <div class="field" id="classwrap" hidden><span class="lab">Matchs de classement</span>
+      <div class="seg" role="group" aria-label="Matchs de classement"><button type="button" id="cl-non" aria-pressed="true">Non</button><button type="button" id="cl-oui" aria-pressed="false">Oui</button></div>
+      <p class="hint" id="clhint"></p></div>
+    <div id="struct"></div>
+    <div class="ready" id="ready"></div>
+    <details id="ctdet"><summary>Combien de terrains me faut-il ?</summary>
+      <p class="hint" style="margin:8px 0">Durée du tournoi selon le nombre de terrains que le club peut te donner. ✔ = tient dans ton temps disponible.</p>
+      <div class="tw"><table id="ctbl" style="min-width:480px"></table></div></details>
+  </section>
+  <div class="part" id="p2"><b>② Je lance les matchs</b><span>Annonce les matchs du bandeau noir, puis écris les scores.</span></div>
+  <section class="card" aria-label="Suivi du tournoi">
+    <h2>En direct : quoi lancer maintenant ?</h2>
+    <div id="next"></div>
+    <div class="figs" id="figs"></div>
+  </section>
+  <section class="card" aria-label="Ordre des matchs" id="orderwrap">
+    <h2>Tous les matchs, dans l'ordre à lancer</h2>
+    <p class="hint" id="orderhint"></p>
+    <div class="tw"><table id="tbl" style="min-width:640px"></table></div>
+    <button type="button" class="btn noprint" id="printl" style="margin-top:10px">🖨️ Imprimer la liste des matchs</button>
+  </section>
+  <div class="part" id="p3"><b>③ Je regarde les résultats</b><span>Poules ou tableau, classement final et affiche à imprimer.</span></div>
+  <section class="card" aria-label="Poules, tableau et scores" id="boardcard">
+    <h2 id="boardh">Poules et tableau</h2>
+    <p class="hint">Tout se remplit tout seul quand tu écris les scores dans la liste des matchs juste en dessous.</p>
+    <div id="board"></div>
+  </section>
+  <section class="card" aria-label="Affiche des résultats" id="posterwrap">
+    <h2>🏆 Affiche des résultats</h2>
+    <p class="hint">Prête dès qu'il y a des scores. Touche « Imprimer » (ou « enregistrer en PDF ») pour l'afficher au club.</p>
+    <div id="poster" class="poster"></div>
+    <button type="button" class="btn main" id="printp">🖨️ Imprimer l'affiche</button>
+  </section>
+  <div class="part" id="p4"><b>④ Besoin d'aide ?</b><span>Le pas à pas, les petits problèmes et les temps d'attente.</span></div>
+  <section class="card" aria-label="Ce que j'ai à faire">
+    <h2>Ce que tu as à faire, pas à pas</h2>
+    <div class="todo" id="todo"></div>
+    <div class="faq">
+      <details><summary>Que faire si… (les petits problèmes)</summary><ul id="faq" style="margin-top:8px"></ul></details>
+      <details><summary>Le tennis en 1 minute</summary><ul class="gl" id="tennis" style="margin-top:8px"></ul></details>
+      <details><summary>Mini-glossaire : les mots du tennis</summary><ul class="gl" id="gloss" style="margin-top:8px"></ul></details>
+    </div>
+  </section>
+  <section class="card" aria-label="Attente des joueurs">
+    <h2>Qui attend, et combien de temps ?</h2>
+    <p class="hint" id="waithint"></p>
+    <div id="wait"></div>
+  </section>
+</div></div>
+

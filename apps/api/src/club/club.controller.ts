@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from "@nest
 import { Role } from "@prisma/client";
 import { AuthUser } from "../common/auth.types";
 import { CurrentUser, Roles } from "../common/decorators";
-import { ClubEventDto, PeopleDto, ScheduleDto, ReorderDto, TeamCountsDto } from "./club.dto";
+import { ClubEventDto, PeopleDto, ScheduleDto, ReorderDto, TeamCountsDto, TournoiDto } from "./club.dto";
 import { ClubService } from "./club.service";
 
 // Planning du club : le coach et le président le gèrent ; les membres du bureau le VOIENT et peuvent PROPOSER des événements, toujours « prévisionnels » (seul le coach valide) ; aucun accès pour les entraîneurs, les adultes ni les familles
@@ -25,4 +25,8 @@ export class ClubController {
   @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Post("events") create(@Body() dto: ClubEventDto, @CurrentUser() u: AuthUser) { return this.svc.create(dto, u.role !== Role.COACH); }
   @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Put("events/:id") @HttpCode(200) update(@Param("id") id: string, @Body() dto: ClubEventDto, @CurrentUser() u: AuthUser) { return this.svc.update(id, dto, u.role !== Role.COACH); }
   @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Delete("events/:id") remove(@Param("id") id: string, @CurrentUser() u: AuthUser) { return this.svc.remove(id, u.role !== Role.COACH); }
+  // Aide au tournoi d'une animation (rattachée à l'événement)
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Get("tournoi/:id") getTournoi(@Param("id") id: string) { return this.svc.getTournoi(id); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Put("tournoi/:id") @HttpCode(200) setTournoi(@Param("id") id: string, @Body() dto: TournoiDto) { return this.svc.setTournoi(id, dto.data); }
+  @Roles(Role.COACH, Role.PRESIDENT, Role.BUREAU) @Delete("tournoi/:id") deleteTournoi(@Param("id") id: string) { return this.svc.deleteTournoi(id); }
 }

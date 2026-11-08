@@ -64,3 +64,8 @@ export class ScheduleDto {
 export class ReorderDto {
   @IsArray() @ArrayMaxSize(60) @IsString({ each: true }) @MaxLength(60, { each: true }) ids!: string[];
 }
+
+// Tournoi amical d'une animation : le contenu est reconstruit champ par champ par le serveur (`sanitizeTournoi`)
+export class TournoiDto {
+  @IsObject() data!: Record<string, unknown>;
+}

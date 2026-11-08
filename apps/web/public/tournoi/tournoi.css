@@ -1,0 +1,306 @@
+#tournoi-root tr.tourh td{background:var(--accent-soft);font-size:13px;border-top:2px solid var(--ink)}
+#tournoi-root tr.tourh.done td{background:color-mix(in srgb,var(--win-soft) 70%,transparent)}
+#tournoi-root td.nm{font-weight:600;overflow-wrap:anywhere;min-width:110px}
+#tournoi-root td.nm.wait{color:var(--muted);font-weight:500;font-style:italic}
+#tournoi-root td.nm.win{font-weight:800;color:var(--win)}
+#tournoi-root input.scin{font:inherit;font-weight:800;text-align:center;padding:6px 2px;border:1px solid var(--line);background:var(--card);color:var(--fg);width:52px;min-height:42px}
+#tournoi-root input.scin:disabled{opacity:.35}
+@media print{body[data-pr] *{visibility:hidden}
+body[data-pr=list] #orderwrap,body[data-pr=list] #orderwrap *{visibility:visible}
+body[data-pr=list] #orderwrap{position:absolute;left:0;top:0;width:100%}
+body[data-pr=list] .noprint{display:none}}
+#tournoi-root .part{margin:26px 0 10px;padding:12px 16px;background:var(--ink);color:var(--on-ink);display:grid;gap:2px}
+#tournoi-root .part b{font-family:var(--serif);font-size:22px}
+#tournoi-root .part span{font-size:13px;color:#d9cfb9}
+#tournoi-root .stepn{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font:700 14px/1 var(--sans);margin-right:6px;vertical-align:2px}
+#tournoi-root .toc{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;position:sticky;top:0;z-index:6;background:var(--card);border:1px solid var(--line);padding:4px;margin:10px 0}
+#tournoi-root .toc button{font:inherit;font-size:13px;min-height:38px;border:1px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;padding:4px 2px}
+#tournoi-root .toc button.on{background:var(--ink);color:var(--on-ink)}
+#tournoi-root #savecard{padding:10px 14px}
+#tournoi-root #savecard h2{font-size:15px;margin:0 0 4px}
+#tournoi-root #savecard .btn{margin:4px 6px 0 0}
+#tournoi-root .poster{border:3px double #8a5a1a;padding:18px;text-align:center;background:#fffdf7;border-radius:6px;margin-bottom:10px}
+#tournoi-root .poster h3{font-size:1.6em;margin:0 0 4px}
+#tournoi-root .poster .champ{font-size:1.4em;font-weight:700;margin:10px 0}
+#tournoi-root .poster ul{list-style:none;padding:0;margin:8px 0;text-align:left;columns:2}
+#tournoi-root .poster li{padding:2px 0;break-inside:avoid}
+@media print{body[data-pr=poster] *{visibility:hidden}
+body[data-pr=poster] #posterwrap,body[data-pr=poster] #posterwrap *{visibility:visible}
+body[data-pr=poster] #posterwrap{position:absolute;left:0;top:0;width:100%}
+body[data-pr=poster] #printp,body[data-pr=poster] #posterwrap .hint,body[data-pr=poster] #posterwrap h2{display:none}}
+#tournoi-root{
+  --bg:#f6f2ea; --card:#fffdf8; --fg:#17140f; --muted:#6b6355; --line:#ddd2bc;
+  --accent:#8a6a2f; --accent-soft:#efe4cb; --ink:#17140f; --on-ink:#fbf8f2;
+  --win:#2f6b4a; --win-soft:#dcebe1; --loss:#a3412a; --loss-soft:#f3dcd4; --mid:#9a7416; --mid-soft:#f2e6c2;
+  --c1:#b3532a; --c2:#4a6d8f; --c3:#2f6b4a; --c4:#7a4a8a;
+  --serif:"Cormorant Garamond",Georgia,serif; --sans:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+#tournoi-root *, #tournoi-root{box-sizing:border-box}
+#tournoi-root [hidden]{display:none!important}
+#tournoi-root{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.4;
+  padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#tournoi-root .wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+#tournoi-root h1,#tournoi-root h2,#tournoi-root h3{font-family:var(--serif);font-weight:600;margin:0;text-wrap:balance}
+#tournoi-root h1{font-size:30px;line-height:1.05}
+#tournoi-root h2{font-size:23px}
+#tournoi-root h3{font-size:18px}
+#tournoi-root .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+#tournoi-root .sample{background:var(--accent-soft);border:1px solid var(--line);padding:8px 12px;font-size:13px}
+#tournoi-root .card{background:var(--card);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:12px}
+#tournoi-root label,#tournoi-root .lab{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#tournoi-root .row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+#tournoi-root .field{display:flex;flex-direction:column;gap:6px}
+#tournoi-root .seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line)}
+#tournoi-root .seg button{font:inherit;font-weight:700;padding:11px 8px;border:0;background:var(--card);color:var(--muted);min-height:46px;cursor:pointer}
+#tournoi-root .seg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+#tournoi-root .seg3{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line)}
+#tournoi-root .seg3 button{font:inherit;font-weight:700;padding:11px 6px;border:0;background:var(--card);color:var(--muted);min-height:54px;cursor:pointer;line-height:1.2}
+#tournoi-root .seg3 button+button{border-left:1px solid var(--line)}
+#tournoi-root .seg3 button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+#tournoi-root .seg3 small{font-weight:500;opacity:.85}
+#tournoi-root .chips{display:flex;flex-wrap:wrap;gap:8px}
+#tournoi-root .chipb{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--fg);padding:10px 14px;min-height:46px;cursor:pointer}
+#tournoi-root .chipb[aria-pressed="true"]{border-color:var(--ink);background:var(--accent-soft)}
+#tournoi-root .rule{background:var(--accent-soft);border-left:4px solid var(--accent);padding:10px 12px;font-size:14px}
+#tournoi-root .step{display:grid;grid-template-columns:48px 1fr 48px;border:1px solid var(--line);background:var(--card)}
+#tournoi-root .step button{font:inherit;font-size:22px;font-weight:700;border:0;background:var(--accent-soft);color:var(--fg);min-height:46px;cursor:pointer}
+#tournoi-root .step output{display:grid;place-items:center;font-family:var(--serif);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+#tournoi-root select,#tournoi-root input[type=time],#tournoi-root textarea{font:inherit;font-weight:600;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);min-height:46px;width:100%}
+#tournoi-root textarea{font-weight:500;min-height:100px;resize:vertical}
+#tournoi-root button:focus-visible,#tournoi-root select:focus-visible,#tournoi-root input:focus-visible,#tournoi-root textarea:focus-visible,#tournoi-root summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#tournoi-root .nlist{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+#tournoi-root .nrow{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center}
+#tournoi-root .nrow.pair{grid-template-columns:34px 1fr 1fr}
+#tournoi-root .nrow .no{font-family:var(--serif);font-size:20px;font-weight:700;text-align:center;color:var(--muted)}
+#tournoi-root .nrow input{font:inherit;font-weight:600;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);min-height:46px;width:100%;min-width:0}
+#tournoi-root .btn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:10px 14px;min-height:44px;cursor:pointer;align-self:flex-start}
+#tournoi-root .btn.main{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+#tournoi-root .teams{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+#tournoi-root .team{border:1px solid var(--line);border-left:6px solid var(--accent);padding:8px 10px;display:grid;gap:2px;background:var(--card)}
+#tournoi-root .team b{font-family:var(--serif);font-size:19px}
+#tournoi-root .team span{font-size:14px;font-weight:600}
+#tournoi-root .fmts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+#tournoi-root .fmt{font:inherit;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--fg);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+#tournoi-root .fmt[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:var(--accent-soft)}
+#tournoi-root .fmt b{font-family:var(--serif);font-size:21px;line-height:1.05}
+#tournoi-root .fmt .d{font-size:13px;color:var(--muted)}
+#tournoi-root .fmt ul{margin:2px 0 0;padding:0;list-style:none;font-size:13px;display:grid;gap:2px}
+#tournoi-root .fmt li b{font-family:var(--sans);font-size:13px}
+#tournoi-root .ffig{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0}
+#tournoi-root .ffig div{text-align:center}
+#tournoi-root .ffig b{display:block;font-family:var(--serif);font-size:19px;font-variant-numeric:tabular-nums}
+#tournoi-root .ffig span{font-size:11px;color:var(--muted)}
+#tournoi-root .ready{background:var(--ink);color:var(--on-ink);padding:12px 14px;display:grid;gap:6px}
+#tournoi-root .ready b{font-family:var(--serif);font-size:21px}
+#tournoi-root .ready .btn{background:var(--accent);color:#fff;border-color:var(--accent)}
+#tournoi-root .chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;align-self:flex-start}
+#tournoi-root .chip.ok{background:var(--win-soft);color:var(--win)}
+#tournoi-root .chip.no{background:var(--loss-soft);color:var(--loss)}
+#tournoi-root .chip.na{background:var(--mid-soft);color:var(--mid)}
+#tournoi-root .warn{background:var(--mid-soft);border-left:4px solid var(--mid);padding:8px 12px;font-size:13px;font-weight:600}
+#tournoi-root .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+#tournoi-root .fig{border:1px solid var(--line);background:var(--card);padding:10px 12px}
+#tournoi-root .fig b{display:block;font-family:var(--serif);font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+#tournoi-root .fig span{font-size:12px;color:var(--muted)}
+#tournoi-root .tw{overflow-x:auto;border:1px solid var(--line)}
+#tournoi-root table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
+#tournoi-root th{background:var(--ink);color:var(--on-ink);text-align:left;padding:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+#tournoi-root td{padding:8px;border-top:1px solid var(--line);vertical-align:top}
+#tournoi-root td.t{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}
+#tournoi-root tr.ph td{background:var(--accent-soft);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+#tournoi-root tr.done td{background:color-mix(in srgb,var(--win-soft) 55%,transparent)}
+#tournoi-root .mt{display:grid;gap:4px;min-width:180px}
+#tournoi-root .mh{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)}
+#tournoi-root .n{flex:none;min-width:24px;height:24px;display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff;background:var(--ink)}
+#tournoi-root .n.c1{background:var(--c1)}
+#tournoi-root .n.c2{background:var(--c2)}
+#tournoi-root .n.c3{background:var(--c3)}
+#tournoi-root .n.c4{background:var(--c4)}
+#tournoi-root .pr{display:grid;grid-template-columns:minmax(0,1fr) 50px;gap:6px;align-items:center}
+#tournoi-root .pr .nm{font-weight:600;overflow-wrap:anywhere}
+#tournoi-root .pr .nm.wait{color:var(--muted);font-weight:500;font-style:italic}
+#tournoi-root .pr .nm.win{font-weight:800;color:var(--win)}
+#tournoi-root .pr input{font:inherit;font-weight:800;text-align:center;padding:6px 2px;border:1px solid var(--line);background:var(--card);color:var(--fg);width:50px;min-height:40px}
+#tournoi-root .pr input:disabled{opacity:.35}
+#tournoi-root .rest{color:var(--muted);font-size:12px}
+#tournoi-root .groups{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+#tournoi-root .group{border:1px solid var(--line);padding:10px;overflow-x:auto;display:grid;gap:8px;align-content:start}
+#tournoi-root .group table{min-width:0;font-size:13px}
+#tournoi-root .group th{padding:6px 5px;font-size:10px}
+#tournoi-root .group td{padding:6px 5px}
+#tournoi-root .group td.num,#tournoi-root .group th.num{text-align:center;font-variant-numeric:tabular-nums}
+#tournoi-root .group tr.q td{background:var(--win-soft);font-weight:800}
+#tournoi-root .gm{display:grid;gap:3px;font-size:13px}
+#tournoi-root .gm div{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;border-top:1px solid var(--line);padding-top:3px}
+#tournoi-root .gm div span:first-child{text-align:right}
+#tournoi-root .gm div b{font-variant-numeric:tabular-nums;min-width:48px;text-align:center;background:var(--accent-soft);padding:1px 6px}
+#tournoi-root .gm div.w1 span:first-child,#tournoi-root .gm div.w2 span:last-child{font-weight:800;color:var(--win)}
+#tournoi-root .gm .sm{color:var(--muted);font-size:11px}
+#tournoi-root .bk{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}
+#tournoi-root .col{display:flex;flex-direction:column;gap:10px;min-width:200px;justify-content:space-around}
+#tournoi-root .col h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#tournoi-root .bm{border:1px solid var(--line);background:var(--card);font-size:13px}
+#tournoi-root .bm .h{background:var(--accent-soft);padding:3px 8px;font-size:11px;font-weight:700;color:var(--muted)}
+#tournoi-root .bm div.r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;padding:5px 8px;border-top:1px solid var(--line)}
+#tournoi-root .bm div.r.w{font-weight:800;color:var(--win)}
+#tournoi-root .bm div.r.p{color:var(--muted);font-style:italic}
+#tournoi-root .bm div.r span:last-child{font-variant-numeric:tabular-nums;font-weight:800;min-width:20px;text-align:right}
+#tournoi-root .bkt{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--accent);margin:8px 0 6px}
+#tournoi-root .next{background:var(--ink);color:var(--on-ink);padding:12px 14px;display:grid;gap:5px}
+#tournoi-root .next b{font-family:var(--serif);font-size:23px}
+#tournoi-root .next small{color:#d9cfb9;font-size:13px}
+#tournoi-root .next .say{background:rgba(255,255,255,.1);padding:8px 10px;font-size:14px;color:#fff;margin-top:2px}
+#tournoi-root .champ{background:var(--win-soft);border:2px solid var(--win);color:var(--win);padding:12px 14px;font-weight:800;font-size:15px}
+#tournoi-root .champ b{font-family:var(--serif);font-size:26px;display:block;color:var(--fg)}
+#tournoi-root .todo{display:grid;gap:12px}
+#tournoi-root .todo section{border:1px solid var(--line);padding:12px;display:grid;gap:6px}
+#tournoi-root .todo h3{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+#tournoi-root .todo ol,#tournoi-root .faq ul,#tournoi-root .gl{margin:0;padding-left:20px;display:grid;gap:6px}
+#tournoi-root .faq details,#tournoi-root .card details{border-top:1px solid var(--line);padding:8px 0}
+#tournoi-root .gl{list-style:none;padding:0;gap:8px}
+#tournoi-root .gl b{color:var(--accent)}
+#tournoi-root .pl{display:grid;gap:4px;font-size:13px}
+#tournoi-root .pl div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;border-top:1px solid var(--line);padding-top:4px}
+#tournoi-root .pl div span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+#tournoi-root .later{border:1px dashed var(--accent);padding:12px 14px;font-size:13px;color:var(--muted)}
+#tournoi-root .later b{color:var(--fg)}
+#tournoi-root .hint{font-size:13px;color:var(--muted);margin:0}
+#tournoi-root details summary{cursor:pointer;font-weight:700}
+@media (prefers-reduced-motion:reduce){#tournoi-root *, #tournoi-root{transition:none!important}}
+#tournoi-root{padding-block:0 90px}
+#tournoi-root .wrap{max-width:640px;gap:0}
+#tournoi-root #app{display:block}
+#tournoi-root #app .card{border-radius:14px;margin:12px 0}
+#tournoi-root .wtop{display:grid;gap:8px;padding:14px 0 6px}
+#tournoi-root .wlogo{font-family:var(--serif);font-size:22px;font-weight:700}
+#tournoi-root .dots{display:flex;gap:6px}
+#tournoi-root .dot{flex:1;text-align:center;font-size:12px;font-weight:800;padding:5px 0;border-radius:99px;background:var(--accent-soft);color:var(--muted)}
+#tournoi-root .dot.ok{background:var(--win-soft);color:var(--win)}
+#tournoi-root .dot.on{background:var(--ink);color:var(--on-ink)}
+#tournoi-root .wcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;margin:10px 0}
+#tournoi-root .wstep{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800}
+#tournoi-root .wq{font-size:34px;line-height:1.05}
+#tournoi-root .wsub{font-size:20px;margin-top:6px}
+#tournoi-root .wh{margin:0;color:var(--muted);font-size:14px}
+#tournoi-root .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+#tournoi-root .tile{font:inherit;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:14px 8px;min-height:64px;cursor:pointer;display:grid;gap:2px;place-content:center;text-align:center}
+#tournoi-root .tile b{font-size:19px}
+#tournoi-root .tile small{font-size:12px;color:var(--muted)}
+#tournoi-root .tile.on{border-color:var(--ink);background:var(--ink);color:var(--on-ink)}
+#tournoi-root .tile.on small{color:#d9cfb9}
+#tournoi-root .bign{display:grid;grid-template-columns:72px 1fr 72px;gap:8px}
+#tournoi-root .nbtn{font:inherit;font-size:34px;font-weight:700;border:0;border-radius:14px;background:var(--accent-soft);color:var(--fg);min-height:72px;cursor:pointer}
+#tournoi-root .bign input,#tournoi-root .tti,#tournoi-root .recap b,#tournoi-root .lhead b{font-variant-numeric:lining-nums}
+#tournoi-root .bign input{font:inherit;font-family:var(--serif);font-size:44px;font-weight:700;text-align:center;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);min-width:0;width:100%}
+#tournoi-root .bigtime{font:inherit;font-size:28px;font-weight:700;padding:12px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);min-height:64px;width:100%}
+#tournoi-root .big{font:inherit;font-size:18px;font-weight:800;border:0;border-radius:14px;background:var(--ink);color:var(--on-ink);padding:16px;min-height:60px;cursor:pointer;width:100%}
+#tournoi-root .big.go{background:var(--win);color:#fff;font-size:22px}
+#tournoi-root .wnav{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin:6px 0 20px}
+#tournoi-root .nbk{font:inherit;font-weight:800;font-size:16px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);min-height:60px;cursor:pointer}
+#tournoi-root .fcards{display:grid;gap:10px}
+#tournoi-root .fcard{font:inherit;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:14px;display:grid;gap:6px;cursor:pointer}
+#tournoi-root .fcard b{font-family:var(--serif);font-size:24px}
+#tournoi-root .fcard.on{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink);background:var(--accent-soft)}
+#tournoi-root .fd{font-size:13px;color:var(--muted)}
+#tournoi-root .ff{font-weight:700;font-size:14px}
+#tournoi-root .rec{justify-self:start;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:var(--mid-soft);color:var(--mid);padding:3px 8px;border-radius:99px}
+#tournoi-root .fchip{justify-self:start;font-size:12px;font-weight:800;padding:3px 8px;border-radius:99px}
+#tournoi-root .fchip.ok{background:var(--win-soft);color:var(--win)}
+#tournoi-root .fchip.no{background:var(--loss-soft);color:var(--loss)}
+#tournoi-root .recap{display:grid;gap:6px;background:var(--accent-soft);border-radius:14px;padding:14px}
+#tournoi-root .recap b{font-family:var(--serif);font-size:26px}
+#tournoi-root .warnb{background:var(--mid-soft);border-left:4px solid var(--mid);padding:10px 12px;font-weight:700;border-radius:8px}
+#tournoi-root .resume{display:grid;gap:8px;background:var(--win-soft);border-radius:14px;padding:12px}
+#tournoi-root .lhead{position:sticky;top:0;z-index:5;background:var(--ink);color:var(--on-ink);padding:10px 14px;margin:0 -16px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+#tournoi-root .lhead b{font-family:var(--serif);font-size:19px}
+#tournoi-root .lhead span{font-size:13px;color:#d9cfb9}
+#tournoi-root .pbar{grid-column:1/-1;height:6px;background:#3a3427;border-radius:9px;overflow:hidden}
+#tournoi-root .pbar i{display:block;height:100%;background:var(--win)}
+#tournoi-root .lbody{display:grid;gap:12px;padding:14px 0}
+#tournoi-root .tnav{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;align-items:center}
+#tournoi-root .tti{text-align:center;font-family:var(--serif);font-size:24px;font-weight:700}
+#tournoi-root .sb{font:inherit;font-size:24px;font-weight:800;border:0;border-radius:12px;background:var(--accent-soft);color:var(--fg);min-height:52px;min-width:48px;cursor:pointer}
+#tournoi-root .sb:disabled{opacity:.3}
+#tournoi-root .chipx{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:8px 14px;min-height:40px;cursor:pointer}
+#tournoi-root .chipx.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+#tournoi-root .chipsrow{display:flex;gap:8px;flex-wrap:wrap}
+#tournoi-root .announce{background:var(--ink);color:var(--on-ink);border-radius:14px;padding:12px 14px}
+#tournoi-root .announce small{color:#d9cfb9;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+#tournoi-root .announce p{margin:6px 0 0;font-size:16px}
+#tournoi-root .ed{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:10px}
+#tournoi-root .ed.fin{border-color:var(--win);background:var(--win-soft)}
+#tournoi-root .ed.wait{opacity:.7}
+#tournoi-root .edh{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+#tournoi-root .edr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+#tournoi-root .edn{font-size:18px;font-weight:700;overflow-wrap:anywhere}
+#tournoi-root .edn.w{color:var(--muted);font-style:italic;font-weight:500;font-size:15px}
+#tournoi-root .edn.win{color:var(--win);font-weight:800}
+#tournoi-root .sctl{display:grid;grid-template-columns:48px 54px 48px;gap:4px}
+#tournoi-root .sctl input{font:inherit;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);width:100%;min-width:0}
+#tournoi-root .edm{font-size:13px;color:var(--muted)}
+#tournoi-root .edm.ok{color:var(--win);font-weight:700}
+#tournoi-root .edm.bad{color:var(--loss);font-weight:700}
+#tournoi-root .rest2{margin:0;font-size:13px;color:var(--muted)}
+#tournoi-root .preview{border:2px dashed var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:3px;font-size:14px}
+#tournoi-root .preview small{font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+#tournoi-root .champb{background:var(--win-soft);border:2px solid var(--win);border-radius:16px;padding:14px;display:grid;gap:8px}
+#tournoi-root .champb b{font-family:var(--serif);font-size:26px}
+#tournoi-root .champb small{font-weight:800;color:var(--win);text-transform:uppercase}
+#tournoi-root .tgrp{display:grid;gap:8px}
+#tournoi-root .tgrp h3{font-size:20px}
+#tournoi-root .tgrp.fin h3{color:var(--win)}
+#tournoi-root .morebtns{display:grid;gap:10px}
+#tournoi-root .big2{font:inherit;font-weight:800;text-align:left;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);padding:14px;min-height:58px;cursor:pointer}
+#tournoi-root .big2.danger{background:var(--loss-soft);border-color:var(--loss);color:var(--loss)}
+#tournoi-root .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+#tournoi-root .tab{font:inherit;font-size:12px;font-weight:700;border:0;background:transparent;color:#d9cfb9;display:grid;gap:1px;justify-items:center;padding:6px 0;min-height:56px;cursor:pointer;border-radius:12px}
+#tournoi-root .tab .ti{font-size:22px}
+#tournoi-root .tab.on{background:#3a3427;color:#fff}
+#tournoi-root #engine{display:none!important}
+#tournoi-root #app .card h2{font-size:20px}
+@media print{#tournoi-root .tabbar,#tournoi-root .lhead{display:none!important}}
+#tournoi-root .bign input,#tournoi-root .tti,#tournoi-root .recap b,#tournoi-root .lhead b,#tournoi-root .sctl input{font-variant-numeric:lining-nums}
+#tournoi-root #app #pairwrap,#tournoi-root #app.dbl #shuffle{display:none!important}
+#tournoi-root .advice{background:var(--mid-soft);border:2px solid var(--mid);border-radius:14px;padding:12px;display:grid;gap:6px}
+#tournoi-root .advice small{font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--mid)}
+#tournoi-root .advice b{font-family:var(--serif);font-size:22px}
+#tournoi-root .advice .okmsg{font-weight:800;color:var(--win)}
+#tournoi-root .big.small{font-size:16px;min-height:50px;padding:10px}
+#tournoi-root .pchips{display:flex;flex-wrap:wrap;gap:8px}
+#tournoi-root .pchip{font:inherit;font-weight:700;font-size:17px;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:10px 16px;min-height:48px;cursor:pointer}
+#tournoi-root .pchip.on{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+#tournoi-root .tlist{display:grid;gap:6px}
+#tournoi-root .tcard{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:2px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--card)}
+#tournoi-root .tcard b{font-family:var(--serif);font-size:18px;white-space:nowrap}
+#tournoi-root .tcard span{font-weight:600;overflow-wrap:anywhere}
+#tournoi-root .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+#tournoi-root .pgrp{border:2px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;gap:2px;font-size:14px}
+#tournoi-root .pgrp b{font-family:var(--serif);font-size:18px}
+#tournoi-root .olist{display:grid;gap:3px;font-size:14px}
+#tournoi-root .olist .oh{font-weight:800;margin-top:8px;border-bottom:2px solid var(--ink)}
+#tournoi-root .olist .om{padding:2px 0}
+#tournoi-root .wcard>.card>h2{display:none}
+#tournoi-root .wcard>.card{margin:0;border-radius:14px}
+/* Intégration au site : la barre du bas de l'assistant se pose au-dessus de la barre du téléphone, la page ne manque jamais de place en bas */
+#tournoi-root{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.4;min-height:60vh;padding:0 0 24px;position:relative;isolation:isolate}
+#tournoi-root .tabbar{position:sticky;left:auto;right:auto;bottom:0;margin:12px -16px 0}
+#tournoi-root .tabbar{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+#tournoi-root .lhead{top:0}
+/* Plein écran : le texte grossit avec l'écran et le contenu utilise toute la largeur */
+#tournoi-root .wrap{max-width:none}
+@media (min-width:900px){#tournoi-root{zoom:1.2}#tournoi-root .wrap{max-width:1100px;margin:0 auto}}
+@media (min-width:1500px){#tournoi-root{zoom:1.45}}
+@media (min-width:900px){
+  #tournoi-root .lbody{grid-template-columns:repeat(auto-fit,minmax(380px,1fr));align-items:start}
+  #tournoi-root .lbody>*{min-width:0}
+  #tournoi-root .lbody>.tnav,#tournoi-root .lbody>.announce,#tournoi-root .lbody>.early,#tournoi-root .lbody>.champb,#tournoi-root .lbody>.chipsrow,#tournoi-root .lbody>.preview,#tournoi-root .lbody>.rest2,#tournoi-root .lbody>.big,#tournoi-root .lbody>.chipx,#tournoi-root .lbody>.card,#tournoi-root .lbody>.tgrp,#tournoi-root .lbody>.morebtns,#tournoi-root .lbody>#orderwrap,#tournoi-root .lbody>#boardcard,#tournoi-root .lbody>#posterwrap{grid-column:1/-1}
+  #tournoi-root .lbody>.tgrp{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+  #tournoi-root .lbody>.tgrp>h3{grid-column:1/-1}
+}
+@media print{#tournoi-fs{position:static!important;overflow:visible!important;height:auto!important}#tournoi-root{zoom:1!important}}
+#tournoi-root .announce ol.launch{list-style:decimal;margin:8px 0 0;padding-left:26px;display:grid;gap:4px;font-weight:700;font-size:16px}
+#tournoi-root .announce ol.launch li.done{opacity:.55;text-decoration:line-through}
+#tournoi-root .announce .why{font-size:13px;opacity:.85;margin:8px 0 0}
+#tournoi-root .early{border:2px solid var(--win);background:var(--win-soft);padding:12px;display:grid;gap:6px;font-size:14px}
+#tournoi-root .early b{font-family:var(--serif);font-size:19px;color:var(--win)}
+#tournoi-root .early p{margin:0}

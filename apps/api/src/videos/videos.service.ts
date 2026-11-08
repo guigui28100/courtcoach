@@ -518,6 +518,10 @@ export class VideosService {
     const today = nowParis().date, yearAgo = new Date(Date.UTC(+today.slice(0, 4) - 1, +today.slice(5, 7) - 1, +today.slice(8, 10))).toISOString().slice(0, 10);
     const lessonIds = oldLessons.filter((l) => { const dt = (l.finalSlot as { date?: string } | null)?.date; return !dt || dt < yearAgo; }).map((l) => l.id);
     const g = lessonIds.length ? await this.prisma.lessonRequest.deleteMany({ where: { id: { in: lessonIds } } }) : { count: 0 };
-    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count, affiches: h.count };
+    // tournois amicaux des animations : 12 mois sans modification
+    const old = new Date(now.getTime() - 365 * 24 * 3600 * 1000).toISOString();
+    const parties = (await this.prisma.clubSetting.findMany({ where: { key: { startsWith: "tournoi:" } } })).filter((r) => { const u = (r.value as { updatedAt?: string } | null)?.updatedAt; return !u || u < old; });
+    if (parties.length) await this.prisma.clubSetting.deleteMany({ where: { key: { in: parties.map((r) => r.key) } } });
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count, affiches: h.count, parties: parties.length };
   }
 }
