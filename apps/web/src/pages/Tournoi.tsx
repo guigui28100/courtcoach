@@ -89,7 +89,7 @@ export default function Tournoi() {
       <h1 className="sr-only">Aide au tournoi : {titleOf(ev)}</h1>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-4 py-2">
         <BackLink fallback="/coach/club">← Retour au planning</BackLink>
-        <p className="m-0 min-w-0 flex-1 text-center text-sm text-ink [overflow-wrap:anywhere]">🎉 {titleOf(ev)} · {fmtRange(ev.startDate, ev.endDate)}{ev.time ? ` · ${ev.time}` : ""}</p>
+        <p className="m-0 order-last basis-full text-center text-sm text-ink break-words sm:order-none sm:min-w-0 sm:flex-1 sm:basis-0">🎉 {titleOf(ev)} · {fmtRange(ev.startDate, ev.endDate)}{ev.time ? ` · ${ev.time}` : ""}</p>
         <p className="m-0 text-sm text-muted" role="status" aria-live="polite">
           {status === "saving" ? "Enregistrement…" : status === "saved" ? "✔ Enregistré avec l'animation" : status === "error" ? "⚠ Pas enregistré : vérifie la connexion" : ""}
         </p>

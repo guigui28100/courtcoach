@@ -782,21 +782,33 @@
   function setScore(id,side,val){var o=S.scores[id]||(S.scores[id]={a:"",b:""});o[side]=String(Math.max(0,Math.min(99,Math.floor(+val)||0)));var other=side==="a"?"b":"a";if(o[other]==="")o[other]="0";refresh();skin(true);}
   function editor(m){
     var A=res(m.a),Bn=res(m.b),rd=!!(A&&Bn),s=sc(m.id),done=fin(m),isL=T.B.info.type==="ladder";
+    V.draft=V.draft||{};V.edit=V.edit||{};var editing=rd&&(!done||!!V.edit[m.id]);
     var c=H("div","ed"+(rd?"":" wait")+(done?" fin":""));
     c.appendChild(H("div","edh","Terrain "+T.court[m.id]+" · match n° "+T.num[m.id]+" · "+(isL?"tour "+m.round:m.phase)));
     [["a",m.a,A],["b",m.b,Bn]].forEach(function(x){
       var row=H("div","edr"),win=!!(done&&s&&(x[0]==="a"?s.a>s.b:s.b>s.a));
       row.appendChild(H("span","edn"+(x[2]?"":" w")+(win?" win":""),(win?"✔ ":"")+label(x[1])));
-      var ctl=H("div","sctl"),val=S.scores[m.id]&&S.scores[m.id][x[0]];
-      var minus=B("−","sb",function(){setScore(m.id,x[0],(+val||0)-1);}),plus=B("+","sb",function(){setScore(m.id,x[0],(+val||0)+1);});
-      var inp=document.createElement("input");inp.type="text";inp.inputMode="numeric";inp.maxLength=2;inp.value=val===undefined||val===""?"":val;inp.placeholder="–";inp.setAttribute("aria-label","Score de "+label(x[1]));
-      inp.onchange=function(){setScore(m.id,x[0],inp.value.replace(/\D/g,""));};
-      if(!rd){minus.disabled=plus.disabled=inp.disabled=true;}
-      ctl.appendChild(minus);ctl.appendChild(inp);ctl.appendChild(plus);row.appendChild(ctl);c.appendChild(row);});
+      var ctl=H("div","sctl"),side=x[0],val=S.scores[m.id]&&S.scores[m.id][side];
+      if(editing){
+        var dr=V.draft[m.id]||(V.draft[m.id]={a:S.scores[m.id]?S.scores[m.id].a:"",b:S.scores[m.id]?S.scores[m.id].b:""});
+        var inp=document.createElement("input");inp.type="text";inp.inputMode="numeric";inp.maxLength=2;inp.value=dr[side]===undefined?"":dr[side];inp.placeholder="–";inp.setAttribute("aria-label","Score de "+label(x[1]));
+        inp.oninput=function(){dr[side]=inp.value.replace(/\D/g,"").slice(0,2);};
+        var minus=B("−","sb",function(){dr[side]=String(Math.max(0,(+dr[side]||0)-1));inp.value=dr[side];}),plus=B("+","sb",function(){dr[side]=String(Math.min(99,(+dr[side]||0)+1));inp.value=dr[side];});
+        ctl.appendChild(minus);ctl.appendChild(inp);ctl.appendChild(plus);
+      }else{ctl.appendChild(H("b","sfix",(rd&&val!==undefined&&val!=="")?String(val):"–"));}
+      row.appendChild(ctl);c.appendChild(row);});
     if(!rd)c.appendChild(H("div","edm","En attente des résultats précédents"));
-    else if(s&&s.a===s.b&&!isPoule(m))c.appendChild(H("div","edm bad","Il faut un vainqueur : rejoue un point décisif."));
-    else if(done)c.appendChild(H("div","edm ok","Match terminé ✔"));
-    else c.appendChild(H("div","edm",""));
+    else if(editing){
+      var msg=H("div","edm bad","");
+      c.appendChild(msg);
+      c.appendChild(B("✔ Valider le score","big okb",function(){
+        var d=V.draft[m.id]||{a:"",b:""},a=d.a,b=d.b;
+        if((a===""||a===undefined)&&(b===""||b===undefined)){msg.textContent="Écris le score.";return;}
+        if(a===""||a===undefined)a="0";if(b===""||b===undefined)b="0";
+        if(!isPoule(m)&&+a===+b){msg.textContent="Il faut un vainqueur.";return;}
+        S.scores[m.id]={a:String(+a),b:String(+b)};delete V.draft[m.id];delete V.edit[m.id];refresh();skin(true);}));
+      if(done)c.appendChild(B("Annuler","chipx",function(){delete V.draft[m.id];delete V.edit[m.id];skin(true);}));
+    }else if(done){c.appendChild(H("div","edm ok","Match validé ✔"));c.appendChild(B("✎ Modifier","chipx",function(){V.edit[m.id]=true;delete V.draft[m.id];skin(true);}));}
     return c;
   }
   function counts(){var d=0;T.B.matches.forEach(function(m){if(fin(m))d++;});return {d:d,t:T.B.matches.length};}
