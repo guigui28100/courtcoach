@@ -67,16 +67,18 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
+    // La phrase « TC Houdan bat TC Dreux » reste sur UNE ligne : sa taille se réduit juste assez pour tenir à côté du score
+    const fit = () => el.querySelectorAll<HTMLElement>("[data-fit]").forEach((n) => { let s = 1; n.style.setProperty("--fs", "1"); while (n.scrollWidth > n.clientWidth + 1 && s > 0.35) { s -= 0.04; n.style.setProperty("--fs", s.toFixed(2)); } });
     const run = () => {
       const inner = el.firstElementChild as HTMLElement; if (!inner) return;
       const cs = getComputedStyle(el); const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); let kk = 1; inner.style.height = "auto";
       for (let i = 0; i < 4; i++) {
-        el.style.setProperty("--k", String(kk)); const hh = inner.scrollHeight; if (hh <= 0) break;
+        el.style.setProperty("--k", String(kk)); fit(); const hh = inner.scrollHeight; if (hh <= 0) break;
         const next = Math.max(0.5, Math.min(1.6, kk * (avail * 0.95) / hh)); if (Math.abs(next - kk) < 0.01) { kk = next; break; } kk = next;
       }
-      el.style.setProperty("--k", String(kk));
-      for (let i = 0; i < 12 && inner.scrollHeight > avail && kk > 0.45; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); }
-      el.style.setProperty("--k", String(kk * g)); inner.style.height = "100%"; setK(kk);
+      el.style.setProperty("--k", String(kk)); fit();
+      for (let i = 0; i < 12 && inner.scrollHeight > avail && kk > 0.45; i++) { kk *= 0.96; el.style.setProperty("--k", String(kk)); fit(); }
+      el.style.setProperty("--k", String(kk * g)); fit(); inner.style.height = "100%"; setK(kk);
     };
     run();
     const fonts = (document as any).fonts; if (fonts?.ready) fonts.ready.then(run).catch(() => {});
@@ -137,7 +139,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
           </div>
           {grid}
           {matches.length > 0 && (
-            <div style={{ flexShrink: 0, display: "grid", gap: p(10) }}>
+            <div style={{ flexShrink: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: p(10) }}>
               {matches.map(({ m, i }) => {
                 const one = matches.length === 1, many = matches.length > 3, oc = outcomeColor(m), ow = outcomeWord(m);
                 const raw = (fmt as Record<string, { text?: string } | undefined> | undefined)?.[`ph-${i}`]?.text;
@@ -156,7 +158,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                         {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: p(14) }}>
-                        <div data-fmt={`ph-${i}`} style={{ flex: 1, minWidth: 0, fontSize: p(one ? 34 : many ? 22 : 26), fontWeight: 900, lineHeight: 1.15, overflowWrap: "break-word" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
+                        <div data-fmt={`ph-${i}`} data-fit style={{ flex: 1, minWidth: 0, fontSize: `calc(${p(one ? 34 : many ? 22 : 26)} * var(--fs, 1))`, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
                         {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 900, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
                       </div>
                     </div>
