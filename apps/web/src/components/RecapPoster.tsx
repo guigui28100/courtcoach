@@ -135,7 +135,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
             {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
             <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
             {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            {!(teamsMode && matches.some(({ m }) => m.date)) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
+            {!(teamsMode && matches.length > 0) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
           </div>
           {grid}
           {matches.length > 0 && (
@@ -146,7 +146,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const [cat, num] = m.team ? teamParts(m.team) : ["Rencontre", ""];
                 const ph = m.photo; const f0 = m.focus ?? [50, 50];
                 const phW = one ? 330 : many ? 150 : 215;
-                const dayTxt = m.date ? fmtDay(m.date).replace(/^./, (c) => c.toUpperCase()) : "";
+                const dayTxt = (m.date || e.startDate) ? fmtDay(m.date || e.startDate).replace(/^./, (c) => c.toUpperCase()) : "";
                 return (
                   <div key={i}>
                   {dayTxt && <div data-fmt={`dt-${i}`} style={{ fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}

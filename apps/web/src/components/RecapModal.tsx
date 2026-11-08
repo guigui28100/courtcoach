@@ -170,7 +170,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                   <button type="button" className="btn-outline" aria-label={`Retirer la rencontre ${i + 1}`} onClick={() => set({ matches: d.matches.filter((_, j) => j !== i) })}>🗑️</button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-sm font-bold text-ink">Jour du match <input type="date" aria-label={`Rencontre ${i + 1} : jour du match`} className={`${field} !w-auto`} value={m.date ?? ""} onChange={(x) => upd({ date: x.target.value || undefined })} /></label>
+                  <label className="text-sm font-bold text-ink">Jour du match <input type="date" aria-label={`Rencontre ${i + 1} : jour du match`} className={`${field} !w-auto`} value={m.date ?? e.startDate} onChange={(x) => upd({ date: x.target.value || undefined })} /></label>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <input aria-label={`Rencontre ${i + 1} : club adverse`} className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Club adverse (ex. TC Guyancourt)" value={m.opponent} onChange={(x) => upd({ opponent: x.target.value })} />
@@ -190,7 +190,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                 {m.photo && <PhotoTuner withSize label={`rencontre ${i + 1}`} value={{ focus: m.focus, zoom: m.zoom, size: m.size }} onChange={(t) => upd(t)} />}
               </div>);
           })}
-          {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
+          {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "", date: e.startDate }] })}>＋ Ajouter une rencontre</button>}
         </div>
       </div>
     ) : e.kind !== "TOURNOI" ? null : (
