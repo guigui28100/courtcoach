@@ -4,7 +4,7 @@ import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ClubEvent, fmtDay, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
+import { ClubEvent, fmtDay, kindOf, teamCat, titleOf } from "../clubPlan";
 import { accentOf } from "./EventPoster";
 import { NoBreak } from "./NoBreak";
 import { fullRange } from "./ClubPoster";
@@ -51,10 +51,10 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
-  const ti = tourInfo(e);
   // Tournoi : le grand titre dit le type et le public (« TMC MESSIEURS », « TOURNOI OPEN DAMES »), la ligne dessous donne les classements du TMC
-  const name = (teamsMode ? "Match par équipes" : ti ? `${ti.type === "TMC" ? "TMC" : "Tournoi open"} ${ti.who}`.trim() : titleOf(e)).toUpperCase();
-  const rankLine = ti && ti.bas && ti.haut ? `Classements de ${ti.bas} à ${ti.haut}` : "";
+  // Le bilan reprend LE NOM de l'événement tel qu'il est écrit dans le planning (il contient déjà le type et les classements d'un TMC) ; seul un match par équipes sans nom écrit s'appelle « Match par équipes »
+  const name = (teamsMode ? (e.title.trim() || "Match par équipes") : titleOf(e)).toUpperCase();
+  const rankLine = "";
   const matches = data.matches.map((m, i) => ({ m, i })).filter(({ m }) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim()); // i = place d'origine : les réglages de texte restent attachés à la bonne rencontre
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement photos et texte
   const results = lite ? [] : data.results.filter((r) => r.what.trim() || r.result.trim());

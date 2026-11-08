@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { nowParis } from "../profs/planning";
 import { clashesWith, CLAY_COURTS, MAX_TEAMS, PlanEvent, TEAM_CATS } from "./club.constants";
 import { PersonDto } from "./club.dto";
+import { sanitizeTournoi } from "./tournoi";
 import { ClubEventDto } from "./club.dto";
 
 const validDate = (d: string) => { const x = new Date(`${d}T00:00:00Z`); return !Number.isNaN(x.getTime()) && x.toISOString().slice(0, 10) === d; };
@@ -172,6 +173,33 @@ export class ClubService {
     if (bureau) { const cur = await this.prisma.clubEvent.findUnique({ where: { id } }); if (cur && !cur.tentative) throw new ForbiddenException("Cet événement est validé : seul le coach peut le supprimer."); }
     const r = await this.prisma.clubEvent.deleteMany({ where: { id } });
     if (!r.count) throw new NotFoundException("Événement introuvable");
+    await this.prisma.clubSetting.deleteMany({ where: { key: `tournoi:${id}` } }); // le tournoi amical rattaché disparaît avec son animation
+    return { deleted: true };
+  }
+
+  // ----- Tournoi amical d'une animation (rattaché à l'événement ; coach, président et bureau) -----
+  private async tournoiEvent(id: string) {
+    const ev = await this.prisma.clubEvent.findUnique({ where: { id } });
+    if (!ev) throw new NotFoundException("Événement introuvable");
+    if (ev.kind !== "ANIMATION") throw new BadRequestException("L'aide au tournoi est réservée aux animations.");
+    return ev;
+  }
+  async getTournoi(id: string) {
+    await this.tournoiEvent(id);
+    const row = await this.prisma.clubSetting.findUnique({ where: { key: `tournoi:${id}` } });
+    const v = row?.value as { data?: unknown; updatedAt?: string } | null | undefined;
+    return { data: v?.data ?? null, updatedAt: v?.updatedAt ?? null };
+  }
+  async setTournoi(id: string, raw: unknown) {
+    await this.tournoiEvent(id);
+    const data = sanitizeTournoi(raw);
+    const value = { data, updatedAt: new Date().toISOString() } as object;
+    await this.prisma.clubSetting.upsert({ where: { key: `tournoi:${id}` }, update: { value }, create: { key: `tournoi:${id}`, value } });
+    return { saved: true, updatedAt: (value as { updatedAt: string }).updatedAt };
+  }
+  async deleteTournoi(id: string) {
+    await this.tournoiEvent(id);
+    await this.prisma.clubSetting.deleteMany({ where: { key: `tournoi:${id}` } });
     return { deleted: true };
   }
 }

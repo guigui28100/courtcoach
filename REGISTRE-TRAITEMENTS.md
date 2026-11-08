@@ -50,4 +50,9 @@
 - Données : titre, noms des tournois, résultats (prénoms seulement pour les enfants), photos. Seulement des photos d'enfants dont les parents ont donné le droit à l'image.
 - Accès : coach, président et bureau (jamais les entraîneurs, familles, jeunes, adultes). Aucun service extérieur. Suppression à la main (🗑️) ou automatique après 12 mois sans modification (tâche nocturne).
 
+## Aide au tournoi d'une animation (coach, président, bureau)
+- Finalité : organiser un tournoi amical pendant une animation du club (équipes, ordre des matchs pour limiter l'attente, scores, classement) ; le tournoi est rattaché à l'animation du planning, sur n'importe quel appareil.
+- Données : réglages (simple / double, terrains, durée, format), PRÉNOMS des joueurs (jamais de nom de famille ni d'autre information sur un enfant), scores. Aucune photo.
+- Accès : coach, président et bureau (jamais les entraîneurs, familles, jeunes, adultes). Aucun service extérieur. Le serveur reconstruit le contenu champ par champ (`sanitizeTournoi`). Suppression : avec l'animation, par « Recommencer à zéro », ou automatiquement après 12 mois sans modification (tâche nocturne).
+
 **Effacements automatiques (27/10/2026)** : tâche nocturne : vidéos de plus de 12 mois, journal de plus de 12 mois, programmations de tournoi de plus de 12 mois, demandes de cours particuliers 12 mois après le cours, jetons de connexion périmés, invitations périmées ou utilisées depuis plus de 30 jours.
