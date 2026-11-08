@@ -30,15 +30,22 @@ function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
 
 const recapFmtItems: FmtItem[] = [
   { key: "entete", label: "Nom du club (bandeau)", edit: true }, { key: "type", label: "Pastille « Bilan »", edit: true }, { key: "surtitre", label: "Titre en haut", edit: true }, { key: "titre", label: "Nom de l'événement", edit: true },
-  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date" }, { key: "rencontres", label: "Rencontres (scores)" }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement", edit: true },
+  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date" }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement", edit: true },
   { key: "partenaires", label: "Mot « partenaires »" }, { key: "pied", label: "« Merci à tous ! » (bas)", edit: true }, { key: "mail", label: "E-mail (bas)", edit: true },
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];
 type Saved = { d: RecapData; format: RecapFormat; bg: string; withPartners: boolean };
+// Les photos de l'affiche = la mosaïque (tournois, fêtes…) + la photo de chaque rencontre (matchs par équipes)
 const recapAccess: PhotoAccess<Saved> = {
-  photos: (s) => s.d.photos, remap: (s, f) => ({ ...s, d: { ...s.d, photos: s.d.photos.map(f) } }),
-  prune: (s) => { const k = s.d.photos.map((p) => !!p); return { ...s, d: { ...s.d, photos: s.d.photos.filter((_, i) => k[i]), focus: s.d.focus?.filter((_, i) => k[i]) } }; },
+  photos: (s) => [...s.d.photos, ...s.d.matches.map((x) => x.photo || "")],
+  remap: (s, f) => ({ ...s, d: { ...s.d, photos: s.d.photos.map(f), matches: s.d.matches.map((x) => (x.photo ? { ...x, photo: f(x.photo) } : x)) } }),
+  prune: (s) => { const k = s.d.photos.map((p) => !!p); return { ...s, d: { ...s.d, photos: s.d.photos.filter((_, i) => k[i]), focus: s.d.focus?.filter((_, i) => k[i]), matches: s.d.matches.map((x) => (x.photo ? x : { ...x, photo: undefined, focus: undefined })) } }; },
 };
+// Un réglage de texte par rencontre : l'équipe, son numéro, la phrase, le score et « victoire / défaite »
+const matchFmtItems = (n: number): FmtItem[] => Array.from({ length: n }, (_, i) => [
+  { key: `eq-${i}`, label: `Rencontre ${i + 1} : équipe`, edit: true }, { key: `nu-${i}`, label: `Rencontre ${i + 1} : numéro`, edit: true },
+  { key: `ph-${i}`, label: `Rencontre ${i + 1} : phrase`, edit: true }, { key: `sc-${i}`, label: `Rencontre ${i + 1} : score`, edit: true }, { key: `rs-${i}`, label: `Rencontre ${i + 1} : victoire / défaite`, edit: true },
+]).flat();
 const FORMATS: StudioFormat[] = [{ id: "CARRE", label: "⬜ Carré", ...RECAP_SIZES.CARRE }, { id: "PORTRAIT", label: "📱 Portrait 4:5", ...RECAP_SIZES.PORTRAIT }];
 
 // Affiche de bilan dans le studio commun. Elle se sauvegarde toute seule en ligne (photos comprises) et se rouvre toute seule à la prochaine visite du même événement.
@@ -57,7 +64,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const idRef = useRef<string | null>(null);
   const [rev, setRev] = useState(0);
   const name = `Bilan · ${titleOf(e)} · ${e.startDate}`.slice(0, 80);
-  const sig = JSON.stringify({ d: { ...d, photos: d.photos.map(photoSig) }, format, bg, withPartners });
+  const sig = JSON.stringify({ d: { ...d, photos: d.photos.map(photoSig), matches: d.matches.map((x) => ({ ...x, photo: x.photo ? photoSig(x.photo) : "" })) }, format, bg, withPartners });
   const auto = useAutosave({
     sig,
     save: async () => {
@@ -104,7 +111,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
       <p className="m-0 mt-2">Rubrique « Mes autorisations » de leur famille. Pour les enfants, écris seulement le prénom. L'affiche et ses photos sont gardées sur le serveur du club (visibles seulement par le coach, le président et le bureau) ; tu la retrouves en rouvrant le bilan de cet événement.</p>
     </details>
     {msg && <p className="m-0 text-sm font-bold text-ink" role="status">{msg}</p>}
-    <section aria-label="Photos" className="rounded-2xl border-2 border-line bg-white p-3">
+    {!teamsMode && <section aria-label="Photos" className="rounded-2xl border-2 border-line bg-white p-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h3 className="m-0 text-base text-ink">📷 Mes photos</h3>
         <span className="text-xs font-bold text-muted">{d.photos.length} sur {MAX_PHOTOS}</span>
@@ -136,7 +143,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
           <p className="m-0 mt-2 text-xs text-muted">👆 Pour <b>cadrer</b> une photo, glisse-la directement sur l'affiche. Pour changer l'<b>ordre</b>, utilise ◀ ▶ ou glisse une vignette.</p>
         </>
       )}
-    </section>
+    </section>}
     <label className="text-sm font-bold text-ink">Titre en haut <span className="font-normal text-muted">(facultatif, ex. « Résultats du tournoi »)</span>
       <input aria-label="Titre en haut" className={`${field} mt-1`} maxLength={40} placeholder="Résultats du tournoi" value={d.headline} onChange={(x) => set({ headline: x.target.value })} /></label>
     {teamsMode ? (
@@ -168,6 +175,13 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                   <span className="text-sm font-bold text-ink">adversaire</span>
                 </div>
                 <p className="m-0 text-sm font-bold text-ink">→ {matchSentence(m)}{m.us && m.them ? ` ${m.us}/${m.them}` : ""}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {m.photo ? <img src={m.photo} alt={`Photo de la rencontre ${i + 1}`} className="size-16 rounded-lg object-cover" /> : <span className="grid size-16 place-items-center rounded-lg border-2 border-dashed border-line text-2xl" aria-hidden>📷</span>}
+                  <label className="btn-outline cursor-pointer">{m.photo ? "Changer la photo de cette équipe" : "📷 Ajouter la photo de cette équipe"}
+                    <input aria-label={`Rencontre ${i + 1} : photo de l'équipe`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (x) => { const f = x.target.files?.[0]; x.target.value = ""; if (!f) return; try { setMsg(""); const url = await photoFromFile(f); upd({ photo: url, focus: [50, 50] }); } catch (er) { setMsg((er as Error).message); } }} /></label>
+                  {m.photo && <button type="button" className="btn-outline" aria-label={`Retirer la photo de la rencontre ${i + 1}`} onClick={() => upd({ photo: undefined, focus: undefined })}>🗑️ Retirer la photo</button>}
+                </div>
+                {m.photo && <p className="m-0 text-xs text-muted">👆 Pour cadrer la photo, glisse-la directement sur l'affiche.</p>}
               </div>);
           })}
           {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
@@ -198,8 +212,8 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
       formats={FORMATS} format={format} onFormat={(f) => setFormat(f as RecapFormat)}
       content={content} bg={bg} onBg={setBg}
       partners={{ count: logos.length, on: withPartners, onChange: setWithPartners, label: "🤝 Remercier les partenaires" }}
-      fmt={{ items: recapFmtItems, value: rfmt, onChange: setRfmt, selected: rsel, onSelect: setRsel }}
-      preview={({ pick }) => poster({ onPick: pick, onPan: (i: number, x: number, y: number) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; }) })}
+      fmt={{ items: teamsMode ? [...recapFmtItems.filter((x) => x.key !== "tout"), ...matchFmtItems(d.matches.length), ...recapFmtItems.filter((x) => x.key === "tout")] : recapFmtItems, value: rfmt, onChange: setRfmt, selected: rsel, onSelect: setRsel }}
+      preview={({ pick }) => poster({ onPick: pick, onPanMatch: (i: number, x: number, y: number) => setD((o) => ({ ...o, matches: o.matches.map((mm, j) => (j === i ? { ...mm, focus: [x, y] as [number, number] } : mm)) })), onPan: (i: number, x: number, y: number) => setD((o) => { const f = [...(o.focus ?? [])]; while (f.length < o.photos.length) f.push([50, 50]); f[i] = [x, y]; return { ...o, focus: f }; }) })}
       printNode={poster()}
       fileBase={(f) => `bilan-${slug(e)}-${e.startDate}-${f.toLowerCase()}`}
       save={auto.state.kind === "idle" ? { kind: "idle", text: "Se sauvegarde toute seule, photos comprises" } : auto.state}
