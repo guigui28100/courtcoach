@@ -2,6 +2,7 @@ import { FmtItem } from "./FmtPanel";
 import { loadOnline, listOnline, OnlineInfo, PhotoAccess, saveOnline } from "./posterOnline";
 import { PosterStudio, photoSig, StudioFormat, useAutosave } from "./PosterStudio";
 import { DraftsMenu } from "./DraftsMenu";
+import { PhotoTuner } from "./PhotoTuner";
 import { Fmts } from "./posterFmt";
 import { useEffect, useRef, useState } from "react";
 import { addDays, ClubEvent, mondayOf, opponentOf, TEAM_CATS, titleOf } from "../clubPlan";
@@ -39,7 +40,7 @@ type Saved = { d: RecapData; format: RecapFormat; bg: string; withPartners: bool
 const recapAccess: PhotoAccess<Saved> = {
   photos: (s) => [...s.d.photos, ...s.d.matches.map((x) => x.photo || "")],
   remap: (s, f) => ({ ...s, d: { ...s.d, photos: s.d.photos.map(f), matches: s.d.matches.map((x) => (x.photo ? { ...x, photo: f(x.photo) } : x)) } }),
-  prune: (s) => { const k = s.d.photos.map((p) => !!p); return { ...s, d: { ...s.d, photos: s.d.photos.filter((_, i) => k[i]), focus: s.d.focus?.filter((_, i) => k[i]), matches: s.d.matches.map((x) => (x.photo ? x : { ...x, photo: undefined, focus: undefined })) } }; },
+  prune: (s) => { const k = s.d.photos.map((p) => !!p); return { ...s, d: { ...s.d, photos: s.d.photos.filter((_, i) => k[i]), focus: s.d.focus?.filter((_, i) => k[i]), zoom: s.d.zoom?.filter((_, i) => k[i]), matches: s.d.matches.map((x) => (x.photo ? x : { ...x, photo: undefined, focus: undefined })) } }; },
 };
 // Un réglage de texte par rencontre : l'équipe, son numéro, la phrase, le score et « victoire / défaite »
 const matchFmtItems = (n: number): FmtItem[] => Array.from({ length: n }, (_, i) => [
@@ -60,6 +61,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement des photos et du texte
   const logos = usePartnerLogos(); const [withPartners, setWithPartners] = useState(true);
   const [msg, setMsg] = useState("");
+  const [selPh, setSelPh] = useState(0);
   const [draftId, setDraftId] = useState<string | null>(null);
   const idRef = useRef<string | null>(null);
   const [rev, setRev] = useState(0);
@@ -95,11 +97,11 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
   const set = (p: Partial<RecapData>) => setD((o) => ({ ...o, ...p }));
   const move = (from: number, to: number) => setD((o) => {
     if (from === to || from < 0 || to < 0 || from >= o.photos.length || to >= o.photos.length) return o;
-    const ph = [...o.photos]; const f = [...(o.focus ?? [])]; while (f.length < ph.length) f.push([50, 50]);
-    const [a] = ph.splice(from, 1); const [b] = f.splice(from, 1); ph.splice(to, 0, a); f.splice(to, 0, b);
-    return { ...o, photos: ph, focus: f };
+    const ph = [...o.photos]; const f = [...(o.focus ?? [])]; while (f.length < ph.length) f.push([50, 50]); const z = [...(o.zoom ?? [])]; while (z.length < ph.length) z.push(1);
+    const [a] = ph.splice(from, 1); const [b] = f.splice(from, 1); const [c] = z.splice(from, 1); ph.splice(to, 0, a); f.splice(to, 0, b); z.splice(to, 0, c);
+    return { ...o, photos: ph, focus: f, zoom: z };
   });
-  const remove = (i: number) => setD((o) => ({ ...o, photos: o.photos.filter((_, j) => j !== i), focus: (o.focus ?? []).filter((_, j) => j !== i) }));
+  const remove = (i: number) => setD((o) => ({ ...o, photos: o.photos.filter((_, j) => j !== i), focus: (o.focus ?? []).filter((_, j) => j !== i), zoom: (o.zoom ?? []).filter((_, j) => j !== i) }));
   const addPhotos = async (files: FileList | null) => {
     if (!files) return; setMsg("");
     try { const room = MAX_PHOTOS - d.photos.length; const list = await Promise.all(Array.from(files).slice(0, room).map(photoFromFile)); set({ photos: [...d.photos, ...list] }); if (files.length > room) setMsg(`${MAX_PHOTOS} photos au plus : les autres n'ont pas été ajoutées.`); }
@@ -128,7 +130,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
           <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-4">
             {d.photos.map((s, i) => (
               <li key={i} className="group relative" draggable onDragStart={(ev) => ev.dataTransfer.setData("text/plain", String(i))} onDragOver={(ev) => ev.preventDefault()} onDrop={(ev) => { ev.preventDefault(); const f = ev.dataTransfer.getData("text/plain"); if (f !== "") move(Number(f), i); }}>
-                <img src={s} alt={`Photo ${i + 1}`} className="aspect-square w-full cursor-grab rounded-lg object-cover" />
+                <img src={s} alt={`Photo ${i + 1}`} onClick={() => setSelPh(i)} className={`aspect-square w-full cursor-pointer rounded-lg object-cover ${selPh === i ? "ring-4 ring-ink" : ""}`} />
                 <span aria-hidden className="absolute left-1 top-1 grid size-6 place-items-center rounded-full bg-ink text-xs font-bold text-white">{i + 1}</span>
                 <span className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
                   <button type="button" aria-label={`Avancer la photo ${i + 1}`} disabled={i === 0} className="grid h-8 min-w-8 place-items-center rounded-md bg-white/90 text-sm font-bold text-ink shadow disabled:opacity-30" onClick={() => move(i, i - 1)}>◀</button>
@@ -140,7 +142,8 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
               <li><label className="grid aspect-square cursor-pointer place-items-center rounded-lg border-2 border-dashed border-line bg-[#fbf8f2] text-center text-xs font-bold text-ink hover:border-ink"><span><span className="block text-2xl" aria-hidden>＋</span>Ajouter</span>
                 <input aria-label="Ajouter des photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(x) => { void addPhotos(x.target.files); x.target.value = ""; }} /></label></li>)}
           </ul>
-          <p className="m-0 mt-2 text-xs text-muted">👆 Pour <b>cadrer</b> une photo, glisse-la directement sur l'affiche. Pour changer l'<b>ordre</b>, utilise ◀ ▶ ou glisse une vignette.</p>
+          <p className="m-0 mt-2 text-xs text-muted">👆 Touche une photo pour la <b>régler</b> (déplacer, zoomer). Pour changer l'<b>ordre</b>, utilise ◀ ▶ ou glisse une vignette.</p>
+          <div className="mt-2"><PhotoTuner label={`photo ${Math.min(selPh, d.photos.length - 1) + 1}`} value={{ focus: d.focus?.[Math.min(selPh, d.photos.length - 1)], zoom: d.zoom?.[Math.min(selPh, d.photos.length - 1)] }} onChange={(t) => setD((o) => { const j = Math.min(selPh, o.photos.length - 1); const f = o.photos.map((_, n) => o.focus?.[n] ?? ([50, 50] as [number, number])); const z = o.photos.map((_, n) => o.zoom?.[n] ?? 1); if (t.focus) f[j] = t.focus; if (t.zoom) z[j] = t.zoom; return { ...o, focus: f, zoom: z }; })} /></div>
         </>
       )}
     </section>}
@@ -181,34 +184,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                     <input aria-label={`Rencontre ${i + 1} : photo de l'équipe`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (x) => { const f = x.target.files?.[0]; x.target.value = ""; if (!f) return; try { setMsg(""); const url = await photoFromFile(f); upd({ photo: url, focus: [50, 50], zoom: 1, size: 1 }); } catch (er) { setMsg((er as Error).message); } }} /></label>
                   {m.photo && <button type="button" className="btn-outline" aria-label={`Retirer la photo de la rencontre ${i + 1}`} onClick={() => upd({ photo: undefined, focus: undefined, zoom: undefined, size: undefined })}>🗑️ Retirer la photo</button>}
                 </div>
-                {m.photo && (() => {
-                  const f = m.focus ?? [50, 50], z = m.zoom ?? 1, sz = m.size ?? 1;
-                  const mv = (dx: number, dy: number) => upd({ focus: [Math.max(0, Math.min(100, f[0] + dx)), Math.max(0, Math.min(100, f[1] + dy))] });
-                  const b = "grid h-10 min-w-10 place-items-center rounded-lg border-2 border-line bg-white px-2 text-base font-bold text-ink hover:border-ink disabled:opacity-30";
-                  return (
-                    <div className="grid gap-2 rounded-xl border border-line bg-white p-2" role="group" aria-label={`Réglage de la photo de la rencontre ${i + 1}`}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="grid grid-cols-3 gap-1" aria-label="Déplacer la photo dans son cadre">
-                          <span /><button type="button" className={b} aria-label="Monter la photo" onClick={() => mv(0, 10)}>▲</button><span />
-                          <button type="button" className={b} aria-label="Photo vers la gauche" onClick={() => mv(10, 0)}>◀</button>
-                          <button type="button" className={b} aria-label="Recentrer la photo" title="Recentrer" onClick={() => upd({ focus: [50, 50], zoom: 1, size: 1 })}>↺</button>
-                          <button type="button" className={b} aria-label="Photo vers la droite" onClick={() => mv(-10, 0)}>▶</button>
-                          <span /><button type="button" className={b} aria-label="Descendre la photo" onClick={() => mv(0, -10)}>▼</button><span />
-                        </div>
-                        <div className="grid gap-1">
-                          <div className="flex items-center gap-1"><span className="w-28 text-xs font-bold text-ink">Zoom dans le cadre</span>
-                            <button type="button" className={b} aria-label="Photo plus petite dans son cadre" disabled={z <= 1} onClick={() => upd({ zoom: Math.max(1, Math.round((z - 0.25) * 100) / 100) })}>➖</button>
-                            <span className="w-12 text-center text-sm font-bold">×{z}</span>
-                            <button type="button" className={b} aria-label="Agrandir la photo dans son cadre" disabled={z >= 3} onClick={() => upd({ zoom: Math.min(3, Math.round((z + 0.25) * 100) / 100) })}>➕</button></div>
-                          <div className="flex items-center gap-1"><span className="w-28 text-xs font-bold text-ink">Taille du cadre</span>
-                            <button type="button" className={b} aria-label="Cadre plus petit" disabled={sz <= 0.6} onClick={() => upd({ size: Math.max(0.6, Math.round((sz - 0.2) * 10) / 10) })}>➖</button>
-                            <span className="w-12 text-center text-sm font-bold">{Math.round(sz * 100)} %</span>
-                            <button type="button" className={b} aria-label="Cadre plus grand" disabled={sz >= 1.4} onClick={() => upd({ size: Math.min(1.4, Math.round((sz + 0.2) * 10) / 10) })}>➕</button></div>
-                        </div>
-                      </div>
-                      <p className="m-0 text-xs text-muted">Tu peux aussi glisser la photo directement sur l'affiche.</p>
-                    </div>);
-                })()}
+                {m.photo && <PhotoTuner withSize label={`rencontre ${i + 1}`} value={{ focus: m.focus, zoom: m.zoom, size: m.size }} onChange={(t) => upd(t)} />}
               </div>);
           })}
           {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
