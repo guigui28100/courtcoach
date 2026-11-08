@@ -741,6 +741,8 @@
       if(S.fmt==="ladder"){card.appendChild(H("h2","wsub","Combien de tours ?"));card.appendChild(tiles([2,3,4,5,6,7,8].map(function(x){return {v:x,l:String(x)};}),S.rounds||autoRounds(),function(v){S.rounds=+v;upd();}));}
     }else{
       var cur=calc(S.fmt),ok=cur.total<=S.avail*60;
+      if(V.restored)card.appendChild(H("div","resume","📂 Ta préparation a été retrouvée : tu peux la modifier ou lancer le tournoi."));
+      card.appendChild(H("p","wh","💾 Tout ce que tu prépares est enregistré avec l'animation : tu peux fermer et revenir plus tard."));
       var rc2=H("div","recap");
       rc2.appendChild(H("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+S.courts+" terrain"+(S.courts>1?"s":"")));
       rc2.appendChild(H("span",null,fname(S.fmt)+(S.classif==="oui"?" + matchs de classement":"")+" · "+optLabel()));
@@ -886,7 +888,7 @@
   }
 
   // le tournoi enregistré avec l'animation se rouvre tout seul ; sinon on part de l'heure et du temps de l'animation
-  if(savedObj){for(var kk0 in savedObj)S[kk0]=savedObj[kk0];S.nsig="";if(savedObj.live){V.mode="live";V.tab="now";}savedObj=null;}
+  if(savedObj){for(var kk0 in savedObj)S[kk0]=savedObj[kk0];S.nsig="";if(savedObj.live){V.mode="live";V.tab="now";}else{V.step=2;V.restored=true;}savedObj=null;}
   else{
     if(HOST.start&&/^\d\d:\d\d$/.test(HOST.start))S.start=HOST.start;
     if(HOST.avail){var best=null;Array.prototype.forEach.call($("avail").options,function(o){var d=Math.abs(+o.value-HOST.avail);if(best===null||d<best[0])best=[d,o.value];});if(best)S.avail=+best[1];}
