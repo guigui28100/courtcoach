@@ -612,8 +612,8 @@
   function setN(v){v=Math.floor(+v);var mn=S.dbl?6:3;if(!(v>=mn))v=mn;if(S.dbl&&v%2)v++;if(v===S.n)return;S.n=v;S.perm=[];S.pairs=[];}
   var DESC2={poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
 
-  var TITLES={who:"Qui joue ?",when:"Où et quand ?",names:"Les noms",teams:"Les équipes",rules:"Comment on joue ?",format:"Quel format ?",ready:"C'est prêt !"};
-  function keys(){return ["who","when","names"].concat(S.dbl?["teams"]:[]).concat(["rules","format","ready"]);}
+  var TITLES={who:"Qui joue ?",when:"Où et quand ?",names:"Les noms",teams:"Les équipes",rules:"Durée des matchs",format:"Format du tournoi",ready:"C'est prêt !"};
+  function keys(){return ["who","when","ready"];}
   function fname(f){return FORMATS.filter(function(x){return x[0]===f;})[0][1];}
   function optLabel(){return optOf()[1];}
 
@@ -692,6 +692,10 @@
     var dots=H("div","dots");ks.forEach(function(t,i){dots.appendChild(H("span","dot"+(i===st?" on":i<st?" ok":""),String(i+1)));});top.appendChild(dots);
     app.appendChild(top);
     var card=H("div","wcard");card.appendChild(H("div","wstep","Étape "+(st+1)+" sur "+ks.length));card.appendChild(H("h1","wq",TITLES[k]));
+    if(k==="ready"){var ak=[S.dbl,S.n,S.courts,S.avail,S.start].join("|");if(V.advKey!==ak){V.advKey=ak;var a1=advise();S.opt[S.mode]=a1.opt;S.durManual=null;S.fmt=a1.f;S.classif=a1.cl;S.dur=playMin()+BUF;}}
+    if(k==="ready")card.className+=" wready";
+    body(card,k);
+    function body(card,k){
     if(k==="who"){
       if(savedObj&&savedObj.live){var rc=H("div","resume");rc.appendChild(H("b",null,"📂 Un tournoi est déjà en cours sur cet appareil"));rc.appendChild(B("Reprendre mon tournoi","big",function(){for(var kk in savedObj)S[kk]=savedObj[kk];S.nsig="";V.mode="live";V.tab="now";render();skin(true);scrollTop();}));card.appendChild(rc);}
       card.appendChild(H("p","wh","Simple : 1 joueur contre 1. Double : deux équipes de 2 joueurs."));
@@ -748,13 +752,20 @@
       if(!ok)card.appendChild(H("div","warnb","⚠️ C'est plus long que ton temps disponible. Reviens changer le format, ajoute un terrain ou raccourcis les matchs."));
       if(T){
         var I=T.B.info;
-        if(I.type==="poules"){card.appendChild(H("h2","wsub","Les poules"));var pg=H("div","pgrid");I.groups.forEach(function(gr){var d=H("div","pgrp");d.appendChild(H("b",null,"Poule "+String.fromCharCode(65+gr.id)));gr.players.forEach(function(i){d.appendChild(H("span",null,T.E[i]));});pg.appendChild(d);});card.appendChild(pg);}
-        card.appendChild(H("h2","wsub","Les matchs, dans l'ordre à lancer"));
+        if(I.type==="poules"){var pdt=document.createElement("details");pdt.className="fold";var psm=document.createElement("summary");psm.textContent="👥 Voir les poules";pdt.appendChild(psm);var pg=H("div","pgrid");I.groups.forEach(function(gr){var d=H("div","pgrp");d.appendChild(H("b",null,"Poule "+String.fromCharCode(65+gr.id)));gr.players.forEach(function(i){d.appendChild(H("span",null,T.E[i]));});pg.appendChild(d);});pdt.appendChild(pg);card.appendChild(pdt);}
+        var odt=document.createElement("details");odt.className="fold";var osm=document.createElement("summary");osm.textContent="📋 Voir tous les matchs dans l'ordre";odt.appendChild(osm);
         var ol=H("div","olist");
         T.res.slots.forEach(function(sl,i){var h3=H("div","oh","Tour "+(i+1)+" · "+hhmm(startMin()+i*S.dur));ol.appendChild(h3);sl.forEach(function(m){ol.appendChild(H("div","om","Terrain "+T.court[m.id]+" : "+label(m.a)+" – "+label(m.b)));});});
-        card.appendChild(ol);
+        odt.appendChild(ol);card.appendChild(odt);
       }
+      [["names","✏️ Écrire les noms des joueurs"],S.dbl?["teams","👥 Former les équipes (tirage au sort par défaut)"]:null,["format","⚙️ Changer la façon de jouer (format, durée)"]].forEach(function(x){
+        if(!x)return;var dt=document.createElement("details");dt.className="fold";if(V.open&&V.open[x[0]])dt.open=true;
+        dt.ontoggle=function(){V.open=V.open||{};V.open[x[0]]=dt.open;};
+        var sm=document.createElement("summary");sm.textContent=x[1];dt.appendChild(sm);var inner=H("div","foldin");
+        if(x[0]==="format"){body(inner,"rules");body(inner,"format");}else body(inner,x[0]);
+        dt.appendChild(inner);card.appendChild(dt);});
       card.appendChild(B("🚀 Lancer le tournoi","big go",function(){if(n<3)return;if(S.dbl&&S.pair==="libre"&&unpaired().length)return;S.live=true;V.mode="live";V.tab="now";V.slot=null;refresh();skin(true);scrollTop();}));
+    }
     }
     app.appendChild(card);
     var nav=H("div","wnav");
@@ -850,18 +861,18 @@
   }
   function drawLive(){
     var c=counts(),pct=c.t?Math.round(c.d*100/c.t):0;
-    var hd=H("div","lhead");hd.appendChild(H("b",null,"🎾 Tournoi amical"));hd.appendChild(H("span",null,c.d+" / "+c.t+" matchs joués"));
+    var hd=H("div","lhead");hd.appendChild(H("b",null,"🎾 Tournoi amical"));hd.appendChild(H("span",null,c.d+" / "+c.t+" matchs joués"));hd.appendChild(B("⋯ Options","chipx",function(){V.tab="more";V.armed=false;skin(true);scrollTop();}));
     var bar=H("div","pbar");var fill=H("i");fill.style.width=pct+"%";bar.appendChild(fill);hd.appendChild(bar);app.appendChild(hd);
     var body=H("div","lbody");
     if(V.tab==="now")drawNow(body);else if(V.tab==="matches")drawMatches(body);else if(V.tab==="res"){body.appendChild(AD.board);body.appendChild(AD.poster);}else drawMore(body);
     app.appendChild(body);
-    var tb=H("nav","tabbar");[["now","🎾","Maintenant"],["matches","📋","Matchs"],["res","🏆","Résultats"],["more","⋯","Plus"]].forEach(function(t){var b=B("","tab"+(V.tab===t[0]?" on":""),function(){V.tab=t[0];V.armed=false;skin(true);scrollTop();});b.appendChild(H("span","ti",t[1]));b.appendChild(H("span",null,t[2]));tb.appendChild(b);});
+    var tb=H("nav","tabbar");[["now","🎾","À lancer"],["matches","📋","Tous les matchs"],["res","🏆","Classement"]].forEach(function(t){var b=B("","tab"+(V.tab===t[0]?" on":""),function(){V.tab=t[0];V.armed=false;skin(true);scrollTop();});b.appendChild(H("span","ti",t[1]));b.appendChild(H("span",null,t[2]));tb.appendChild(b);});
     app.appendChild(tb);
   }
   function skin(force){
     var ae=document.activeElement;
     if(!force&&ae&&ae.tagName==="INPUT"&&app.contains(ae))return;
-    if(!force&&V.mode==="wizard"&&V.step===2&&app.firstChild)return;
+    
     if(V.mode==="live"&&!T){V.mode="wizard";V.step=0;}
     var eng=$("engine");Object.keys(AD).forEach(function(k){if(AD[k]&&AD[k].parentNode!==eng)eng.appendChild(AD[k]);});
     app.textContent="";
