@@ -28,7 +28,6 @@ export default function Tournoi() {
   const [initial, setInitial] = useState<string | null | undefined>(undefined);
   const [err, setErr] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const scroller = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef<string>("");
   const lastSent = useRef<string>("");
@@ -66,15 +65,14 @@ export default function Tournoi() {
     window.__tournoiHost = {
       initial, title: titleOf(ev), dateLabel: day.replace(/^./, (c) => c.toUpperCase()), start: hours.start, avail: hours.avail,
       save: (json) => { latest.current = json; window.clearTimeout(timer.current); timer.current = window.setTimeout(() => { void send(latest.current); }, 1200); },
-      scrollTop: () => scroller.current?.scrollTo({ top: 0 }),
+      scrollTop: () => window.scrollTo({ top: 0 }),
       ready: () => undefined,
     };
-    document.body.style.overflow = "hidden"; // l'assistant couvre tout l'écran : la page du dessous ne défile pas
     const s = document.createElement("script"); s.src = `/tournoi/tournoi.js?v=${Date.now()}`; document.body.appendChild(s);
     return () => {
       window.clearTimeout(timer.current);
       if (latest.current && latest.current !== lastSent.current) void send(latest.current); // on n'oublie pas le dernier score en quittant la page
-      s.remove(); css.remove(); document.body.style.overflow = ""; delete window.__tournoiHost; document.body.removeAttribute("data-pr");
+      s.remove(); css.remove(); delete window.__tournoiHost; document.body.removeAttribute("data-pr");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ev, initial]);
@@ -85,11 +83,11 @@ export default function Tournoi() {
   if (ev.kind !== "ANIMATION") return <main className="mx-auto max-w-3xl p-4"><BackLink fallback="/coach/club">← Retour</BackLink><p className="mt-4">L'aide au tournoi est réservée aux animations.</p></main>;
 
   return (
-    <div id="tournoi-fs" ref={scroller} className="fixed inset-0 z-[60] overflow-y-auto bg-[#f6f2ea]">
+    <div id="tournoi-fs" className="min-h-[70vh] bg-[#f6f2ea]">
       <h1 className="sr-only">Aide au tournoi : {titleOf(ev)}</h1>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-4 py-2">
         <BackLink fallback="/coach/club">← Retour au planning</BackLink>
-        <p className="m-0 min-w-0 flex-1 text-center text-sm text-ink [overflow-wrap:anywhere]">🎉 {titleOf(ev)} · {fmtRange(ev.startDate, ev.endDate)}{ev.time ? ` · ${ev.time}` : ""}</p>
+        <p className="m-0 order-last basis-full text-center text-sm text-ink break-words sm:order-none sm:min-w-0 sm:flex-1 sm:basis-0">🎉 {titleOf(ev)} · {fmtRange(ev.startDate, ev.endDate)}{ev.time ? ` · ${ev.time}` : ""}</p>
         <p className="m-0 text-sm text-muted" role="status" aria-live="polite">
           {status === "saving" ? "Enregistrement…" : status === "saved" ? "✔ Enregistré avec l'animation" : status === "error" ? "⚠ Pas enregistré : vérifie la connexion" : ""}
         </p>
