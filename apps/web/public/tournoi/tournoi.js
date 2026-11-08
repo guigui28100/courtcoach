@@ -606,7 +606,7 @@
   function ready(m){return !!(res(m.a)&&res(m.b));}
   function fin(m){var s=sc(m.id);return !!(s&&ready(m)&&(s.a!==s.b||isPoule(m)));}
   function slotFin(sl){return sl.length>0&&sl.every(fin);}
-  function scrollTop(){try{window.scrollTo(0,0);}catch(e){}}
+  function scrollTop(){try{if(HOST.scrollTop)HOST.scrollTop();else window.scrollTo(0,0);}catch(e){}}
 
   function tiles(list,cur,on){var g=H("div","tiles");list.forEach(function(o){var b=B("","tile"+(String(o.v)===String(cur)?" on":""),function(){on(o.v);});b.appendChild(H("b",null,o.l));if(o.s)b.appendChild(H("small",null,o.s));g.appendChild(b);});return g;}
   function setN(v){v=Math.floor(+v);var mn=S.dbl?6:3;if(!(v>=mn))v=mn;if(S.dbl&&v%2)v++;if(v===S.n)return;S.n=v;S.perm=[];S.pairs=[];}

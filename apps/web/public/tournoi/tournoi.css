@@ -284,8 +284,20 @@ body[data-pr=poster] #printp,body[data-pr=poster] #posterwrap .hint,body[data-pr
 /* Intégration au site : la barre du bas de l'assistant se pose au-dessus de la barre du téléphone, la page ne manque jamais de place en bas */
 #tournoi-root{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.4;min-height:60vh;padding:0 0 24px;position:relative;isolation:isolate}
 #tournoi-root .tabbar{position:sticky;left:auto;right:auto;bottom:0;margin:12px -16px 0}
-@media (max-width:767px){#tournoi-root .tabbar{bottom:calc(4rem + env(safe-area-inset-bottom,0px))}}
+#tournoi-root .tabbar{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
 #tournoi-root .lhead{top:0}
+/* Plein écran : le texte grossit avec l'écran et le contenu utilise toute la largeur */
+#tournoi-root .wrap{max-width:none}
+@media (min-width:900px){#tournoi-root{zoom:1.2}#tournoi-root .wrap{max-width:1100px;margin:0 auto}}
+@media (min-width:1500px){#tournoi-root{zoom:1.45}}
+@media (min-width:900px){
+  #tournoi-root .lbody{grid-template-columns:repeat(auto-fit,minmax(380px,1fr));align-items:start}
+  #tournoi-root .lbody>*{min-width:0}
+  #tournoi-root .lbody>.tnav,#tournoi-root .lbody>.announce,#tournoi-root .lbody>.early,#tournoi-root .lbody>.champb,#tournoi-root .lbody>.chipsrow,#tournoi-root .lbody>.preview,#tournoi-root .lbody>.rest2,#tournoi-root .lbody>.big,#tournoi-root .lbody>.chipx,#tournoi-root .lbody>.card,#tournoi-root .lbody>.tgrp,#tournoi-root .lbody>.morebtns,#tournoi-root .lbody>#orderwrap,#tournoi-root .lbody>#boardcard,#tournoi-root .lbody>#posterwrap{grid-column:1/-1}
+  #tournoi-root .lbody>.tgrp{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+  #tournoi-root .lbody>.tgrp>h3{grid-column:1/-1}
+}
+@media print{#tournoi-fs{position:static!important;overflow:visible!important;height:auto!important}#tournoi-root{zoom:1!important}}
 #tournoi-root .announce ol.launch{list-style:decimal;margin:8px 0 0;padding-left:26px;display:grid;gap:4px;font-weight:700;font-size:16px}
 #tournoi-root .announce ol.launch li.done{opacity:.55;text-decoration:line-through}
 #tournoi-root .announce .why{font-size:13px;opacity:.85;margin:8px 0 0}
