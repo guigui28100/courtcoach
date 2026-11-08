@@ -343,7 +343,6 @@
       var sl=slots[nextSlot],d2=el("div","next");d2.appendChild(el("small",null,"Prochain tour à lancer"));d2.appendChild(el("b",null,"Tour "+(nextSlot+1)+" · "+hhmm(startMin()+nextSlot*S.dur)));
       var say=[];
       sl.forEach(function(m){var ready=res(m.a)&&res(m.b);d2.appendChild(el("small",null,"Terrain "+T.court[m.id]+" · n° "+T.num[m.id]+" : "+label(m.a)+" – "+label(m.b)+(ready?"":" (en attente de résultats)")));if(ready)say.push("Terrain "+T.court[m.id]+" : "+label(m.a)+" contre "+label(m.b));});
-      if(say.length){var s2=el("div","say","📣 À dire aux joueurs : « Tour "+(nextSlot+1)+". "+say.join(". ")+". "+(S.mode==="temps"?"On joue "+S.opt.temps+" minutes, je lance le chrono. ":"")+"Bonne chance à tous ! »");d2.appendChild(s2);}
       d2.appendChild(el("small",null,nextSlot===0&&doneCount===0?"Quand les matchs sont finis, écris les scores dans la liste des matchs plus bas : le tableau et les classements se remplissent tout seuls.":"Quand les matchs de ce tour sont finis, écris leurs scores dans la liste plus bas."));
       nx.appendChild(d2);
     }else if(!ch.length)nx.appendChild(el("p","hint","Tous les matchs sont joués."));
@@ -833,7 +832,7 @@
       var an=H("div","announce");an.appendChild(H("small",null,"📣 Matchs à lancer, dans cet ordre"));
       var ol=H("ol","launch");ord.forEach(function(m){if(ready(m))ol.appendChild(H("li",fin(m)?"done":null,"Terrain "+T.court[m.id]+" : "+label(m.a)+" contre "+label(m.b)+(fin(m)?" ✔ terminé":"")));});an.appendChild(ol);
       an.appendChild(H("p","why","Les joueurs qui ont attendu le plus longtemps passent en premier : l'attente de chacun reste la plus courte possible."));
-      an.appendChild(H("p",null,"« Tour "+(idx+1)+". "+say.join(". ")+". "+(S.mode==="temps"?"On joue "+S.opt.temps+" minutes, je lance le chrono. ":"")+"Bonne chance à tous ! »"));body.appendChild(an);}
+      body.appendChild(an);}
     var early=(idx===auto)?freeSuggestions(idx):[];
     if(early.length){var fe=H("div","early");fe.appendChild(H("b",null,"🆓 Un terrain est libre : lance tout de suite"));
       early.forEach(function(x){fe.appendChild(H("p",null,"Terrain "+x.court+" : "+label(x.m.a)+" contre "+label(x.m.b)+" — ils attendent depuis "+hm(x.wait*S.dur)+" ; ce match était prévu au tour "+(x.j+1)+", le lancer maintenant évite de les faire patienter."));});
