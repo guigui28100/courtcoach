@@ -4,7 +4,7 @@ import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { ClubEvent, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
+import { ClubEvent, fmtDay, kindOf, teamCat, titleOf, tourInfo } from "../clubPlan";
 import { accentOf } from "./EventPoster";
 import { NoBreak } from "./NoBreak";
 import { fullRange } from "./ClubPoster";
@@ -13,7 +13,7 @@ import { fullRange } from "./ClubPoster";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
-export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number]; zoom?: number; size?: number } // zoom : photo agrandie DANS son cadre (1 à 3) ; size : taille du cadre (0,6 à 1,6) // team = « sen-m#1 » (catégorie + numéro d'équipe)
+export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number]; zoom?: number; size?: number; date?: string } // zoom : photo agrandie DANS son cadre (1 à 3) ; size : taille du cadre (0,6 à 1,6) // team = « sen-m#1 » (catégorie + numéro d'équipe)
 export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; zoom?: number[]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
 export { teamPlain, catPlain };
@@ -135,7 +135,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
             {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
             <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
             {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>
+            {!(teamsMode && matches.some(({ m }) => m.date)) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
           </div>
           {grid}
           {matches.length > 0 && (
@@ -146,8 +146,11 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const [cat, num] = m.team ? teamParts(m.team) : ["Rencontre", ""];
                 const ph = m.photo; const f0 = m.focus ?? [50, 50];
                 const phW = one ? 330 : many ? 150 : 215;
+                const dayTxt = m.date ? fmtDay(m.date).replace(/^./, (c) => c.toUpperCase()) : "";
                 return (
-                  <div key={i} style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
+                  <div key={i}>
+                  {dayTxt && <div data-fmt={`dt-${i}`} style={{ fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
+                  <div style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
                     {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
                       <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
                     </div>}
@@ -164,7 +167,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                         {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 900, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
                       </div>
                     </div>
-                  </div>);
+                  </div></div>);
               })}
             </div>
           )}

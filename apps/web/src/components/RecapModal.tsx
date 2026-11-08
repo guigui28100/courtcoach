@@ -25,7 +25,7 @@ function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
   const list = events.filter((x) => x.kind === "EQUIPES" && x.startDate >= mon && x.startDate <= sun && (x.id === e.id || true));
   list.sort((a, b) => (a.id === e.id ? -1 : b.id === e.id ? 1 : a.startDate.localeCompare(b.startDate) || (a.position ?? 0) - (b.position ?? 0)));
   const out: RecapMatch[] = [];
-  for (const x of list) for (const t of x.teams.length ? x.teams : [""]) out.push({ team: t, opponent: opponentOf(x), us: "", them: "" });
+  for (const x of list) for (const t of x.teams.length ? x.teams : [""]) out.push({ team: t, opponent: opponentOf(x), us: "", them: "", date: x.startDate });
   return out.slice(0, 8);
 }
 
@@ -44,7 +44,7 @@ const recapAccess: PhotoAccess<Saved> = {
 };
 // Un réglage de texte par rencontre : l'équipe, son numéro, la phrase, le score et « victoire / défaite »
 const matchFmtItems = (n: number): FmtItem[] => Array.from({ length: n }, (_, i) => [
-  { key: `eq-${i}`, label: `Rencontre ${i + 1} : équipe`, edit: true }, { key: `nu-${i}`, label: `Rencontre ${i + 1} : numéro`, edit: true },
+  { key: `dt-${i}`, label: `Rencontre ${i + 1} : date`, edit: true }, { key: `eq-${i}`, label: `Rencontre ${i + 1} : équipe`, edit: true }, { key: `nu-${i}`, label: `Rencontre ${i + 1} : numéro`, edit: true },
   { key: `ph-${i}`, label: `Rencontre ${i + 1} : phrase`, edit: true }, { key: `sc-${i}`, label: `Rencontre ${i + 1} : score`, edit: true }, { key: `rs-${i}`, label: `Rencontre ${i + 1} : victoire / défaite`, edit: true },
 ]).flat();
 const FORMATS: StudioFormat[] = [{ id: "CARRE", label: "⬜ Carré", ...RECAP_SIZES.CARRE }, { id: "PORTRAIT", label: "📱 Portrait 4:5", ...RECAP_SIZES.PORTRAIT }];
@@ -168,6 +168,9 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                     {[1, 2, 3, 4].map((n) => <option key={n} value={n}>équipe {n}</option>)}
                   </select>
                   <button type="button" className="btn-outline" aria-label={`Retirer la rencontre ${i + 1}`} onClick={() => set({ matches: d.matches.filter((_, j) => j !== i) })}>🗑️</button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-sm font-bold text-ink">Jour du match <input type="date" aria-label={`Rencontre ${i + 1} : jour du match`} className={`${field} !w-auto`} value={m.date ?? ""} onChange={(x) => upd({ date: x.target.value || undefined })} /></label>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <input aria-label={`Rencontre ${i + 1} : club adverse`} className={`${field} min-w-0 flex-1`} maxLength={60} placeholder="Club adverse (ex. TC Guyancourt)" value={m.opponent} onChange={(x) => upd({ opponent: x.target.value })} />
