@@ -13,7 +13,7 @@ import { fullRange } from "./ClubPoster";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
-export interface RecapMatch { team: string; opponent: string; us: string; them: string } // team = « sen-m#1 » (catégorie + numéro d'équipe)
+export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number] } // team = « sen-m#1 » (catégorie + numéro d'équipe)
 export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
 export { teamPlain, catPlain };
@@ -47,7 +47,7 @@ export async function photoFromFile(file: File): Promise<string> {
 // Photos par rangée selon leur nombre : la taille de chaque photo s'adapte (1 grande, 2 côte à côte, 3 = 1 + 2, 5 = 2 + 3…)
 export const PHOTO_ROWS: Record<number, number[]> = { 1: [1], 2: [2], 3: [1, 2], 4: [2, 2], 5: [2, 3], 6: [3, 3], 7: [3, 4], 8: [4, 4] };
 
-export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, onPan }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (i: number, x: number, y: number) => void }) {
+export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, onPan, onPanMatch }: { e: ClubEvent; format: RecapFormat; data: RecapData; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (i: number, x: number, y: number) => void; onPanMatch?: (i: number, x: number, y: number) => void }) {
   const { w, h } = RECAP_SIZES[format]; const sq = format === "CARRE";
   const kd = kindOf(e.kind); const acc = accentOf(e);
   const teamsMode = e.kind === "EQUIPES";
@@ -55,15 +55,16 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   // Tournoi : le grand titre dit le type et le public (« TMC MESSIEURS », « TOURNOI OPEN DAMES »), la ligne dessous donne les classements du TMC
   const name = (teamsMode ? "Match par équipes" : ti ? `${ti.type === "TMC" ? "TMC" : "Tournoi open"} ${ti.who}`.trim() : titleOf(e)).toUpperCase();
   const rankLine = ti && ti.bas && ti.haut ? `Classements de ${ti.bas} à ${ti.haut}` : "";
-  const matches = data.matches.filter((m) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim());
+  const matches = data.matches.map((m, i) => ({ m, i })).filter(({ m }) => m.team || m.opponent.trim() || m.us.trim() || m.them.trim()); // i = place d'origine : les réglages de texte restent attachés à la bonne rencontre
   const lite = !teamsMode && e.kind !== "TOURNOI"; // stages, animations, fêtes… : seulement photos et texte
   const results = lite ? [] : data.results.filter((r) => r.what.trim() || r.result.trim());
-  const photos = data.photos.slice(0, 8); const logos = partners ?? [];
+  const photos = teamsMode ? [] : data.photos.slice(0, 8); // match par équipes : les photos sont À CÔTÉ de leur équipe (une par rencontre)
+  const logos = partners ?? [];
 
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
-  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches, photos.length, logos.length]);
+  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -101,6 +102,14 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
     const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
     el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
   };
+  const panM = (i: number, f0: [number, number]) => (ev: React.PointerEvent<HTMLDivElement>) => {
+    if (!onPanMatch) return;
+    const el = ev.currentTarget; const rect = el.getBoundingClientRect(); const kk = rect.width / el.offsetWidth || 1; const x0 = ev.clientX, y0 = ev.clientY;
+    el.setPointerCapture(ev.pointerId);
+    const move = (mv: PointerEvent) => onPanMatch(i, Math.max(0, Math.min(100, f0[0] - ((mv.clientX - x0) / kk / el.offsetWidth) * 140)), Math.max(0, Math.min(100, f0[1] - ((mv.clientY - y0) / kk / el.offsetHeight) * 140)));
+    const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  };
   const grid = photos.length > 0 && (
     <div style={{ display: "grid", gap: p(8), gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden", fontVariantNumeric: "lining-nums" }}>
       {photos.map((src, i) => { const f = data.focus?.[i] ?? [50, 50]; return <img key={i} src={src} alt="" draggable={false} onPointerDown={pan(i)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f[0]}% ${f[1]}%`, display: "block", gridColumn: `span ${cells[i].span}`, gridRow: cells[i].r + 1, minWidth: 0, minHeight: 0, cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} />; })}
@@ -128,18 +137,31 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
           </div>
           {grid}
           {matches.length > 0 && (
-            <div data-fmt="rencontres" style={{ flexShrink: 0, display: "grid", gap: p(10) }}>
-              {matches.map((m, i) => (
-                <div key={i} style={{ ...card, display: "block", borderLeft: `10px solid ${outcomeColor(m)}` }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: p(12), marginBottom: p(6) }}>
-                    <div style={{ fontWeight: 800, color: MUTED, lineHeight: 1.15 }}>{m.team ? (() => { const [c, n] = teamParts(m.team); return <><div style={{ fontSize: p(matches.length === 1 ? 28 : 24), whiteSpace: "nowrap", color: NAVY, fontWeight: 900 }}>{c}</div><div style={{ fontSize: p(matches.length === 1 ? 22 : 19) }}>{n}</div></>; })() : <div style={{ fontSize: p(22) }}>Rencontre</div>}</div>
-                    {outcomeWord(m) && <div style={{ flex: "0 0 auto", background: outcomeColor(m), color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(16), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{outcomeWord(m)}</div>}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: p(16) }}>
-                    <div style={{ flex: 1, minWidth: 0, fontSize: p(matches.length === 1 ? 38 : 28), fontWeight: 900, lineHeight: 1.15, overflowWrap: "break-word" }}>{(() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
-                    {m.us.trim() !== "" && m.them.trim() !== "" && <div style={{ flex: "0 0 auto", fontSize: p(matches.length === 1 ? 84 : 56), fontWeight: 900, lineHeight: 1, color: outcomeColor(m), whiteSpace: "nowrap" }}>{m.us.trim()}/{m.them.trim()}</div>}
-                  </div>
-                </div>))}
+            <div style={{ flexShrink: 0, display: "grid", gap: p(10) }}>
+              {matches.map(({ m, i }) => {
+                const one = matches.length === 1, many = matches.length > 3, oc = outcomeColor(m), ow = outcomeWord(m);
+                const raw = (fmt as Record<string, { text?: string } | undefined> | undefined)?.[`ph-${i}`]?.text;
+                const [cat, num] = m.team ? teamParts(m.team) : ["Rencontre", ""];
+                const ph = m.photo; const f0 = m.focus ?? [50, 50];
+                const phW = one ? 330 : many ? 150 : 215;
+                return (
+                  <div key={i} style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
+                    {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW)}`, minHeight: p(one ? 250 : many ? 110 : 150), borderRadius: 10, background: `#e4dccb url(${ph}) ${f0[0]}% ${f0[1]}% / cover no-repeat`, cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }} />}
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
+                        <div style={{ lineHeight: 1.15, minWidth: 0 }}>
+                          <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), whiteSpace: "nowrap", color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
+                          {num && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
+                        </div>
+                        {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: p(14) }}>
+                        <div data-fmt={`ph-${i}`} style={{ flex: 1, minWidth: 0, fontSize: p(one ? 34 : many ? 22 : 26), fontWeight: 900, lineHeight: 1.15, overflowWrap: "break-word" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
+                        {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 900, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
+                      </div>
+                    </div>
+                  </div>);
+              })}
             </div>
           )}
           {results.length > 0 && (
