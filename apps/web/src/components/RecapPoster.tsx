@@ -150,11 +150,11 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 return (
                   <div key={i}>
                   {dayTxt && <div data-fmt={`dt-${i}`} style={{ fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
-                  <div style={{ ...card, display: "flex", flexDirection: ph ? "column" : "row", alignItems: "stretch", gap: p(ph ? 10 : 16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
-                    {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ order: 1, flex: "0 0 auto", width: "100%", height: p((one ? 300 : many ? 130 : 190) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
+                  <div style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
+                    {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
                       <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
                     </div>}
-                    <div style={{ flex: 1, minWidth: 0, display: ph ? "contents" : "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
                         <div style={{ lineHeight: 1.15, minWidth: 0, flex: 1 }}>
                           <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
@@ -162,7 +162,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                         </div>
                         {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
                       </div>
-                      <div style={{ order: 2, display: "flex", alignItems: "center", gap: p(14) }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: p(14) }}>
                         <div data-fmt={`ph-${i}`} data-fit style={{ flex: 1, minWidth: 0, fontSize: `calc(${p(one ? 34 : many ? 22 : 26)} * var(--fs, 1))`, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
                         {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 900, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
                       </div>
