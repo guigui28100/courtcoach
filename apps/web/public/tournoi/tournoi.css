@@ -298,9 +298,10 @@ body[data-pr=poster] #printp,body[data-pr=poster] #posterwrap .hint,body[data-pr
 #tournoi-root .lhead{top:0}
 /* Plein écran : le texte grossit avec l'écran et le contenu utilise toute la largeur */
 #tournoi-root .wrap{max-width:none}
-@media (min-width:900px){#tournoi-root{zoom:1.2}#tournoi-root .wrap{max-width:1100px;margin:0 auto}}
-@media (min-width:1500px){#tournoi-root{zoom:1.45}}
-@media (min-width:900px){
+@media (min-width:1100px){#tournoi-root{zoom:1.2}#tournoi-root .wrap{max-width:1100px;margin:0 auto}}
+@media (min-width:1800px){#tournoi-root{zoom:1.45}}
+@media (max-width:767px){#tournoi-root .tabbar{bottom:calc(4rem + env(safe-area-inset-bottom,0px))}}
+@media (min-width:1100px){
   #tournoi-root .lbody{grid-template-columns:repeat(auto-fit,minmax(380px,1fr));align-items:start}
   #tournoi-root .lbody>*{min-width:0}
   #tournoi-root .lbody>.tnav,#tournoi-root .lbody>.announce,#tournoi-root .lbody>.early,#tournoi-root .lbody>.champb,#tournoi-root .lbody>.chipsrow,#tournoi-root .lbody>.preview,#tournoi-root .lbody>.rest2,#tournoi-root .lbody>.big,#tournoi-root .lbody>.chipx,#tournoi-root .lbody>.card,#tournoi-root .lbody>.tgrp,#tournoi-root .lbody>.morebtns,#tournoi-root .lbody>#orderwrap,#tournoi-root .lbody>#boardcard,#tournoi-root .lbody>#posterwrap{grid-column:1/-1}
