@@ -31,7 +31,7 @@ function weekendMatches(e: ClubEvent, events: ClubEvent[]): RecapMatch[] {
 
 const recapFmtItems: FmtItem[] = [
   { key: "entete", label: "Nom du club (bandeau)", edit: true }, { key: "type", label: "Pastille « Bilan »", edit: true }, { key: "surtitre", label: "Titre en haut", edit: true }, { key: "titre", label: "Nom de l'événement", edit: true },
-  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date" }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement", edit: true },
+  { key: "classement", label: "Type et classements" }, { key: "date", label: "Date", edit: true }, { key: "resultats", label: "Résultats" }, { key: "texte", label: "Mot de remerciement", edit: true },
   { key: "partenaires", label: "Mot « partenaires »" }, { key: "pied", label: "« Merci à tous ! » (bas)", edit: true }, { key: "mail", label: "E-mail (bas)", edit: true },
   { key: "tout", label: "Tous les textes", sizeOnly: true },
 ];

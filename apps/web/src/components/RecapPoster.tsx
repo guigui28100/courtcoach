@@ -135,7 +135,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
             {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
             <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
             {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{fullRange(e).replace(/^./, (c) => c.toUpperCase())}</div>
+            <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>
           </div>
           {grid}
           {matches.length > 0 && (
