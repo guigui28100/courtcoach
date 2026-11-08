@@ -13,7 +13,7 @@ import { fullRange } from "./ClubPoster";
 // Tout est fabriqué dans le navigateur et RIEN n'est enregistré : les photos et les noms restent dans la fenêtre ouverte.
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
-export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number] } // team = « sen-m#1 » (catégorie + numéro d'équipe)
+export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number]; zoom?: number; size?: number } // zoom : photo agrandie DANS son cadre (1 à 3) ; size : taille du cadre (0,6 à 1,6) // team = « sen-m#1 » (catégorie + numéro d'équipe)
 export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
 export { teamPlain, catPlain };
@@ -148,11 +148,13 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const phW = one ? 330 : many ? 150 : 215;
                 return (
                   <div key={i} style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
-                    {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW)}`, minHeight: p(one ? 250 : many ? 110 : 150), borderRadius: 10, background: `#e4dccb url(${ph}) ${f0[0]}% ${f0[1]}% / cover no-repeat`, cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }} />}
+                    {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
+                      <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
+                    </div>}
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
-                        <div style={{ lineHeight: 1.15, minWidth: 0 }}>
-                          <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), whiteSpace: "nowrap", color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
+                        <div style={{ lineHeight: 1.15, minWidth: 0, flex: 1 }}>
+                          <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
                           {num && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
                         </div>
                         {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}

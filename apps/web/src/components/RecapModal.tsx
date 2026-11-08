@@ -178,10 +178,37 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
                 <div className="flex flex-wrap items-center gap-2">
                   {m.photo ? <img src={m.photo} alt={`Photo de la rencontre ${i + 1}`} className="size-16 rounded-lg object-cover" /> : <span className="grid size-16 place-items-center rounded-lg border-2 border-dashed border-line text-2xl" aria-hidden>📷</span>}
                   <label className="btn-outline cursor-pointer">{m.photo ? "Changer la photo de cette équipe" : "📷 Ajouter la photo de cette équipe"}
-                    <input aria-label={`Rencontre ${i + 1} : photo de l'équipe`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (x) => { const f = x.target.files?.[0]; x.target.value = ""; if (!f) return; try { setMsg(""); const url = await photoFromFile(f); upd({ photo: url, focus: [50, 50] }); } catch (er) { setMsg((er as Error).message); } }} /></label>
-                  {m.photo && <button type="button" className="btn-outline" aria-label={`Retirer la photo de la rencontre ${i + 1}`} onClick={() => upd({ photo: undefined, focus: undefined })}>🗑️ Retirer la photo</button>}
+                    <input aria-label={`Rencontre ${i + 1} : photo de l'équipe`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={async (x) => { const f = x.target.files?.[0]; x.target.value = ""; if (!f) return; try { setMsg(""); const url = await photoFromFile(f); upd({ photo: url, focus: [50, 50], zoom: 1, size: 1 }); } catch (er) { setMsg((er as Error).message); } }} /></label>
+                  {m.photo && <button type="button" className="btn-outline" aria-label={`Retirer la photo de la rencontre ${i + 1}`} onClick={() => upd({ photo: undefined, focus: undefined, zoom: undefined, size: undefined })}>🗑️ Retirer la photo</button>}
                 </div>
-                {m.photo && <p className="m-0 text-xs text-muted">👆 Pour cadrer la photo, glisse-la directement sur l'affiche.</p>}
+                {m.photo && (() => {
+                  const f = m.focus ?? [50, 50], z = m.zoom ?? 1, sz = m.size ?? 1;
+                  const mv = (dx: number, dy: number) => upd({ focus: [Math.max(0, Math.min(100, f[0] + dx)), Math.max(0, Math.min(100, f[1] + dy))] });
+                  const b = "grid h-10 min-w-10 place-items-center rounded-lg border-2 border-line bg-white px-2 text-base font-bold text-ink hover:border-ink disabled:opacity-30";
+                  return (
+                    <div className="grid gap-2 rounded-xl border border-line bg-white p-2" role="group" aria-label={`Réglage de la photo de la rencontre ${i + 1}`}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="grid grid-cols-3 gap-1" aria-label="Déplacer la photo dans son cadre">
+                          <span /><button type="button" className={b} aria-label="Monter la photo" onClick={() => mv(0, 10)}>▲</button><span />
+                          <button type="button" className={b} aria-label="Photo vers la gauche" onClick={() => mv(10, 0)}>◀</button>
+                          <button type="button" className={b} aria-label="Recentrer la photo" title="Recentrer" onClick={() => upd({ focus: [50, 50], zoom: 1, size: 1 })}>↺</button>
+                          <button type="button" className={b} aria-label="Photo vers la droite" onClick={() => mv(-10, 0)}>▶</button>
+                          <span /><button type="button" className={b} aria-label="Descendre la photo" onClick={() => mv(0, -10)}>▼</button><span />
+                        </div>
+                        <div className="grid gap-1">
+                          <div className="flex items-center gap-1"><span className="w-28 text-xs font-bold text-ink">Zoom dans le cadre</span>
+                            <button type="button" className={b} aria-label="Photo plus petite dans son cadre" disabled={z <= 1} onClick={() => upd({ zoom: Math.max(1, Math.round((z - 0.25) * 100) / 100) })}>➖</button>
+                            <span className="w-12 text-center text-sm font-bold">×{z}</span>
+                            <button type="button" className={b} aria-label="Agrandir la photo dans son cadre" disabled={z >= 3} onClick={() => upd({ zoom: Math.min(3, Math.round((z + 0.25) * 100) / 100) })}>➕</button></div>
+                          <div className="flex items-center gap-1"><span className="w-28 text-xs font-bold text-ink">Taille du cadre</span>
+                            <button type="button" className={b} aria-label="Cadre plus petit" disabled={sz <= 0.6} onClick={() => upd({ size: Math.max(0.6, Math.round((sz - 0.2) * 10) / 10) })}>➖</button>
+                            <span className="w-12 text-center text-sm font-bold">{Math.round(sz * 100)} %</span>
+                            <button type="button" className={b} aria-label="Cadre plus grand" disabled={sz >= 1.4} onClick={() => upd({ size: Math.min(1.4, Math.round((sz + 0.2) * 10) / 10) })}>➕</button></div>
+                        </div>
+                      </div>
+                      <p className="m-0 text-xs text-muted">Tu peux aussi glisser la photo directement sur l'affiche.</p>
+                    </div>);
+                })()}
               </div>);
           })}
           {d.matches.length < 8 && <button type="button" className="btn-outline justify-self-start" onClick={() => set({ matches: [...d.matches, { team: "", opponent: "", us: "", them: "" }] })}>＋ Ajouter une rencontre</button>}
