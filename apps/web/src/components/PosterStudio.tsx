@@ -127,7 +127,7 @@ export function PosterStudio(p: StudioProps) {
     if (!el) { setBarPos(null); return; }
     const a = area.current.getBoundingClientRect(), r = el.getBoundingClientRect();
     const top = r.top - a.top - 52 >= 4 ? r.top - a.top - 52 : Math.min(a.height - 52, r.bottom - a.top + 8);
-    const left = Math.max(6, Math.min(r.left - a.left, a.width - 470));
+    const left = Math.max(6, Math.min(r.left - a.left, a.width - 540));
     setBarPos({ top, left });
   }, [barOn, tab, p.fmt, scale, p.format, box.w, box.h]);
 

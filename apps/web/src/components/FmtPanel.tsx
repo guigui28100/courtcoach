@@ -54,7 +54,7 @@ export function FmtPanel({ items, fmt, onChange, selected, onSelect, title = "�
             {btn("S", cur.underline, () => set({ underline: cur.underline ? undefined : true }), "Souligné", { textDecoration: "underline" })}
           </>)}
           {row("Alignement", (["left", "center", "right"] as const).map((a, i) => <span key={a}>{btn(["⬅", "↔", "➡"][i], cur.align === a, () => set({ align: cur.align === a ? undefined : a }), ["À gauche", "Centré", "À droite"][i])}</span>))}
-          {row("Position", <>{btn("⬆", undefined, () => set({ dy: (cur.dy ?? 0) - 1 }), "Monter")}{btn("⬇", undefined, () => set({ dy: (cur.dy ?? 0) + 1 }), "Descendre")}</>)}
+          {row("Position", <>{btn("⬆", undefined, () => set({ dy: (cur.dy ?? 0) - 1 }), "Monter")}{btn("⬇", undefined, () => set({ dy: (cur.dy ?? 0) + 1 }), "Descendre")}{btn("←", undefined, () => set({ dx: (cur.dx ?? 0) - 1 }), "Décaler vers la gauche")}{btn("→", undefined, () => set({ dx: (cur.dx ?? 0) + 1 }), "Décaler vers la droite")}</>)}
           {row("Couleur", <span className="flex flex-wrap gap-1.5" role="group" aria-label="Couleur du texte">{FMT_COLORS.map(([c, n]) => <button key={c} type="button" aria-label={n} aria-pressed={cur.color === c} title={n} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`size-8 rounded-full border-2 ${cur.color === c ? "border-ink ring-2 ring-champagne" : "border-line shadow"}`} />)}</span>)}
         </>}
         {item.sizeOnly && <p className="m-0 text-xs text-muted">Agrandit ou réduit tous les textes ensemble. Si tu agrandis trop, le bas peut être coupé : regarde l'aperçu.</p>}
@@ -101,6 +101,8 @@ export function FmtFloat({ items, fmt, onChange, selected, style, onClose }: { i
         <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
         {b("⬆", () => set({ dy: (cur.dy ?? 0) - 1 }), "Monter ce texte")}
         {b("⬇", () => set({ dy: (cur.dy ?? 0) + 1 }), "Descendre ce texte")}
+        {b("←", () => set({ dx: (cur.dx ?? 0) - 1 }), "Décaler ce texte vers la gauche")}
+        {b("→", () => set({ dx: (cur.dx ?? 0) + 1 }), "Décaler ce texte vers la droite")}
         <span className="mx-0.5 h-5 w-px bg-white/25" aria-hidden />
         {FMT_COLORS.slice(0, 5).map(([c, n]) => <button key={c} type="button" aria-label={n} title={n} aria-pressed={cur.color === c} onClick={() => set({ color: cur.color === c ? undefined : c })} style={{ background: c }} className={`size-6 rounded-full border-2 ${cur.color === c ? "border-white ring-2 ring-champagne" : "border-white/40"}`} />)}
       </>}
