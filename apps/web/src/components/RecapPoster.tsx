@@ -14,7 +14,7 @@ import { fullRange } from "./ClubPoster";
 export type RecapFormat = "CARRE" | "PORTRAIT";
 export const RECAP_SIZES: Record<RecapFormat, { w: number; h: number }> = { CARRE: { w: 1080, h: 1080 }, PORTRAIT: { w: 1080, h: 1350 } };
 export interface RecapMatch { team: string; opponent: string; us: string; them: string; photo?: string; focus?: [number, number]; zoom?: number; size?: number } // zoom : photo agrandie DANS son cadre (1 à 3) ; size : taille du cadre (0,6 à 1,6) // team = « sen-m#1 » (catégorie + numéro d'équipe)
-export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
+export interface RecapData { headline: string; photos: string[]; focus?: [number, number][]; zoom?: number[]; results: { what: string; result: string }[]; matches: RecapMatch[]; message: string }
 
 export { teamPlain, catPlain };
 // « TC Houdan bat TC Guyancourt » / « TC Houdan perd contre TC Guyancourt » / « TC Houdan fait match nul contre TC Guyancourt »
@@ -64,7 +64,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
-  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, logos.length]);
+  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, data.zoom, data.focus, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     // La phrase « TC Houdan bat TC Dreux » reste sur UNE ligne : sa taille se réduit juste assez pour tenir à côté du score
@@ -114,7 +114,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   };
   const grid = photos.length > 0 && (
     <div style={{ display: "grid", gap: p(8), gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: `repeat(${rows}, ${p((lite ? (sq ? 440 : 600) : (sq ? 330 : 420)) / rows)})`, flexShrink: 0, borderRadius: 16, overflow: "hidden", fontVariantNumeric: "lining-nums" }}>
-      {photos.map((src, i) => { const f = data.focus?.[i] ?? [50, 50]; return <img key={i} src={src} alt="" draggable={false} onPointerDown={pan(i)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f[0]}% ${f[1]}%`, display: "block", gridColumn: `span ${cells[i].span}`, gridRow: cells[i].r + 1, minWidth: 0, minHeight: 0, cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} />; })}
+      {photos.map((src, i) => { const f = data.focus?.[i] ?? [50, 50], z = data.zoom?.[i] ?? 1; return <div key={i} style={{ gridColumn: `span ${cells[i].span}`, gridRow: cells[i].r + 1, minWidth: 0, minHeight: 0, overflow: "hidden", position: "relative" }}><img src={src} alt="" draggable={false} onPointerDown={pan(i)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f[0]}% ${f[1]}%`, transform: `scale(${z})`, transformOrigin: `${f[0]}% ${f[1]}%`, display: "block", cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} /></div>; })}
     </div>
   );
 

@@ -7,6 +7,7 @@ import { POSTER_H, POSTER_W } from "./ClubPoster";
 import { PosterStudio, Sec, Seg, Toggle } from "./PosterStudio";
 import { teamParts, tidy } from "./posterCopy";
 import { photoFromFile } from "./RecapPoster";
+import { PhotoTuner } from "./PhotoTuner";
 import { FmtStyle, Fmts, pickFmt, txt } from "./posterFmt";
 import { FmtItem } from "./FmtPanel";
 
@@ -15,7 +16,7 @@ import { FmtItem } from "./FmtPanel";
 // Rien n'est enregistré. Aucun nom d'élève : seulement le club rencontré.
 export type MatchMode = "weekend" | "jeunes";
 type Item = { key: string; day: string; e: ClubEvent };
-export type Score = { h: string; a: string; club: string; photo?: string }; // photo : photo de l'équipe (facultative), réduite dans le navigateur, jamais envoyée
+export type Score = { h: string; a: string; club: string; photo?: string; focus?: [number, number]; zoom?: number }; // photo : photo de l'équipe (facultative), réduite dans le navigateur, jamais envoyée
 const mLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
 const addMonth = (m: string, n: number) => { const t = +m.slice(0, 4) * 12 + (+m.slice(5, 7) - 1) + n; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`; };
 const dn = (d: string) => (+d.slice(8, 10) === 1 ? "1er" : String(+d.slice(8, 10)));
@@ -49,7 +50,15 @@ const Logo = ({ size, style }: { size: number; style?: React.CSSProperties }) =>
 );
 
 const safe = (s: string) => s.replace(/[^a-z0-9-]/gi, "-");
-export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onPick }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onPick, onPan }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (key: string, x: number, y: number) => void }) {
+  const panPhoto = (key: string, f0: [number, number]) => (ev: React.PointerEvent<HTMLDivElement>) => {
+    if (!onPan) return;
+    const el = ev.currentTarget; const rect = el.getBoundingClientRect(); const kk = rect.width / el.offsetWidth || 1; const x0 = ev.clientX, y0 = ev.clientY;
+    el.setPointerCapture(ev.pointerId);
+    const move = (mv: PointerEvent) => onPan(key, Math.max(0, Math.min(100, f0[0] - ((mv.clientX - x0) / kk / el.offsetWidth) * 140)), Math.max(0, Math.min(100, f0[1] - ((mv.clientY - y0) / kk / el.offsetHeight) * 140)));
+    const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  };
   const shown = list.filter((x) => resultOf(scores[x.key]) !== null);
   const days: { d: string; items: Item[] }[] = [];
   for (const x of shown) { const g = days.find((y) => y.d === x.day); g ? g.items.push(x) : days.push({ d: x.day, items: [x] }); }
@@ -116,7 +125,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onP
                     <div data-fmt={`ph-${kk}`} style={{ fontSize: anyPhoto ? 20 : 22, fontWeight: 900, lineHeight: 1.15 }}>{txt(fmt, `ph-${kk}`, verbe)}</div>
                     {v && <div><span data-fmt={`ch-${kk}`} style={{ background: v === "home" ? "#2f6b4a" : "#4a6d8f", color: "#fff", fontSize: 12, fontWeight: 900, letterSpacing: "0.05em", textTransform: "uppercase", padding: "2px 8px", whiteSpace: "nowrap" }}>{txt(fmt, `ch-${kk}`, v === "home" ? "À domicile" : "En déplacement")}</span></div>}
                   </div>
-                  {sc.photo && <div style={{ flex: "0 0 auto", width: 118, minHeight: 78, borderRadius: 8, overflow: "hidden", background: `#e4dccb url(${sc.photo}) center / cover no-repeat` }} role="img" aria-label="Photo de l'équipe" />}
+                  {sc.photo && <div style={{ flex: "0 0 auto", width: 118, minHeight: 78, borderRadius: 8, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} role="img" aria-label="Photo de l'équipe" onPointerDown={panPhoto(x.key, sc.focus ?? [50, 50])}><img src={sc.photo} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${(sc.focus ?? [50, 50])[0]}% ${(sc.focus ?? [50, 50])[1]}%`, transform: `scale(${sc.zoom ?? 1})`, transformOrigin: `${(sc.focus ?? [50, 50])[0]}% ${(sc.focus ?? [50, 50])[1]}%`, pointerEvents: "none" }} /></div>}
                   <div style={{ flex: "0 0 auto", width: anyPhoto ? 112 : 128, background: RES[r].c, color: "#fff", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "4px 6px" }}>
                     <div data-fmt={`sc-${kk}`} style={{ fontFamily: SERIF, fontSize: scSize, fontWeight: 900, lineHeight: 1.05, textAlign: "center", overflowWrap: "anywhere", maxWidth: "100%" }}>{scText}</div>
                     <div data-fmt={`rs-${kk}`} style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.12em", marginTop: 3 }}>{txt(fmt, `rs-${kk}`, RES[r].t)}</div>
@@ -246,8 +255,9 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
                       📷 {sc.photo ? "Changer la photo" : "Ajouter la photo de l'équipe"}
                       <input type="file" accept="image/*" className="sr-only" aria-label="Photo de l'équipe" onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) addPhoto(x.key, f); }} />
                     </label>
-                    {sc.photo && <button type="button" className="text-xs font-bold text-muted underline" onClick={() => setS(x.key, { photo: "" })}>Retirer</button>}
+                    {sc.photo && <button type="button" className="text-xs font-bold text-muted underline" onClick={() => setS(x.key, { photo: "", focus: undefined, zoom: undefined })}>Retirer</button>}
                   </div>
+                  {sc.photo && <div className="mt-2"><PhotoTuner label="équipe" value={{ focus: sc.focus, zoom: sc.zoom }} onChange={(t) => setS(x.key, t)} /></div>}
                 </div>
               );
             })}
@@ -258,7 +268,7 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
       </>}
       bg={bg} onBg={setBg}
       fmt={{ items: fmtItems, value: fmt, onChange: setFmt, selected: sel, onSelect: setSel }}
-      preview={({ pick }) => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} />}
+      preview={({ pick }) => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} onPan={(k, x, y) => setS(k, { focus: [x, y] })} />}
       printNode={<MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} />}
       fileBase={() => (byWeekend ? `affiche-resultats-${mode === "jeunes" ? "jeunes-" : ""}weekend-${sat}` : `affiche-resultats-jeunes-${from}-${to}`)}
       save={{ kind: "local", text: "● Rien n'est enregistré : les scores restent dans cette fenêtre" }}
