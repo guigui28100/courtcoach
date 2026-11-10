@@ -31,6 +31,8 @@ export default function Tournoi() {
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef<string>("");
   const lastSent = useRef<string>("");
+  const [sure, setSure] = useState(false);
+  const [wiping, setWiping] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -55,6 +57,14 @@ export default function Tournoi() {
     setStatus("saving");
     try { await api(`/club/tournoi/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: JSON.parse(json) }) }); lastSent.current = json; setStatus("saved"); }
     catch { setStatus("error"); }
+  };
+
+  const wipe = async () => {
+    if (!sure) { setSure(true); window.setTimeout(() => setSure(false), 6000); return; }
+    setWiping(true);
+    window.clearTimeout(timer.current); latest.current = ""; // plus rien à envoyer
+    try { await api(`/club/tournoi/${id}`, { method: "DELETE" }); window.location.reload(); }
+    catch { setWiping(false); setSure(false); setStatus("error"); }
   };
 
   useEffect(() => {
@@ -91,6 +101,9 @@ export default function Tournoi() {
         <p className="m-0 text-sm text-muted" role="status" aria-live="polite">
           {status === "saving" ? "Enregistrement…" : status === "saved" ? "✔ Enregistré avec l'animation" : status === "error" ? "⚠ Pas enregistré : vérifie la connexion" : ""}
         </p>
+        <button type="button" disabled={wiping} onClick={wipe} className={`rounded border px-3 py-1.5 text-sm font-semibold ${sure ? "border-[#b42318] bg-[#b42318] text-white" : "border-line bg-white text-ink hover:bg-sand"}`}>
+          {wiping ? "Effacement…" : sure ? "⚠️ Sûr ? Touche encore pour tout effacer" : "🗑️ Tout effacer et recommencer"}
+        </button>
       </div>
       <div className="px-4 pb-6">
         <div id="tournoi-root" dangerouslySetInnerHTML={{ __html: markup }} />
