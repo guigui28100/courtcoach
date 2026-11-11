@@ -21,6 +21,7 @@ import { RecapModal } from "../components/RecapModal";
 import { ResultsModal } from "../components/ResultsModal";
 import { TournoisModal } from "../components/TournoisPoster";
 import { MatchsModal, MatchMode } from "../components/MatchsPoster";
+import { TextileModal } from "../components/TextilePoster";
 import { BgPicker } from "../components/PosterBackdrop";
 import { EventPoster, PosterLayout, PosterBg, PosterFormat, SIZES, PosterFmt } from "../components/EventPoster";
 import { posterToPdf, posterToPng } from "../components/exportPoster";
@@ -65,6 +66,7 @@ export function ClubPlan() {
   const [menuEnd, setMenuEnd] = useState<string | null>(null); // dernier jour quand on choisit une plage directement dans le mois
   const [posterOpen, setPosterOpen] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [textileOpen, setTextileOpen] = useState(false);
   const [tournoisOpen, setTournoisOpen] = useState(false);
   const [matchsOpen, setMatchsOpen] = useState<MatchMode | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
@@ -174,6 +176,7 @@ export function ClubPlan() {
               ...(viewer ? [] : [{ i: "🎾", t: "Affiche des résultats des matchs par équipes du week-end", d: "Les résultats de toutes les équipes du samedi et du dimanche : les matchs viennent du planning, tu écris seulement les scores.", go: () => setMatchsOpen("weekend") }]),
               ...(viewer ? [] : [{ i: "🧒", t: "Affiche des résultats des équipes jeunes", d: "Les résultats des matchs par équipes des jeunes (garçons et filles) d'un week-end ou de plusieurs mois : tu écris seulement les scores.", go: () => setMatchsOpen("jeunes") }]),
               ...(viewer ? [] : [{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
+              ...(viewer ? [] : [{ i: "👕", t: "Affiche de l'opération textile", d: "La vente de tenues du club : tes photos de vêtements, les prix, la date limite et la façon de commander.", go: () => setTextileOpen(true) }]),
               { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
               ...(viewer ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
               ...(readOnly || viewer ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
@@ -210,6 +213,7 @@ export function ClubPlan() {
       {tournoisOpen && <TournoisModal events={events} onClose={() => setTournoisOpen(false)} />}
       {matchsOpen && <MatchsModal events={events} mode={matchsOpen} onClose={() => setMatchsOpen(null)} />}
       {resultsOpen && <ResultsModal events={events} onClose={() => setResultsOpen(false)} />}
+      {textileOpen && <TextileModal onClose={() => setTextileOpen(false)} />}
       {posterOpen && <PosterModal events={events} initialMonth={month} onClose={() => setPosterOpen(false)} />}
       {peopleOpen && <PeopleModal people={people} onClose={() => setPeopleOpen(false)} onDone={() => { setPeopleOpen(false); load(); }} />}
       {teamsOpen && <TeamsModal counts={counts} onClose={() => setTeamsOpen(false)} onDone={() => { setTeamsOpen(false); load(); }} />}
