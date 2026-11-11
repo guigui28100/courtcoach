@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
 import { Err, Page, PageHead, TabsBar } from "../components/ui";
 import { buildPages, DocChoice } from "../components/ProgressionDoc";
+import { Bilan } from "../components/ProgressionBilan";
 import { Consult, Docs, PrintHost } from "../components/ProgressionViews";
 import {
   compsOf, filOptions, joinSkills, parseSkills, titleOptions, LevelDef,
@@ -133,57 +134,6 @@ function GroupHead({ g, upd, onDelete }: { g: Group; upd: (p: Partial<Group>) =>
       <div className="flex justify-end">
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Supprimer ce groupe et sa programmation ?</b><button type="button" className="btn-ink btn-sm" onClick={onDelete}>Oui, supprimer</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>
           : <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>🗑️ Supprimer le groupe</button>}
-      </div>
-    </section>
-  );
-}
-
-function Bilan({ g, upd, next }: { g: Group; upd: (p: Partial<Group>) => void; next: () => void }) {
-  const L = levelDef(g.level);
-  const found = useMemo(() => Object.keys(themesInText(g.notes)).filter((n) => L.ok.includes(n) && g.bilan[n] === undefined), [g.notes, g.bilan, L]);
-  const setLevel = (n: string, v: number) => { const b = { ...g.bilan }; if (b[n] === v) delete b[n]; else b[n] = v; upd({ bilan: b }); };
-  const rated = Object.keys(g.bilan).filter((n) => L.ok.includes(n)).length;
-  const applyFound = () => { const b = { ...g.bilan }; found.forEach((n) => { b[n] = 0; }); upd({ bilan: b }); };
-  return (
-    <section className="grid gap-5">
-      <div className="grid gap-2">
-        <label htmlFor="g-notes" className="font-bold">Ce qui n'est pas acquis, les défauts que tu as vus (écris comme tu parles)</label>
-        <textarea id="g-notes" className="input min-h-28" maxLength={2000} value={g.notes} onChange={(e) => upd({ notes: e.target.value })} placeholder="Ex. Beaucoup de fautes en revers, le service est souvent raté à la 2e balle, ils bougent peu les jambes, ils s'énervent quand ils perdent." />
-        <p className="hint m-0">Pas de nom d'élève. L'outil repère des mots comme « revers », « service », « jambes », « concentre », « volée ».</p>
-        {found.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-champagne-soft p-3 text-sm">
-            <span>Cité dans ton texte et pas encore noté : <b>{found.join(", ")}</b></span>
-            <button type="button" className="btn-clay btn-sm" onClick={applyFound}>Les mettre « à acquérir » dans le bilan</button>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="m-0 text-xl">Niveau du groupe sur chaque thème</h2><span className="text-sm text-muted">{rated} thème{rated > 1 ? "s" : ""} noté{rated > 1 ? "s" : ""} · touche à nouveau pour effacer</span></div>
-        {DOMAINS.map((d) => {
-          const names = THEME_NAMES.filter((n) => THEMES[n].d === d.key && L.ok.includes(n));
-          if (!names.length) return null;
-          return (
-            <fieldset key={d.key} className="m-0 grid gap-2 rounded-xl border border-line bg-white p-3" style={{ borderTop: `4px solid ${d.color}` }}>
-              <legend className="px-1 text-sm font-bold uppercase tracking-wide" style={{ color: d.color }}>{d.label}</legend>
-              {names.map((n) => (
-                <div key={n} className="grid items-center gap-2 sm:grid-cols-[13rem_minmax(0,1fr)]">
-                  <span className="font-semibold">{n}</span>
-                  <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Niveau du groupe : ${n}`}>
-                    {BILAN_LEVELS.map((b, i) => (
-                      <button key={b.label} type="button" aria-pressed={g.bilan[n] === i} onClick={() => setLevel(n, i)} style={g.bilan[n] === i ? { background: b.color, borderColor: b.color, color: "#fff" } : undefined}
-                        className={`min-h-10 rounded-lg border-2 px-2.5 py-1 text-sm font-bold ${g.bilan[n] === i ? "" : "border-line bg-white text-ink hover:border-ink"}`}>{b.short}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </fieldset>
-          );
-        })}
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-clay" onClick={next}>Voir la programmation →</button>
-        <span className="text-sm text-muted">Les thèmes « à acquérir » viennent en premier et reviennent le plus souvent ; ceux déjà acquis sont seulement consolidés.</span>
       </div>
     </section>
   );

@@ -55,7 +55,7 @@ export const THEMES: Record<string, Theme> = {
     ["Choisir le bon moment", "Avancer pendant la frappe", "Raquette devant"],
     ["Montée sur balle courte", "Volée placée", "Se replacer après la volée"],
     ["Monter et conclure le point", "Lire le lob adverse", "Smash de suite"]]),
-  "Construire le point (régularité)": T("tact", /regularit|faute|fautes|rater|rate|ratent|en jeu|constru/, [
+  "Construire le point (régularité)": T("tact", /regularit|constru|garder la balle|balle en jeu|echanges/, [
     ["Garder la balle en jeu", "Viser large", "Compter les échanges"],
     ["8 balles avant d'attaquer", "Viser profond", "Varier les hauteurs"],
     ["Régularité sous score", "Gagner les points importants", "Reprendre la balle en jeu après une erreur"]]),
@@ -154,12 +154,38 @@ export function themesInText(text: string): Record<string, number> {
   return out;
 }
 
+// Analyse du texte du prof : pour chaque thème cité, le niveau qui ressort de la phrase (0 à acquérir · 1 en cours · 2 acquis · 3 point fort) et la phrase elle-même
+export type Found = { theme: string; level: number; excerpt: string };
+const NEG = /mauvais|faute|rate\b|rates\b|rater|ratent|raté|\bmal\b|difficult|manque|faible|probleme|fragile|\bpeu\b|jamais|insuffisant|\blent|irregulier|hesit|n'ose|ose pas|bloque|oublie|enerv|stress|decourag|souvent|trop \w+ |du mal|pas (acquis|assez|maitris|encore|de )/;
+const POS = /\bbon\b|\bbonne|\bbien\b|maitris|solide|point fort|a l'aise|\bacquis|excellent|regulier|facilit|progress|\bfort\b/;
+const TOP = /point fort|excellent|tres bon|tres bien/;
+export function analyseText(text: string, levelKey: string): Found[] {
+  const L = levelDef(levelKey), out = new Map<string, Found>();
+  const parts = text.split(/[.!?;\n]+/).map((x) => x.trim()).filter(Boolean);
+  for (const raw of parts) {
+    const tAll = norm(raw), sentNeg = NEG.test(tAll), sentPos = POS.test(tAll);
+    for (const clause of raw.split(/\bmais\b|\bet\b|,/i).map((x) => x.trim()).filter(Boolean)) {
+      const t = norm(clause);
+      for (const n of THEME_NAMES) {
+        if (!L.ok.includes(n) || !new RegExp(THEMES[n].kw.source).test(t)) continue;
+        // La polarité vient du morceau de phrase ; s'il n'en a pas, de la phrase entière
+        let neg = NEG.test(t), pos = POS.test(t);
+        if (!neg && !pos) { neg = sentNeg; pos = sentPos; }
+        const level = neg ? (pos ? 1 : 0) : pos ? (TOP.test(t) ? 3 : 2) : 1;
+        const prev = out.get(n);
+        if (!prev || level < prev.level) out.set(n, { theme: n, level, excerpt: clause.length > 110 ? clause.slice(0, 107) + "…" : clause });
+      }
+    }
+  }
+  return [...out.values()].sort((a, b) => a.level - b.level);
+}
+
 // Poids d'un thème : ce que le bilan montre comme à acquérir + ce que le texte cite + la base du niveau
 export function weights(g: Group): Record<string, number> {
-  const L = levelDef(g.level), kw = themesInText(g.notes), w: Record<string, number> = {};
+  const L = levelDef(g.level), kw = themesInText(g.notes), seen = Object.fromEntries(analyseText(g.notes, g.level).map((f) => [f.theme, f.level])), w: Record<string, number> = {};
   for (const n of THEME_NAMES) {
     if (!L.ok.includes(n)) continue;
-    const b = g.bilan[n]; let v = 0;
+    const b = g.bilan[n] ?? seen[n]; let v = 0;
     if (b === 0) v += 3; else if (b === 1) v += 2; else if (b === 2) v += 0.6; else if (b === 3) v += 0.15;
     v += (kw[n] || 0) * 1.5; if (L.core.includes(n)) v += 1;
     if (v > 0) w[n] = v;
