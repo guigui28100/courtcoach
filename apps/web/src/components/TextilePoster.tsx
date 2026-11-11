@@ -14,7 +14,9 @@ import { loadOnline, OnlineInfo, PhotoAccess, saveOnline } from "./posterOnline"
 // Affiche « OPÉRATION TEXTILE » : la vente de tenues du club. Le coach (ou le bureau) importe ses photos de vêtements,
 // écrit le nom et le PRIX de chaque article (un seul prix : pas de tarif non adhérent), la date limite, la remise et la façon de commander.
 // Enregistrée en ligne (photos comprises) comme les autres affiches. Aucun nom d'élève.
-export type TextileItem = { name: string; price: string; photo: string; focus?: [number, number]; zoom?: number };
+export type TextileItem = { name: string; price: string; photo: string; focus?: [number, number]; zoom?: number; colors?: string[] }; // colors : coloris proposés (pastilles de couleur, jusqu'à 8)
+export const COLOR_CHOICES: [string, string][] = [["#ffffff", "Blanc"], ["#17140f", "Noir"], ["#1b1863", "Bleu marine"], ["#2f6bd1", "Bleu"], ["#7fb2e5", "Ciel"], ["#c0392b", "Rouge"], ["#b8471f", "Terre battue"], ["#e8920c", "Orange"], ["#ffd84d", "Jaune"], ["#2f6b4a", "Vert"], ["#8a8a8a", "Gris"], ["#d96aa7", "Rose"]];
+const colorName = (c: string) => COLOR_CHOICES.find(([h]) => h === c.toLowerCase())?.[1] ?? c;
 export type TextileData = { chip: string; tagline: string; deadline: string; delivery: string; how: string; sizes: string; items: TextileItem[] };
 export type TextileFormat = "A4" | "CARRE";
 export const TEXTILE_SIZES: Record<TextileFormat, { w: number; h: number }> = { A4: { w: 794, h: 1123 }, CARRE: { w: 1080, h: 1080 } };
@@ -65,6 +67,7 @@ export function TextilePoster({ data, format, bg = "", fmt, onPick, onPan, logos
               </div>
               <div style={{ flex: "0 0 auto", padding: "10px 12px 12px", textAlign: "center", display: "grid", gap: 2 }}>
                 <div data-fmt={`nom-${i}`} style={{ fontSize: (n > 4 ? 17 : 21) * k, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", overflowWrap: "break-word" }}>{txt(fmt, `nom-${i}`, tidy(it.name) || `Article ${i + 1}`)}</div>
+                {it.colors && it.colors.length > 0 && <div role="img" aria-label={`Coloris : ${it.colors.map(colorName).join(", ")}`} style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 4 }}>{it.colors.map((c) => <span key={c} style={{ width: n > 4 ? 20 : 26, height: n > 4 ? 20 : 26, borderRadius: "50%", background: c, border: "2px solid #fff", boxShadow: "0 0 0 1px rgba(0,0,0,.35)" }} />)}</div>}
                 {pr && <div data-fmt={`prix-${i}`} style={{ fontSize: (n > 4 ? 30 : 38) * k, fontWeight: 900, color: "#ffd84d", lineHeight: 1.05 }}>{txt(fmt, `prix-${i}`, pr)}</div>}
               </div>
             </div>
@@ -104,7 +107,6 @@ export function TextileModal({ onClose, canPartners = true }: { onClose: () => v
   const [bg, setBg] = useState("");
   const [fmt, setFmt] = useState<Fmts>({});
   const [sel, setSel] = useState("titre");
-  const [selItem, setSelItem] = useState(0);
   const [msg, setMsg] = useState("");
   const logos = usePartnerLogos("event"); const [withPartners, setWithPartners] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -149,14 +151,13 @@ export function TextileModal({ onClose, canPartners = true }: { onClose: () => v
       if (files.length > room) setMsg(`${MAX_ITEMS} articles au plus : les autres photos n'ont pas été ajoutées.`);
     } catch (x) { setMsg((x as Error).message); }
   };
-  const move = (i: number, to: number) => setD((o) => { if (to < 0 || to >= o.items.length) return o; const l = [...o.items]; const [a] = l.splice(i, 1); l.splice(to, 0, a); setSelItem(to); return { ...o, items: l }; });
+  const move = (i: number, to: number) => setD((o) => { if (to < 0 || to >= o.items.length) return o; const l = [...o.items]; const [a] = l.splice(i, 1); l.splice(to, 0, a); return { ...o, items: l }; });
   const shown = d.items.map((x, i) => ({ x, i })).filter(({ x }) => x.photo || x.name.trim() || x.price.trim());
   const fmtItems: FmtItem[] = [
     { key: "entete", label: "Nom du club (haut)", edit: true }, { key: "chip", label: "Pastille « commandes ouvertes »", edit: true }, { key: "titre", label: "Titre", edit: true }, { key: "accroche", label: "Phrase sous le titre", edit: true },
     ...shown.flatMap((_, j) => [{ key: `nom-${j}`, label: `Article ${j + 1} : nom`, edit: true }, { key: `prix-${j}`, label: `Article ${j + 1} : prix`, edit: true }] as FmtItem[]),
     { key: "tailles", label: "Tailles", edit: true }, { key: "date-limite", label: "Date limite", edit: true }, { key: "remise", label: "Remise des tenues", edit: true }, { key: "commande", label: "Comment commander", edit: true }, { key: "tout", label: "Tous les textes", sizeOnly: true },
   ];
-  const cur = Math.min(selItem, d.items.length - 1);
   const poster = (extra: object = {}) => <TextilePoster data={d} format={format} bg={bg} fmt={fmt} logos={withPartners ? logos : []} {...extra} />;
   return (
     <PosterStudio
@@ -174,7 +175,7 @@ export function TextileModal({ onClose, canPartners = true }: { onClose: () => v
           ) : (
             <div className="grid gap-3">
               {d.items.map((it, i) => (
-                <div key={i} className={"grid gap-2 rounded-md border-2 bg-white p-2 " + (i === cur ? "border-ink" : "border-line")} onFocus={() => setSelItem(i)}>
+                <div key={i} className={"grid gap-2 rounded-md border-2 border-line bg-white p-2"}>
                   <div className="flex items-center gap-2">
                     {it.photo ? <img src={it.photo} alt="" className="h-16 w-14 rounded object-cover" /> : <span className="grid h-16 w-14 place-items-center rounded bg-sand text-xs text-muted">photo</span>}
                     <div className="grid min-w-0 flex-1 gap-1">
@@ -187,16 +188,27 @@ export function TextileModal({ onClose, canPartners = true }: { onClose: () => v
                     <button type="button" className="btn-outline btn-sm" aria-label={`Article ${i + 1} : après`} disabled={i === d.items.length - 1} onClick={() => move(i, i + 1)}>▶</button>
                     <label className="btn-outline btn-sm cursor-pointer">📷 {it.photo ? "Changer la photo" : "Ajouter la photo"}
                       <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={`Article ${i + 1} : photo`} onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { try { setItem(i, { photo: await photoFromFile(f), focus: undefined, zoom: undefined }); } catch (x) { setMsg((x as Error).message); } } }} /></label>
-                    <button type="button" className="btn-outline btn-sm" aria-label={`Retirer l'article ${i + 1}`} onClick={() => { setD((o) => ({ ...o, items: o.items.filter((_, j) => j !== i) })); setSelItem(0); }}>🗑️ Retirer</button>
+                    <button type="button" className="btn-outline btn-sm" aria-label={`Retirer l'article ${i + 1}`} onClick={() => { setD((o) => ({ ...o, items: o.items.filter((_, j) => j !== i) })); }}>🗑️ Retirer</button>
                   </div>
-                  {it.photo && i === cur && <PhotoTuner label={it.name || `article ${i + 1}`} value={{ focus: it.focus, zoom: it.zoom }} onChange={(t) => setItem(i, t)} />}
+                  <div className="grid gap-1" role="group" aria-label={`Article ${i + 1} : coloris`}>
+                    <span className="text-xs font-bold text-ink">Coloris proposés <span className="font-normal text-muted">(touche pour ajouter ou retirer)</span></span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {COLOR_CHOICES.map(([h, nm]) => { const on = (it.colors ?? []).includes(h); return (
+                        <button key={h} type="button" aria-pressed={on} aria-label={`${nm}${on ? " (choisi)" : ""}`} title={nm} onClick={() => setItem(i, { colors: on ? (it.colors ?? []).filter((c) => c !== h) : [...(it.colors ?? []), h].slice(0, 8) })}
+                          className={"h-8 w-8 rounded-full border-2 " + (on ? "border-ink ring-2 ring-champagne" : "border-line")} style={{ background: h }}>{on ? <span style={{ color: h === "#ffffff" || h === "#ffd84d" ? "#17140f" : "#fff" }}>✓</span> : null}</button>); })}
+                      <label className="flex h-8 cursor-pointer items-center gap-1 rounded-full border-2 border-dashed border-ink bg-white px-2 text-xs font-bold text-ink">＋ Autre
+                        <input type="color" className="h-5 w-6 cursor-pointer border-0 bg-transparent p-0" aria-label={`Article ${i + 1} : ajouter une autre couleur`} onChange={(e) => { const h = e.target.value.toLowerCase(); if (!(it.colors ?? []).includes(h)) setItem(i, { colors: [...(it.colors ?? []), h].slice(0, 8) }); }} /></label>
+                    </div>
+                    {(it.colors ?? []).filter((c) => !COLOR_CHOICES.some(([h]) => h === c)).length > 0 && <div className="flex flex-wrap gap-1.5">{(it.colors ?? []).filter((c) => !COLOR_CHOICES.some(([h]) => h === c)).map((c) => <button key={c} type="button" className="flex items-center gap-1 rounded-full border-2 border-line bg-white px-2 py-0.5 text-xs font-bold" aria-label={`Retirer la couleur ${c}`} onClick={() => setItem(i, { colors: (it.colors ?? []).filter((x) => x !== c) })}><span className="h-4 w-4 rounded-full border border-line" style={{ background: c }} />{c} ✕</button>)}</div>}
+                  </div>
+                  {it.photo && <details className="rounded-md bg-sand/60 p-2"><summary className="cursor-pointer text-xs font-bold text-ink">🖼️ Régler le cadrage de la photo</summary><div className="mt-2"><PhotoTuner label={it.name || `article ${i + 1}`} value={{ focus: it.focus, zoom: it.zoom }} onChange={(t) => setItem(i, t)} /></div></details>}
                 </div>
               ))}
               {d.items.length < MAX_ITEMS && (
                 <label className="btn-outline cursor-pointer justify-self-start">＋ Ajouter des photos
                   <input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="Ajouter d'autres photos" onChange={(e) => { void addFiles(e.target.files); e.target.value = ""; }} /></label>
               )}
-              <button type="button" className="btn-outline justify-self-start" onClick={() => { setD((o) => ({ ...o, items: [...o.items, { name: "", price: "", photo: "" }] })); setSelItem(d.items.length); }} disabled={d.items.length >= MAX_ITEMS}>＋ Un article sans photo</button>
+              <button type="button" className="btn-outline justify-self-start" onClick={() => { setD((o) => ({ ...o, items: [...o.items, { name: "", price: "", photo: "" }] })); }} disabled={d.items.length >= MAX_ITEMS}>＋ Un article sans photo</button>
             </div>
           )}
         </Sec>
