@@ -9,7 +9,7 @@ import { hasContent } from "./BulletinShelf";
 import { useStars } from "./Stars";
 import { MatchTable, useFollowUp } from "./Suivi";
 import { AuthorBadge, Err, Field } from "./ui";
-import { RANKINGS, AXES, axisAverage, LEVELS, levelOf, DOMAIN_EMOJI, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, START_ITEMS, itemKey, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
+import { itemsOf, RANKINGS, AXES, axisAverage, LEVELS, levelOf, DOMAIN_EMOJI, currentSeason, Goal, goalApplies, Evaluation, EVAL_AXES, fmtAvg, inPeriod, MatchRow, periodLabel, periodShort, previousPeriod, Player, RATING_LABELS, START_ITEMS, itemKey, ratedCount, trimesterOf, TOTAL_SKILLS, trendCommon, overallAverage, fmtDate } from "../types";
 
 const seasonsAround = () => { const y = Number(currentSeason().slice(0, 4)); return [`${y - 1}-${y}`, `${y}-${y + 1}`, `${y + 1}-${y + 2}`]; };
 
@@ -98,12 +98,12 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player; season: string; t: number; saved?: Evaluation; onSaved: () => void; onGoto?: (tab: "objectifs") => void }) {
   const [rt, setRt] = useState<Record<string, number>>(() => ({ ...Object.fromEntries(EVAL_AXES.map((a) => [a.key, Math.round(axisAverage(saved, a))]).filter(([, v]) => v)), ...Object.fromEntries(Object.entries(saved?.ratings ?? {}).filter(([k]) => k.startsWith("d_"))) }));
   // Toucher un niveau : la note du domaine devient la moyenne des points notés (arrondie à un entier de 1 à 5, comme avant)
-  const setItem = (axis: string, key: string, n: number) => setRt((r) => { const next = { ...r, [key]: n }; const vals = (START_ITEMS[axis] ?? []).map(([k]) => next[itemKey(axis, k)]).filter(Boolean); if (vals.length) next[axis] = Math.min(5, Math.max(1, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length))); return next; });
+  const setItem = (axis: string, key: string, n: number) => setRt((r) => { const next = { ...r, [key]: n }; const vals = itemsOf(axis, p).map(([k]) => next[itemKey(axis, k)]).filter(Boolean); if (vals.length) next[axis] = Math.min(5, Math.max(1, Math.round(vals.reduce((a, b) => a + b, 0) / vals.length))); return next; });
   const [word, setWord] = useState(saved?.appreciation ?? "");
   // Points forts et priorités : calculés d'après les niveaux (le coach n'écrit rien)
-  const listOf = (levels: number[]) => EVAL_AXES.flatMap((a) => (START_ITEMS[a.key] ?? []).filter(([k]) => levels.includes(levelOf(rt[itemKey(a.key, k)]))).map(([, label]) => label));
+  const listOf = (levels: number[]) => EVAL_AXES.flatMap((a) => itemsOf(a.key, p).filter(([k]) => levels.includes(levelOf(rt[itemKey(a.key, k)]))).map(([, label]) => label));
   const strong = listOf([3]).length ? listOf([3]) : listOf([2]), todo = listOf([0]).length ? listOf([0]) : listOf([1]);
-  const counts = LEVELS.map((_, i) => EVAL_AXES.reduce((n, a) => n + (START_ITEMS[a.key] ?? []).filter(([k]) => levelOf(rt[itemKey(a.key, k)]) === i).length, 0));
+  const counts = LEVELS.map((_, i) => EVAL_AXES.reduce((n, a) => n + itemsOf(a.key, p).filter(([k]) => levelOf(rt[itemKey(a.key, k)]) === i).length, 0));
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -119,7 +119,7 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
         {LEVELS.map((l, i) => <div key={l.label} className="rounded-2xl border-t-[5px] bg-white p-3 text-center shadow-sm" style={{ borderTopColor: l.color }}><b className="block text-3xl" style={{ color: l.color }}>{counts[i]}</b><span className="text-sm font-bold">{l.label}</span></div>)}
       </div>
       {EVAL_AXES.map((a) => {
-        const items = START_ITEMS[a.key] ?? [];
+        const items = itemsOf(a.key, p);
         const done = items.filter(([k]) => levelOf(rt[itemKey(a.key, k)]) >= 2).length;
         const oldNote = !items.some(([k]) => rt[itemKey(a.key, k)]) && rt[a.key];
         return (

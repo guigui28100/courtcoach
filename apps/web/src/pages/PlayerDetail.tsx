@@ -14,7 +14,7 @@ import { useRegisterSubNav } from "../components/subnav";
 import { AuthorBadge, authorColor, Avatar, BackLink, Empty, Err, Field, MultiSelect, SelectOrText, Page, TabLabel, PageHead, ProgressBar, SideLayout } from "../components/ui";
 import { VideoUpload, useVideos, VideoBadge, MarkBadge } from "../components/Videos";
 import { Bulletins, Evaluations, Matchs } from "../components/CoachFollowUp";
-import { DEPART_SHOTS, GESTURE_MARKS, HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
+import { GestureConfig, customGestures, gestureNotes, DEPART_SHOTS, GESTURE_MARKS, HEIGHTS, TRAINING_VOLUMES, MISSION_TOPICS, inPeriod, DOMAIN_EMOJI, EVAL_AXES, AXES, checkpointAt, fmtDay, starReason, todayIso, totalStars, Consent, currentSeason, fmtDate, fullName, Goal, GoalCheckpoint, goalApplies, GoalStatus, isCarriedOver, Player, progressAt, STATUS, statusAt, trimesterOf, trimestersOf } from "../types";
 
 type Tab = "profil" | "accords" | "depart" | "objectifs" | "evaluations" | "etoiles" | "videos" | "matchs" | "bulletins";
 const CONSENT_LABEL: Record<Consent["kind"], string> = {
@@ -306,7 +306,7 @@ function Objectifs({ p }: { p: Player }) {
   const here = goals.filter((g) => goalApplies(g, t));
 
   const [newAxis, setNewAxis] = useState<string>("TECHNIQUE"), [topic, setTopic] = useState(""), [newObjs, setNewObjs] = useState<string[]>([""]), [saving, setSaving] = useState(false), [added, setAdded] = useState("");
-  const topics = MISSION_TOPICS[newAxis] ?? [];
+  const topics = [...(MISSION_TOPICS[newAxis] ?? []), ...(newAxis === "TECHNIQUE" ? customGestures(p).map((c) => c.label) : [])];
   const filled = newObjs.map((x) => x.trim()).filter(Boolean);
   async function addQuick(e: FormEvent) {
     e.preventDefault(); if (!filled.length || saving) return;
@@ -434,7 +434,7 @@ function StarsTab({ p }: { p: Player }) {
   function edit(d: string) { const list = (stars ?? []).filter((s) => s.day === d); setDay(d); setLines(list.map((s) => ({ stars: s.stars, reason: s.reason, domain: s.domain ?? "", comment: s.comment, goalId: s.goalId ?? undefined }))); window.scrollTo({ top: 0, behavior: "smooth" }); }
   return (
     <div className="grid gap-4">
-      <ThemeRadar ratings={evals?.find((e) => e.season === currentSeason(new Date(day + "T12:00:00")) && e.trimester === 0)?.ratings} goals={goals} stars={stars} who="coach" season={currentSeason(new Date(day + "T12:00:00"))} t={trimesterOf(new Date(day + "T12:00:00"))} />
+      <ThemeRadar ratings={evals?.find((e) => e.season === currentSeason(new Date(day + "T12:00:00")) && e.trimester === 0)?.ratings} goals={goals} stars={stars} who="coach" custom={customGestures(p)} season={currentSeason(new Date(day + "T12:00:00"))} t={trimesterOf(new Date(day + "T12:00:00"))} />
       <section className="card grid gap-3">
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
@@ -466,17 +466,26 @@ function StarsTab({ p }: { p: Player }) {
   );
 }
 
-function PlayerVideosTab({ p }: { p: Player }) {
+function PlayerVideosTab({ p, onConfig }: { p: Player; onConfig: (c: GestureConfig) => void }) {
   const nav = useNavigate();
   const [version, setVersion] = useState(0);
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
   const [params] = useSearchParams();
   const [shot, setShot] = useState<string | null>(() => { const c = params.get("coup"); return c && c.length <= 40 ? c : null; });
-  const [extra, setExtra] = useState<string[]>([]); // gestes écrits par le coach (en plus des 6 habituels)
-  const [adding, setAdding] = useState(false), [newName, setNewName] = useState("");
-  const slots = [...DEPART_SHOTS, ...new Set([...videos.filter((v) => GESTURE_MARKS.some((g) => g.key === v.mark) && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot), ...extra, ...(shot && !DEPART_SHOTS.includes(shot) ? [shot] : [])])];
-  const addShot = () => { const n = newName.trim().slice(0, 40); if (!n) return; setExtra((x) => (x.includes(n) ? x : [...x, n])); setShot(n); setNewName(""); setAdding(false); };
+  const cfg: GestureConfig = p.gestureConfig ?? { custom: [], notes: {} };
+  const [adding, setAdding] = useState(false), [newName, setNewName] = useState(""), [note, setNote] = useState(""), [cfgErr, setCfgErr] = useState("");
+  const slots = [...DEPART_SHOTS, ...new Set([...cfg.custom.map((c) => c.label), ...videos.filter((v) => GESTURE_MARKS.some((g) => g.key === v.mark) && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)])];
+  const noteOf = (s: string) => cfg.notes[s] ?? "";
+  useEffect(() => { setNote(shot ? noteOf(shot) : ""); }, [shot, p.gestureConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function saveCfg(custom: string[], notes: Record<string, string>) {
+    setCfgErr("");
+    try { onConfig(await put<GestureConfig>(`/players/${p.id}/gestures`, { custom: custom.map((label) => ({ label })), notes })); return true; }
+    catch (e) { setCfgErr((e as Error).message); return false; }
+  }
+  async function addShot() { const n = newName.trim().slice(0, 30); if (n.length < 2) return; if (await saveCfg([...cfg.custom.map((c) => c.label), ...(cfg.custom.some((c) => c.label === n) ? [] : [n])], cfg.notes)) { setShot(n); setNewName(""); setAdding(false); } }
+  async function saveNote() { if (!shot) return; const notes = { ...cfg.notes }; if (note.trim()) notes[shot] = note.trim(); else delete notes[shot]; await saveCfg(cfg.custom.map((c) => c.label), notes); }
+  async function removeShot(label: string) { if (!confirm(`Retirer le geste « ${label} » de la toile et des notes de ${p.firstName} ? Les vidéos déjà filmées restent.`)) return; const notes = { ...cfg.notes }; delete notes[label]; if (await saveCfg(cfg.custom.filter((c) => c.label !== label).map((c) => c.label), notes)) setShot(null); }
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
@@ -487,7 +496,7 @@ function PlayerVideosTab({ p }: { p: Player }) {
           {slots.map((s) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === s), on = shot === s; return (
             <button key={s} type="button" role="tab" aria-selected={on} onClick={() => setShot(on ? null : s)}
               className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
-              {s}{has ? " 📍" : ""}
+              {s}{noteOf(s) ? ` · ${noteOf(s)}` : ""}{has ? " 📍" : ""}
             </button>
           ); })}
           <button type="button" onClick={() => setAdding((a) => !a)} aria-expanded={adding} className="min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 border-dashed border-ink bg-white px-3 text-sm font-bold text-ink hover:bg-sand">✏️ Autre geste</button>
@@ -496,6 +505,14 @@ function PlayerVideosTab({ p }: { p: Player }) {
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid gap-1 text-sm font-bold">Quel geste veux-tu filmer ?<input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addShot(); } }} maxLength={40} className="input" placeholder="Ex. Service kické, jeu de jambes…" /></label>
             <button type="button" className="btn-clay btn-sm" onClick={addShot} disabled={!newName.trim()}>Ajouter ce geste</button>
+          </div>
+        )}
+        {cfgErr && <p className="alert m-0" role="alert">{cfgErr}</p>}
+        {shot && (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid gap-1 text-sm font-bold">Précision sur « {shot} » (facultatif)<input value={note} onChange={(e) => setNote(e.target.value)} maxLength={40} className="input" placeholder="Ex. lifté, à une main, kické…" /></label>
+            <button type="button" className="btn-outline btn-sm" onClick={saveNote} disabled={note.trim() === noteOf(shot)}>Enregistrer la précision</button>
+            {cfg.custom.some((c) => c.label === shot) && <button type="button" className="btn-outline btn-sm" onClick={() => removeShot(shot)}>🗑️ Retirer ce geste</button>}
           </div>
         )}
         {shot && (
@@ -509,7 +526,7 @@ function PlayerVideosTab({ p }: { p: Player }) {
                     ? <div className="grid gap-1"><VideoBadge v={v} forCoach /><button type="button" className="btn-clay btn-sm self-start" onClick={async () => { await post(`/videos/${v.id}/send-to-player`); setVersion((x) => x + 1); }}>📤 Envoyer à {p.firstName}</button></div>
                     : <span className="badge self-start !border-ok !text-ok">✅ Visible par {p.firstName}{g.key !== "DEPART" ? " à l'ouverture du trimestre" : ""}</span>}
                 </>
-                  : imageOk ? <VideoUpload playerId={p.id} toPlayer={p.firstName} shot={shot} mark={g.key} label={`＋ Ajouter la vidéo ${g.key === "DEPART" ? "de départ" : g.label}`} onDone={(id) => { setVersion((x) => x + 1); if (id) nav(`/coach/videos/${id}`); }} />
+                  : imageOk ? <VideoUpload playerId={p.id} toPlayer={p.firstName} shot={shot} subject={noteOf(shot) ? `${shot} · ${noteOf(shot)}` : shot} mark={g.key} label={`＋ Ajouter la vidéo ${g.key === "DEPART" ? "de départ" : g.label}`} onDone={(id) => { setVersion((x) => x + 1); if (id) nav(`/coach/videos/${id}`); }} />
                   : <p className="hint m-0">Accord « droit à l'image » manquant.</p>}
               </div>
             ); })}
@@ -564,7 +581,7 @@ export default function PlayerDetail() {
           {tab === "depart" && <StartEvalPanel p={p} onGoto={(x) => setTab(x)} />}
           {tab === "objectifs" && <><Objectifs p={p} /><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="missions" /></>}
           {tab === "evaluations" && <Evaluations p={p} onGoto={(x) => setTab(x)} />}
-          {tab === "videos" && <PlayerVideosTab p={p} />}
+          {tab === "videos" && <PlayerVideosTab p={p} onConfig={(c) => setP((x) => (x ? { ...x, gestureConfig: c } : x))} />}
           {tab === "matchs" && <><PlayerReports p={p} /><Matchs p={p} /></>}
           {tab === "etoiles" && <StarsTab p={p} />}
           {tab === "bulletins" && <><MailFamilyBar playerId={p.id} firstName={p.firstName} topic="bulletin" /><Bulletins p={p} /></>}

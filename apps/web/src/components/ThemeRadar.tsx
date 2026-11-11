@@ -13,14 +13,19 @@ const SHORT: Record<string, string> = { "Gestion des émotions": "Émotions", "R
 
 export interface ThemeDef { id: string; axis: string; label: string; item?: string }
 // Tous les thèmes possibles, dans l'ordre : domaine, puis points du bilan, puis les autres points à travailler des missions
+export type CustomTheme = { key: string; label: string };
+// Les gestes ajoutés par le coach pour ce joueur sont des thèmes de Technique, à la suite des autres
+export const themeCatalog = (custom: CustomTheme[] = []): ThemeDef[] => custom.length ? THEME_CATALOG.flatMap((d, i, all) => [d, ...(d.axis === "technique" && all[i + 1]?.axis !== "technique" ? custom.map((c) => ({ id: `technique:${c.key}`, axis: "technique", label: c.label, item: c.key })) : [])]) : THEME_CATALOG;
 export const THEME_CATALOG: ThemeDef[] = AXES.flatMap((axis) => {
   const items = (START_ITEMS[axis] ?? []).map(([k, label]) => ({ id: `${axis}:${k}`, axis, label, item: k }));
   const known = new Set(Object.values(TOPIC_ITEM));
   const topics = (MISSION_TOPICS[axis.toUpperCase()] ?? []).filter((t) => !TOPIC_ITEM[t] || !known.has(TOPIC_ITEM[t])).map((t) => ({ id: `${axis}:${t}`, axis, label: t }));
   return [...items, ...topics];
 });
-const defOfMission = (g: Goal): { id: string; axis: string; label: string } => {
+const defOfMission = (g: Goal, custom: CustomTheme[] = []): { id: string; axis: string; label: string } => {
   const axis = g.axis.toLowerCase(), k = g.title.indexOf(" : "), head = k > 0 ? g.title.slice(0, k) : "";
+  const c = g.axis === "TECHNIQUE" ? custom.find((x) => x.label === head) : undefined;
+  if (c) return { id: `technique:${c.key}`, axis, label: c.label };
   if (head && (MISSION_TOPICS[g.axis] ?? []).includes(head)) { const it = TOPIC_ITEM[head]; return { id: it ? `${axis}:${it}` : `${axis}:${head}`, axis, label: head }; }
   return { id: `${axis}:`, axis, label: AXIS_NAME[axis] ?? axis }; // sans thème connu : le nom du domaine
 };
@@ -71,16 +76,16 @@ const Legend = ({ items, dark }: { items: { label: string; color: string; dashed
 );
 
 // La toile de l'espace du jeune et de la fiche du coach (« Mon point de départ » / « Donner des étoiles »)
-export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune", season: seasonProp, t: tProp }: { ratings?: Record<string, number>; goals: Goal[]; stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "coach"; season?: string; t?: number }) {
+export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune", season: seasonProp, t: tProp, custom = [] }: { custom?: CustomTheme[]; ratings?: Record<string, number>; goals: Goal[]; stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "coach"; season?: string; t?: number }) {
   if (!stars) return <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />;
   const season = seasonProp ?? currentSeason(), t = tProp ?? trimesterOf(), r = ratings ?? {};
   const here = goals.filter((g) => goalApplies(g, t));
   // Étoiles gagnées sur les missions de chaque thème (ce trimestre)
   const earned = new Map<string, { axis: string; label: string; stars: number }>();
-  for (const g of here) { const d = defOfMission(g), cur = earned.get(d.id) ?? { axis: d.axis, label: d.label, stars: 0 }; cur.stars += missionStars(stars, g.id, season, t); earned.set(d.id, cur); }
+  for (const g of here) { const d = defOfMission(g, custom), cur = earned.get(d.id) ?? { axis: d.axis, label: d.label, stars: 0 }; cur.stars += missionStars(stars, g.id, season, t); earned.set(d.id, cur); }
   // Pointes : les points notés au bilan + les thèmes qui ont au moins une mission
   const spokes: (RadarSpoke & { start: number })[] = [];
-  for (const d of THEME_CATALOG) { const v = d.item ? r[itemKey(d.axis, d.item)] ?? 0 : 0; if (v > 0 || earned.has(d.id)) spokes.push({ id: d.id, axis: d.axis, label: d.label, start: v }); }
+  for (const d of themeCatalog(custom)) { const v = d.item ? r[itemKey(d.axis, d.item)] ?? 0 : 0; if (v > 0 || earned.has(d.id)) spokes.push({ id: d.id, axis: d.axis, label: d.label, start: v }); }
   for (const [id, e] of earned) if (!spokes.some((s) => s.id === id)) spokes.push({ id, axis: e.axis, label: e.label, start: r[e.axis] ?? 0 });
   spokes.sort((a, b) => AXES.indexOf(a.axis as (typeof AXES)[number]) - AXES.indexOf(b.axis as (typeof AXES)[number]));
   const me = who === "jeune", n = spokes.length, sub = dark ? "text-white/80" : "text-muted";
@@ -103,10 +108,10 @@ export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune",
 }
 
 // « Image du joueur » des bulletins : les points notés dans une évaluation (départ, trimestre précédent, ce trimestre). Anciens bulletins (sans notes par point) : on affiche l'ancien dessin à 5 branches (`fallback`).
-export function ThemeImage({ evals, fallback = null }: { evals: { label: string; ratings: Record<string, number> | undefined; color: string; dashed?: boolean }[]; fallback?: React.ReactNode }) {
+export function ThemeImage({ evals, fallback = null, custom = [] }: { custom?: CustomTheme[]; evals: { label: string; ratings: Record<string, number> | undefined; color: string; dashed?: boolean }[]; fallback?: React.ReactNode }) {
   const has = (r?: Record<string, number>) => Object.keys(r ?? {}).some((k) => k.startsWith("d_"));
   if (!evals.some((e) => has(e.ratings))) return <>{fallback}</>;
-  const spokes = THEME_CATALOG.filter((d) => d.item && evals.some((e) => (e.ratings?.[itemKey(d.axis, d.item!)] ?? 0) > 0));
+  const spokes = themeCatalog(custom).filter((d) => d.item && evals.some((e) => (e.ratings?.[itemKey(d.axis, d.item!)] ?? 0) > 0));
   if (spokes.length < 3) return <>{fallback}</>;
   const series = evals.filter((e) => e.ratings).map((e) => ({ label: e.label, color: e.color, dashed: e.dashed, values: spokes.map((d) => e.ratings![itemKey(d.axis, d.item!)] ?? 0) }));
   const summary = "Image du joueur. " + spokes.map((d, i) => `${d.label} : ${series.map((s) => `${s.label} ${s.values[i]} sur 5`).join(", ")}`).join(". ");

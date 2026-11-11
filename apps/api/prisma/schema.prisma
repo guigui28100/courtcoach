@@ -121,6 +121,7 @@ model Player {
   availability     String?
   health           String?   // facultatif, sensible : jamais visible hors coach et responsables
   coachNotes       String?   // notes privées du coach : jamais visibles par la famille
+  gestureConfig    Json?     // gestes ajoutés par le coach (thèmes de la toile) et précisions des coups : { custom: [{key,label}], notes: {coup: texte} }
   createdAt        DateTime  @default(now())
   lastActivityAt   DateTime  @default(now())
   archivedAt       DateTime?

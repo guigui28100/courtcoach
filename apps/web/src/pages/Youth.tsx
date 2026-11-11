@@ -18,7 +18,7 @@ import { ThemeRadar } from "../components/ThemeRadar";
 import { useFollowUp } from "../components/Suivi";
 import { BackLink } from "../components/ui";
 import { gestureVideo, GestureBeforeAfter, useVideos, VideoList, VideosIntro, VideoUpload } from "../components/Videos";
-import { AXES, isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars, inPeriod, fmtDay } from "../types";
+import { customGestures, AXES, isTeen, missionPercent, missionStars, axisAverage, checkpointAt, currentSeason, EVAL_AXES, goalApplies, isCarriedOver, periodShort, STATUS, statusAt, trimesterOf, fmtAvg, fmtDate, Goal, overallAverage, periodLabel, pendingSelfEval, Player, previousPeriod, ratedCount, SelfEvaluation, trendCommon, VideoRow, CourseStar, starReason, totalStars, inPeriod, fmtDay } from "../types";
 
 // Couleurs claires (lisibles sur fond sombre) et émojis des 4 axes de progression
 const MISSION: Record<string, { label: string; emoji: string; color: string }> = {
@@ -93,7 +93,7 @@ function StartBilan({ p, base, goals, stars }: { p: Player; base: string; goals:
           <div><Link to={`${base}/bulletin/${season}/0`} className="gal-btn btn-sm no-underline">Voir mon bilan de départ en entier</Link></div>
         </section>
       )}
-      <ThemeRadar ratings={start?.ratings} goals={goals} stars={stars} dark />
+      <ThemeRadar ratings={start?.ratings} goals={goals} stars={stars} dark custom={customGestures(p)} />
     </div>
   );
 }
@@ -277,7 +277,7 @@ function ProgressTab({ p, stars, goals, preview }: { p: Player; stars: CourseSta
           <div className="grid gap-3 p-4"><p className="m-0 opacity-85">Ton point de départ et tes progrès, thème par thème.</p>
             <button type="button" className="gal-btn justify-self-start" aria-expanded={open} aria-controls="theme-radar-zone" onClick={() => setOpen((o) => !o)}>{open ? "🙈 Cacher ma toile" : "🕸️ Voir ma toile"}</button></div>
         </section>)} />
-      <div id="theme-radar-zone">{open && <section className="prog-panel p-4" aria-label="Ma toile"><ThemeRadar ratings={start?.ratings} goals={goals} stars={stars} dark /></section>}</div>
+      <div id="theme-radar-zone">{open && <section className="prog-panel p-4" aria-label="Ma toile"><ThemeRadar ratings={start?.ratings} goals={goals} stars={stars} dark custom={customGestures(p)} /></section>}</div>
     </div>
   );
 }
@@ -335,12 +335,12 @@ function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: 
 }
 
 // Aperçu coach : les vidéos de ce joueur et l'état de chaque analyse (le coach les ouvre dans son studio)
-function PreviewVideos({ mine }: { mine: VideoRow[] }) {
+function PreviewVideos({ mine, config }: { mine: VideoRow[]; config?: Player["gestureConfig"] }) {
   return (
     <section className="glass gal-pop grid gap-3" aria-labelledby="gal-videos-apercu">
       <h2 id="gal-videos-apercu" className="m-0 text-2xl">🎬 Mes vidéos</h2>
       <VideosIntro who="apercu" dark />
-      <GestureBeforeAfter videos={mine} onChanged={() => undefined} preview />
+      <GestureBeforeAfter videos={mine} onChanged={() => undefined} preview config={config} />
       <VideoList videos={mine.filter((v) => !gestureVideo(v, mine))} onChanged={() => undefined} preview empty="Aucune autre vidéo pour l'instant." />
     </section>
   );
@@ -353,7 +353,7 @@ function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow
       <VideosIntro who="jeune" />
       {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
       {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
-      <GestureBeforeAfter videos={mine} openId={openId} onChanged={refresh} />
+      <GestureBeforeAfter videos={mine} openId={openId} onChanged={refresh} config={p.gestureConfig} />
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine.filter((v) => !gestureVideo(v, mine))} openId={openId} onChanged={refresh} empty={mine.length ? "" : "Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !"} />
     </section>
@@ -495,7 +495,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
               {tab === "accueil" && <HomeTab p={p} done={(goals[p.id] ?? []).filter((g) => g.checkpoints?.some((c) => c.status === "ACHIEVED")).length} wins={wins[p.id] ?? 0} fresh={fresh.length - freshSent} sent={freshSent} pending={pending} stars={stars ?? []} newStars={newStars} go={go} />}
               {tab === "depart" && <StartBilan p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} goals={goals[p.id] ?? []} stars={stars} />}
               {tab === "missions" && <><Missions goals={goals[p.id] ?? []} p={p} base={previewId ? `/coach/centre/${p.id}` : `/suivi/${p.id}`} stars={stars} videos={mine} /></>}
-              {tab === "videos" && (previewId ? <PreviewVideos mine={mine} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
+              {tab === "videos" && (previewId ? <PreviewVideos mine={mine} config={p.gestureConfig} /> : <Videos p={p} mine={mine} fresh={fresh} refresh={refresh} openId={params.get("video")} />)}
               {tab === "progres" && <ProgressTab p={p} stars={stars} goals={goals[p.id] ?? []} preview={!!previewId} />}
               {tab === "tournois" && p.committeeTrainer && <ChildReports playerId={p.id} />}
               {tab === "matchs" && <MatchesTab p={p} preview={!!previewId} />}

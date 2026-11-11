@@ -215,3 +215,10 @@ export class TournamentReportDto {
   @IsObject() themes: Record<string, { level: string; goalId?: string }>;
   @IsOptional() @Transform(trim) @IsString() @MaxLength(300) summary?: string;
 }
+
+// Gestes ajoutés par le coach pour un joueur (deviennent des thèmes de la toile) et précision écrite sur un coup habituel
+export class GestureItemDto { @Transform(({ value }) => (typeof value === "string" ? value.trim() : value)) @IsString() @MinLength(2) @MaxLength(30) label: string; }
+export class GesturesDto {
+  @IsArray() @ArrayMaxSize(8) @ValidateNested({ each: true }) @Type(() => GestureItemDto) custom: GestureItemDto[];
+  @IsOptional() @IsObject() notes?: Record<string, string>;
+}

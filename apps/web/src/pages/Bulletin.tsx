@@ -11,7 +11,7 @@ import { MatchTable, SkillBars, useFollowUp } from "../components/Suivi";
 import { BackLink, ClubLogo, Empty } from "../components/ui";
 import { SelfEvalView } from "../components/SelfEval";
 import { useVideos } from "../components/Videos";
-import { MISSION_TOPICS, ageOf, isTeen, AXES, START_ITEMS, itemKey, LEVELS, levelOf, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
+import { customGestures, itemsOf, MISSION_TOPICS, ageOf, isTeen, AXES, START_ITEMS, itemKey, LEVELS, levelOf, SELF_EVAL_MONTH, selfEvalIsOpen, missionPercent, missionStars, QUALITIES, qualityStars, matchStats, starsByDomain, axisAverage, checkpointAt, currentSeason, isCarriedOver, periodShort, STATUS, statusAt, EVAL_AXES, fmtAvg, fmtDate, fullName, Goal, goalApplies, inPeriod, overallAverage, periodLabel, Player, previousPeriod, progressAt, SelfEvaluation, progressBefore, ratedCount, TRIMESTER_MONTHS, trendCommon } from "../types";
 
 const EMOJI: Record<string, string> = { technique: "🎾", tactique: "🧠", physique: "💪", mental: "🔥", attitude: "🤝" };
 
@@ -134,7 +134,7 @@ export default function Bulletin() {
             {here.length > 0 && (
               <section className="bul-card grid gap-3" aria-labelledby="bul-missions">
                 <div className="grid gap-1.5"><h2 id="bul-missions" className="m-0 text-2xl">🎯 Missions du trimestre</h2><ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Bilan des objectifs">{(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as const).map((k) => { const n = here.filter((g) => statusAt(g, t) === k).length; return n ? <li key={k} className="rounded-full px-3 py-0.5 text-sm font-bold" style={{ background: STATUS[k].bg, color: STATUS[k].ink }}>{STATUS[k].emoji} {n} {LAB[k].toLowerCase()}</li> : null; })}</ul></div>
-                <DomainMissions goals={here} render={(g) => { const st = statusAt(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
+                <DomainMissions custom={customGestures(p).map((c) => c.label)} goals={here} render={(g) => { const st = statusAt(g, t); const note = checkpointAt(g, t)?.comment.trim(); return (
                   <li key={g.id} className="pl-1">
                     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"><strong className="font-bold">{g.title}</strong><span className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-sm font-bold" style={{ background: st ? STATUS[st].bg : "#f1f1f1", color: st ? STATUS[st].ink : "#655d4c" }}>{st ? `${STATUS[st].emoji} ${LAB[st]}` : "Pas encore évaluée"}</span></div>
                     {note && <p className="m-0 mt-1 border-l-4 border-[#7b5d2a] pl-2 text-sm italic text-[#655d4d]"><strong className="not-italic">💬 Mot du coach : </strong>{note}</p>}
@@ -153,7 +153,7 @@ export default function Bulletin() {
                 <h2 id="bul-image" className="m-0 text-3xl font-black text-white drop-shadow">📸 Image du joueur</h2>
             {rated ? (
                 <div className="grid w-full justify-items-center gap-1 break-inside-avoid rounded-3xl bg-white p-3 shadow-[0_10px_28px_rgba(23, 20, 15, 0.35)] ring-4 ring-white/40 sm:mx-auto sm:max-w-2xl">
-                  <ThemeImage evals={[{ label: t === 0 ? "Bilan de début d'année" : `Ce trimestre (T${t})`, ratings: ev?.ratings, color: "#7b5d2a" }, ...(prev ? [{ label: pp.t === 0 ? "Point de départ (début d'année)" : "Trimestre précédent", ratings: prev.ratings, color: "#2a2720", dashed: true }] : []), ...(start && ratedCount(start) ? [{ label: "Point de départ (début d'année)", ratings: start.ratings, color: "#e08a00", dashed: true }] : [])]} fallback={<Radar series={series} />} />
+                  <ThemeImage custom={customGestures(p)} evals={[{ label: t === 0 ? "Bilan de début d'année" : `Ce trimestre (T${t})`, ratings: ev?.ratings, color: "#7b5d2a" }, ...(prev ? [{ label: pp.t === 0 ? "Point de départ (début d'année)" : "Trimestre précédent", ratings: prev.ratings, color: "#2a2720", dashed: true }] : []), ...(start && ratedCount(start) ? [{ label: "Point de départ (début d'année)", ratings: start.ratings, color: "#e08a00", dashed: true }] : [])]} fallback={<Radar series={series} />} />
                 </div>
               ) : t === 0 ? <Empty>Les notes du bilan de départ ne sont pas encore saisies.</Empty> : null}
 
@@ -172,11 +172,11 @@ export default function Bulletin() {
               </section>
             )}
 
-            {t === 0 && ev && Object.keys(START_ITEMS).some((k) => START_ITEMS[k].some(([i]) => ev.ratings[itemKey(k, i)])) && (
+            {t === 0 && ev && Object.keys(START_ITEMS).some((k) => itemsOf(k, p).some(([i]) => ev.ratings[itemKey(k, i)])) && (
               <section className="bul-card grid gap-3" aria-labelledby="bul-detail">
                 <h2 id="bul-detail" className="m-0 text-2xl">🔍 Le détail du bilan</h2>
                 <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
-                  {AXES.map((a) => { const its = (START_ITEMS[a.key.toLowerCase()] ?? []).filter(([i]) => ev.ratings[itemKey(a.key.toLowerCase(), i)]); if (!its.length) return null; return (
+                  {AXES.map((a) => { const its = itemsOf(a.key.toLowerCase(), p).filter(([i]) => ev.ratings[itemKey(a.key.toLowerCase(), i)]); if (!its.length) return null; return (
                     <section key={a.key} className="grid min-w-0 break-inside-avoid content-start gap-1.5" aria-label={a.label}>
                       <h3 className="m-0 border-b-2 pb-1 text-base" style={{ color: a.color, borderColor: `${a.color}55` }}>{EMOJI[a.key.toLowerCase()]} {a.label}</h3>
                       <ul className="m-0 grid list-none gap-1.5 p-0">{its.map(([i, label]) => { const v = ev.ratings[itemKey(a.key.toLowerCase(), i)]; return (
@@ -191,7 +191,7 @@ export default function Bulletin() {
             {startGoals.length > 0 && (
               <section className="bul-card grid gap-3" aria-labelledby="bul-t1">
                 <div className="grid gap-1"><h2 id="bul-t1" className="m-0 text-2xl">🎯 À travailler au trimestre 1</h2><p className="m-0 text-sm text-muted">Ce que {p.firstName} va travailler en priorité pour commencer la saison, domaine par domaine.</p></div>
-                <DomainMissions goals={startGoals} render={(g) => <li key={g.id}>{g.title}</li>} />
+                <DomainMissions custom={customGestures(p).map((c) => c.label)} goals={startGoals} render={(g) => <li key={g.id}>{g.title}</li>} />
               </section>
             )}
 
@@ -223,15 +223,15 @@ export default function Bulletin() {
 
 // Liste compacte : un titre par domaine (technique, tactique, physique, mental), puis une puce par mission
 // Les missions d'un domaine sont rangées par « point à travailler » (coup droit, revers…) : « Revers : Fiabiliser la profondeur » → sous-titre « Revers » + objectif « Fiabiliser la profondeur »
-function splitTopic(g: Goal): [string, Goal] {
+function splitTopic(g: Goal, custom: string[] = []): [string, Goal] {
   const k = g.title.indexOf(" : "), head = k > 0 ? g.title.slice(0, k) : "";
-  return head && (MISSION_TOPICS[g.axis] ?? []).includes(head) ? [head, { ...g, title: g.title.slice(k + 3) }] : ["", g];
+  return head && ((MISSION_TOPICS[g.axis] ?? []).includes(head) || (g.axis === "TECHNIQUE" && custom.includes(head))) ? [head, { ...g, title: g.title.slice(k + 3) }] : ["", g];
 }
-function DomainMissions({ goals, render, rating }: { goals: Goal[]; render: (g: Goal) => ReactNode; rating?: (axisKey: string) => number | undefined }) {
+function DomainMissions({ goals, render, rating, custom = [] }: { custom?: string[]; goals: Goal[]; render: (g: Goal) => ReactNode; rating?: (axisKey: string) => number | undefined }) {
   return (
     <div className="grid gap-3">
       {AXES.map((a) => { const list = goals.filter((g) => g.axis === a.key); if (!list.length) return null; const n = rating?.(a.key.toLowerCase());
-        const parts = list.map(splitTopic), topics = [...new Set(parts.map(([t]) => t).filter(Boolean))], free = parts.filter(([t]) => !t).map(([, g]) => g);
+        const parts = list.map((g) => splitTopic(g, custom)), topics = [...new Set(parts.map(([t]) => t).filter(Boolean))], free = parts.filter(([t]) => !t).map(([, g]) => g);
         const ul = (items: Goal[]) => <ul className="bul-list m-0 grid list-disc gap-2 pl-6 text-[#312d25]" style={{ ["--mk" as string]: a.color }}>{items.map(render)}</ul>;
         return (
         <section key={a.key} className="grid min-w-0 break-inside-avoid gap-1" aria-label={a.label}>
