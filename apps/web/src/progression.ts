@@ -226,3 +226,15 @@ export const joinSkills = (list: string[]) => list.map((x) => "• " + x).join("
 export const titleOptions = (theme: string) => compsOf(theme).map((c) => `${theme} : ${c}`);
 // Fil rouge : une compétence d'un thème physique ou mental
 export const filOptions = (): string[] => THEME_NAMES.filter((n) => THEMES[n].d === "phys" || THEMES[n].d === "ment").flatMap((n) => THEMES[n].s[0].concat(THEMES[n].s[1], THEMES[n].s[2]).filter((c, i, a) => a.indexOf(c) === i).map((c) => `${n} : ${c}`));
+
+// ——— V2 : consultation et documents ———
+export const seasonLabel = (d = new Date()) => { const y = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1; return `${y} – ${y + 1}`; };
+export const sessionDomain = (s: Session): Domain | null => (s.theme && THEMES[s.theme] ? THEMES[s.theme].d : null);
+export const sessionColor = (s: Session) => { const d = sessionDomain(s); return d ? domainOf(d).color : "#a8884a"; };
+export const KIND_LABEL: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
+export const nextSession = (g: Group) => { const i = g.sessions.findIndex((s) => !s.done); return i < 0 ? g.sessions.length - 1 : i; };
+// Niveau moyen du groupe par domaine, d'après le bilan de départ (0 à 3), ou null si rien n'est noté
+export function bilanByDomain(g: Group): { d: (typeof DOMAINS)[number]; rated: [string, number][]; avg: number | null }[] {
+  const L = levelDef(g.level);
+  return DOMAINS.map((d) => { const rated = THEME_NAMES.filter((n) => THEMES[n].d === d.key && L.ok.includes(n) && g.bilan[n] !== undefined).map((n) => [n, g.bilan[n]] as [string, number]); return { d, rated, avg: rated.length ? rated.reduce((a, [, v]) => a + v, 0) / rated.length : null }; });
+}

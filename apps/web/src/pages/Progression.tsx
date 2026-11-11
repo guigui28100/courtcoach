@@ -1,28 +1,28 @@
-import { createPortal } from "react-dom";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
 import { Err, Page, PageHead, TabsBar } from "../components/ui";
-import { ClubLogo } from "../components/ui";
+import { buildPages, DocChoice } from "../components/ProgressionDoc";
+import { Consult, Docs, PrintHost } from "../components/ProgressionViews";
 import {
   compsOf, filOptions, joinSkills, parseSkills, titleOptions, LevelDef,
   BILAN_LEVELS, DOMAINS, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
-type Tab = "bilan" | "programme" | "synthese";
-const TABS: [Tab, string][] = [["bilan", "📋 1 · Bilan de départ"], ["programme", "🗓️ 2 · Programmation"], ["synthese", "📊 3 · Synthèse et impression"]];
+type Tab = "bilan" | "programme" | "consulter" | "documents";
+const TABS: [Tab, string][] = [["bilan", "📋 1 · Bilan de départ"], ["programme", "🗓️ 2 · Programmation"], ["consulter", "👁️ 3 · Consulter"], ["documents", "📄 4 · Documents"]];
 const KIND: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [sel, setSel] = useState(""); const [tab, setTab] = useState<Tab>("bilan");
   const [err, setErr] = useState(""); const [state, setState] = useState<"" | "saving" | "saved" | "error">("");
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null);
   const loaded = useRef(false); const sig = useRef("");
 
   useEffect(() => {
     get<{ groups: Group[] }>("/progressions").then((r) => {
       const gs = (r.groups || []).map((g) => ({ ...g, bilan: g.bilan || {}, sessions: g.sessions || [], minutes: g.minutes || 60 }));
-      sig.current = JSON.stringify(gs); setGroups(gs); setSel(gs[0]?.id || ""); loaded.current = true; if (!gs.length) setAdding(true);
+      sig.current = JSON.stringify(gs); setGroups(gs); setSel(gs[0]?.id || ""); if (gs[0]?.sessions.length) setTab("consulter"); loaded.current = true; if (!gs.length) setAdding(true);
     }).catch((e) => setErr(e.message));
   }, []);
 
@@ -41,6 +41,8 @@ export default function Progression() {
   const upd = (patch: Partial<Group>) => setGroups((gs) => gs!.map((x) => (x.id === sel ? { ...x, ...patch } : x)));
   const create = (n: Partial<Group>) => { const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: n.size || 0, minutes: n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setTab("bilan"); setAdding(false); };
   const remove = () => { setGroups((gs) => { const r = gs!.filter((x) => x.id !== sel); setSel(r[0]?.id || ""); return r; }); };
+
+  const doPrint = (c: DocChoice, a = 1, b = 30) => { if (g) setPrintPages(buildPages(g, c, a, b)); };
 
   if (err && !groups) return <Page><Err msg={err} /></Page>;
   if (!groups) return <Page><div className="skeleton h-40" /></Page>;
@@ -83,12 +85,14 @@ export default function Progression() {
                   <TabsBar tabs={TABS} active={tab} onChange={(k) => setTab(k as Tab)} label="Étapes du groupe" side={false} />
                   {tab === "bilan" && <Bilan g={g} upd={upd} next={() => setTab("programme")} />}
                   {tab === "programme" && <Programme g={g} upd={upd} />}
-                  {tab === "synthese" && <Synthese g={g} />}
+                  {tab === "consulter" && <Consult g={g} onDone={(i, v) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, done: v } : x)) })} onPrint={doPrint} onEdit={() => setTab("programme")} />}
+                  {tab === "documents" && <Docs g={g} onPrint={doPrint} />}
                 </div>
               )}
           </div>
         </div>
       </Page>
+      <PrintHost pages={printPages} onDone={() => setPrintPages(null)} />
     </>
   );
 }
@@ -286,102 +290,5 @@ function ThemeEditor({ g, s, i, L, setS, changeTheme }: { g: Group; s: Session; 
         <select id={`s-fil-${i}`} className="input" value={filSel} onChange={(e) => setS(i, { fil: e.target.value === OTHER ? "Mon fil rouge" : e.target.value })}><option value="">Aucun</option>{fils.map((f) => <option key={f}>{f}</option>)}<option value={OTHER}>✏️ Autre : je l'écris moi-même</option></select>
         {filSel === OTHER && <input id={`s-fil2-${i}`} className="input" maxLength={160} value={s.fil} onChange={(e) => setS(i, { fil: e.target.value })} />}</label>
     </>
-  );
-}
-
-function Synthese({ g }: { g: Group }) {
-  const L = levelDef(g.level); const S = g.sessions;
-  const [pm, setPm] = useState<null | "prog" | "fiches">(null);
-  const count: Record<string, number> = {}; S.forEach((s) => { if (s.theme) count[s.theme] = (count[s.theme] || 0) + 1; });
-  const byDom = DOMAINS.map((d) => ({ d, n: Object.entries(count).filter(([t]) => THEMES[t]?.d === d.key).reduce((a, [, c]) => a + c, 0) }));
-  const total = Math.max(1, byDom.reduce((a, x) => a + x.n, 0));
-  const missing = Object.entries(g.bilan).filter(([n, v]) => v <= 1 && L.ok.includes(n) && !count[n]).map(([n]) => n);
-  useEffect(() => {
-    if (!pm) return;
-    const st = document.createElement("style"); st.textContent = "@page{size:210mm 297mm;margin:12mm}";
-    document.head.appendChild(st); document.body.classList.add("printing-affiche");
-    const done = () => { document.body.classList.remove("printing-affiche"); st.remove(); window.removeEventListener("afterprint", done); setPm(null); };
-    window.addEventListener("afterprint", done); const t = window.setTimeout(() => window.print(), 150);
-    return () => { window.clearTimeout(t); window.removeEventListener("afterprint", done); document.body.classList.remove("printing-affiche"); st.remove(); };
-  }, [pm]);
-  if (!S.length) return <p className="m-0 text-muted">Crée d'abord la programmation (étape 2).</p>;
-  return (
-    <section className="grid gap-5">
-      <div className="grid gap-3">
-        <h2 className="m-0 text-xl">Ce que la saison couvre</h2>
-        <div className="flex h-5 overflow-hidden rounded" role="img" aria-label="Répartition des séances par domaine">{byDom.map(({ d, n }) => <div key={d.key} style={{ width: `${(n / total) * 100}%`, background: d.color }} />)}</div>
-        <div className="flex flex-wrap gap-3 text-sm">{byDom.map(({ d, n }) => <span key={d.key}><i className="mr-1 inline-block size-3 align-[-1px]" style={{ background: d.color }} />{d.label} : {n} séance{n > 1 ? "s" : ""}</span>)}</div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Object.entries(count).sort((a, b) => b[1] - a[1]).map(([t, c]) => {
-          const ph = [0, 1, 2].map((p) => S.filter((s, i) => s.theme === t && phaseOf(i) === p).length); const d = domainOf(THEMES[t]?.d ?? "tech");
-          return <div key={t} className="rounded-xl border border-line bg-white p-3" style={{ borderTop: `4px solid ${d.color}` }}><b>{t}</b> <span className="text-muted">· {c} séance{c > 1 ? "s" : ""}</span><p className="m-0 mt-1 text-xs text-muted">Bases {ph[0]} · Consolidation {ph[1]} · Mise en jeu {ph[2]}</p>{g.bilan[t] !== undefined && <p className="m-0 mt-1 text-xs">Bilan de départ : {BILAN_LEVELS[g.bilan[t]].label}</p>}</div>;
-        })}
-      </div>
-      {missing.length > 0 && <p className="m-0 rounded-lg border-l-4 border-clay bg-champagne-soft p-3 text-sm"><b>À regarder :</b> ces thèmes sont « à acquérir » au bilan mais n'ont aucune séance : {missing.join(", ")}.</p>}
-      <div className="grid gap-2 rounded-xl border border-line bg-white p-4">
-        <h2 className="m-0 text-xl">Imprimer</h2>
-        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={() => setPm("prog")}>📄 Le programme de l'année (A4)</button><button type="button" className="btn-outline" onClick={() => setPm("fiches")}>🗒️ Les fiches de séance (2 par page)</button></div>
-        <p className="hint m-0">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » pour garder un fichier. Rien n'est envoyé sur Internet.</p>
-      </div>
-      {pm && createPortal(<div className="affiche-print" style={{ background: "#fff", color: "#16140f", fontSize: 12, lineHeight: 1.35 }}>{pm === "prog" ? <PrintProgramme g={g} /> : <PrintFiches g={g} />}</div>, document.body)}
-    </section>
-  );
-}
-
-const PHead = ({ g, sub }: { g: Group; sub: string }) => {
-  const L = levelDef(g.level);
-  return (
-    <header style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #a8884a", paddingBottom: 8, marginBottom: 10 }}>
-      <ClubLogo className="size-12 text-[#16140f]" />
-      <div style={{ flex: 1 }}><div style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 700 }}>{g.name}</div><div style={{ color: "#6a645a" }}>{sub} · {L.key}{g.size ? ` · ${g.size} joueurs` : ""} · séances de {g.minutes} min</div></div>
-      <div style={{ textAlign: "right", fontSize: 10, color: "#6a645a" }}>Tennis Club Houdan<br />Programmation de la saison</div>
-    </header>
-  );
-};
-function PrintProgramme({ g }: { g: Group }) {
-  const L = levelDef(g.level); const rated = Object.entries(g.bilan).filter(([n]) => L.ok.includes(n));
-  return (
-    <div>
-      <PHead g={g} sub="Programme de l'année" />
-      <p style={{ margin: "0 0 6px" }}><b>Attendu à ce niveau :</b> {L.att.join(" · ")}.</p>
-      {rated.length > 0 && <p style={{ margin: "0 0 8px" }}><b>Bilan de départ :</b> {rated.map(([n, v]) => `${n} (${BILAN_LEVELS[v].short.toLowerCase()})`).join(", ")}.</p>}
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead><tr style={{ background: "#efe8d8", textAlign: "left" }}>{["N°", "Séance", "Compétences", "Fil rouge", "Fait"].map((h) => <th key={h} style={{ border: "1px solid #ccc", padding: 4, fontSize: 10 }}>{h}</th>)}</tr></thead>
-        <tbody>{g.sessions.map((s, i) => (
-          <Fragment key={i}>
-            {i % 10 === 0 && <tr><td colSpan={5} style={{ background: "#16140f", color: "#fff", padding: "3px 6px", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>{PHASES[phaseOf(i)]}</td></tr>}
-            <tr style={{ breakInside: "avoid" }}>
-              <td style={{ border: "1px solid #ccc", padding: 4, fontWeight: 700 }}>{i + 1}</td>
-              <td style={{ border: "1px solid #ccc", padding: 4 }}><b>{s.title}</b></td>
-              <td style={{ border: "1px solid #ccc", padding: 4, whiteSpace: "pre-line" }}>{s.skills.replace(/• /g, "").split("\n").filter(Boolean).join(" · ")}</td>
-              <td style={{ border: "1px solid #ccc", padding: 4 }}>{s.fil}</td>
-              <td style={{ border: "1px solid #ccc", padding: 4, width: 22 }}>{s.done ? "✔" : ""}</td>
-            </tr>
-          </Fragment>
-        ))}</tbody>
-      </table>
-    </div>
-  );
-}
-function PrintFiches({ g }: { g: Group }) {
-  const pages: Session[][] = []; for (let i = 0; i < g.sessions.length; i += 2) pages.push(g.sessions.slice(i, i + 2));
-  return (
-    <div>
-      {pages.map((p, k) => (
-        <section key={k} style={{ breakAfter: k < pages.length - 1 ? "page" : "auto", minHeight: "270mm", display: "grid", gridTemplateRows: "auto 1fr 1fr", gap: 8 }}>
-          <PHead g={g} sub="Fiches de séance" />
-          {p.map((s, j) => { const i = k * 2 + j; const d = s.theme && THEMES[s.theme] ? domainOf(THEMES[s.theme].d) : null; return (
-            <article key={i} style={{ border: "1px solid #bbb", borderLeft: `6px solid ${d?.color ?? "#a8884a"}`, padding: 8, overflow: "hidden" }}>
-              <div style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 18, fontWeight: 700 }}>Séance {i + 1} · {s.title} <span style={{ fontSize: 11, fontFamily: "inherit", color: "#6a645a" }}>({PHASES[phaseOf(i)].toLowerCase()})</span></div>
-              {s.why && <div style={{ color: "#6a645a", fontSize: 10 }}>Pourquoi : {s.why}</div>}
-              <div style={{ marginTop: 4 }}><b>Compétences</b><div style={{ whiteSpace: "pre-line" }}>{s.skills}</div></div>
-              {s.fil && <div style={{ marginTop: 4 }}><b>Fil rouge :</b> {s.fil}</div>}
-              <div style={{ marginTop: 6, borderTop: "1px dashed #bbb", paddingTop: 4, color: "#6a645a" }}>Notes : {s.note || "………………………………………………………………………………………………………………"}</div>
-            </article>
-          ); })}
-        </section>
-      ))}
-    </div>
   );
 }
