@@ -56,3 +56,6 @@
 - Accès : coach, président et bureau (jamais les entraîneurs, familles, jeunes, adultes). Aucun service extérieur. Le serveur reconstruit le contenu champ par champ (`sanitizeTournoi`). Suppression : avec l'animation, par « Recommencer à zéro », ou automatiquement après 12 mois sans modification (tâche nocturne).
 
 **Effacements automatiques (27/10/2026)** : tâche nocturne : vidéos de plus de 12 mois, journal de plus de 12 mois, programmations de tournoi de plus de 12 mois, demandes de cours particuliers 12 mois après le cours, jetons de connexion périmés, invitations périmées ou utilisées depuis plus de 30 jours.
+
+## Progression des séances des profs (11/11/2026)
+Chaque prof (coach ou entraîneur) peut créer des groupes (nom, niveau, nombre de joueurs) avec un bilan de départ et 30 séances. Texte libre possible (« remarques », notes de séance) : l'écran demande de ne jamais écrire de nom d'élève. Visible de la seule personne qui l'a écrite (ni le coach pour un entraîneur, ni le président, le bureau, les familles). Supprimé avec le compte du prof et après 12 mois sans modification.
