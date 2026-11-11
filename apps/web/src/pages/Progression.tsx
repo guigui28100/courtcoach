@@ -4,6 +4,7 @@ import { get, put } from "../api";
 import { Err, Page, PageHead, TabsBar } from "../components/ui";
 import { ClubLogo } from "../components/ui";
 import {
+  compsOf, filOptions, joinSkills, parseSkills, titleOptions, LevelDef,
   BILAN_LEVELS, DOMAINS, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
@@ -227,14 +228,12 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
               </div>
               {isOpen && (
                 <div className="grid gap-3 border-t border-line p-3">
-                  {s.kind === "theme" && (
-                    <label className="grid gap-1"><span className="text-sm font-bold">Thème de la séance</span>
-                      <select id={`s-th-${i}`} className="input" value={s.theme} onChange={(e) => changeTheme(i, e.target.value)}>{L.ok.map((n) => <option key={n}>{n}</option>)}{!L.ok.includes(s.theme) && <option>{s.theme}</option>}</select>
-                      <span className="hint">Changer de thème remplace les compétences et l'exercice par ceux du nouveau thème.</span></label>
+                  {s.kind === "theme" ? <ThemeEditor g={g} s={s} i={i} L={L} setS={setS} changeTheme={changeTheme} /> : (
+                    <>
+                      <label className="grid gap-1"><span className="text-sm font-bold">Titre</span><input id={`s-ti-${i}`} className="input" maxLength={120} value={s.title} onChange={(e) => setS(i, { title: e.target.value })} /></label>
+                      <label className="grid gap-1"><span className="text-sm font-bold">À faire</span><textarea id={`s-sk-${i}`} className="input min-h-20" maxLength={600} value={s.skills} onChange={(e) => setS(i, { skills: e.target.value })} /></label>
+                    </>
                   )}
-                  <label className="grid gap-1"><span className="text-sm font-bold">Titre</span><input id={`s-ti-${i}`} className="input" maxLength={120} value={s.title} onChange={(e) => setS(i, { title: e.target.value })} /></label>
-                  <label className="grid gap-1"><span className="text-sm font-bold">Compétences à travailler</span><textarea id={`s-sk-${i}`} className="input min-h-20" maxLength={600} value={s.skills} onChange={(e) => setS(i, { skills: e.target.value })} /></label>
-                  <label className="grid gap-1"><span className="text-sm font-bold">Fil rouge (physique ou mental)</span><input id={`s-fil-${i}`} className="input" maxLength={160} value={s.fil} onChange={(e) => setS(i, { fil: e.target.value })} /></label>
                   <label className="grid gap-1"><span className="text-sm font-bold">Mes notes après la séance</span><textarea id={`s-no-${i}`} className="input min-h-16" maxLength={600} value={s.note} onChange={(e) => setS(i, { note: e.target.value })} placeholder="Ce qui a marché, ce qu'il faut refaire. Pas de nom d'élève." /></label>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className="btn-outline btn-sm" disabled={i === 0} onClick={() => move(i, -1)}>↑ Monter</button>
@@ -249,6 +248,44 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
       })}
       <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, { kind: "theme", theme: "", title: "Séance à écrire", skills: "", fil: "", why: "", note: "", done: false }] }); setOpen(S.length); }}>＋ Ajouter une séance à moi</button></div>
     </section>
+  );
+}
+
+// Séance de thème : thème, titre et compétences sont des menus déroulants liés entre eux
+const OTHER = "__autre";
+function ThemeEditor({ g, s, i, L, setS, changeTheme }: { g: Group; s: Session; i: number; L: LevelDef; setS: (i: number, p: Partial<Session>) => void; changeTheme: (i: number, t: string) => void }) {
+  void g;
+  const comps = compsOf(s.theme), titles = titleOptions(s.theme), skills = parseSkills(s.skills);
+  const customSkills = skills.filter((x) => !comps.includes(x));
+  const titleSel = titles.includes(s.title) ? s.title : OTHER;
+  const fils = filOptions(); const filSel = fils.includes(s.fil) ? s.fil : s.fil ? OTHER : "";
+  const [add, setAdd] = useState("");
+  const toggle = (c: string) => setS(i, { skills: joinSkills(skills.includes(c) ? skills.filter((x) => x !== c) : [...skills, c]) });
+  const pickTitle = (v: string) => {
+    if (v === OTHER) { setS(i, { title: "" }); return; }
+    const c = v.slice(s.theme.length + 3);
+    setS(i, { title: v, skills: joinSkills(skills.includes(c) ? skills : [c, ...skills]) });
+  };
+  return (
+    <>
+      <label className="grid gap-1"><span className="text-sm font-bold">1 · Thème de la séance</span>
+        <select id={`s-th-${i}`} className="input" value={s.theme} onChange={(e) => changeTheme(i, e.target.value)}>{L.ok.map((n) => <option key={n}>{n}</option>)}{!L.ok.includes(s.theme) && <option>{s.theme}</option>}</select>
+        <span className="hint">Changer de thème remplace le titre et les compétences par ceux du nouveau thème.</span></label>
+      <label className="grid gap-1"><span className="text-sm font-bold">2 · Titre (compétence principale)</span>
+        <select id={`s-ti-${i}`} className="input" value={titleSel} onChange={(e) => pickTitle(e.target.value)}>{titles.map((t) => <option key={t}>{t}</option>)}<option value={OTHER}>✏️ Autre : je l'écris moi-même</option></select>
+        {titleSel === OTHER && <input id={`s-ti2-${i}`} className="input" maxLength={120} value={s.title} placeholder="Mon titre" onChange={(e) => setS(i, { title: e.target.value })} />}</label>
+      <details className="rounded-lg border border-line bg-white" open>
+        <summary className="cursor-pointer p-3 font-bold">3 · Compétences à travailler <span className="font-normal text-muted">({skills.length} choisie{skills.length > 1 ? "s" : ""})</span></summary>
+        <div className="grid gap-1 border-t border-line p-3 sm:grid-cols-2">
+          {comps.map((c) => <label key={c} className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 size-5 accent-clay" checked={skills.includes(c)} onChange={() => toggle(c)} /><span>{c}</span></label>)}
+          {customSkills.map((c) => <label key={c} className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 size-5 accent-clay" checked onChange={() => toggle(c)} /><span>{c} <i className="text-muted">(à moi)</i></span></label>)}
+        </div>
+        <div className="flex gap-2 border-t border-line p-3"><input id={`s-add-${i}`} className="input" maxLength={80} value={add} placeholder="Ajouter une compétence à moi" onChange={(e) => setAdd(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const t = add.trim(); if (t && !skills.includes(t)) setS(i, { skills: joinSkills([...skills, t]) }); setAdd(""); } }} /><button type="button" className="btn-outline btn-sm" onClick={() => { const t = add.trim(); if (t && !skills.includes(t)) setS(i, { skills: joinSkills([...skills, t]) }); setAdd(""); }}>Ajouter</button></div>
+      </details>
+      <label className="grid gap-1"><span className="text-sm font-bold">4 · Fil rouge (physique ou mental)</span>
+        <select id={`s-fil-${i}`} className="input" value={filSel} onChange={(e) => setS(i, { fil: e.target.value === OTHER ? "Mon fil rouge" : e.target.value })}><option value="">Aucun</option>{fils.map((f) => <option key={f}>{f}</option>)}<option value={OTHER}>✏️ Autre : je l'écris moi-même</option></select>
+        {filSel === OTHER && <input id={`s-fil2-${i}`} className="input" maxLength={160} value={s.fil} onChange={(e) => setS(i, { fil: e.target.value })} />}</label>
+    </>
   );
 }
 

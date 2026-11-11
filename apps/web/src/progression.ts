@@ -181,7 +181,7 @@ export function whyOf(g: Group, theme: string): string {
 export function sessionFor(g: Group, theme: string, phase: number, fil: string): Session {
   const th = THEMES[theme], fr = THEMES[fil];
   const skills = th.s[phase].map((x) => "• " + x).join("\n");
-  return { kind: "theme", theme, title: `${theme} · ${PHASES[phase].toLowerCase()}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false };
+  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false };
 }
 
 export function generate(g: Group): Session[] {
@@ -218,3 +218,11 @@ export function generate(g: Group): Session[] {
   for (let i = 0; i < 30; i++) { if (special[i]) list.push(special[i]); else { const s = seq[k]; list.push(sessionFor(g, s.n, phaseOf(i), fr[k % fr.length])); k++; } }
   return list;
 }
+
+// Menus déroulants d'une séance : tout est lié au thème choisi
+export const compsOf = (theme: string): string[] => (THEMES[theme] ? [...new Set(THEMES[theme].s.flat())] : []);
+export const parseSkills = (text: string): string[] => text.split("\n").map((l) => l.replace(/^\s*•\s*/, "").trim()).filter(Boolean);
+export const joinSkills = (list: string[]) => list.map((x) => "• " + x).join("\n");
+export const titleOptions = (theme: string) => compsOf(theme).map((c) => `${theme} : ${c}`);
+// Fil rouge : une compétence d'un thème physique ou mental
+export const filOptions = (): string[] => THEME_NAMES.filter((n) => THEMES[n].d === "phys" || THEMES[n].d === "ment").flatMap((n) => THEMES[n].s[0].concat(THEMES[n].s[1], THEMES[n].s[2]).filter((c, i, a) => a.indexOf(c) === i).map((c) => `${n} : ${c}`));
