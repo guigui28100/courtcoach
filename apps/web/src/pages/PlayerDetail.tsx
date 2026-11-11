@@ -472,7 +472,11 @@ function PlayerVideosTab({ p }: { p: Player }) {
   const videos = (useVideos(version) ?? []).filter((v) => v.player?.id === p.id);
   const imageOk = !!p.consents?.some((c) => c.kind === "IMAGE" && !c.withdrawnAt);
   const [params] = useSearchParams();
-  const [shot, setShot] = useState<string | null>(() => { const c = params.get("coup"); return c && DEPART_SHOTS.includes(c) ? c : null; });
+  const [shot, setShot] = useState<string | null>(() => { const c = params.get("coup"); return c && c.length <= 40 ? c : null; });
+  const [extra, setExtra] = useState<string[]>([]); // gestes écrits par le coach (en plus des 6 habituels)
+  const [adding, setAdding] = useState(false), [newName, setNewName] = useState("");
+  const slots = [...DEPART_SHOTS, ...new Set([...videos.filter((v) => GESTURE_MARKS.some((g) => g.key === v.mark) && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot), ...extra, ...(shot && !DEPART_SHOTS.includes(shot) ? [shot] : [])])];
+  const addShot = () => { const n = newName.trim().slice(0, 40); if (!n) return; setExtra((x) => (x.includes(n) ? x : [...x, n])); setShot(n); setNewName(""); setAdding(false); };
   return (
     <div className="grid gap-4">
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
@@ -480,13 +484,20 @@ function PlayerVideosTab({ p }: { p: Player }) {
       <section className="grid gap-3 rounded-xl border-2 border-line bg-white p-3" aria-label="Gestes de départ">
         <div><strong>📍 Gestes de {p.firstName} : {(() => { const n = DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length; return `${n} ${n > 1 ? "départs filmés" : "départ filmé"} sur ${DEPART_SHOTS.length}`; })()}</strong><p className="hint m-0">Touche un coup : tu vois son départ (septembre) et chaque fin de trimestre, et tu peux ajouter la vidéo qui manque.</p></div>
         <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Coups">
-          {DEPART_SHOTS.map((s) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === s), on = shot === s; return (
+          {slots.map((s) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === s), on = shot === s; return (
             <button key={s} type="button" role="tab" aria-selected={on} onClick={() => setShot(on ? null : s)}
               className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
               {s}{has ? " 📍" : ""}
             </button>
           ); })}
+          <button type="button" onClick={() => setAdding((a) => !a)} aria-expanded={adding} className="min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 border-dashed border-ink bg-white px-3 text-sm font-bold text-ink hover:bg-sand">✏️ Autre geste</button>
         </div>
+        {adding && (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid gap-1 text-sm font-bold">Quel geste veux-tu filmer ?<input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addShot(); } }} maxLength={40} className="input" placeholder="Ex. Service kické, jeu de jambes…" /></label>
+            <button type="button" className="btn-clay btn-sm" onClick={addShot} disabled={!newName.trim()}>Ajouter ce geste</button>
+          </div>
+        )}
         {shot && (
           <div className="grid gap-3 sm:grid-cols-2" role="tabpanel">
             {GESTURE_MARKS.map((g) => { const v = videos.find((x) => x.mark === g.key && x.shot === shot); return (

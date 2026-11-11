@@ -198,7 +198,7 @@ export function Bulletins({ p }: { p: Player }) {
     <div className="grid gap-3">
       <p className="hint m-0">Un bulletin est créé pour chaque trimestre évalué. Tu peux l'imprimer ou l'enregistrer en PDF. La famille le voit aussi dans son espace.</p>
       <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
-        {evals.map((e: Evaluation) => {
+        {[...evals].sort((a, b) => (a.season === b.season ? a.trimester - b.trimester : a.season < b.season ? -1 : 1)).map((e: Evaluation) => {
           const pp = previousPeriod(e.season, e.trimester);
           const before = evals.find((x) => x.season === pp.season && x.trimester === pp.t);
           const avg = overallAverage(e);

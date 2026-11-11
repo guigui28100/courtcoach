@@ -30,7 +30,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
     if (blob.size < 1024) return setErr("Ce fichier est vide.");
     setPct(0);
     try {
-      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? String(f.get("shot")) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
+      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? (String(f.get("subject") || f.get("shot")).trim() || String(f.get("shot"))) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
       for (let i = 0; i < c.chunkCount; i++) {
         const part = blob.slice(i * c.chunkSize, (i + 1) * c.chunkSize);
         for (let attempt = 1; ; attempt++) {
@@ -58,6 +58,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
           )}
           <div className={"grid gap-4 " + (toPlayer ? "" : "sm:grid-cols-2")}>
             {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
+            {shot && toPlayer && <Field label="Texte de la carte (tu peux le changer ou le compléter)" id="v-subject"><input id="v-subject" name="subject" maxLength={80} defaultValue={shot} className="input" placeholder="Ex. Service kické, revers à une main…" /></Field>}
             {shot ? <input type="hidden" name="shot" value={shot} /> : <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>}
           </div>
           {!toPlayer && <Field label="Une question pour le coach ? (facultatif)" id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>}
