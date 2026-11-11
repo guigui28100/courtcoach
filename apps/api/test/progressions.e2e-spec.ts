@@ -18,7 +18,7 @@ describe("Progression des séances (privée au prof)", () => {
     const email = `${key}@exemple.fr`; await prisma.user.create({ data: { email, role, firstName: key, passwordHash: await hash(PASSWORD) } });
     A[key] = request.agent(app.getHttpServer()); await A[key].post("/api/auth/login").set(ORIGIN).send({ email, password: PASSWORD }).expect(200);
   }
-  const doc = (name = "Orange du mercredi") => ({ groups: [{ id: "g1", name, level: "Balle orange · 7-9 ans", size: 8, minutes: 75, bilan: { Revers: 0, Service: 1, Smash: 9 }, notes: "revers fragile", sessions: [{ kind: "theme", theme: "Revers", title: "Revers : bases", skills: "Prise", exercise: "Panier", fil: "Jeu de jambes", note: "", done: true }] }] });
+  const doc = (name = "Orange du mercredi") => ({ groups: [{ id: "g1", name, level: "Balle orange · 7-9 ans", size: 8, minutes: 75, bilan: { Revers: 0, Service: 1, Smash: 9 }, notes: "revers fragile", sessions: [{ kind: "theme", theme: "Revers", title: "Revers : bases", skills: "Prise", fil: "Jeu de jambes", note: "", done: true }] }] });
 
   beforeAll(async () => { app = await createApp(); await app.init(); prisma = app.get(PrismaService); await clean(); for (const [k, r] of [["coach", Role.COACH], ["prof1", Role.TRAINER], ["prof2", Role.TRAINER], ["president", Role.PRESIDENT], ["bureau", Role.BUREAU], ["adulte", Role.ADULT], ["parent", Role.GUARDIAN], ["jeune", Role.YOUTH]] as [string, Role][]) await login(k, r); });
   afterAll(async () => { await clean(); await app.close(); });

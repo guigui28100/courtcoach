@@ -234,7 +234,6 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
                   )}
                   <label className="grid gap-1"><span className="text-sm font-bold">Titre</span><input id={`s-ti-${i}`} className="input" maxLength={120} value={s.title} onChange={(e) => setS(i, { title: e.target.value })} /></label>
                   <label className="grid gap-1"><span className="text-sm font-bold">Compétences à travailler</span><textarea id={`s-sk-${i}`} className="input min-h-20" maxLength={600} value={s.skills} onChange={(e) => setS(i, { skills: e.target.value })} /></label>
-                  <label className="grid gap-1"><span className="text-sm font-bold">Exercice (dispositif, critère de réussite, variables)</span><textarea id={`s-ex-${i}`} className="input min-h-40" maxLength={1200} value={s.exercise} onChange={(e) => setS(i, { exercise: e.target.value })} /></label>
                   <label className="grid gap-1"><span className="text-sm font-bold">Fil rouge (physique ou mental)</span><input id={`s-fil-${i}`} className="input" maxLength={160} value={s.fil} onChange={(e) => setS(i, { fil: e.target.value })} /></label>
                   <label className="grid gap-1"><span className="text-sm font-bold">Mes notes après la séance</span><textarea id={`s-no-${i}`} className="input min-h-16" maxLength={600} value={s.note} onChange={(e) => setS(i, { note: e.target.value })} placeholder="Ce qui a marché, ce qu'il faut refaire. Pas de nom d'élève." /></label>
                   <div className="flex flex-wrap gap-2">
@@ -248,7 +247,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
           </div>
         );
       })}
-      <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, { kind: "theme", theme: "", title: "Séance à écrire", skills: "", exercise: "", fil: "", why: "", note: "", done: false }] }); setOpen(S.length); }}>＋ Ajouter une séance à moi</button></div>
+      <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, { kind: "theme", theme: "", title: "Séance à écrire", skills: "", fil: "", why: "", note: "", done: false }] }); setOpen(S.length); }}>＋ Ajouter une séance à moi</button></div>
     </section>
   );
 }
@@ -340,7 +339,6 @@ function PrintFiches({ g }: { g: Group }) {
               <div style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 18, fontWeight: 700 }}>Séance {i + 1} · {s.title} <span style={{ fontSize: 11, fontFamily: "inherit", color: "#6a645a" }}>({PHASES[phaseOf(i)].toLowerCase()})</span></div>
               {s.why && <div style={{ color: "#6a645a", fontSize: 10 }}>Pourquoi : {s.why}</div>}
               <div style={{ marginTop: 4 }}><b>Compétences</b><div style={{ whiteSpace: "pre-line" }}>{s.skills}</div></div>
-              <div style={{ marginTop: 4 }}><b>Exercice</b><div style={{ whiteSpace: "pre-line" }}>{s.exercise}</div></div>
               {s.fil && <div style={{ marginTop: 4 }}><b>Fil rouge :</b> {s.fil}</div>}
               <div style={{ marginTop: 6, borderTop: "1px dashed #bbb", paddingTop: 4, color: "#6a645a" }}>Notes : {s.note || "………………………………………………………………………………………………………………"}</div>
             </article>

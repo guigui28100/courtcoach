@@ -34,7 +34,7 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
       notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (l'écran le rappelle)
       sessions: sessions.map((s) => {
         const x = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
-        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 600), exercise: str(x.exercise, 1200), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true };
+        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 600), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true };
       }),
     };
   });
