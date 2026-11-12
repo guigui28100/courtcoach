@@ -183,6 +183,9 @@ body[data-pr=poster] #printp,body[data-pr=poster] #posterwrap .hint,body[data-pr
 #tournoi-root .wsub{font-size:20px;margin-top:6px}
 #tournoi-root .wh{margin:0;color:var(--muted);font-size:14px}
 #tournoi-root .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+#tournoi-root .planrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0;padding:10px;border:2px solid var(--line,#d9d2c4);border-radius:12px;background:#fff}
+#tournoi-root .planrow select{font:inherit;font-size:16px;padding:10px;border-radius:10px;border:2px solid #cfc7b6;background:#fff}
+#tournoi-root .planrow small{flex:1 1 100%;opacity:.8}
 #tournoi-root .tile{font:inherit;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:14px 8px;min-height:64px;cursor:pointer;display:grid;gap:2px;place-content:center;text-align:center}
 #tournoi-root .tile b{font-size:19px}
 #tournoi-root .tile small{font-size:12px;color:var(--muted)}
