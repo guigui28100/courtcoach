@@ -704,16 +704,14 @@ function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; c
 
 // Liste déroulante + possibilité d'écrire soi-même (valeur gardée dans le parent)
 function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength = 80 }: { label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string; maxLength?: number }) {
-  const [other, setOther] = useState(() => !!value && !options.includes(value));
+  // On peut TOUJOURS écrire ce qu'on veut ; le menu est un raccourci qui remplit le champ
   return (
     <div className="grid gap-2">
-      <select aria-label={label} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" value={other ? "__autre" : value}
-        onChange={(e) => { if (e.target.value === "__autre") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
-        <option value="">Choisir dans la liste…</option>
+      <input aria-label={`${label} : écrit à la main`} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
+      <select aria-label={`${label} : choix habituels`} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 text-ink" value={options.includes(value) ? value : ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Ou choisir dans la liste…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        <option value="__autre">✏️ Autre : je l'écris moi-même</option>
       </select>
-      {other && <input aria-label={`${label} : écrit à la main`} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3" />}
     </div>
   );
 }

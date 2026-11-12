@@ -33,12 +33,12 @@ export function DayTimes({ start, end, value, onChange }: { start: string; end: 
   const first = days.map((d) => map[d.label]).find((x) => x?.trim());
   const filled = days.filter((d) => map[d.label]?.trim()).length;
   return (
-    <div className="text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif : « Pas de match » pour un jour sans match)</small>
+    <div className="text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(écris les horaires que tu veux ; laisse vide un jour sans match)</small>
       <ul className="m-0 mt-1 grid list-none gap-1.5 p-0">
         {days.map((d) => (
           <li key={d.date} className="grid grid-cols-[120px_1fr] items-start gap-2">
             <span className="pt-2 text-sm font-extrabold text-ink">{d.label}</span>
-            <ChoiceField label={`Horaires du ${d.label}`} first="Pas de match ce jour-là" options={DAY_HOURS} value={map[d.label] ?? ""} onChange={(v) => write({ ...map, [d.label]: v.slice(0, 30) })} placeholder="Ex. 9 h – 19 h" />
+            <ChoiceField label={`Horaires du ${d.label}`} first="Ou choisir un horaire habituel…" alwaysText options={DAY_HOURS} value={map[d.label] ?? ""} onChange={(v) => write({ ...map, [d.label]: v.slice(0, 30) })} placeholder="Pas de match ce jour-là (laisser vide) · ou écrire : 9 h – 19 h" />
           </li>))}
       </ul>
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -91,18 +91,31 @@ function PriceField({ label, value, onChange, placeholder }: { label: string; va
 }
 
 // Menu déroulant générique + « Autre » pour écrire à la main
-export function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…" }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string }) {
+export function ChoiceField({ label, options, value, onChange, placeholder, first = "Choisir…", alwaysText }: { label: string; options: string[]; value: string; onChange: (v: string) => void; placeholder?: string; first?: string; alwaysText?: boolean }) {
   const [other, setOther] = useState(false);
   const custom = other || (value !== "" && !options.includes(value));
+  const box = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink";
+  if (alwaysText) {
+    // Un champ où l'on écrit TOUJOURS ce qu'on veut ; le menu n'est qu'un raccourci qui remplit le champ (et le champ reste modifiable ensuite)
+    return (
+      <div className="grid gap-1.5">
+        <input aria-label={`${label} : écrit à la main`} maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={box} />
+        <select aria-label={`${label} : horaires habituels`} className={`${box} font-normal text-muted`} value={options.includes(value) ? value : ""} onChange={(e) => onChange(e.target.value)}>
+          <option value="">{first}</option>
+          {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-1.5">
-      <select aria-label={label} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" value={custom ? PRICE_OTHER : value}
+      <select aria-label={label} className={box} value={custom ? PRICE_OTHER : value}
         onChange={(e) => { const v = e.target.value; if (v === PRICE_OTHER) { setOther(true); if (options.includes(value)) onChange(""); } else { setOther(false); onChange(v); } }}>
         <option value="">{first}</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
         <option value={PRICE_OTHER}>✏️ Autre : je l'écris moi-même</option>
       </select>
-      {custom && <input aria-label={`${label} : écrit à la main`} maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold normal-case text-ink" />}
+      {custom && <input aria-label={`${label} : écrit à la main`} maxLength={120} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={box} />}
     </div>
   );
 }
