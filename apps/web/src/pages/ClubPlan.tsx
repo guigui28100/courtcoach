@@ -406,13 +406,13 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 {(laneRows.get(d) ?? []).map((seg, li) => {
                   if (!seg) return <span key={"sp" + li} aria-hidden className="block h-9 max-sm:h-9" />;
                   const e = seg.e; const n = seg.n; const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null;
-                  const lbl = `${e.featured ? "★" : ""}${kindOf(e.kind).icon}`;
+                  const lbl = e.featured ? "★ " : "";
                   // Un morceau DANS chaque case (la barre ne traverse jamais les bordures), toujours sur la même ligne ; le titre est répété dans chaque morceau
                   return <button key={e.id + d} type="button" title={titleOf(e) + (e.tentative ? " (prévisionnel)" : "")} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                     {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
                     className={"relative block h-9 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-[11px] font-semibold leading-[14px] max-sm:leading-9 max-sm:text-base sm:px-1.5 py-[3px] max-sm:py-0 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
-                    style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
-                    <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " " : ""}{hasPoster(e) ? " " : ""}</span></span>
+                    style={{ ["--n" as any]: n, background: e.tentative ? "#eceae4" : "#fff", color: "#17140f", border: e.tentative ? "1px dashed #6b6558" : "1px solid rgba(23,20,15,0.12)", borderLeft: `4px ${e.tentative ? "dashed #6b6558" : "solid " + colorOf(e)}`, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
+                    <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span> {titleOf(e)}{e.note ? " " : ""}{hasPoster(e) ? " " : ""}</span></span>
                   </button>;
                 })}
                 {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-semibold text-ink">+{hiddenCount.get(d)} autres</span>}
