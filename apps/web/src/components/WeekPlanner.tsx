@@ -118,7 +118,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
     const bad = clashing(blocks);
     if (bad.size) { setMsg({ ok: false, text: "Deux cours se chevauchent (cadre rouge) : déplace ou supprime l'un des deux avant d'enregistrer." }); return; }
     const items: Saved[] = blocks.map((b) => ({ weekday: b.weekday, start: toTime(b.start), end: toTime(b.end), label: b.label, ...(b.kind ? { kind: b.kind } : {}) }));
-    try { await put(`/club/schedule/${id}`, { items }); setDirty(false); setMsg({ ok: true, text: "Enregistré ✓ Il le voit dans « Ton agenda »." }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { await put(`/club/schedule/${id}`, { items }); setDirty(false); setMsg({ ok: true, text: "Enregistré Il le voit dans « Ton agenda »." }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
   const bad = useMemo(() => clashing(blocks), [blocks]);
@@ -127,7 +127,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
   return (
     <div className="grid gap-3 rounded border-2 border-line bg-[#faf7ef] p-3 sm:p-4">
       <div>
-        <h3 className="m-0 text-lg">🗓️ Planning de {name}</h3>
+        <h3 className="m-0 text-lg">Planning de {name}</h3>
         <p className="m-0 mt-1 text-sm text-muted">Attrape un type de cours ci-dessous et glisse-le dans la semaine : il commence à l'heure ou à la demi-heure où tu le lâches, et sa fin se calcule toute seule. Tu peux aussi déplacer un cours déjà posé. Plus de glisser ? Touche un type, puis touche le planning.</p>
       </div>
 
@@ -140,7 +140,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
             <span aria-hidden="true">⠿</span><span className="grid leading-tight">{t.label}<small className="font-normal opacity-90">{dur(t.k)}</small></span>
           </div>
         ))}
-        <p className="m-0 self-center text-sm text-muted">{pick ? <>👆 <b>{kindOf(pick)!.label}</b> choisi : touche l'endroit du planning où il commence.</> : "↓ Glisse un type dans la semaine."}</p>
+        <p className="m-0 self-center text-sm text-muted">{pick ? <><b>{kindOf(pick)!.label}</b> choisi : touche l'endroit du planning où il commence.</> : "↓ Glisse un type dans la semaine."}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2" aria-label="Semaine affichée">
@@ -148,14 +148,14 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         <b className="min-w-[13rem] text-center text-sm">Semaine du {Number(weekDates[0].slice(8, 10))} au {Number(weekDates[6].slice(8, 10))} {MONTHS[Number(weekDates[6].slice(5, 7)) - 1]}</b>
         <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" aria-label="Semaine suivante" onClick={() => setMonday((m) => addD(m, 7))}>›</button>
         <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => setMonday(mondayOf(todayIso()))}>Cette semaine</button>
-        <span className="text-xs text-muted">Les cours du club se répètent chaque semaine. Les cours particuliers (🎾 jaune / vert) sont à voir seulement : ils viennent des réservations.</span>
+        <span className="text-xs text-muted">Les cours du club se répètent chaque semaine. Les cours particuliers (jaune / vert) sont à voir seulement : ils viennent des réservations.</span>
       </div>
       {!ready ? (msg ? <p role="alert" className="m-0 font-semibold text-bad">{msg.text}</p> : <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />) : (
         <div className="overflow-x-auto">
           <div className="min-w-[720px]" style={{ display: "grid", gridTemplateColumns: "3.6rem repeat(7, minmax(0, 1fr))", columnGap: 4 }}>
             <div />
             {DAYS.map((d, i) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-semibold leading-tight text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span><small className="block font-normal opacity-80">{Number(weekDates[i].slice(8, 10))} {MONTHS[Number(weekDates[i].slice(5, 7)) - 1].slice(0, 4)}.</small></div>)}
-            <div className="self-center text-right text-[11px] font-semibold leading-tight text-muted" title="Événements du club où ce prof est affecté" aria-hidden="true">🏆</div>
+            <div className="self-center text-right text-[11px] font-semibold leading-tight text-muted" title="Événements du club où ce prof est affecté" aria-hidden="true"></div>
             {weekDates.map((dt, i) => {
               const here = evs.filter((e) => e.startDate <= dt && e.endDate >= dt);
               return (
@@ -191,7 +191,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
                   <div key={p.l.id} aria-label={`Cours particulier${p.l.status === "BOOKED" ? " à confirmer" : ""}, ${d}, de ${hm(p.start)} à ${hm(p.end)}, ${adultName(p.l.member, "adhérent")}`} title="Cours particulier : à voir seulement"
                     className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded border-2 px-1 py-0.5 text-[11px] font-semibold leading-tight"
                     style={{ top: px(p.start - DAY_START), height: px(PRIV_MIN) - 2, background: p.l.status === "BOOKED" ? "#fff0a8" : "#d7f0df", borderColor: p.l.status === "BOOKED" ? "#c9ac00" : "#1f7a45", color: "#17140f" }}>
-                    <span className="block truncate">🎾 Particulier{p.l.status === "BOOKED" ? " · à confirmer" : ""}</span>
+                    <span className="block truncate">Particulier{p.l.status === "BOOKED" ? " · à confirmer" : ""}</span>
                     <span className="block truncate font-normal">{hm(p.start)} – {hm(p.end)} · {adultName(p.l.member, "adhérent")}</span>
                   </div>))}
                 {preview && preview.weekday === wd && drag && (
@@ -206,15 +206,15 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         </div>
       )}
 
-      {blocks.some((b) => privClash(b)) && <p role="status" className="m-0 rounded border-2 border-[#c9ac00] bg-[#fff8d6] p-2 text-sm font-semibold text-[#5c4300]">⚠ Cette semaine, un cours du club tombe en même temps qu'un cours particulier ({blocks.filter((b) => privClash(b)).map((b) => `${DAYS[b.weekday].toLowerCase()} ${hm(b.start)}`).join(", ")}). Rien n'est bloqué : à toi de voir.</p>}
-      {preview && !preview.ok && <p role="alert" className="m-0 rounded border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-semibold text-bad">⚠ {preview.reason} Si tu lâches ici, rien ne sera placé.</p>}
+      {blocks.some((b) => privClash(b)) && <p role="status" className="m-0 rounded border-2 border-[#c9ac00] bg-[#fff8d6] p-2 text-sm font-semibold text-[#5c4300]">Cette semaine, un cours du club tombe en même temps qu'un cours particulier ({blocks.filter((b) => privClash(b)).map((b) => `${DAYS[b.weekday].toLowerCase()} ${hm(b.start)}`).join(", ")}). Rien n'est bloqué : à toi de voir.</p>}
+      {preview && !preview.ok && <p role="alert" className="m-0 rounded border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-semibold text-bad">{preview.reason} Si tu lâches ici, rien ne sera placé.</p>}
       {drag && (
         <div aria-hidden="true" className="pointer-events-none fixed z-[200] rounded px-3 py-1.5 text-sm font-semibold text-white shadow-lg" style={{ left: drag.x + 12, top: drag.y + 8, background: kindOf(drag.kind)!.bg, opacity: drag.moved ? 0.92 : 0 }}>
           {kindOf(drag.kind)!.label} · {dur(drag.kind)}{preview ? ` · ${hm(preview.start)} – ${hm(preview.end)}` : ""}
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <button className="btn-ink" disabled={!ready || !dirty} onClick={save}>🔄 Enregistrer le planning</button>
+        <button className="btn-ink" disabled={!ready || !dirty} onClick={save}>Enregistrer le planning</button>
         {dirty && <span className="text-sm font-semibold text-[#8a6200]">● Modifications pas encore enregistrées</span>}
         {msg && ready && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
       </div>

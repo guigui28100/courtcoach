@@ -35,7 +35,7 @@ import {
 
 const ABBR = ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
 type View = "annee" | "mois";
-const VIEWS: [View, string][] = [["annee", "📆 Vue année entière"], ["mois", "🗓️ Vue mois par mois"]];
+const VIEWS: [View, string][] = [["annee", "Vue année entière"], ["mois", "Vue mois par mois"]];
 const diffDays = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 const covers = (e: ClubEvent, d: string) => evOn(e, d); // dans la période ET pas un « jour sans événement »
 const fmtShort = (d: string) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
@@ -141,7 +141,7 @@ export function ClubPlan() {
             </div>
             <div className="flex flex-wrap gap-2">
               {!viewer && <button type="button" className="rounded bg-champagne px-4 py-2.5 font-semibold text-ink hover:bg-champagne-deep" onClick={() => { setAskNew(true); setMenuEnd(null); setMenuDay(todayParis()); }}>＋ Ajouter un événement</button>}
-              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{viewer ? "📤 Exporter" : readOnly ? "🖨️ Affiches et export" : "⋯ Affiche, export, réglages"}</button>
+              <button type="button" className="rounded border border-white/50 px-4 py-2.5 font-semibold text-white hover:bg-white/10" aria-haspopup="dialog" onClick={() => setMoreOpen(true)}>{viewer ? "Exporter" : readOnly ? "Affiches et export" : "⋯ Affiche, export, réglages"}</button>
             </div>
           </div>
         </section>
@@ -162,21 +162,21 @@ export function ClubPlan() {
             <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">👀 Tu consultes le planning du club : pour ajouter ou changer un événement, demande au coach.</p>}
-        {readOnly && !viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
+        {viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">Tu consultes le planning du club : pour ajouter ou changer un événement, demande au coach.</p>}
+        {readOnly && !viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
           <div className="grid gap-2">
             {[
-              ...(viewer ? [] : [{ i: "🖨️", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
-              ...(viewer ? [] : [{ i: "🗓️", t: "Affiche des tournois", d: "Les tournois jeunes ou adultes (TMC et open) de plusieurs mois, pris dans le planning, par exemple de janvier à avril.", go: () => setTournoisOpen(true) }]),
-              ...(viewer ? [] : [{ i: "🎾", t: "Affiche des résultats des matchs par équipes du week-end", d: "Les résultats de toutes les équipes du samedi et du dimanche : les matchs viennent du planning, tu écris seulement les scores.", go: () => setMatchsOpen("weekend") }]),
-              ...(viewer ? [] : [{ i: "🧒", t: "Affiche des résultats des équipes jeunes", d: "Les résultats des matchs par équipes des jeunes (garçons et filles) d'un week-end ou de plusieurs mois : tu écris seulement les scores.", go: () => setMatchsOpen("jeunes") }]),
-              ...(viewer ? [] : [{ i: "🏆", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
-              { i: "📤", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
-              ...(viewer ? [] : [{ i: "🤝", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
-              ...(readOnly || viewer ? [] : [{ i: "⚙️", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
+              ...(viewer ? [] : [{ i: "", t: "Affiche du mois", d: "Une affiche A4 du mois, à imprimer ou à envoyer en image.", go: () => setPosterOpen(true) }]),
+              ...(viewer ? [] : [{ i: "", t: "Affiche des tournois", d: "Les tournois jeunes ou adultes (TMC et open) de plusieurs mois, pris dans le planning, par exemple de janvier à avril.", go: () => setTournoisOpen(true) }]),
+              ...(viewer ? [] : [{ i: "", t: "Affiche des résultats des matchs par équipes du week-end", d: "Les résultats de toutes les équipes du samedi et du dimanche : les matchs viennent du planning, tu écris seulement les scores.", go: () => setMatchsOpen("weekend") }]),
+              ...(viewer ? [] : [{ i: "", t: "Affiche des résultats des équipes jeunes", d: "Les résultats des matchs par équipes des jeunes (garçons et filles) d'un week-end ou de plusieurs mois : tu écris seulement les scores.", go: () => setMatchsOpen("jeunes") }]),
+              ...(viewer ? [] : [{ i: "", t: "Affiche de résultats (plusieurs tournois)", d: "Les résultats de plusieurs tournois sur une seule affiche, avec les photos de chacun.", go: () => setResultsOpen(true) }]),
+              { i: "", t: "Exporter le planning", d: "Le dossier de saison en PDF, ou l’agenda à mettre dans ton téléphone.", go: () => setExportOpen(true) },
+              ...(viewer ? [] : [{ i: "", t: "Partenaires (sponsors)", d: "Le suivi des entreprises qui soutiennent le club, leurs logos pour les affiches et le dossier à leur envoyer.", go: () => nav("/coach/club/partenaires") }]),
+              ...(readOnly || viewer ? [] : [{ i: "", t: "Réglages", d: "Le nombre d’équipes et la liste des personnes (président, bénévoles, bureau).", go: () => setSettingsOpen(true) }]),
             ].map((o) => (
               <button key={o.t} type="button" className="flex items-center gap-3 rounded-2xl border-2 border-line bg-white p-3 text-left hover:border-ink" onClick={() => { setMoreOpen(false); o.go(); }}>
                 <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#f3efe6] text-2xl">{o.i}</span>
@@ -195,10 +195,10 @@ export function ClubPlan() {
       {draft && <EventModal key={draft.id ?? "new"} initial={draft} events={events} counts={counts} names={names} onClose={() => setDraft(null)} onDone={() => { setDraft(null); load(); }} />}
       {menuDay && <DayMenu key={`${menuDay}-${menuEnd}-${askNew}`} ask={askNew} day={menuDay} endInit={menuEnd ?? undefined} events={events} counts={counts} crew={crew} onPeople={() => setPeopleOpen(true)} onClose={() => setMenuDay(null)} onDone={(c) => { setMenuDay(null); load(); if (c) setPlaced(c); }} onEvent={(e) => { setMenuDay(null); setActionEv(e); }} />}
       {settingsOpen && (
-        <Modal title="⚙️ Réglages" onClose={() => setSettingsOpen(false)}>
+        <Modal title="Réglages" onClose={() => setSettingsOpen(false)}>
           <div className="grid gap-2">
-            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setTeamsOpen(true); }}>🎾 Mes équipes (combien d'équipes par catégorie)</button>
-            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setPeopleOpen(true); }}>👥 Mes personnes (bénévoles, bureau)</button>
+            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setTeamsOpen(true); }}>Mes équipes (combien d'équipes par catégorie)</button>
+            <button type="button" className="btn-outline" onClick={() => { setSettingsOpen(false); setPeopleOpen(true); }}>Mes personnes (bénévoles, bureau)</button>
           </div>
         </Modal>
       )}
@@ -235,7 +235,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
     <div className="grid gap-4">
       {clashes.length > 0 && (
         <div role="alert" className="rounded-2xl border-2 border-[#C0392B] bg-[#fdecea] p-4">
-          <b className="text-[#922b21]">⚠️ {clashes.length} chose{clashes.length > 1 ? "s" : ""} à régler</b>
+          <b className="text-[#922b21]">{clashes.length} chose{clashes.length > 1 ? "s" : ""} à régler</b>
           <ul className="m-0 mt-2 grid list-none gap-2 p-0">
             {clashes.slice(0, 6).map((c, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2 text-sm">
@@ -247,7 +247,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="m-0 text-sm text-muted">💡 Touche un mois pour voir ce qu'il contient.</p>
+        <p className="m-0 text-sm text-muted">Touche un mois pour voir ce qu'il contient.</p>
         <button type="button" className="rounded-xl border-2 border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:border-ink" onClick={() => setOpenSet(openSet.size > 0 ? new Set() : new Set(months))}>{openSet.size > 0 ? "▲ Tout fermer" : "▼ Tout ouvrir"}</button>
       </div>
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -275,13 +275,13 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                       <li key={e.id}>
                         <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
                           <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-semibold" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                          <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.tentative ? <small className="ml-1 font-normal text-muted">(prévisionnel)</small> : null}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                          <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-ink [overflow-wrap:anywhere]">{e.featured ? "★ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.tentative ? <small className="ml-1 font-normal text-muted">(prévisionnel)</small> : null}{e.who.length ? <small className="block font-normal text-muted">{e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{e.note}</small> : null}</span>
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
-                <button type="button" className="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 font-semibold text-ink hover:bg-sand" aria-label={`Ouvrir ${MONTHS[mi - 1]} en vue mois par mois`} onClick={() => onMonth(m)}>🗓️ Voir {MONTHS[mi - 1].toLowerCase()} jour par jour ›</button>
+                <button type="button" className="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 font-semibold text-ink hover:bg-sand" aria-label={`Ouvrir ${MONTHS[mi - 1]} en vue mois par mois`} onClick={() => onMonth(m)}>Voir {MONTHS[mi - 1].toLowerCase()} jour par jour ›</button>
               </div>
             </details>
           );
@@ -406,13 +406,13 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 {(laneRows.get(d) ?? []).map((seg, li) => {
                   if (!seg) return <span key={"sp" + li} aria-hidden className="block h-9 max-sm:h-9" />;
                   const e = seg.e; const n = seg.n; const movable = !!onReorder && e.kind !== "BULLE"; const ov = over?.id === e.id && drag?.day === d && drag.id !== e.id ? over : null;
-                  const lbl = `${e.tentative ? "⏳" : ""}${e.featured ? "⭐" : ""}${kindOf(e.kind).icon}`;
+                  const lbl = `${e.featured ? "★" : ""}${kindOf(e.kind).icon}`;
                   // Un morceau DANS chaque case (la barre ne traverse jamais les bordures), toujours sur la même ligne ; le titre est répété dans chaque morceau
                   return <button key={e.id + d} type="button" title={titleOf(e) + (e.tentative ? " (prévisionnel)" : "")} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                     {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
                     className={"relative block h-9 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-[11px] font-semibold leading-[14px] max-sm:leading-9 max-sm:text-base sm:px-1.5 py-[3px] max-sm:py-0 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
                     style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
-                    <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></span>
+                    <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " " : ""}{hasPoster(e) ? " " : ""}</span></span>
                   </button>;
                 })}
                 {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-semibold text-ink">+{hiddenCount.get(d)} autres</span>}
@@ -421,10 +421,10 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
           );
         })}
       </div>
-      {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>↕ {ghost.text}</div>}
-      {onReorder && <p className="m-0 hidden rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
+      {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>{ghost.text}</div>}
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f] sm:block">Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
-        <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
+        <h3 className="m-0 mb-2 text-base text-ink">Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
           const list = events.filter((e) => e.startDate.slice(0, 7) <= month && e.endDate.slice(0, 7) >= month && !e.kind.startsWith("BULLE")).sort((a, b) => a.startDate.localeCompare(b.startDate));
           if (list.length === 0) return <p className="m-0 text-sm text-muted">Rien de prévu ce mois-ci. Touche un jour pour placer un événement.</p>;
@@ -434,9 +434,9 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                 <button type="button" onClick={() => onEvent(e)} className="flex min-w-0 flex-1 items-start gap-3 rounded-xl border-2 border-line bg-white p-2 text-left hover:border-ink">
                   <span aria-hidden className="mt-1 size-3 shrink-0 rounded-full" style={{ background: colorOf(e) }} />
                   <span className="min-w-0 flex-1">
-                    <b className="block text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? ` (${skipNote(e)})` : ""}</span></b>
-                    {e.who.length > 0 && <span className="block text-sm text-muted">👤 {e.who.join(", ")}</span>}
-                    {e.note && <span className="mt-0.5 block whitespace-pre-line text-sm text-ink [overflow-wrap:anywhere]">📝 {e.note}</span>}
+                    <b className="block text-ink [overflow-wrap:anywhere]">{e.featured ? "★ " : ""}{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? ` (${skipNote(e)})` : ""}</span></b>
+                    {e.who.length > 0 && <span className="block text-sm text-muted">{e.who.join(", ")}</span>}
+                    {e.note && <span className="mt-0.5 block whitespace-pre-line text-sm text-ink [overflow-wrap:anywhere]">{e.note}</span>}
                   </span>
                 </button>
               </li>))}
@@ -527,19 +527,19 @@ function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
   const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-semibold text-ink";
   return (
     <section aria-label="Type et catégories du tournoi" className="mb-4 grid gap-3 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3">
-      <b className="text-ink">🏆 Type, classements et catégories</b>
+      <b className="text-ink">Type, classements et catégories</b>
       <div className="grid grid-cols-2 gap-2">
         {TOUR_TYPES.map((t) => <Pill key={t.key} on={type === t.key} onClick={() => apply({ type: t.key, ...(t.key === "OPEN" ? { bas: "", haut: "" } : {}) })}>{t.icon} {t.label}</Pill>)}
       </div>
       {type === "TMC" && <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-sm font-semibold text-ink">⬇️ Classement le plus bas
+        <label className="text-sm font-semibold text-ink">⬇Classement le plus bas
           <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => apply({ bas: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
-        <label className="text-sm font-semibold text-ink">⬆️ Classement le plus haut
+        <label className="text-sm font-semibold text-ink">⬆Classement le plus haut
           <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => apply({ haut: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
         {!rankOk && <p role="alert" className="m-0 text-sm font-semibold text-[#7a5a00] sm:col-span-2">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
       </div>}
       <div role="tablist" aria-label="Adultes ou jeunes" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
-        {([["seniors", "🎾 Adultes"], ["jeunes", "🧒 Jeunes"]] as const).map(([k, l]) => (
+        {([["seniors", "Adultes"], ["jeunes", "Jeunes"]] as const).map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-semibold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
@@ -549,7 +549,7 @@ function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
               <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => apply({ keys: multiOk(t.key) ? toggle(catKeys, t.key) : [t.key] })}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
           </div></div>))}
       {!catKeys.length && d.audience && <p className="m-0 text-xs text-muted">Catégorie actuelle : « {d.audience} ». Touche une catégorie pour la changer.</p>}
-      <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">🏷️ Nom du tournoi : {d.title || "—"}</p>
+      <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">Nom du tournoi : {d.title || "—"}</p>
     </section>
   );
 }
@@ -599,14 +599,14 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         </Step>
       )}
       {d.kind === "EQUIPES" && (
-        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink">Club rencontré <span className="font-normal text-muted">(facultatif)</span>
           <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
         </label>)}
       {d.kind === "EQUIPES" && <VenuePick value={d.place ?? ""} onChange={(v) => set({ place: v })} />}
       {d.kind === "EQUIPES" && <MatchWhere courts={d.courts} onCourts={(c) => set({ courts: c })} time={d.time ?? ""} onTime={(t) => set({ time: t })} />}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
-        <p className="mb-0 mt-2 font-semibold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
+        <p className="mb-0 mt-2 font-semibold text-ink">{fmtRange(d.startDate, d.endDate)}</p>
         {!pickEnd && <p className="m-0 text-xs text-muted">Pour plusieurs jours : touche le premier, puis le dernier.</p>}
       </Step>
       <Step n={d.kind === "EQUIPES" ? 4 : 3} title="À quel moment ?">
@@ -628,26 +628,26 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <Step n={d.kind === "EQUIPES" ? 6 : 5} title="Quel(s) professeur(s) ? (facultatif)">
         {names.length === 0 ? <p className="m-0 text-sm text-muted">Aucun professeur pour le moment.</p> : <div className="flex flex-wrap gap-2">{names.map((n) => <Pill key={n} on={d.who.includes(n)} onClick={() => set({ who: toggle(d.who, n) })}>{n}</Pill>)}</div>}
       </Step>
-      <details className="mb-4"><summary className="cursor-pointer font-semibold text-ink">✏️ Changer le nom (facultatif)</summary>
+      <details className="mb-4"><summary className="cursor-pointer font-semibold text-ink">Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
       </details>
       <SkipDays start={d.startDate} end={d.endDate} value={d.skipDays ?? []} onChange={(v) => set({ skipDays: v })} />
-      <label className="mb-4 block font-semibold text-ink">📝 Description (facultative, 600 caractères)
+      <label className="mb-4 block font-semibold text-ink">Description (facultative, 600 caractères)
         <textarea aria-label="Description de l'événement" rows={3} maxLength={600} value={d.note} onChange={(e) => set({ note: e.target.value })}
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
       <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
-        <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
+        À mettre en avant sur l'affiche
       </button>
       <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.tentative} onClick={() => set({ tentative: !d.tentative })}
         className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold ${d.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>
-        <span aria-hidden className="text-lg">{d.tentative ? "⏳" : "✅"}</span> {d.tentative ? "Prévisionnel : pas encore validé (en gris)" : "Validé"}
+        {d.tentative ? "Prévisionnel : pas encore validé (en gris)" : "Validé"}
       </button>
       {clashes.length > 0 && (
         <div role="alert" className="mb-3 rounded-xl border-2 border-[#C0392B] bg-[#fdecea] p-3 text-sm text-[#922b21]">
-          <b>⚠️ Ça se chevauche :</b>
+          <b>Ça se chevauche :</b>
           <ul className="m-0 mt-1 pl-5">{clashes.map((c) => <li key={c.id}>« {c.title} » : {c.why}.</li>)}</ul>
         </div>
       )}
@@ -656,7 +656,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         {clashes.length > 0 && !sure
           ? <button type="button" className="btn-outline" disabled={busy || !!missing} onClick={() => setSure(true)}>Placer quand même…</button>
           : <button type="button" className="btn-clay" disabled={busy || !!missing} onClick={() => save(clashes.length > 0)} style={{ background: kind.color, color: textOn(kind.color) }}>{clashes.length > 0 ? "Oui, placer quand même" : d.id ? "Enregistrer" : "Placer dans le planning"}</button>}
-        {d.id && <button type="button" className="btn-outline ml-auto text-[#922b21]" disabled={busy} onClick={() => { if (confirm("Supprimer cet événement ?")) remove(); }}>🗑️ Supprimer</button>}
+        {d.id && <button type="button" className="btn-outline ml-auto text-[#922b21]" disabled={busy} onClick={() => { if (confirm("Supprimer cet événement ?")) remove(); }}>Supprimer</button>}
       </div>
     </Modal>
   );
@@ -665,15 +665,15 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
 
 // Choix des équipes d'un match : rangées dans trois ONGLETS (jeunes de 8 à 18 ans · séniors · séniors +35 / +45 ans), messieurs et dames dans chacun
 const TEAM_TABS: { id: string; label: string; match: (g: string) => boolean }[] = [
-  { id: "jeunes", label: "🧒 Jeunes de 8 à 18 ans", match: (g) => g.startsWith("Jeunes") },
-  { id: "seniors", label: "🎾 Séniors", match: (g) => g === "Séniors" },
-  { id: "veterans", label: "🏅 Séniors +35 / +45 ans", match: (g) => g.startsWith("Séniors +") },
+  { id: "jeunes", label: "Jeunes de 8 à 18 ans", match: (g) => g.startsWith("Jeunes") },
+  { id: "seniors", label: "Séniors", match: (g) => g === "Séniors" },
+  { id: "veterans", label: "Séniors +35 / +45 ans", match: (g) => g.startsWith("Séniors +") },
 ];
 function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; counts: Record<string, number>; teams: string[]; onToggle: (t: string) => void }) {
   const inTab = (id: string) => cats.filter((c) => TEAM_TABS.find((t) => t.id === id)!.match(c.group));
   const picked = (id: string) => teams.filter((t) => inTab(id).some((c) => c.key === t.split("#")[0])).length;
   const [tab, setTab] = useState<string>(() => TEAM_TABS.find((t) => picked(t.id) > 0)?.id ?? TEAM_TABS.find((t) => inTab(t.id).length > 0)?.id ?? "jeunes");
-  const sexOf = (key: string) => (key.startsWith("gar") || key.endsWith("-m") ? "👦 Messieurs / garçons" : "👧 Dames / filles");
+  const sexOf = (key: string) => (key.startsWith("gar") || key.endsWith("-m") ? "Messieurs / garçons" : "Dames / filles");
   const list = inTab(tab);
   return (
     <div>
@@ -707,7 +707,7 @@ function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength 
         onChange={(e) => { if (e.target.value === "__autre") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
         <option value="">Choisir dans la liste…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        <option value="__autre">✏️ Autre : je l'écris moi-même</option>
+        <option value="__autre">Autre : je l'écris moi-même</option>
       </select>
       {other && <input aria-label={`${label} : écrit à la main`} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3" />}
     </div>
@@ -775,13 +775,13 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
         </button>))}
     </div>
     {(() => { const t = c.teams[Math.min(ti, c.teams.length - 1)]; return <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />; })()}
-    <button type="button" className="justify-self-start text-sm font-semibold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
+    <button type="button" className="justify-self-start text-sm font-semibold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>Même club pour toutes les équipes (celui de la 1re)</button>
     <small className="text-muted">Facultatif : laisse vide une équipe dont l'adversaire n'est pas connu.</small><Nav skip /></> : <>
     <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
     <small className="text-muted">Facultatif. Clubs des Yvelines (liste à compléter) et clubs déjà notés ; un club absent s'écrit à la main.</small><Nav skip /></>);
   if (cur === "venue") return card("Où se joue le match ?", <>
     <div className="grid grid-cols-2 gap-2">
-      {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, sub]) => (
+      {([[VENUE_HOME, "À domicile", "au club"], [VENUE_AWAY, "En déplacement", "chez l'adversaire"]] as const).map(([v, l, sub]) => (
         <button key={v} type="button" aria-pressed={c.info.place === v} onClick={() => { info({ place: v }); setI(i + 1); }}
           className={`rounded-xl border-2 px-3 py-4 text-left ${c.info.place === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
           <span className="block font-semibold">{l}</span><span className="block text-xs font-normal opacity-80">{sub}</span>
@@ -796,23 +796,23 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
     <ChoiceOrText label="Heure du match" value={c.info.time} onChange={(v) => info({ time: v })} options={MATCH_HOURS} placeholder="Ex. 14 h, ou 9 h – 17 h" />
     <small className="text-muted">Facultatif.</small><Nav skip /></>);
   return card("Dernier détail : un mot et qui s'en occupe", <>
-    <label className="block text-sm font-semibold text-ink">📝 Un mot sur ce match (facultatif)
+    <label className="block text-sm font-semibold text-ink">Un mot sur ce match (facultatif)
       <textarea aria-label="Description : match par équipes" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Quelques mots sur cet événement" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
     </label>
-    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
+    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
       {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
         <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-semibold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">{many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "à domicile" : "en déplacement"}` : ""}{c.info.time ? ` · ${c.info.time}` : ""}{!away && c.courts.length ? ` · Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
 // Tournoi : des CARTES qui s'ouvrent l'une après l'autre (type → catégorie → classements si TMC → surface → horaires → dernier détail)
-const TOUR_TYPES = [{ key: "TMC", label: "TMC", sub: "Tournoi multi-chances : des matchs garantis, entre joueurs de niveaux proches", icon: "🎯" }, { key: "OPEN", label: "Tournoi open", sub: "Ouvert à tous les niveaux, sans limite de classement", icon: "🏆" }] as const;
+const TOUR_TYPES = [{ key: "TMC", label: "TMC", sub: "Tournoi multi-chances : des matchs garantis, entre joueurs de niveaux proches", icon: "" }, { key: "OPEN", label: "Tournoi open", sub: "Ouvert à tous les niveaux, sans limite de classement", icon: "" }] as const;
 const tourWord = (key: string) => (key === "sen-m" ? "messieurs" : key === "sen-d" ? "dames" : teamCat(key)?.label ?? "");
 // Ce qui est gardé dans « audience » : la grande famille (pour la couleur de l'affiche) puis, si utile, le détail
 const tourAudience = (keys: string[]) => {
@@ -891,7 +891,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
     const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Séniors", "Séniors +35 / +45"];
     return card("Pour quelle catégorie ?", <>
       <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
-        {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
+        {([["jeunes", "Jeunes"], ["seniors", "Seniors"]] as const).map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-semibold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
@@ -906,38 +906,38 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
   if (cur === "rank") return card("Entre quels classements ?", <>
     <p className="m-0 text-sm text-muted">Pour un TMC, on indique le classement le plus bas et le plus haut des joueurs admis (de NC à -30).</p>
     <div className="grid gap-2 sm:grid-cols-2">
-      <label className="text-sm font-semibold text-ink">⬇️ Classement le plus bas
+      <label className="text-sm font-semibold text-ink">⬇Classement le plus bas
         <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => setBas(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
-      <label className="text-sm font-semibold text-ink">⬆️ Classement le plus haut
+      <label className="text-sm font-semibold text-ink">⬆Classement le plus haut
         <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => setHaut(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
     </div>
     {!rankOk && <p role="alert" className="m-0 rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-semibold text-[#7a5a00]">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
-    {range && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
+    {range && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">Tournoi réservé aux classements{range.replace(" de", "")}</p>}
     <Nav ok={rankOk} skip /></>);
   if (cur === "surface") return card("Sur quelle surface ?", <>
     <ChoiceField label="Surface" options={SURFACES} value={c.info.place} onChange={(v) => info({ place: v })} placeholder="Ex. Terre battue couverte" /><Nav skip /></>);
   if (cur === "when") return card("Horaires et finale", <>
     {start && end
       ? <DayTimes start={start} end={end} value={c.info.time} onChange={(v) => info({ time: v })} />
-      : <label className="block text-sm font-semibold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
+      : <label className="block text-sm font-semibold text-ink">Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
         <input aria-label="Horaires des matchs" maxLength={600} value={c.info.time} onChange={(e) => info({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>}
-    <label className="block text-sm font-semibold text-ink">🏆 Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
+    <label className="block text-sm font-semibold text-ink">Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
       <input aria-label="Finale" maxLength={120} value={c.info.signup} onChange={(e) => info({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
     <Nav skip /></>);
   return card("Dernier détail : le nom et qui s'en occupe", <>
-    <label className="block text-sm font-semibold text-ink">🏷️ Nom du tournoi
+    <label className="block text-sm font-semibold text-ink">Nom du tournoi
       <input aria-label="Nom du tournoi" maxLength={80} value={c.title ?? ""} onChange={(e) => { setEdited(true); patch({ title: e.target.value }); }} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
-    <label className="block text-sm font-semibold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
+    <label className="block text-sm font-semibold text-ink">Petit message <small className="font-normal text-muted">(facultatif)</small>
       <textarea aria-label="Petit message" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Ex. Buvette sur place, remise des prix après la finale…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
-    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
+    <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
       {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
         <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
       <button type="button" className="mt-2 text-xs font-semibold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">{c.title || "—"}{c.info.place ? ` · ${c.info.place}` : ""}{c.info.time ? ` · ${c.info.time}` : ""}{c.info.signup ? ` · finale : ${c.info.signup}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
 }
 
@@ -947,7 +947,7 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
   const groups = [...new Set(TEAM_CATS.map((t) => t.group))];
   const save = async () => { setBusy(true); try { await put("/club/teams", { counts: c }); onDone(); } catch (e: any) { setErr(e.message); setBusy(false); } };
   return (
-    <Modal title="⚙️ Mes équipes" onClose={onClose}>
+    <Modal title="Mes équipes" onClose={onClose}>
       <p className="mt-0 text-sm text-muted">Combien d'équipes le club engage dans chaque catégorie. Elles apparaissent ensuite à cocher quand tu ajoutes un match par équipes.</p>
       {groups.map((g) => (
         <section key={g} className="mb-3 rounded-2xl border-2 border-line bg-white p-3"><b className="text-ink">{g}</b>
@@ -981,7 +981,7 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
   return (
   <details open={open} className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
     <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}14` }}>
-      <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-white" style={{ background: color }}>{icon}</span>
+      <span aria-hidden className="size-9 shrink-0 rounded-xl" style={{ background: color }} />
       <span className="min-w-0 flex-1"><span className="block font-semibold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
       {badge ? <span className="grid min-w-6 place-items-center rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ background: color }}>{badge}</span> : null}
       <span aria-hidden className="text-lg font-semibold text-ink transition-transform group-open:rotate-90">›</span>
@@ -996,9 +996,9 @@ interface Sel { clubs?: Record<string, string>; title?: string; on: boolean; cou
 function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink" role="group" aria-label="Où se joue le match ?">
-      <span>📍 Où se joue le match ? <span className="font-normal text-muted">(facultatif)</span></span>
+      <span>Où se joue le match ? <span className="font-normal text-muted">(facultatif)</span></span>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, s]) => (
+        {([[VENUE_HOME, "À domicile", "au club"], [VENUE_AWAY, "En déplacement", "chez l'adversaire"]] as const).map(([v, l, s]) => (
           <button key={v} type="button" aria-pressed={value === v} onClick={() => onChange(value === v ? "" : v)}
             className={`rounded-xl border-2 px-3 py-3 text-left ${value === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
             <span className="block">{l}</span><span className="block text-xs font-normal opacity-80">{s}</span>
@@ -1013,12 +1013,12 @@ function VenuePick({ value, onChange }: { value: string; onChange: (v: string) =
 function MatchWhere({ courts, onCourts, time, onTime }: { courts: number[]; onCourts: (c: number[]) => void; time: string; onTime: (t: string) => void }) {
   return (
     <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink">
-      <span>🏟️ Sur quels terrains ? <span className="font-normal text-muted">(facultatif)</span></span>
+      <span>Sur quels terrains ? <span className="font-normal text-muted">(facultatif)</span></span>
       <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Terrains du match">
         {COURTS.map((c) => <Pill key={c.n} on={courts.includes(c.n)} onClick={() => onCourts(toggle(courts, c.n).sort())}>Court {c.n}</Pill>)}
         <Pill on={courts.length === COURTS.length} onClick={() => onCourts(courts.length === COURTS.length ? [] : COURTS.map((c) => c.n))}>Tous</Pill>
       </div>
-      <label className="mt-3 block">🕒 À quelle heure ? <span className="font-normal text-muted">(facultatif)</span>
+      <label className="mt-3 block">À quelle heure ? <span className="font-normal text-muted">(facultatif)</span>
         <input aria-label="Heure du match" maxLength={80} value={time} onChange={(e) => onTime(e.target.value)} placeholder="Ex. 14 h, ou 9 h – 17 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
     </div>
@@ -1035,7 +1035,7 @@ function SkipDays({ start, end, value, onChange }: { start: string; end: string;
   const toggle = (d: string) => { if (off.includes(d)) onChange(off.filter((x) => x !== d)); else if (off.length < days.length - 1) onChange([...off, d].sort()); };
   return (
     <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-      <p className="m-0 mb-1 text-sm font-semibold text-ink">🚫 Un jour sans l'événement ? <span className="font-normal text-muted">(facultatif)</span></p>
+      <p className="m-0 mb-1 text-sm font-semibold text-ink">Un jour sans l'événement ? <span className="font-normal text-muted">(facultatif)</span></p>
       <p className="m-0 mb-2 text-xs text-muted">Touche les jours où il n'a PAS lieu : ils seront barrés et vides dans le calendrier.</p>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Jours sans l'événement">
         {days.map((d) => { const o = off.includes(d); return <button key={d} type="button" aria-pressed={o} onClick={() => toggle(d)} title={o ? "Pas d'événement ce jour-là (toucher pour remettre)" : "Toucher pour retirer ce jour"}
@@ -1097,13 +1097,13 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     } catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); }
   };
   const FAMILIES: { name: string; icon: string; color: string; kinds: string[] }[] = [
-    { name: "Compétition", icon: "🏆", color: "#D35400", kinds: ["TOURNOI", "EQUIPES"] },
-    { name: "Animation", icon: "🎉", color: "#8E44AD", kinds: ["ANIMATION", "FETE", "JUMELAGE"] },
-    { name: "Stages", icon: "🎾", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
-    { name: "Maintenance des installations", icon: "🔧", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE"] },
-    { name: "Événement pédagogique", icon: "🎓", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
-    { name: "Vie associative", icon: "🏛️", color: "#1F618D", kinds: ["AG", "AGE"] },
-    { name: "＋ Ajouter un autre événement", icon: "📌", color: "#566573", kinds: ["AUTRE"] },
+    { name: "Compétition", icon: "", color: "#D35400", kinds: ["TOURNOI", "EQUIPES"] },
+    { name: "Animation", icon: "", color: "#8E44AD", kinds: ["ANIMATION", "FETE", "JUMELAGE"] },
+    { name: "Stages", icon: "", color: "#27AE60", kinds: ["STAGE_ENFANTS", "STAGE_ADULTES"] },
+    { name: "Maintenance des installations", icon: "", color: "#A04000", kinds: ["BULLE_MONTAGE_TB", "BULLE_DEMONTAGE_TB", "BULLE_MONTAGE_QUICK", "BULLE_DEMONTAGE_QUICK", "MAINT_BULLE_TB", "MAINT_BULLE_QUICK", "TERRE_BATTUE"] },
+    { name: "Événement pédagogique", icon: "", color: "#2C3E50", kinds: ["FETE_ECOLE", "INSCRIPTIONS", "DEBUT_COURS", "FIN_COURS"] },
+    { name: "Vie associative", icon: "", color: "#1F618D", kinds: ["AG", "AGE"] },
+    { name: "＋ Ajouter un autre événement", icon: "", color: "#566573", kinds: ["AUTRE"] },
   ];
   const setDays = (n: number) => { setChosen(true); setPickEnd(false); setEnd(addDays(start, Math.max(0, Math.min(365, n - 1)))); };
   const nbDays = diffDays(start, end) + 1;
@@ -1120,13 +1120,13 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     </Modal>
   );
   return (
-    <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
+    <Modal title={chosen ? `${end === start ? fmtDay(start) : fmtRange(start, end)}` : "Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
         <div>
           <p className="mb-3 mt-0 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-semibold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
-            <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
-            <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
+            <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>Un seul jour</button>
+            <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>Plusieurs jours</button>
           </div>
           {(ask || multi) && (
             <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
@@ -1134,18 +1134,18 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
               <MiniCalendar start={start} end={end} onPick={ask ? (multi ? pickDate : (x: string) => { setChosen(true); setStart(x); setEnd(x); }) : pickLast} />
             </div>
           )}
-          <p className="mb-3 mt-0 text-sm font-semibold text-ink">{!chosen ? "👉 Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
+          <p className="mb-3 mt-0 text-sm font-semibold text-ink">{!chosen ? "Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
           {chosen && nbDays > 1 && <SkipDays start={start} end={end} value={skip} onChange={setSkip} />}
           <button type="button" className="btn-clay" disabled={!chosen} onClick={() => setStep(2)}>Valider la durée →</button>
         </div>
       ) : (<>
-      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-semibold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#17140f]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
+      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-semibold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#17140f]" onClick={() => setStep(1)}>Changer la durée</button></p>
       {already.length > 0 && (
-        <Fold color="#7b5d2a" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
+        <Fold color="#7b5d2a" icon="" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#fff6f0] p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
-              <span className="min-w-0 flex-1 font-semibold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block whitespace-pre-line text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
+              <span className="min-w-0 flex-1 font-semibold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block whitespace-pre-line text-sm font-normal text-muted [overflow-wrap:anywhere]">{e.note}</span> : null}</span>
               <button type="button" className="btn-outline" aria-label={`Gérer ${titleOf(e)}`} onClick={() => onEvent(e)}>Gérer ›</button>
             </li>))}
           </ul>
@@ -1173,27 +1173,27 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
-                    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+                    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
                     <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
                       className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
-                      <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
+                      Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
                   </div>
                   {k.key === "EQUIPES" ? <MatchCards c={c} patch={(p) => patch(k.key, p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]} /> : (<>
                   {(k.key === "TOURNOI" || k.key === "ANIMATION" || k.key === "AUTRE") && (
-                    <label className="mb-2 block text-sm font-semibold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
+                    <label className="mb-2 block text-sm font-semibold text-ink">Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
                       <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : k.key === "AUTRE" ? "Ex. Repas des bénévoles" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
                   {!POSTER_KINDS.includes(k.key) && (
                     <div className="rounded-xl border-2 border-line bg-white p-3">
-                      <label className="block text-sm font-semibold text-ink">📝 Description (facultatif)
+                      <label className="block text-sm font-semibold text-ink">Description (facultatif)
                         <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
                           placeholder="Quelques mots sur cet événement"
                           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                       </label>
                     </div>
                   )}
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-semibold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-semibold text-ink">Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
                       <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
@@ -1221,12 +1221,12 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
   return (
     <Modal title="✔ Événement enregistré" onClose={onLater}>
       <div className="px-2 py-4 text-center">
-        <div aria-hidden className="mx-auto mb-3 grid size-16 place-items-center rounded-full bg-[#3fb97a] text-4xl text-white shadow-[0_0_0_8px_#3fb97a33]">✓</div>
+        <div aria-hidden className="mx-auto mb-3 grid size-16 place-items-center rounded-full bg-[#3fb97a] text-4xl text-white shadow-[0_0_0_8px_#3fb97a33]"></div>
         <h3 className="m-0 text-2xl text-ink">C'est placé dans le planning</h3>
         <p className="mb-4 mt-1 text-muted">Tu peux maintenant fabriquer l'affiche.</p>
         <p className="mx-auto mb-5 inline-block rounded-2xl border-2 bg-white px-4 py-2 font-semibold text-ink" style={{ borderColor: k.color }}>{k.icon} {titleOf(e)} · {fmtRange(e.startDate, e.endDate)}</p>
         <div className="grid gap-2">
-          <button type="button" className="btn-clay" onClick={onPoster}>🪧 Créer l'affiche maintenant</button>
+          <button type="button" className="btn-clay" onClick={onPoster}>Créer l'affiche maintenant</button>
           <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={onLater}>Plus tard</button>
         </div>
         <p className="mb-0 mt-3 text-xs text-muted">Tu pourras toujours la faire plus tard en touchant l'événement dans le calendrier.</p>
@@ -1285,28 +1285,28 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
   });
   const close = () => { void auto.flush().finally(() => { if (wasSaved.current) onSaved(); onClose(); }); };
   const poster = (extra: object = {}) => <EventPoster e={draft} format={format} showWho={showWho} fmt={fmt} partners={partners} bg={bg} light={light} layout={layout} {...extra} />;
-  const formats: StudioFormat[] = [{ id: "A4", label: "📄 A4 à imprimer", ...SIZES.A4 }, { id: "CARRE", label: "📱 Carré (WhatsApp, Facebook)", ...SIZES.CARRE }];
+  const formats: StudioFormat[] = [{ id: "A4", label: "A4 à imprimer", ...SIZES.A4 }, { id: "CARRE", label: "Carré (WhatsApp, Facebook)", ...SIZES.CARRE }];
   return (
     <PosterStudio
-      title={`🪧 ${titleOf(draft)}`} subtitle={`${fmtRange(e.startDate, e.endDate)} · dates prises dans le planning`} onClose={close}
+      title={`${titleOf(draft)}`} subtitle={`${fmtRange(e.startDate, e.endDate)} · dates prises dans le planning`} onClose={close}
       formats={formats} format={format} onFormat={(f) => setFormat(f as PosterFormat)}
       content={hasSimpleForm(e.kind)
         ? <AnimationForm tournoi={isTournoi(e.kind)} start={e.startDate} end={e.endDate} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
-        : <><label className="block text-sm font-semibold text-ink">📝 Description (facultatif)
+        : <><label className="block text-sm font-semibold text-ink">Description (facultatif)
             <textarea aria-label="Description de l'affiche" rows={2} maxLength={600} value={note} onChange={(x) => setNote(x.target.value)} className="mt-1 w-full rounded-md border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
           <EventPosterFields kind={e.kind} value={info} onChange={setInfo} /></>}
       look={<>
-        <Sec title="Modèle"><Seg label="Disposition de l'affiche" value={layout} options={[{ id: "elegant", label: "✨ Élégante" }, { id: "classique", label: "🏷️ Classique" }]} onChange={setLayout} />
+        <Sec title="Modèle"><Seg label="Disposition de l'affiche" value={layout} options={[{ id: "elegant", label: "Élégante" }, { id: "classique", label: "Classique" }]} onChange={setLayout} />
           <p className="mb-0 mt-1 text-xs text-muted">{layout === "elegant" ? "Ivoire, filets dorés, QR code." : "Bandeau bleu nuit et cartes."}</p></Sec>
         <Sec title="Cartes d'information"><Seg label="Taille des cartes" value={light ? "petites" : "grandes"} options={[{ id: "grandes", label: "Grandes" }, { id: "petites", label: "Petites" }]} onChange={(v) => setLight(v === "petites")} />
           <p className="mb-0 mt-1 text-xs text-muted">Petites : on voit davantage le fond.</p></Sec>
-        {e.who.length > 0 && <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="👤 Montrer qui s'en occupe" /></Sec>}
+        {e.who.length > 0 && <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="Montrer qui s'en occupe" /></Sec>}
       </>}
       bg={bg} onBg={setBg}
       partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
       fmt={{ items: eventFmtItems(e.kind === "EQUIPES", partners.length > 0), value: fmt, onChange: setFmt as (f: Fmts) => void, selected: fsel, onSelect: setFsel }}
       preview={({ pick }) => poster({ onPick: pick, onFit: setTight })}
-      notice={tight ? "⚠️ Le texte est très grand ou très long : il déborde ou devient très petit. Raccourcis un texte ou réduis une taille (onglet Textes)." : undefined}
+      notice={tight ? "Le texte est très grand ou très long : il déborde ou devient très petit. Raccourcis un texte ou réduis une taille (onglet Textes)." : undefined}
       printNode={poster()}
       fileBase={(f) => `affiche-${titleOf(draft).toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${e.startDate}-${f === "A4" ? "a4" : "carre"}`}
       save={auto.state.kind === "idle" ? { kind: "idle", text: "Se sauvegarde toute seule dans le planning" } : auto.state}
@@ -1320,18 +1320,18 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
-      {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-semibold text-ink">⏳ Prévisionnel : pas encore validé</p>}
-      {canValidate && !readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
-      <p className="mt-0 font-semibold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
-      {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
-      {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
+      {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-semibold text-ink">Prévisionnel : pas encore validé</p>}
+      {canValidate && !readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "Valider cet événement" : "Remettre en prévisionnel"}</button>}
+      <p className="mt-0 font-semibold text-ink">{fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
+      {e.who.length > 0 && <p className="text-sm text-ink">{e.who.join(", ")}</p>}
+      {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">{e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
       {!viewer && <div className="mt-3 grid gap-2">
-        {!readOnly && <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "⭐ Mis en avant sur l'affiche (toucher pour retirer)" : "☆ Mettre en avant sur l'affiche"}</button>}
-        <button type="button" className="btn-clay" onClick={() => onPoster(e)}>🪧 {hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
-        {e.kind === "ANIMATION" && <button type="button" className="btn-clay" onClick={() => onTournoi(e)}>🏆 Organiser le tournoi pendant l'animation</button>}
-        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>📸 Affiche de bilan pour les réseaux (photos, résultats)</button>
-        {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>⚙️ Modifier</button>}
-        {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>🗑️ Annuler cet événement</button>}
+        {!readOnly && <button type="button" aria-pressed={!!e.featured} className={e.featured ? "btn-outline !border-[#d4a000] !bg-[#fff3c4]" : "btn-outline"} onClick={() => onStar(e)}>{e.featured ? "Mis en avant sur l'affiche (toucher pour retirer)" : "Mettre en avant sur l'affiche"}</button>}
+        <button type="button" className="btn-clay" onClick={() => onPoster(e)}>{hasPoster(e) ? "Modifier ou refaire l'affiche" : "Créer l'affiche de cet événement"}</button>
+        {e.kind === "ANIMATION" && <button type="button" className="btn-clay" onClick={() => onTournoi(e)}>Organiser le tournoi pendant l'animation</button>}
+        <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => onRecap(e)}>Affiche de bilan pour les réseaux (photos, résultats)</button>
+        {(!readOnly || e.tentative) && <button type="button" className="btn-outline" onClick={() => onEdit(e)}>Modifier</button>}
+        {(!readOnly || e.tentative) && <button type="button" className="btn-outline !border-[#b42318] !text-[#b42318] hover:!bg-[#b42318] hover:!text-white" onClick={() => onDelete(e)}>Annuler cet événement</button>}
         {readOnly && !e.tentative && <p className="m-0 text-sm text-muted">Cet événement est validé : seuls le coach et le président changent ses dates. Tu peux modifier toutes les infos de son affiche.</p>}
       </div>}
     </Modal>
@@ -1362,18 +1362,18 @@ function ExportModal({ events: allEvents, season, month, onClose }: { events: Cl
     window.addEventListener("afterprint", done); window.print();
   };
   return (
-    <Modal title="📤 Exporter le planning" onClose={onClose}>
+    <Modal title="Exporter le planning" onClose={onClose}>
       <p className="mt-0 text-sm text-ink">Le document est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
       <p className="mb-1 text-sm font-semibold text-ink">1. Quelle période ?</p>
       <div className="mb-3 flex flex-wrap gap-2">
-        <Pill on={scope === "saison"} onClick={() => { setScope("saison"); setPageNo(0); }}>📆 Toute la saison {season} / {season + 1}</Pill>
-        <Pill on={scope === "mois"} onClick={() => { setScope("mois"); setPageNo(0); }}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
+        <Pill on={scope === "saison"} onClick={() => { setScope("saison"); setPageNo(0); }}>Toute la saison {season} / {season + 1}</Pill>
+        <Pill on={scope === "mois"} onClick={() => { setScope("mois"); setPageNo(0); }}>{MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
       </div>
       <p className="mb-1 text-sm font-semibold text-ink">2. Options</p>
       <div className="mb-3 flex flex-wrap gap-2">
-        {scope === "saison" && <Pill on={cover} onClick={() => { setCover(!cover); setPageNo(0); }}>📘 Avec la couverture</Pill>}
-        <Pill on={onlyTour} onClick={() => { setOnlyTour(!onlyTour); setPageNo(0); }}>🏆 Seulement les tournois (TMC et open)</Pill>
-        <Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe »</Pill>
+        {scope === "saison" && <Pill on={cover} onClick={() => { setCover(!cover); setPageNo(0); }}>Avec la couverture</Pill>}
+        <Pill on={onlyTour} onClick={() => { setOnlyTour(!onlyTour); setPageNo(0); }}>Seulement les tournois (TMC et open)</Pill>
+        <Pill on={withWho} onClick={() => setWithWho(!withWho)}>Ajouter « Qui s'en occupe »</Pill>
       </div>
       <p className="mb-1 text-sm font-semibold text-ink">3. Le dossier de saison <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""} · {pages.length} page{pages.length > 1 ? "s" : ""})</span></p>
       {n > 0 && pages.length > 0 ? (<>
@@ -1385,10 +1385,10 @@ function ExportModal({ events: allEvents, season, month, onClose }: { events: Cl
           <b className="text-ink">Page {idx + 1} / {pages.length}</b>
           <button type="button" className="btn-outline" aria-label="Page suivante" disabled={idx >= pages.length - 1} onClick={() => setPageNo(idx + 1)}>›</button>
         </div>
-        <button type="button" className="btn-clay mt-3 w-full" onClick={print}>📘 Imprimer ou enregistrer en PDF</button>
+        <button type="button" className="btn-clay mt-3 w-full" onClick={print}>Imprimer ou enregistrer en PDF</button>
         <p className="mb-0 mt-2 text-xs text-muted">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » (format A4, marges : aucune).</p>
       </>) : <p className="mb-0 mt-1 text-sm text-muted">Il n'y a aucun événement sur cette période.</p>}
-      <button type="button" className="btn-outline mt-4 w-full bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>📅 Agenda pour Google, Outlook, iPhone (.ics)</button>
+      <button type="button" className="btn-outline mt-4 w-full bg-white hover:bg-ink hover:text-white" disabled={!n} onClick={() => download(`planning-${tag}.ics`, "text/calendar", toIcs(events, opts))}>Agenda pour Google, Outlook, iPhone (.ics)</button>
       {createPortal(<div className="affiche-print" style={{ background: "#fff" }}>{pages}</div>, document.body)}
     </Modal>
   );
@@ -1417,13 +1417,13 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
         const put = (patch: { title?: string; note?: string }) => setEvText({ ...evText, [ev.id]: { ...o, ...patch } });
         return (
           <div className="mb-2 rounded-lg border-2 border-clay bg-white p-3">
-            <p className="m-0 mb-2 text-sm font-semibold text-ink">✏️ Texte de cet événement sur l'affiche <span className="font-normal text-muted">({fmtRange(ev.startDate, ev.endDate)})</span></p>
+            <p className="m-0 mb-2 text-sm font-semibold text-ink">Texte de cet événement sur l'affiche <span className="font-normal text-muted">({fmtRange(ev.startDate, ev.endDate)})</span></p>
             <label className="block text-xs font-semibold text-ink">Titre
               <textarea aria-label="Titre de l'événement sur l'affiche" rows={2} value={o.title ?? titleOf(ev)} onChange={(x) => put({ title: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
             <label className="mt-2 block text-xs font-semibold text-ink">Description (Entrée = nouvelle ligne)
               <textarea aria-label="Description de l'événement sur l'affiche" rows={3} value={o.note ?? ev.note ?? ""} onChange={(x) => put({ note: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
             <div className="mt-2 flex flex-wrap gap-2">
-              {evText[ev.id] && <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { const n = { ...evText }; delete n[ev.id]; setEvText(n); }}>↺ Remettre les textes d'origine</button>}
+              {evText[ev.id] && <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { const n = { ...evText }; delete n[ev.id]; setEvText(n); }}>Remettre les textes d'origine</button>}
               <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => setSelEv("")}>Terminé</button>
             </div>
             <p className="m-0 mt-1 text-xs text-muted">Cela ne change que l'affiche (pas le planning). Gardé dans ce navigateur.</p>
@@ -1433,7 +1433,7 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
   const poster = (extra: object = {}) => <ClubPoster events={events} month={month} model={model} showWho={showWho} partners={partners} bg={bg} fmt={mfmt} evText={evText} {...extra} />;
   return (
     <PosterStudio
-      title="🖨️ Affiche du mois" subtitle={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onClose={onClose}
+      title="Affiche du mois" subtitle={`${MONTHS[+month.slice(5, 7) - 1]} ${month.slice(0, 4)}`} onClose={onClose}
       formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
       content={<>
         <Sec title="Quel mois ?">
@@ -1444,9 +1444,9 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
           </div>
           <p className="mb-0 mt-2 text-xs text-muted">L'affiche reprend les événements du planning de ce mois. Pour changer un texte, touche-le sur l'affiche.</p>
         </Sec>
-        <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="👤 Montrer les professeurs" hint="Noms des personnes affectées aux événements" /></Sec>
+        <Sec title="Personnes"><Toggle on={showWho} onChange={setShowWho} label="Montrer les professeurs" hint="Noms des personnes affectées aux événements" /></Sec>
       </>}
-      look={<Sec title="Modèle"><Seg label="Modèle de l'affiche" value={model} options={[{ id: "liste", label: "📋 Liste" }, { id: "calendrier", label: "🗓️ Calendrier" }]} onChange={setModel} /></Sec>}
+      look={<Sec title="Modèle"><Seg label="Modèle de l'affiche" value={model} options={[{ id: "liste", label: "Liste" }, { id: "calendrier", label: "Calendrier" }]} onChange={setModel} /></Sec>}
       bg={bg} onBg={setBg}
       partners={{ count: logos.length, on: withPartners, onChange: setWithPartners }}
       fmt={{ items: monthFmtItems(model === "liste", monthEvents(events, month)), value: mfmt, onChange: setMfmt, selected: selEv ? `ev-${selEv}` : msel, onSelect: (k) => { setSelEv(k.startsWith("ev-") ? k.slice(3) : ""); setMsel(k); } }}
@@ -1472,14 +1472,14 @@ function PeopleModal({ people, onClose, onDone }: { people: { name: string; role
   };
   const save = async () => { setBusy(true); setErr(""); try { await put("/club/people", { people: list }); onDone(); } catch (e: any) { setErr(e.message || "Impossible d'enregistrer."); setBusy(false); } };
   return (
-    <Modal title="👥 Mes personnes" onClose={onClose}>
+    <Modal title="Mes personnes" onClose={onClose}>
       <p className="mt-0 text-sm text-muted">Les noms à pouvoir affecter à un événement. Tu les écris une seule fois ici, ensuite tu les coches. Les professeurs du site y sont déjà. N'indique que des adultes du club.</p>
       {ROLES.filter((r) => r.key !== "PROF" || list.some((x) => x.role === "PROF")).map((r) => (
         <section key={r.key} className="mb-3 rounded-2xl border-2 border-line bg-white p-3"><b className="text-ink">{r.label}</b>
           {list.filter((x) => x.role === r.key).length === 0 && <p className="m-0 mt-1 text-sm text-muted">Personne pour le moment.</p>}
           {list.filter((x) => x.role === r.key).map((x) => (
             <div key={x.name} className="mt-1.5 flex items-center gap-2"><span className="flex-1 font-semibold text-ink">{x.name}</span>
-              <button type="button" className="btn-outline" aria-label={`Retirer ${x.name}`} onClick={() => setList(list.filter((y) => y.name !== x.name))}>🗑️</button></div>
+              <button type="button" className="btn-outline" aria-label={`Retirer ${x.name}`} onClick={() => setList(list.filter((y) => y.name !== x.name))}></button></div>
           ))}
         </section>
       ))}

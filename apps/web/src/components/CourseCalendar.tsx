@@ -24,7 +24,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
 }
 
 const TONE = { ACCEPTED: "bg-[#15803d] text-white", BOOKED: "border-2 border-[#e0b100] bg-[#fff1c2] text-[#7a5a00]", REFUSED: "bg-[#fde8e8] text-[#b42318] line-through" } as const;
-const MARK = { ACCEPTED: "✔", BOOKED: "⏳", REFUSED: "✖" } as const;
+const MARK = { ACCEPTED: "✔", BOOKED: "", REFUSED: "" } as const;
 
 // Nombre de créneaux libres de chaque jour (tous les professeurs ensemble) : affiché dans le calendrier avant de cliquer
 // `version` change quand les cours de l'adulte changent (réservation, annulation) : les nombres de créneaux libres sont alors relus
@@ -99,7 +99,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
                   <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-semibold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
-                    <span aria-hidden="true">{MARK[l.status as keyof typeof MARK]} </span>{(l.seriesCount ?? 0) > 1 && "🔁 "}{hourOf(l.finalSlot!.time)}<span className="hidden sm:inline"> {l.prof?.firstName ?? ""}</span>
+                    <span aria-hidden="true">{MARK[l.status as keyof typeof MARK]} </span>{(l.seriesCount ?? 0) > 1 && ""}{hourOf(l.finalSlot!.time)}<span className="hidden sm:inline"> {l.prof?.firstName ?? ""}</span>
                   </button>
                 ))}
               </div>
@@ -107,7 +107,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre (on réserve jusqu'à 28 jours à l'avance, au plus tard la veille)</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-muted"><span>Confirmé</span><span>Le professeur doit confirmer</span><span>Refusé</span><span>chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre (on réserve jusqu'à 28 jours à l'avance, au plus tard la veille)</span></p>
     </div>
   );
 }
@@ -116,17 +116,17 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
 export function LessonSheet({ l, onClose, onCancel }: { l: Lesson; onClose: () => void; onCancel?: (l: Lesson, series?: boolean) => void }) {
   const slot = l.finalSlot!;
   const serie = (l.seriesCount ?? 0) > 1;
-  const state = l.status === "ACCEPTED" ? ["✅ Confirmé par le professeur", "text-ok"] : l.status === "BOOKED" ? ["⏳ Le professeur doit confirmer (sous 48 h)", "text-[#7a5a00]"] : ["❌ Refusé ou annulé", "text-bad"];
+  const state = l.status === "ACCEPTED" ? ["Confirmé par le professeur", "text-ok"] : l.status === "BOOKED" ? ["Le professeur doit confirmer (sous 48 h)", "text-[#7a5a00]"] : ["Refusé ou annulé", "text-bad"];
   const Row = ({ i, children }: { i: string; children: ReactNode }) => <p className="m-0 flex items-center gap-3 font-semibold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">{i}</span><span>{children}</span></p>;
   return (
     <Sheet title={dayLong(slot.date)} onClose={onClose}>
-      <p className="m-0 text-muted">Ton cours particulier{serie ? " · 🔁 chaque semaine" : ""}</p>
-      <Row i="🕕">{hourOf(slot.time)} – {hourOf(`${String(Number(slot.time.slice(0, 2)) + 1).padStart(2, "0")}:${slot.time.slice(3, 5)}`)}</Row>
-      <Row i="👨‍🏫">avec {lessonProfName(l.prof)}</Row>
-      {l.place && <Row i="🎾">{l.place}</Row>}
-      <Row i="🎯">{l.objective}{l.type === "duo" ? " · cours à deux" : ""}</Row>
-      {l.price ? <Row i="💶">{l.price} € à régler directement avec le professeur</Row> : null}
-      <Row i="ℹ️"><span className={state[1]}>{state[0]}</span></Row>
+      <p className="m-0 text-muted">Ton cours particulier{serie ? " · chaque semaine" : ""}</p>
+      <Row i="">{hourOf(slot.time)} – {hourOf(`${String(Number(slot.time.slice(0, 2)) + 1).padStart(2, "0")}:${slot.time.slice(3, 5)}`)}</Row>
+      <Row i="‍">avec {lessonProfName(l.prof)}</Row>
+      {l.place && <Row i="">{l.place}</Row>}
+      <Row i="">{l.objective}{l.type === "duo" ? " · cours à deux" : ""}</Row>
+      {l.price ? <Row i="">{l.price} € à régler directement avec le professeur</Row> : null}
+      <Row i="ℹ"><span className={state[1]}>{state[0]}</span></Row>
       <div className="mt-2 flex flex-wrap gap-2">
         {onCancel && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-semibold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l); }}>{l.status === "BOOKED" ? "Retirer ma demande" : "Annuler ce cours"}</button>}
         {onCancel && serie && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-semibold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l, true); }}>Arrêter toute la série</button>}
@@ -166,7 +166,7 @@ export function DaySheet({ date, preview, onClose, onReserve }: { date: string; 
     <Sheet title={dayLong(date)} onClose={onClose}>
       <p className="m-0 text-muted">Aucun cours ce jour-là.</p>
       {rows === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : rows.length === 0 ? <p className="m-0 font-semibold">Aucun professeur n'est visible pour le moment.</p> : rows.map((r) => (
-        <p key={r.prof.id} className="m-0 flex items-center gap-3 font-semibold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">👨‍🏫</span><span>{profName(r.prof)} : {r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""}` : <span className="text-muted">complet ce jour-là</span>}</span></p>
+        <p key={r.prof.id} className="m-0 flex items-center gap-3 font-semibold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">‍</span><span>{profName(r.prof)} : {r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""}` : <span className="text-muted">complet ce jour-là</span>}</span></p>
       ))}
       <div className="mt-2 flex flex-wrap gap-2">
         <button className="btn-clay" disabled={!any} onClick={onReserve}>Réserver ce jour-là →</button>
