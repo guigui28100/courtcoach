@@ -24,11 +24,11 @@
   --color-ball: #dfcb98;
   --color-ok: #3a7a56;
   --color-bad: #a1291f;
-  /* Polices : titres et grands chiffres en Garamond (Cormorant), interface en Archivo, lecture en Atkinson (accessible) */
-  --font-serif: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  /* Polices : titres en Newsreader, interface et texte en DM Sans (13/11/2026) ; Cormorant et Archivo restent chargées pour les affiches, dossiers et bulletins */
+  --font-serif: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --font-display: var(--font-serif);
-  --font-ui: "Archivo", "Arial Narrow", system-ui, sans-serif;
-  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   /* Rayons : fins et nets, pour tout le site (espaces des jeunes compris) */
   --radius-md: 0.25rem;
   --radius-lg: 0.25rem;
@@ -549,7 +549,7 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
   body.printing-affiche { margin: 0; background: #fff; }
 }
 
-/* Chiffres alignés (Cormorant a des chiffres « elzéviriens » par défaut) */
+/* Chiffres alignés (les serifs ont parfois des chiffres « elzéviriens » par défaut) */
 h1, h2, h3, .font-display { font-variant-numeric: lining-nums; }
 
 /* =====================================================================
