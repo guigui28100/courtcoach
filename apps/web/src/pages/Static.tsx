@@ -12,7 +12,7 @@ function Legal({ html }: { html: string }) {
   }, []);
   return (
     <>
-      <div className="mx-auto max-w-3xl px-4 pt-4 print:hidden"><BackLink fallback="/" className="font-bold text-ink underline">← Retour</BackLink></div>
+      <div className="mx-auto max-w-3xl px-4 pt-4 print:hidden"><BackLink fallback="/" className="font-semibold text-ink underline">← Retour</BackLink></div>
       <article className="legal" dangerouslySetInnerHTML={{ __html: html }} />
     </>
   );

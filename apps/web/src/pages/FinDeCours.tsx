@@ -70,7 +70,7 @@ export default function FinDeCours() {
       <Page>
         <div className="flex flex-wrap items-center gap-3">
           <div className="field"><label htmlFor="fc-day">Date du cours</label><input id="fc-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
-          <BackLink fallback="/coach/centre" className="font-bold text-ink underline">← Retour</BackLink>
+          <BackLink fallback="/coach/centre" className="font-semibold text-ink underline">← Retour</BackLink>
         </div>
         {players === null && <div className="skeleton h-32" role="status" aria-label="Chargement en cours" />}
         {players && !players.length && <Empty>Aucun joueur pour l'instant.</Empty>}
@@ -78,7 +78,7 @@ export default function FinDeCours() {
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Joueurs du cours">
             {players.map((p) => { const r = rows[p.id] ?? EMPTY; const on = (sel ?? players[0].id) === p.id; return (
               <button key={p.id} type="button" role="tab" aria-selected={on} onClick={() => setSel(p.id)}
-                className={"min-h-11 rounded-full border-2 px-4 font-bold " + (on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>
+                className={"min-h-11 rounded-full border-2 px-4 font-semibold " + (on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>
                 {p.firstName}{r.dirty ? " ✏️" : r.had ? " ✔" : ""}
               </button>
             ); })}
@@ -90,7 +90,7 @@ export default function FinDeCours() {
               <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">⚠️ pas encore enregistré</span>}</span>
               <strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>
             </div>
-            {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-bold text-ink">⚠️ {offDayReason(day, p.courseDays)} Une confirmation te sera demandée.</p>}
+            {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-semibold text-ink">⚠️ {offDayReason(day, p.courseDays)} Une confirmation te sera demandée.</p>}
             <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} allStars={allStars[p.id]} day={day} onChange={(lines) => set(p.id, { lines })} />
             <div className="flex flex-wrap gap-2">
               <button className="btn-clay" disabled={busy || !r.dirty} onClick={async () => { if (await saveRows([p]) && next) setSel(next.id); }}>{next ? `💾 Enregistrer ${p.firstName} et passer à ${next.firstName} →` : `💾 Enregistrer ${p.firstName}`}</button>
@@ -100,7 +100,7 @@ export default function FinDeCours() {
         {players && players.length > 0 && (
           <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3">
             <button className="btn-clay" onClick={save} disabled={busy || dirtyPlayers.length === 0}>{busy ? "Enregistrement…" : dirtyPlayers.length ? `Enregistrer les modifications (${dirtyPlayers.length})` : "Tout est enregistré ✓"}</button>
-            {msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
+            {msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
           </div>
         )}
         <Err msg={msg && !msg.ok ? msg.text : ""} />

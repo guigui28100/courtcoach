@@ -65,7 +65,7 @@ export function ThemeRadarSvg({ spokes, series, dark = false, summary }: { spoke
 }
 
 const Legend = ({ items, dark }: { items: { label: string; color: string; dashed?: boolean }[]; dark: boolean }) => (
-  <figcaption className={"flex flex-wrap justify-center gap-4 text-sm font-bold " + (dark ? "text-white" : "text-[#2a2720]")}>
+  <figcaption className={"flex flex-wrap justify-center gap-4 text-sm font-semibold " + (dark ? "text-white" : "text-[#2a2720]")}>
     {items.map((s) => <span key={s.label} className="flex items-center gap-2"><span aria-hidden className="inline-block h-0 w-6 border-t-[3px]" style={{ borderColor: s.color, borderStyle: s.dashed ? "dashed" : "solid" }} />{s.label}</span>)}
   </figcaption>
 );

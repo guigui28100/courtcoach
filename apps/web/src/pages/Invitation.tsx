@@ -33,14 +33,14 @@ export default function Invitation() {
           : "Crée ton accès pour consulter le planning du club (en lecture seule : tu ne peux rien modifier)."}
       </PageHead>
       <div className="mx-auto grid max-w-lg gap-4 px-4 py-8">
-        <BackLink fallback="/" className="text-sm font-bold">← Retour</BackLink>
+        <BackLink fallback="/" className="text-sm font-semibold">← Retour</BackLink>
         <form onSubmit={submit} className="card grid gap-4" noValidate>
           <p className="m-0 text-sm text-muted">Compte pour : <strong>{info.email}</strong></p>
           <Field label="Prénom (facultatif)" id="firstName"><input id="firstName" name="firstName" className="input" maxLength={60} autoComplete="given-name" /></Field>
           <Field label="Choisis un mot de passe" id="password" hint="10 caractères minimum."><input id="password" name="password" type="password" required minLength={10} maxLength={128} className="input" autoComplete="new-password" /></Field>
           <label className="flex items-start gap-3 text-sm">
             <input type="checkbox" name="policy" required className="mt-1 h-5 w-5 accent-clay" />
-            <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-bold text-clay underline">politique de confidentialité</Link>.</span>
+            <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-semibold text-clay underline">politique de confidentialité</Link>.</span>
           </label>
           <Err msg={error} />
           <button className="btn-clay w-full">Créer mon accès</button>

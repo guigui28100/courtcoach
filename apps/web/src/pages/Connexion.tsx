@@ -28,11 +28,11 @@ export default function Connexion() {
   }
 
   return (
-    <AuthShell tour eyebrow={mode === "connexion" ? "Connexion" : "Nouveau compte"} title={mode === "connexion" ? "Content de te revoir !" : "Créer mon compte"} subtitle={mode === "connexion" ? "Connecte-toi pour retrouver tes vidéos et ton suivi." : "Gratuit pour les adhérents adultes du club."}>
+    <AuthShell tour eyebrow={mode === "connexion" ? "Connexion" : "Nouveau compte"} title={mode === "connexion" ? "Se connecter" : "Créer mon compte"} subtitle={mode === "connexion" ? "Connecte-toi pour retrouver tes vidéos et ton suivi." : "Gratuit pour les adhérents adultes du club."}>
       <div role="tablist" aria-label="Connexion ou inscription" className="grid grid-cols-2 border-b border-line">
         {(["connexion", "inscription"] as const).map((m) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setError(""); setNeedCode(false); }}
-            className={"-mb-px min-h-12 border-b-2 font-ui text-[0.78rem] font-semibold uppercase tracking-[0.12em] transition-colors " + (mode === m ? "border-champagne-deep text-ink" : "border-transparent text-muted hover:text-ink")}>{m === "connexion" ? "J'ai un compte" : "Je suis nouveau"}</button>
+            className={"-mb-px min-h-12 border-b-2 font-ui text-[0.78rem] font-semibold  transition-colors " + (mode === m ? "border-champagne-deep text-ink" : "border-transparent text-muted hover:text-ink")}>{m === "connexion" ? "J'ai un compte" : "Je suis nouveau"}</button>
         ))}
       </div>
 
@@ -62,14 +62,14 @@ export default function Connexion() {
         {mode === "inscription" && (
           <label className="flex items-start gap-3 text-sm">
             <input type="checkbox" name="policy" required className="mt-1 h-5 w-5 accent-clay" />
-            <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-bold text-clay underline">politique de confidentialité</Link> : mes informations ne servent qu'au suivi au club.</span>
+            <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-semibold text-clay underline">politique de confidentialité</Link> : mes informations ne servent qu'au suivi au club.</span>
           </label>
         )}
         <Err msg={error} />
         <button className="btn-clay w-full !min-h-14 text-lg" disabled={busy}>{busy ? "Un instant…" : mode === "connexion" ? "Se connecter" : "Créer mon compte"}</button>
         {mode === "connexion" && <p className="m-0 text-center text-sm text-muted">Mot de passe oublié ? Demande à ton coach d'en donner un nouveau.</p>}
       </form>
-      <p className="m-0 text-center text-sm text-muted"><span aria-hidden="true">🔒</span> Connexion chiffrée · tes données restent au club · <Link to="/confidentialite" className="font-bold text-clay underline">Confidentialité</Link></p>
+      <p className="m-0 text-center text-sm text-muted"><span aria-hidden="true">🔒</span> Connexion chiffrée · tes données restent au club · <Link to="/confidentialite" className="font-semibold text-clay underline">Confidentialité</Link></p>
     </AuthShell>
   );
 }

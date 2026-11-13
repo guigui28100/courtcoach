@@ -117,13 +117,13 @@ export function VideoPanel({ id, onChanged, onSeen, preview = false }: { id: str
       {v.analysis?.sentAt ? <Analysis v={v} /> : !v.fromCoach && <p className="m-0 rounded-xl bg-sand p-3">Le coach n'a pas encore analysé cette vidéo. Tu seras prévenu ici dès que ce sera fait.</p>}
       {v.analysis?.sentAt && (
         <section className="grid gap-2" aria-label="Discussion avec le coach">
-          <h4 className="m-0 font-display font-bold">Discussion avec le coach</h4>
+          <h4 className="m-0 font-display font-semibold">Discussion avec le coach</h4>
           <Thread messages={v.messages} />
           <form onSubmit={say} className="flex flex-wrap gap-2" noValidate>
             <input className="input min-w-52 flex-1" aria-label="Ton message" value={preview ? "" : text} maxLength={1000} disabled={preview} onChange={(e) => setText(e.target.value)} placeholder="Une précision, une question…" />
             <button className="btn-clay btn-sm" disabled={preview || !text.trim()}>Envoyer</button>
           </form>
-          {preview && <p className="m-0 text-sm font-bold">👀 Aperçu : c'est ici que le jeune t'écrit. Le champ est grisé pour que rien ne soit envoyé à sa place.</p>}
+          {preview && <p className="m-0 text-sm font-semibold">👀 Aperçu : c'est ici que le jeune t'écrit. Le champ est grisé pour que rien ne soit envoyé à sa place.</p>}
           <Err msg={err} />
         </section>
       )}
@@ -144,7 +144,7 @@ function ZoomImage({ src, alt }: { src: string; alt: string }) {
     <>
       <button type="button" onClick={() => setOpen(true)} className="block w-full cursor-zoom-in rounded-lg border-0 bg-transparent p-0" aria-label={`Agrandir l'image : ${alt}`}>
         <img src={src} alt={alt} className="w-full rounded-lg" loading="lazy" />
-        <span className="mt-1 block text-left text-xs font-bold text-muted">🔍 Touche pour agrandir</span>
+        <span className="mt-1 block text-left text-xs font-semibold text-muted">🔍 Touche pour agrandir</span>
       </button>
       {open && createPortal(
         <div role="dialog" aria-modal="true" aria-label="Image agrandie" className="fixed inset-0 z-[100] grid place-items-center overflow-auto bg-black/90 p-3" onClick={() => setOpen(false)}>
@@ -161,7 +161,7 @@ export function Analysis({ v }: { v: VideoDetail }) {
   const a = v.analysis!;
   return (
     <section className="grid gap-2 rounded-xl border border-line bg-[#fffaf5] p-3" aria-label="Analyse du coach">
-      <h4 className="m-0 font-display font-bold">Analyse du coach · {a.sentAt && fmtDate(a.sentAt)}</h4>
+      <h4 className="m-0 font-display font-semibold">Analyse du coach · {a.sentAt && fmtDate(a.sentAt)}</h4>
       {a.observation && <p className="m-0 whitespace-pre-line">{a.observation}</p>}
       {a.strengths && <p className="m-0"><strong>{v.kind === "centre" ? "👍 Ce qui est bien : " : "Points forts : "}</strong>{a.strengths}</p>}
       {a.improve && <p className="m-0"><strong>{v.kind === "centre" ? "🎯 Ce que tu dois travailler : " : "À améliorer : "}</strong>{a.improve}</p>}
@@ -181,7 +181,7 @@ export function Thread({ messages }: { messages: VideoDetail["messages"] }) {
     <ul className="m-0 grid list-none gap-2 p-0">
       {messages.map((m) => (
         <li key={m.id} className={"max-w-[85%] rounded-2xl px-3 py-2 " + (m.mine ? "justify-self-end bg-[#fdf1ea]" : "justify-self-start bg-sand")}>
-          <small className="block font-bold">{m.fromCoach ? "Coach" : m.mine ? "Moi" : "Famille"} · {fmtDate(m.createdAt)}</small>{m.text}
+          <small className="block font-semibold">{m.fromCoach ? "Coach" : m.mine ? "Moi" : "Famille"} · {fmtDate(m.createdAt)}</small>{m.text}
         </li>
       ))}
     </ul>
@@ -244,7 +244,7 @@ export function GestureBeforeAfter({ videos, openId, onChanged, preview = false 
         <strong>{g.emoji} {g.key === "DEPART" ? "Au départ" : g.label} <span className="font-normal text-muted">· {v ? fmtDate(v.recordedAt) : g.when}</span></strong>
         {v ? (
           <>
-            {preview && (v.draft || !visibleToChild(v)) && <p className="m-0 rounded-lg bg-[#fff3cd] p-2 text-sm font-bold text-[#7a5a00]">{v.draft ? "📝 Brouillon : le jeune ne la voit pas encore (envoie-la depuis la fiche)." : `🔒 Le jeune ne la verra qu'à partir du ${opensOn(v.mark)}.`}</p>}
+            {preview && (v.draft || !visibleToChild(v)) && <p className="m-0 rounded-lg bg-[#fff3cd] p-2 text-sm font-semibold text-[#7a5a00]">{v.draft ? "📝 Brouillon : le jeune ne la voit pas encore (envoie-la depuis la fiche)." : `🔒 Le jeune ne la verra qu'à partir du ${opensOn(v.mark)}.`}</p>}
             <VideoPanel id={v.id} preview={preview} onChanged={onChanged} onSeen={onChanged} />
           </>
         ) : <p className="m-0 rounded-lg border-2 border-dashed border-line p-4 text-center text-muted">{g.key === "DEPART" ? "Ton coach filmera ton geste de départ." : "Le geste de ce trimestre viendra ici."}</p>}
@@ -257,7 +257,7 @@ export function GestureBeforeAfter({ videos, openId, onChanged, preview = false 
       <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Mes coups">
         {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot, fresh = videos.some((v) => v.shot === shot && GESTURE_MARKS.some((g) => g.key === v.mark) && !v.seenAt && (v.fromCoach || v.analysis?.sentAt)); return (
           <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
-            className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : fresh ? "border-ok bg-[#eef8f1] text-ink" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+            className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-semibold " + (on ? "border-ink bg-ink text-white" : fresh ? "border-ok bg-[#eef8f1] text-ink" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
             {shot}{has ? " 📍" : ""}{fresh ? " 🔔" : ""}
           </button>
         ); })}

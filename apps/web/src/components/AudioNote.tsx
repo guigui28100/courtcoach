@@ -70,7 +70,7 @@ export function AudioRecorder({ v, onChanged }: { v: VideoRow; onChanged: () => 
       )}
       {phase === "review" && (
         <div className="grid gap-2 rounded-xl border border-line bg-white p-3">
-          <p className="m-0 font-bold">Écoute avant d'envoyer ({fmt(secs)}) :</p>
+          <p className="m-0 font-semibold">Écoute avant d'envoyer ({fmt(secs)}) :</p>
           <audio controls src={url} className="w-full" aria-label="Écouter ton enregistrement" />
           <div className="flex flex-wrap gap-2"><button className="btn-clay btn-sm" disabled={busy} onClick={attach}>✅ Joindre à l'analyse</button><button className="btn-outline btn-sm" disabled={busy} onClick={again}>Recommencer</button></div>
         </div>

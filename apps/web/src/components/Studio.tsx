@@ -209,10 +209,10 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
         {TOOLS.map(([k, label]) => <button key={k} type="button" aria-pressed={tool === k} onClick={() => { setTool(k); setDraft(null); }} className={"btn-sm btn " + (tool === k ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>{label}</button>)}
       </div>
       <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Épaisseur du trait">
-        <span className="text-sm font-bold">{tool === "text" ? "Taille du texte" : "Épaisseur"} :</span>
+        <span className="text-sm font-semibold">{tool === "text" ? "Taille du texte" : "Épaisseur"} :</span>
         {SIZES.map(([label, v]) => (
           <button key={label} type="button" role="radio" aria-checked={size === v} onClick={() => setSize(v)} aria-label={label} title={label}
-            className={"flex h-10 min-w-16 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (size === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
+            className={"flex h-10 min-w-16 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-semibold " + (size === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
             {tool === "text" ? <span style={{ fontSize: `${10 + v * 5}px`, lineHeight: 1 }}>Aa</span> : <span aria-hidden="true" className="block w-7 rounded-full bg-current" style={{ height: `${Math.max(2, v * 3)}px` }} />}
           </button>
         ))}
@@ -232,7 +232,7 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
                 <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border border-line" style={{ background: s.color }} />
                 {s.tool === "text"
                   ? <input aria-label={`Texte n° ${i + 1}`} className="input !min-h-10 min-w-0 flex-1" maxLength={200} value={s.text ?? ""} onChange={(e) => setShapes((l) => l.map((x, k) => (k === i ? { ...x, text: e.target.value } : x)))} />
-                  : <span className="flex-1 text-sm font-bold">{TOOLS.find(([k]) => k === s.tool)?.[1] ?? s.tool}{s.tool === "angle" && s.pts.length === 3 ? ` : ${Math.round(angleOf(s.pts[0], s.pts[1], s.pts[2]))}°` : ""}</span>}
+                  : <span className="flex-1 text-sm font-semibold">{TOOLS.find(([k]) => k === s.tool)?.[1] ?? s.tool}{s.tool === "angle" && s.pts.length === 3 ? ` : ${Math.round(angleOf(s.pts[0], s.pts[1], s.pts[2]))}°` : ""}</span>}
                 <button type="button" className="btn-outline btn-sm" onClick={() => setShapes((l) => l.filter((_, k) => k !== i))} aria-label={`Retirer le tracé n° ${i + 1}`}>🗑 Retirer</button>
               </li>
             ))}
@@ -246,10 +246,10 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
           {!skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(defaultSkeleton()); setSkMsg("Squelette posé : glisse chaque point blanc à sa place sur le joueur."); }}>Placer un squelette à la main</button>}
           {skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(null); setSkMsg(""); }}>Retirer le squelette</button>}
         </div>
-        {skMsg && <p role="status" className="m-0 text-sm font-bold">{skMsg}</p>}
+        {skMsg && <p role="status" className="m-0 text-sm font-semibold">{skMsg}</p>}
         {skel && (
           <>
-            <div className="flex flex-wrap gap-4 text-sm font-bold">
+            <div className="flex flex-wrap gap-4 text-sm font-semibold">
               <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
               <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={showMeasures} onChange={(e) => setShowMeasures(e.target.checked)} />Écrire les mesures sur l'image</label>
             </div>
@@ -273,7 +273,7 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
         )}
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
-        {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
+        {busy && <p role="status" className="m-0 font-semibold">{step || "Enregistrement…"}</p>}
         <Err msg={err} />
         <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : initial ? "Enregistrer les modifications" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
       </form>
@@ -327,7 +327,7 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
   const go = (t: number) => { const v = el(); if (!v) return; v.pause(); v.currentTime = Math.max(0, Math.min(Number.isFinite(v.duration) ? v.duration : t, t)); };
   return (
     <div className="grid content-start gap-2">
-      <p className="m-0 font-bold">{label}</p>
+      <p className="m-0 font-semibold">{label}</p>
       <div className="relative">
       <video ref={vref} src={src} playsInline preload="metadata" muted className="block w-full rounded-xl bg-black" aria-label={label}
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
@@ -335,7 +335,7 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
         onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />
       <PoseOverlay video={vref} active={pose} guides={guides} onSkeleton={onSkeleton} />
       </div>
-      <label className="flex items-center gap-2 text-sm font-bold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
+      <label className="flex items-center gap-2 text-sm font-semibold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn-outline btn-sm" onClick={() => go(pos - 1 / FPS)} aria-label={`${label} : reculer d'une image`}>◀ 1 image</button>
         <button className="btn-outline btn-sm" onClick={() => go(pos + 1 / FPS)} aria-label={`${label} : avancer d'une image`}>1 image ▶</button>
@@ -428,15 +428,15 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
               <button className="btn-outline btn-sm" onClick={() => { pauseBoth(); seekBoth(t + 1 / FPS); }} aria-label="Avancer les deux d'une image">1 image ▶</button>
               {SPEEDS.map((x) => <button key={x} aria-pressed={speed === x} className={"btn btn-sm " + (speed === x ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(x)}>{x}×</button>)}
             </div>
-            <label className="flex items-center gap-3 text-sm font-bold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
+            <label className="flex items-center gap-3 text-sm font-semibold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>🦴 {pose ? "Arrêter le suivi du squelette" : "Suivre le squelette sur les deux vidéos"}</button>
-            {pose && <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement</label>}
+            {pose && <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement</label>}
           </div>
           <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>📸 Capturer la comparaison et annoter</button></div>
           <Err msg={err} />
-          {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
+          {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">{done}</p>}
           {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note, extra) => { await saveImage(v.id, blob, note, extra); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
         </>
       )}
@@ -549,7 +549,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       </div>
       {pose && (
         <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
-          <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
+          <label className="flex items-center gap-2 font-semibold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
           <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
         </div>
       )}
@@ -559,7 +559,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
         <h3 className="m-0 text-base">🖼️ Images de l'analyse ({v.images.length}/8)</h3>
-        {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
+        {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">{done}</p>}
         {v.images.length === 0 ? <p className="hint m-0">Aucune image pour l'instant : utilise « 📸 Capturer ».</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
@@ -576,7 +576,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           </ul>
         )}
       </section>
-      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-bold">🎙️ Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
+      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-semibold">🎙️ Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
     </div>
   );
 }

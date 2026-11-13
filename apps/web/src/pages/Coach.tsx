@@ -40,19 +40,19 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
-          {serie && <p className="m-0 text-sm font-bold text-clay">🔁 Série « toute l'année » : {everyDay(l.finalSlot!)} · {l.seriesCount} cours {l.status === "BOOKED" ? "à confirmer" : l.status === "REFUSED" ? "annulés" : "à venir"}</p>}
-          <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
-          {!asProf && l.prof && <p className="m-0 text-sm font-bold text-ink">👩‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
-          {!!l.price && <p className="m-0 text-sm font-bold text-ink">💶 {l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
-          {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-bold text-ink">👥 Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
+          {serie && <p className="m-0 text-sm font-semibold text-clay">🔁 Série « toute l'année » : {everyDay(l.finalSlot!)} · {l.seriesCount} cours {l.status === "BOOKED" ? "à confirmer" : l.status === "REFUSED" ? "annulés" : "à venir"}</p>}
+          <p className="m-0 flex flex-wrap gap-x-4 text-sm font-semibold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
+          {!asProf && l.prof && <p className="m-0 text-sm font-semibold text-ink">👩‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
+          {!!l.price && <p className="m-0 text-sm font-semibold text-ink">💶 {l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
+          {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-semibold text-ink">👥 Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
           <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
           {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
         </div>
         {badge && <span className={"badge " + badge[1]}>{badge[0]}</span>}
       </div>
 
-      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
-      {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-bold text-[#1d6b43]">{freshConfirm ? "🔔 Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
+      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-semibold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
+      {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-semibold text-[#1d6b43]">{freshConfirm ? "🔔 Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
       {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">💬 « {l.coachReply} »</p>}
 
       {l.status !== "REFUSED" && (!ask ? (
@@ -124,7 +124,7 @@ function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player
           <p className="hint m-0">Choisis un rendez-vous : ✅ = déjà filmé (touche pour l'ouvrir), ＋ = à filmer (touche pour l'ajouter). {filmed} sur {players.length * DEPART_SHOTS.length}.</p>
         </div>
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Rendez-vous">
-          {GESTURE_MARKS.map((m) => <button key={m.key} type="button" role="tab" aria-selected={rdv === m.key} onClick={() => setRdv(m.key)} className={"min-h-11 rounded-full border-2 px-4 text-sm font-bold " + (rdv === m.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>{m.emoji} {m.key === "DEPART" ? "Départ (septembre)" : `${m.label} (${m.when})`}</button>)}
+          {GESTURE_MARKS.map((m) => <button key={m.key} type="button" role="tab" aria-selected={rdv === m.key} onClick={() => setRdv(m.key)} className={"min-h-11 rounded-full border-2 px-4 text-sm font-semibold " + (rdv === m.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>{m.emoji} {m.key === "DEPART" ? "Départ (septembre)" : `${m.label} (${m.when})`}</button>)}
         </div>
         {players.length === 0 ? <Empty>Aucun joueur pour l'instant.</Empty> : (
           <div className="overflow-x-auto rounded-xl border-2 border-line bg-white">
@@ -134,11 +134,11 @@ function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player
               <tbody>
                 {players.map((p) => (
                   <tr key={p.id} className="border-t border-line">
-                    <th scope="row" className="p-2 text-left"><Link to={`/coach/centre/${p.id}?onglet=videos`} className="font-bold text-ink underline">{p.firstName}</Link></th>
+                    <th scope="row" className="p-2 text-left"><Link to={`/coach/centre/${p.id}?onglet=videos`} className="font-semibold text-ink underline">{p.firstName}</Link></th>
                     {DEPART_SHOTS.map((sh) => { const v = done(p.id, sh); return (
                       <td key={sh} className="p-1 text-center">
-                        {v ? <Link to={`/coach/videos/${v.id}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-ok bg-[#eef8f1] px-2 py-1 font-bold text-ok no-underline" aria-label={`${p.firstName} : ${sh}, déjà filmé${v.draft ? " (brouillon)" : ""}`}>{v.draft ? "📝" : "✅"}</Link>
-                          : <Link to={`/coach/centre/${p.id}?onglet=videos&coup=${encodeURIComponent(sh)}&rdv=${rdv}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-dashed border-line px-2 py-1 font-bold text-muted no-underline hover:bg-sand" aria-label={`${p.firstName} : ${sh}, à filmer`}>＋</Link>}
+                        {v ? <Link to={`/coach/videos/${v.id}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-ok bg-[#eef8f1] px-2 py-1 font-semibold text-ok no-underline" aria-label={`${p.firstName} : ${sh}, déjà filmé${v.draft ? " (brouillon)" : ""}`}>{v.draft ? "📝" : "✅"}</Link>
+                          : <Link to={`/coach/centre/${p.id}?onglet=videos&coup=${encodeURIComponent(sh)}&rdv=${rdv}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-dashed border-line px-2 py-1 font-semibold text-muted no-underline hover:bg-sand" aria-label={`${p.firstName} : ${sh}, à filmer`}>＋</Link>}
                       </td>
                     ); })}
                   </tr>
@@ -237,22 +237,22 @@ export function CoachHome() {
     <div className="bg-[#1f1a12] text-white print:bg-white print:text-ink">
       <div className="mx-auto flex max-w-[2400px] gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
         <aside aria-label="Raccourcis" className={(homeInSidebar ? "md:hidden " : "") + "min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden"}>
-          <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a89c82] lg:block">Menu</p>
+          <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold  text-[#a89c82] lg:block">Menu</p>
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 lg:grid lg:gap-1.5 lg:overflow-visible">
-            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-bold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
+            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-semibold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
           </ul>
         </aside>
         <div className="min-w-0 flex-1 px-4 py-6 lg:px-8">
           <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
+              <p className="m-0 text-xs font-semibold  text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
               <h1 className="m-0 mt-1 text-3xl leading-tight text-white sm:text-4xl">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first}</h1>
               <p className="m-0 mt-1 text-[#d6cdbb]">{line2}</p>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded bg-champagne px-4 py-2.5 font-display font-bold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
-              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="film" />Analyser une vidéo</Link>
-              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
+              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded bg-champagne px-4 py-2.5 font-display font-semibold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
+              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-semibold text-white no-underline hover:bg-[#3a3326]"><Ico n="film" />Analyser une vidéo</Link>
+              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-semibold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
             </div>
           </header>
           <ClubNotice />
@@ -288,17 +288,17 @@ export function CoachHome() {
                   ))}
                 </ul>
               )}
-              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a3326] pt-2 text-sm font-bold text-[#c9ad77] no-underline hover:underline">Voir mon agenda →</Link>
+              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a3326] pt-2 text-sm font-semibold text-[#c9ad77] no-underline hover:underline">Voir mon agenda →</Link>
             </HomeFold>
           </div>
           <section className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2" aria-label="Mes deux espaces">
             <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#2b261d" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold ">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{toDo}</b> <span className="font-semibold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
             <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#26211a" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold ">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{d.players.length}</b> <span className="font-semibold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
           </section>
         </div>
@@ -464,7 +464,7 @@ export function Centre() {
               {!players.length && <div className="sm:col-span-2 lg:col-span-3"><Empty>{isCoach ? "Aucun joueur pour l'instant. Ajoute le premier avec le bouton « + Ajouter un joueur » ci-dessus." : "Le coach ne t'a pas encore confié de jeune."}</Empty></div>}
             </div>
             {isCoach && <details className="card">
-              <summary className="cursor-pointer font-bold text-muted">Pour essayer : créer un joueur fictif</summary>
+              <summary className="cursor-pointer font-semibold text-muted">Pour essayer : créer un joueur fictif</summary>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
                 <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
@@ -493,7 +493,7 @@ export function Centre() {
           <section className="card grid gap-2">
             <h2 className="m-0 text-lg">Dossiers inactifs depuis plus de 12 mois</h2>
             <p className="hint m-0">Les données d'un jeune qui a quitté le club ne doivent pas être gardées : télécharge une copie si besoin, puis supprime.</p>
-            {inactive.map((p) => <Link key={p.id} to={`/coach/centre/${p.id}`} className="font-bold text-clay underline">{fullName(p)} — dernière activité le {fmtDate(p.lastActivityAt)}</Link>)}
+            {inactive.map((p) => <Link key={p.id} to={`/coach/centre/${p.id}`} className="font-semibold text-clay underline">{fullName(p)} — dernière activité le {fmtDate(p.lastActivityAt)}</Link>)}
             {!inactive.length && <Empty>Aucun dossier à vérifier : tout est récent 👍</Empty>}
           </section>
         )}

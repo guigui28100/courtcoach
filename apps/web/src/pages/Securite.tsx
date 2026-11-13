@@ -31,7 +31,7 @@ export default function Securite() {
 
   return (
     <>
-      <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : me?.role === "PRESIDENT" ? "Espace du président" : me?.role === "BUREAU" ? "Espace du bureau" : "Espace coach"} title="Sécurité de mon compte"><BackLink fallback={me ? homeFor(me.role) : "/coach"} className="mb-2 inline-block font-bold text-ink underline">← Retour</BackLink><br />{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
+      <PageHead eyebrow={me?.role === "TRAINER" ? "Espace entraîneur" : me?.role === "PRESIDENT" ? "Espace du président" : me?.role === "BUREAU" ? "Espace du bureau" : "Espace coach"} title="Sécurité de mon compte"><BackLink fallback={me ? homeFor(me.role) : "/coach"} className="mb-2 inline-block font-semibold text-ink underline">← Retour</BackLink><br />{me?.role === "TRAINER" ? "Ton compte donne accès aux dossiers de jeunes mineurs : il mérite une double protection." : "Ton compte donne accès aux dossiers de tous les jeunes : il mérite une double protection."}</PageHead>
       <Page>
         {me?.role === "COACH" && holidaysDaysLeft(todayIso()) < HOLIDAYS_WARN_DAYS && (
           <section className="grid gap-2 rounded border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-vac">
@@ -63,9 +63,9 @@ export default function Securite() {
 
           {codes && (
             <div role="status" className="rounded-2xl border-2 border-ok bg-[#eef8f1] p-4">
-              <p className="m-0 font-bold">✅ C'est activé. Note ces 8 codes de secours maintenant : ils ne seront plus affichés.</p>
+              <p className="m-0 font-semibold">✅ C'est activé. Note ces 8 codes de secours maintenant : ils ne seront plus affichés.</p>
               <p className="m-0 text-sm">Chaque code ne sert qu'une fois, si tu perds ton téléphone. Garde-les sur papier, dans un endroit sûr (pas dans ton téléphone).</p>
-              <ul className="m-0 mt-2 grid list-none grid-cols-2 gap-2 p-0 font-mono text-lg font-bold">{codes.map((c) => <li key={c} className="rounded bg-white px-2 py-1">{c}</li>)}</ul>
+              <ul className="m-0 mt-2 grid list-none grid-cols-2 gap-2 p-0 font-mono text-lg font-semibold">{codes.map((c) => <li key={c} className="rounded bg-white px-2 py-1">{c}</li>)}</ul>
               <button className="btn-outline btn-sm mt-3" onClick={() => window.print()}>🖨️ Imprimer</button>
             </div>
           )}
@@ -84,8 +84,8 @@ export default function Securite() {
 
           {setup && (
             <form onSubmit={enable} className="grid gap-3" noValidate>
-              <p className="m-0 font-bold">Ta clé (à recopier dans l'application, sans la partager) :</p>
-              <p className="m-0 select-all break-all rounded-xl bg-sand p-3 font-mono text-xl font-bold tracking-widest">{setup.secret.match(/.{1,4}/g)?.join(" ")}</p>
+              <p className="m-0 font-semibold">Ta clé (à recopier dans l'application, sans la partager) :</p>
+              <p className="m-0 select-all break-all rounded-xl bg-sand p-3 font-mono text-xl font-semibold">{setup.secret.match(/.{1,4}/g)?.join(" ")}</p>
               <p className="hint m-0">Type : « basé sur l'heure ». Nom du compte : CourtCoach.</p>
               <Field label="Code à 6 chiffres affiché dans l'application" id="code"><input id="code" name="code" required inputMode="numeric" autoComplete="one-time-code" maxLength={6} className="input !w-40" autoFocus /></Field>
               <div><button className="btn-clay" disabled={busy}>Vérifier et activer</button></div>
@@ -94,7 +94,7 @@ export default function Securite() {
 
           {on && !codes && (
             <details>
-              <summary className="cursor-pointer font-bold text-muted">Désactiver la double authentification</summary>
+              <summary className="cursor-pointer font-semibold text-muted">Désactiver la double authentification</summary>
               <form onSubmit={disable} className="mt-3 grid gap-3 sm:grid-cols-2" noValidate>
                 <Field label="Mot de passe" id="d-pwd"><input id="d-pwd" name="password" type="password" required className="input" autoComplete="current-password" /></Field>
                 <Field label="Code à 6 chiffres" id="d-code"><input id="d-code" name="code" required inputMode="numeric" maxLength={6} className="input" /></Field>

@@ -40,7 +40,7 @@ export function ClubNotice() {
     <Link to={me?.role === "COACH" ? "/coach/prof" : "/prof"} className="mb-4 flex items-center gap-3 rounded border-2 border-champagne bg-[#fff6dd] px-4 py-3 text-ink no-underline hover:bg-[#ffefc2]">
       <span aria-hidden="true" className="text-2xl">🔔</span>
       <span className="min-w-0 flex-1"><b>Tu as été placé sur {fresh.length} événement{fresh.length > 1 ? "s" : ""} du club.</b> <span className="text-muted">Ils sont dans ton agenda.</span></span>
-      <span className="shrink-0 font-bold">Voir →</span>
+      <span className="shrink-0 font-semibold">Voir →</span>
     </Link>
   );
 }

@@ -128,14 +128,14 @@ export function ClubPlan() {
     <Page>
       <BureauCtx.Provider value={me?.role !== "COACH"}>
       <div className="grid gap-3">
-        <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-bold text-ink">← Retour</BackLink>
+        <BackLink fallback={me ? homeFor(me.role) : "/coach"} className="text-sm font-semibold text-ink">← Retour</BackLink>
         <section className="relative overflow-hidden rounded bg-ink px-5 py-5 text-white border-b-2 border-champagne">
           <svg aria-hidden className="pointer-events-none absolute inset-0 size-full opacity-20" preserveAspectRatio="xMidYMid slice" viewBox="0 0 400 100"><g fill="none" stroke="#c9ad77" strokeWidth="1.2"><CourtLines cx={200} y={12} h={76} netWidth={2} /></g></svg>
           <div className="relative flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <ClubLogo className="size-16 text-white drop-shadow" />
               <div className="min-w-0">
-                <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-champagne">{readOnly ? "Lecture seule" : "Réservé au club"} · Saison {season} / {season + 1}</p>
+                <p className="m-0 text-xs font-semibold  text-champagne">{readOnly ? "Lecture seule" : "Réservé au club"} · Saison {season} / {season + 1}</p>
                 <h1 className="m-0 text-3xl text-white">Planning du club</h1>
               </div>
             </div>
@@ -152,18 +152,18 @@ export function ClubPlan() {
           <div role="tablist" aria-label="Façon de voir le planning" className="flex w-full rounded sm:w-auto bg-sand p-1">
             {VIEWS.map(([k, l]) => (
               <button key={k} role="tab" aria-selected={view === k} type="button" onClick={() => { setView(k); setMulti(false); }}
-                className={`flex-1 rounded-lg px-2 py-2 text-sm font-extrabold sm:flex-none sm:px-4 sm:text-base ${view === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
+                className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold sm:flex-none sm:px-4 sm:text-base ${view === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>
             ))}
           </div>
           <div className="flex flex-1 flex-wrap items-center justify-center gap-2">
-            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Précédent" onClick={() => step(-1)}>‹</button>
+            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-semibold text-ink hover:border-ink" aria-label="Précédent" onClick={() => step(-1)}>‹</button>
             <b className="min-w-[8rem] text-center text-xl text-ink sm:min-w-[11rem]">{navLabel}</b>
-            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
-            <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
+            <button type="button" className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-semibold text-ink hover:border-ink" aria-label="Suivant" onClick={() => step(1)}>›</button>
+            <button type="button" className="whitespace-nowrap rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:border-ink" onClick={goToday}>{view === "annee" ? "Retour à l’année en cours" : "Retour au mois en cours"}</button>
           </div>
         </div>
-        {viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">👀 Tu consultes le planning du club : pour ajouter ou changer un événement, demande au coach.</p>}
-        {readOnly && !viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
+        {viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">👀 Tu consultes le planning du club : pour ajouter ou changer un événement, demande au coach.</p>}
+        {readOnly && !viewer && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">⏳ Tu peux proposer des événements : ils sont placés en « prévisionnel » (en gris). Seuls seul le coach les valide.</p>}
       </div>
       {moreOpen && (
         <Modal title="⋯ Affiche, export, réglages" onClose={() => setMoreOpen(false)}>
@@ -248,7 +248,7 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
       )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="m-0 text-sm text-muted">💡 Touche un mois pour voir ce qu'il contient.</p>
-        <button type="button" className="rounded-xl border-2 border-line bg-white px-3 py-1.5 text-sm font-bold text-ink hover:border-ink" onClick={() => setOpenSet(openSet.size > 0 ? new Set() : new Set(months))}>{openSet.size > 0 ? "▲ Tout fermer" : "▼ Tout ouvrir"}</button>
+        <button type="button" className="rounded-xl border-2 border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:border-ink" onClick={() => setOpenSet(openSet.size > 0 ? new Set() : new Set(months))}>{openSet.size > 0 ? "▲ Tout fermer" : "▼ Tout ouvrir"}</button>
       </div>
       <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {months.map((m) => {
@@ -260,13 +260,13 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
             <details key={m} open={openSet.has(m)} onToggle={(ev) => { const o = (ev.currentTarget as HTMLDetailsElement).open; setOpenSet((x) => { if (x.has(m) === o) return x; const n = new Set(x); if (o) n.add(m); else n.delete(m); return n; }); }}
               className={`group overflow-hidden rounded-2xl bg-white shadow-sm ${now ? "border-4 border-clay" : "border-2"}`} style={now ? undefined : { borderColor: color }}>
               <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}1a` }}>
-                <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-black uppercase leading-none text-white" style={{ background: color }}>{["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][mi - 1]}</span>
+                <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-xl text-xs font-semibold  leading-none text-white" style={{ background: color }}>{["JANV", "FÉVR", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOÛT", "SEPT", "OCT", "NOV", "DÉC"][mi - 1]}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-black leading-tight text-ink">{MONTHS[mi - 1]} {m.slice(0, 4)}{now ? <small className="ml-2 rounded-full bg-clay px-2 py-0.5 align-middle text-[11px] font-extrabold text-white">Ce mois-ci</small> : null}</span>
+                  <span className="block text-lg font-semibold leading-tight text-ink">{MONTHS[mi - 1]} {m.slice(0, 4)}{now ? <small className="ml-2 rounded-full bg-clay px-2 py-0.5 align-middle text-[11px] font-semibold text-white">Ce mois-ci</small> : null}</span>
                   <span className="block truncate text-xs font-semibold text-muted">{shown.length === 0 ? "Rien de prévu" : shown.map((e) => `${kindOf(e.kind).icon} ${titleOf(e)}`).join(" · ")}</span>
                 </span>
-                {shown.length > 0 && <span className="grid min-w-7 place-items-center rounded-full px-2 py-0.5 text-sm font-black text-white" style={{ background: color }}>{shown.length}</span>}
-                <span aria-hidden className="text-xl font-black text-ink transition-transform group-open:rotate-90">›</span>
+                {shown.length > 0 && <span className="grid min-w-7 place-items-center rounded-full px-2 py-0.5 text-sm font-semibold text-white" style={{ background: color }}>{shown.length}</span>}
+                <span aria-hidden className="text-xl font-semibold text-ink transition-transform group-open:rotate-90">›</span>
               </summary>
               <div className="p-3">
                 {list.length === 0 ? <p className="m-0 rounded-lg bg-[#f4f1ea] px-3 py-2 text-sm text-muted">Rien de prévu ce mois-ci.</p> : (
@@ -274,14 +274,14 @@ function YearView({ season, setSeason, events, clashes, onOpen, onMonth }: { sea
                     {list.map((e) => (
                       <li key={e.id}>
                         <button type="button" onClick={() => onOpen(e)} className="flex w-full items-start gap-2 rounded-lg border-2 border-[#d6dbe6] bg-white px-2 py-1.5 text-left hover:border-ink">
-                          <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-black" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
-                          <span className="min-w-0 flex-1 text-sm font-bold leading-tight text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.tentative ? <small className="ml-1 font-normal text-muted">(prévisionnel)</small> : null}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
+                          <span className="grid min-w-[3.4rem] shrink-0 place-items-center rounded-md px-1 py-0.5 text-xs font-semibold" style={{ background: colorOf(e), color: textOn(colorOf(e)) }}>{dayLabel(e, m)}</span>
+                          <span className="min-w-0 flex-1 text-sm font-semibold leading-tight text-ink [overflow-wrap:anywhere]">{e.tentative ? "⏳ " : ""}{e.featured ? "⭐ " : ""}{kindOf(e.kind).icon} {titleOf(e)}{e.tentative ? <small className="ml-1 font-normal text-muted">(prévisionnel)</small> : null}{e.who.length ? <small className="block font-normal text-muted">👤 {e.who.join(", ")}</small> : null}{e.note ? <small className="mt-0.5 block text-[13px] font-normal text-ink whitespace-pre-line [overflow-wrap:anywhere]" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>📝 {e.note}</small> : null}</span>
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
-                <button type="button" className="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 font-bold text-ink hover:bg-sand" aria-label={`Ouvrir ${MONTHS[mi - 1]} en vue mois par mois`} onClick={() => onMonth(m)}>🗓️ Voir {MONTHS[mi - 1].toLowerCase()} jour par jour ›</button>
+                <button type="button" className="mt-3 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 font-semibold text-ink hover:bg-sand" aria-label={`Ouvrir ${MONTHS[mi - 1]} en vue mois par mois`} onClick={() => onMonth(m)}>🗓️ Voir {MONTHS[mi - 1].toLowerCase()} jour par jour ›</button>
               </div>
             </details>
           );
@@ -391,7 +391,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
   });
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-[#5e574a]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
+      <div className="grid grid-cols-7 gap-2.5 text-center text-xs font-semibold  text-[#5e574a]">{DAYS.map((d) => <span key={d}>{d.slice(0, 3)}</span>)}</div>
       <div className="grid grid-cols-7 gap-2.5">
         {rows.map((d) => {
           const evs = cellEvents(d);
@@ -401,7 +401,7 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
           return (
             <div key={d} data-cell={d} onClick={() => { if (justDragged.current) return; click(d); }}
               className={`min-h-[112px] cursor-pointer rounded-2xl p-2 max-sm:p-1 text-left align-top shadow-md hover:border-clay hover:shadow-md ${bg}`}>
-              <button type="button" onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-black max-sm:min-h-9 ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
+              <button type="button" onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; click(d); }} aria-label={`${fmtDay(d)} : ${evs.length} événement${evs.length > 1 ? "s" : ""}`} className={`mb-1 block w-full text-left text-base font-semibold max-sm:min-h-9 ${d === today ? "text-clay" : "text-ink"}`}>{+d.slice(8, 10)}</button>
               <span className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
                 {(laneRows.get(d) ?? []).map((seg, li) => {
                   if (!seg) return <span key={"sp" + li} aria-hidden className="block h-9 max-sm:h-9" />;
@@ -410,19 +410,19 @@ function MonthView({ month, multi, events, onDay, onRange, onEvent, onReorder }:
                   // Un morceau DANS chaque case (la barre ne traverse jamais les bordures), toujours sur la même ligne ; le titre est répété dans chaque morceau
                   return <button key={e.id + d} type="button" title={titleOf(e) + (e.tentative ? " (prévisionnel)" : "")} aria-label={`${titleOf(e)} : voir, modifier ou annuler`} onClick={(ev) => { ev.stopPropagation(); if (justDragged.current) return; onEvent(e); }}
                     {...(movable ? { "data-ev": e.id, onPointerDown: (ev: React.PointerEvent<HTMLElement>) => press(ev, e.id, d, titleOf(e)), onDragStart: (ev: React.DragEvent) => ev.preventDefault() } : {})}
-                    className={"relative block h-9 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-[11px] font-bold leading-[14px] max-sm:leading-9 max-sm:text-base sm:px-1.5 py-[3px] max-sm:py-0 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
+                    className={"relative block h-9 max-sm:h-9 w-full min-w-0 overflow-hidden select-none rounded-md px-1 text-left text-[11px] font-semibold leading-[14px] max-sm:leading-9 max-sm:text-base sm:px-1.5 py-[3px] max-sm:py-0 hover:brightness-95 " + (seg.skip ? "" : "z-10 ") + (movable ? "cursor-grab " : "") + (drag?.id === e.id ? "opacity-40" : "")}
                     style={{ ["--n" as any]: n, background: colorOf(e), color: e.tentative ? "#17140f" : textOn(colorOf(e)), border: e.tentative ? "2px dashed #6b6558" : undefined, boxShadow: ov ? (ov.after ? "0 4px 0 0 #17140f" : "0 -4px 0 0 #17140f") : undefined }}>
                     <span className="block max-sm:truncate sm:[display:-webkit-box] sm:[-webkit-box-orient:vertical] sm:[-webkit-line-clamp:2] sm:overflow-hidden [overflow-wrap:anywhere]">{lbl}<span className="hidden sm:inline"> {titleOf(e)}{e.note ? " 📝" : ""}{hasPoster(e) ? " 🪧" : ""}</span></span>
                   </button>;
                 })}
-                {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-extrabold text-ink">+{hiddenCount.get(d)} autres</span>}
+                {(hiddenCount.get(d) ?? 0) > 0 && <span className="text-xs font-semibold text-ink">+{hiddenCount.get(d)} autres</span>}
               </span>
             </div>
           );
         })}
       </div>
-      {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-extrabold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>↕ {ghost.text}</div>}
-      {onReorder && <p className="m-0 hidden rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
+      {ghost && <div aria-hidden className="pointer-events-none fixed z-[60] max-w-[14rem] -translate-x-1/2 -translate-y-full truncate rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-xl" style={{ left: ghost.x, top: ghost.y - 8 }}>↕ {ghost.text}</div>}
+      {onReorder && <p className="m-0 hidden rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f] sm:block">↕ Pour changer l'ordre : glisse un événement au-dessus ou en dessous d'un autre dans la même case (avec la souris, ou en appuyant longuement avec le doigt).</p>}
       <section className="rounded-2xl border-2 border-[#5b6680] bg-white p-3">
         <h3 className="m-0 mb-2 text-base text-ink">📋 Programme de {MONTHS[+month.slice(5, 7) - 1].toLowerCase()} (avec les descriptions)</h3>
         {(() => {
@@ -472,7 +472,7 @@ export function Modal({ title, onClose, children, wide, bare }: { title: string;
 const Pill = ({ on, onClick, children, color, disabled, title }: { on: boolean; onClick: () => void; children: React.ReactNode; color?: string; disabled?: boolean; title?: string }) => (
   <button type="button" aria-pressed={on} disabled={disabled} title={title} onClick={onClick}
     style={on && color ? { background: color, color: textOn(color), borderColor: color } : undefined}
-    className={`rounded-xl border-2 px-3 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40 ${on ? (color ? "" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
+    className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${on ? (color ? "" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:border-ink"}`}>{children}</button>
 );
 const Step = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
   <section className="mb-4"><h3 className="m-0 mb-2 text-base text-ink"><span className="mr-2 inline-grid size-6 place-items-center rounded-full bg-clay text-sm text-white">{n}</span>{title}</h3>{children}</section>
@@ -492,7 +492,7 @@ function MiniCalendar({ start, end, onPick }: { start: string; end: string; onPi
         {days.map((d) => {
           const inR = d >= start && d <= end; const edge = d === start || d === end;
           return <button key={d} type="button" aria-label={fmtDay(d)} aria-pressed={inR} onClick={() => onPick(d)}
-            className={`h-8 rounded-md font-bold ${edge ? "bg-clay text-white" : inR ? "bg-champagne-soft text-ink" : d.slice(0, 7) === m ? (isVacation(d) ? "bg-champagne-soft text-ink" : "text-ink hover:bg-sand") : "text-muted opacity-40"}`}>{+d.slice(8, 10)}</button>;
+            className={`h-8 rounded-md font-semibold ${edge ? "bg-clay text-white" : inR ? "bg-champagne-soft text-ink" : d.slice(0, 7) === m ? (isVacation(d) ? "bg-champagne-soft text-ink" : "text-ink hover:bg-sand") : "text-muted opacity-40"}`}>{+d.slice(8, 10)}</button>;
         })}
       </div>
     </div>
@@ -524,7 +524,7 @@ function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
     set(patch);
   };
   const groups = pub === "jeunes" ? ["Jeunes · garçons", "Jeunes · filles"] : ["Séniors", "Séniors +35 / +45"];
-  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink";
+  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-semibold text-ink";
   return (
     <section aria-label="Type et catégories du tournoi" className="mb-4 grid gap-3 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3">
       <b className="text-ink">🏆 Type, classements et catégories</b>
@@ -532,15 +532,15 @@ function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
         {TOUR_TYPES.map((t) => <Pill key={t.key} on={type === t.key} onClick={() => apply({ type: t.key, ...(t.key === "OPEN" ? { bas: "", haut: "" } : {}) })}>{t.icon} {t.label}</Pill>)}
       </div>
       {type === "TMC" && <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-sm font-bold text-ink">⬇️ Classement le plus bas
+        <label className="text-sm font-semibold text-ink">⬇️ Classement le plus bas
           <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => apply({ bas: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
-        <label className="text-sm font-bold text-ink">⬆️ Classement le plus haut
+        <label className="text-sm font-semibold text-ink">⬆️ Classement le plus haut
           <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => apply({ haut: e.target.value })}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
-        {!rankOk && <p role="alert" className="m-0 text-sm font-bold text-[#7a5a00] sm:col-span-2">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
+        {!rankOk && <p role="alert" className="m-0 text-sm font-semibold text-[#7a5a00] sm:col-span-2">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
       </div>}
       <div role="tablist" aria-label="Adultes ou jeunes" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
         {([["seniors", "🎾 Adultes"], ["jeunes", "🧒 Jeunes"]] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-semibold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
         <div key={g}><b className="text-sm text-muted">{g}</b>
@@ -549,7 +549,7 @@ function TournoiEdit({ d, set }: { d: Draft; set: (p: Partial<Draft>) => void })
               <Pill key={t.key} on={catKeys.includes(t.key)} onClick={() => apply({ keys: multiOk(t.key) ? toggle(catKeys, t.key) : [t.key] })}>{tourWord(t.key).replace(/^./, (x) => x.toUpperCase())}</Pill>))}
           </div></div>))}
       {!catKeys.length && d.audience && <p className="m-0 text-xs text-muted">Catégorie actuelle : « {d.audience} ». Touche une catégorie pour la changer.</p>}
-      <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">🏷️ Nom du tournoi : {d.title || "—"}</p>
+      <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">🏷️ Nom du tournoi : {d.title || "—"}</p>
     </section>
   );
 }
@@ -588,7 +588,7 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {KINDS.map((k) => (
             <button key={k.key} type="button" aria-pressed={d.kind === k.key} onClick={() => pickKind(k.key)} style={{ borderColor: d.kind === k.key ? k.color : undefined, background: d.kind === k.key ? k.color : undefined, color: d.kind === k.key ? textOn(k.color) : undefined }}
-              className="rounded-xl border-2 border-line bg-white p-2 text-sm font-bold text-ink hover:border-ink">{k.icon} {k.label}</button>
+              className="rounded-xl border-2 border-line bg-white p-2 text-sm font-semibold text-ink hover:border-ink">{k.icon} {k.label}</button>
           ))}
         </div>
       </Step>
@@ -599,14 +599,14 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
         </Step>
       )}
       {d.kind === "EQUIPES" && (
-        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
+        <label className="mb-4 block rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink">🏟️ Club rencontré <span className="font-normal text-muted">(facultatif)</span>
           <input aria-label="Club rencontré" maxLength={80} value={d.audience ?? ""} onChange={(e) => set({ audience: e.target.value })} placeholder="Ex. TC Dreux, US Mantes…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
         </label>)}
       {d.kind === "EQUIPES" && <VenuePick value={d.place ?? ""} onChange={(v) => set({ place: v })} />}
       {d.kind === "EQUIPES" && <MatchWhere courts={d.courts} onCourts={(c) => set({ courts: c })} time={d.time ?? ""} onTime={(t) => set({ time: t })} />}
       <Step n={d.kind === "EQUIPES" ? 3 : 2} title={pickEnd ? "Touche le dernier jour (ou le même jour)" : "Quel(s) jour(s) ?"}>
         <MiniCalendar start={d.startDate} end={d.endDate} onPick={pickDate} />
-        <p className="mb-0 mt-2 font-bold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
+        <p className="mb-0 mt-2 font-semibold text-ink">📅 {fmtRange(d.startDate, d.endDate)}</p>
         {!pickEnd && <p className="m-0 text-xs text-muted">Pour plusieurs jours : touche le premier, puis le dernier.</p>}
       </Step>
       <Step n={d.kind === "EQUIPES" ? 4 : 3} title="À quel moment ?">
@@ -628,21 +628,21 @@ function EventModal({ initial, events, counts, names, onClose, onDone }: { initi
       <Step n={d.kind === "EQUIPES" ? 6 : 5} title="Quel(s) professeur(s) ? (facultatif)">
         {names.length === 0 ? <p className="m-0 text-sm text-muted">Aucun professeur pour le moment.</p> : <div className="flex flex-wrap gap-2">{names.map((n) => <Pill key={n} on={d.who.includes(n)} onClick={() => set({ who: toggle(d.who, n) })}>{n}</Pill>)}</div>}
       </Step>
-      <details className="mb-4"><summary className="cursor-pointer font-bold text-ink">✏️ Changer le nom (facultatif)</summary>
+      <details className="mb-4"><summary className="cursor-pointer font-semibold text-ink">✏️ Changer le nom (facultatif)</summary>
         <input aria-label="Nom de l'événement" maxLength={80} className="mt-2 w-full rounded-xl border-2 border-line px-3 py-2" placeholder={proposedTitle(d)} value={d.title} onChange={(e) => set({ title: e.target.value })} />
       </details>
       <SkipDays start={d.startDate} end={d.endDate} value={d.skipDays ?? []} onChange={(v) => set({ skipDays: v })} />
-      <label className="mb-4 block font-bold text-ink">📝 Description (facultative, 600 caractères)
+      <label className="mb-4 block font-semibold text-ink">📝 Description (facultative, 600 caractères)
         <textarea aria-label="Description de l'événement" rows={3} maxLength={600} value={d.note} onChange={(e) => set({ note: e.target.value })}
           placeholder="Quelques mots qui s'afficheront dans le planning et sur l'affiche"
           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
       </label>
       <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.featured} onClick={() => set({ featured: !d.featured })}
-        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold ${d.featured ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.featured ? "⭐" : "☆"}</span> À mettre en avant sur l'affiche
       </button>
       <button type="button" hidden={bureau} role="checkbox" aria-checked={!!d.tentative} onClick={() => set({ tentative: !d.tentative })}
-        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${d.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>
+        className={`mb-4 flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold ${d.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>
         <span aria-hidden className="text-lg">{d.tentative ? "⏳" : "✅"}</span> {d.tentative ? "Prévisionnel : pas encore validé (en gris)" : "Validé"}
       </button>
       {clashes.length > 0 && (
@@ -680,15 +680,15 @@ function TeamTabs({ cats, counts, teams, onToggle }: { cats: typeof TEAM_CATS; c
       <div role="tablist" aria-label="Catégories d'équipes" className="mb-2 flex flex-wrap gap-1.5">
         {TEAM_TABS.filter((t) => inTab(t.id).length > 0).map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-            className={"min-h-10 rounded-full border-2 px-3 text-sm font-extrabold " + (tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+            className={"min-h-10 rounded-full border-2 px-3 text-sm font-semibold " + (tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
             {t.label}{picked(t.id) > 0 && <span className="ml-1.5 rounded-full bg-[#facc15] px-1.5 text-xs text-ink">{picked(t.id)}</span>}
           </button>
         ))}
       </div>
       {list.map((c, i) => (
         <div key={c.key}>
-          {(i === 0 || sexOf(list[i - 1].key) !== sexOf(c.key)) && <b className="mt-2 block text-xs uppercase tracking-wide text-muted">{sexOf(c.key)}</b>}
-          <div className="mt-1 flex flex-wrap items-center gap-2"><span className="w-44 text-sm font-bold text-ink sm:w-52">{c.label}</span>
+          {(i === 0 || sexOf(list[i - 1].key) !== sexOf(c.key)) && <b className="mt-2 block text-xs  tracking-wide text-muted">{sexOf(c.key)}</b>}
+          <div className="mt-1 flex flex-wrap items-center gap-2"><span className="w-44 text-sm font-semibold text-ink sm:w-52">{c.label}</span>
             {Array.from({ length: counts[c.key] ?? c.def }, (_, n) => `${c.key}#${n + 1}`).map((t, n) => <Pill key={t} on={teams.includes(t)} color={c.color} onClick={() => onToggle(t)}>Éq. {n + 1}</Pill>)}
           </div>
         </div>
@@ -703,7 +703,7 @@ function ChoiceOrText({ label, value, onChange, options, placeholder, maxLength 
   const [other, setOther] = useState(() => !!value && !options.includes(value));
   return (
     <div className="grid gap-2">
-      <select aria-label={label} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" value={other ? "__autre" : value}
+      <select aria-label={label} className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-semibold text-ink" value={other ? "__autre" : value}
         onChange={(e) => { if (e.target.value === "__autre") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
         <option value="">Choisir dans la liste…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -724,13 +724,13 @@ function ClubPicker({ value, onChange, known, compact, label = "Club rencontré"
   const shown = all.filter((n) => (letter ? plain(n).startsWith(letter.toLowerCase()) : true) && (q ? plain(n).startsWith(q) || plain(n).includes(` ${q}`) || plain(n).includes(`-${q}`) : true));
   return (
     <div className="grid gap-2">
-      <input aria-label={label} maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-bold text-ink" />
+      <input aria-label={label} maxLength={80} value={value} onChange={(e) => { onChange(e.target.value); setLetter(""); }} placeholder="Écris le début du nom, ou touche une lettre…" className="min-h-12 w-full rounded-xl border-2 border-line bg-white px-3 font-semibold text-ink" />
       <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrer par première lettre">
-        {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-extrabold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
+        {letters.map((l) => <button key={l} type="button" aria-pressed={letter === l} onClick={() => { setLetter(letter === l ? "" : l); onChange(""); }} className={"size-8 rounded-lg border-2 text-sm font-semibold " + (letter === l ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{l}</button>)}
       </div>
       <ul className={`m-0 grid ${compact ? "max-h-28" : "max-h-52"} list-none gap-1 overflow-y-auto p-0`} aria-label="Clubs proposés">
-        {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-bold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
-        {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
+        {shown.map((n) => <li key={n}><button type="button" aria-pressed={value === n} onClick={() => { onChange(n); setLetter(""); }} className={"w-full rounded-xl border-2 px-3 py-2 text-left font-semibold " + (value === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>{value === n ? "✔ " : ""}{n}</button></li>)}
+        {shown.length === 0 && <li className="rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-semibold text-[#7a5a00]">Aucun club dans la liste : « {value} » sera écrit tel quel.</li>}
       </ul>
     </div>
   );
@@ -756,8 +756,8 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
   const card = (title: string, body: React.ReactNode) => (
     <section aria-label={title} className="grid gap-2 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3 sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
-        <small className="font-bold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
+        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
+        <small className="font-semibold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
       </div>
       <h4 className="m-0 font-display text-lg text-ink">{title}</h4>
       {body}
@@ -770,12 +770,12 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
     <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Équipe à régler">
       {c.teams.map((t, n) => (
         <button key={t} type="button" role="tab" aria-selected={Math.min(ti, c.teams.length - 1) === n} onClick={() => setTi(n)}
-          className={"rounded-xl border-2 px-2.5 py-1.5 text-left text-xs font-extrabold leading-tight " + (Math.min(ti, c.teams.length - 1) === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
-          <span className="block">{teamLabel(t)}</span><span className="block font-bold opacity-80">{clubOf(t) ? `✔ ${clubOf(t)}` : "club à choisir"}</span>
+          className={"rounded-xl border-2 px-2.5 py-1.5 text-left text-xs font-semibold leading-tight " + (Math.min(ti, c.teams.length - 1) === n ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+          <span className="block">{teamLabel(t)}</span><span className="block font-semibold opacity-80">{clubOf(t) ? `✔ ${clubOf(t)}` : "club à choisir"}</span>
         </button>))}
     </div>
     {(() => { const t = c.teams[Math.min(ti, c.teams.length - 1)]; return <ClubPicker compact label={`Club rencontré par ${teamLabel(t)}`} value={clubOf(t)} onChange={(v) => patch({ clubs: { ...c.clubs, [t]: v } })} known={pastClubs} />; })()}
-    <button type="button" className="justify-self-start text-sm font-bold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
+    <button type="button" className="justify-self-start text-sm font-semibold text-ink underline" onClick={() => patch({ clubs: Object.fromEntries(c.teams.map((t) => [t, clubOf(c.teams[0])])) })}>↧ Même club pour toutes les équipes (celui de la 1re)</button>
     <small className="text-muted">Facultatif : laisse vide une équipe dont l'adversaire n'est pas connu.</small><Nav skip /></> : <>
     <ClubPicker value={c.info.audience} onChange={(v) => info({ audience: v })} known={pastClubs} />
     <small className="text-muted">Facultatif. Clubs des Yvelines (liste à compléter) et clubs déjà notés ; un club absent s'écrit à la main.</small><Nav skip /></>);
@@ -784,7 +784,7 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
       {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, sub]) => (
         <button key={v} type="button" aria-pressed={c.info.place === v} onClick={() => { info({ place: v }); setI(i + 1); }}
           className={`rounded-xl border-2 px-3 py-4 text-left ${c.info.place === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
-          <span className="block font-bold">{l}</span><span className="block text-xs font-normal opacity-80">{sub}</span>
+          <span className="block font-semibold">{l}</span><span className="block text-xs font-normal opacity-80">{sub}</span>
         </button>))}
     </div><Nav skip /></>);
   if (cur === "courts") return card("Sur quels terrains ?", <>
@@ -796,18 +796,18 @@ function MatchCards({ c, patch, cats, counts, crew, onPeople, pastClubs, onExit,
     <ChoiceOrText label="Heure du match" value={c.info.time} onChange={(v) => info({ time: v })} options={MATCH_HOURS} placeholder="Ex. 14 h, ou 9 h – 17 h" />
     <small className="text-muted">Facultatif.</small><Nav skip /></>);
   return card("Dernier détail : un mot et qui s'en occupe", <>
-    <label className="block text-sm font-bold text-ink">📝 Un mot sur ce match (facultatif)
+    <label className="block text-sm font-semibold text-ink">📝 Un mot sur ce match (facultatif)
       <textarea aria-label="Description : match par équipes" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Quelques mots sur cet événement" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
     </label>
     <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
       {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
-        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
+        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
-      <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
+      <button type="button" className="mt-2 text-xs font-semibold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">🎾 {many ? c.teams.map((t) => `${teamLabel(t)}${clubOf(t) ? ` (contre ${clubOf(t)})` : ""}`).join(" · ") : `${c.teams.map(teamLabel).join(" · ") || "—"}${c.info.audience ? ` · contre ${c.info.audience}` : ""}`}{c.info.place ? ` · ${c.info.place === VENUE_HOME ? "🏠 à domicile" : "🚌 en déplacement"}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{!away && c.courts.length ? ` · 🏟️ Court${c.courts.length > 1 ? "s" : ""} ${c.courts.join(", ")}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy} onClick={onSave}>✔ Enregistrer ce match</button> : <small className="text-muted">Tout est prêt : touche « ✔ Enregistrer » en bas.</small>}</>);
 }
 
@@ -872,14 +872,14 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
   const card = (title: string, body: React.ReactNode) => (
     <section aria-label={title} className="grid gap-2 rounded-2xl border-2 border-[#2a7fc1] bg-white p-3 sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
-        <small className="font-bold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
+        {i > 0 ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={() => setI(i - 1)}>← Retour</button> : onExit ? <button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={onExit}>← Changer de type d'événement</button> : <span />}
+        <small className="font-semibold text-muted">Étape {Math.min(i, steps.length - 1) + 1} sur {steps.length}</small>
       </div>
       <h4 className="m-0 font-display text-lg text-ink">{title}</h4>
       {body}
     </section>
   );
-  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-bold text-ink";
+  const selCls = "w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-semibold text-ink";
   if (cur === "type") return card("Quel type de tournoi ?", <>
     <div className="grid gap-2 sm:grid-cols-2">
       {TOUR_TYPES.map((t) => (
@@ -892,7 +892,7 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
     return card("Pour quelle catégorie ?", <>
       <div role="tablist" aria-label="Jeunes ou seniors" className="grid grid-cols-2 gap-1 rounded-xl bg-[#e9edf5] p-1">
         {([["jeunes", "🧒 Jeunes"], ["seniors", "🎾 Seniors"]] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-extrabold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
+          <button key={k} type="button" role="tab" aria-selected={pub === k} onClick={() => { setPub(k); setCatKeys([]); }} className={`rounded-lg px-3 py-2 font-semibold ${pub === k ? "bg-[#17140f] text-white shadow" : "text-ink hover:bg-white"}`}>{l}</button>))}
       </div>
       {groups.map((g) => (
         <div key={g}><b className="text-sm text-muted">{g}</b>
@@ -906,38 +906,38 @@ function TournoiCards({ c, patch, crew, onPeople, onExit, onSave, busy, err, sta
   if (cur === "rank") return card("Entre quels classements ?", <>
     <p className="m-0 text-sm text-muted">Pour un TMC, on indique le classement le plus bas et le plus haut des joueurs admis (de NC à -30).</p>
     <div className="grid gap-2 sm:grid-cols-2">
-      <label className="text-sm font-bold text-ink">⬇️ Classement le plus bas
+      <label className="text-sm font-semibold text-ink">⬇️ Classement le plus bas
         <select aria-label="Classement le plus bas" className={selCls} value={bas} onChange={(e) => setBas(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
-      <label className="text-sm font-bold text-ink">⬆️ Classement le plus haut
+      <label className="text-sm font-semibold text-ink">⬆️ Classement le plus haut
         <select aria-label="Classement le plus haut" className={selCls} value={haut} onChange={(e) => setHaut(e.target.value)}><option value="">Choisir…</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
     </div>
-    {!rankOk && <p role="alert" className="m-0 rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-bold text-[#7a5a00]">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
-    {range && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-bold text-[#17140f]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
+    {!rankOk && <p role="alert" className="m-0 rounded-xl bg-[#fff3cd] px-3 py-2 text-sm font-semibold text-[#7a5a00]">Le classement le plus bas doit être plus bas que le plus haut : inverse-les.</p>}
+    {range && <p className="m-0 rounded-xl bg-[#efe8da] px-3 py-2 text-sm font-semibold text-[#17140f]">🎯 Tournoi réservé aux classements{range.replace(" de", "")}</p>}
     <Nav ok={rankOk} skip /></>);
   if (cur === "surface") return card("Sur quelle surface ?", <>
     <ChoiceField label="Surface" options={SURFACES} value={c.info.place} onChange={(v) => info({ place: v })} placeholder="Ex. Terre battue couverte" /><Nav skip /></>);
   if (cur === "when") return card("Horaires et finale", <>
     {start && end
       ? <DayTimes start={start} end={end} value={c.info.time} onChange={(v) => info({ time: v })} />
-      : <label className="block text-sm font-bold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
+      : <label className="block text-sm font-semibold text-ink">🕒 Horaires des matchs, jour par jour <small className="font-normal text-muted">(facultatif)</small>
         <input aria-label="Horaires des matchs" maxLength={600} value={c.info.time} onChange={(e) => info({ time: e.target.value })} placeholder="Ex. Sam. 9 h – 19 h · Dim. 9 h – 18 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>}
-    <label className="block text-sm font-bold text-ink">🏆 Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
+    <label className="block text-sm font-semibold text-ink">🏆 Date et heure de la finale <small className="font-normal text-muted">(facultatif)</small>
       <input aria-label="Finale" maxLength={120} value={c.info.signup} onChange={(e) => info({ signup: e.target.value })} placeholder="Ex. Dimanche 15 novembre à 16 h" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
     <Nav skip /></>);
   return card("Dernier détail : le nom et qui s'en occupe", <>
-    <label className="block text-sm font-bold text-ink">🏷️ Nom du tournoi
+    <label className="block text-sm font-semibold text-ink">🏷️ Nom du tournoi
       <input aria-label="Nom du tournoi" maxLength={80} value={c.title ?? ""} onChange={(e) => { setEdited(true); patch({ title: e.target.value }); }} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
-    <label className="block text-sm font-bold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
+    <label className="block text-sm font-semibold text-ink">💬 Petit message <small className="font-normal text-muted">(facultatif)</small>
       <textarea aria-label="Petit message" rows={2} maxLength={600} value={c.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Ex. Buvette sur place, remise des prix après la finale…" className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
     <div className="rounded-xl border-2 border-line bg-white p-2"><b className="text-sm text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></b>
       {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
-        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
+        <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
           {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch({ who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>); })}
-      <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
+      <button type="button" className="mt-2 text-xs font-semibold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
     </div>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
-    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
-    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-bold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch({ tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+    <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch({ star: !c.star })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink"}`}>{c.star ? "⭐" : "☆"} Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small></button>
+    <div className="rounded-xl bg-[#efe8da] p-3 text-sm font-semibold text-[#17140f]">🏆 {c.title || "—"}{c.info.place ? ` · 🎾 ${c.info.place}` : ""}{c.info.time ? ` · 🕒 ${c.info.time}` : ""}{c.info.signup ? ` · 🏆 finale : ${c.info.signup}` : ""}</div>
     <Err msg={err} />{onSave ? <button type="button" className="btn-clay justify-self-start" disabled={busy || !c.title?.trim()} onClick={onSave}>✔ Enregistrer ce tournoi</button> : null}</>);
 }
 
@@ -952,7 +952,7 @@ function TeamsModal({ counts, onClose, onDone }: { counts: Record<string, number
       {groups.map((g) => (
         <section key={g} className="mb-3 rounded-2xl border-2 border-line bg-white p-3"><b className="text-ink">{g}</b>
           {TEAM_CATS.filter((t) => t.group === g).map((t) => (
-            <div key={t.key} className="mt-2 flex items-center gap-2"><i className="size-3 rounded" style={{ background: t.color }} /><span className="flex-1 text-sm font-bold text-ink">{t.label}</span>
+            <div key={t.key} className="mt-2 flex items-center gap-2"><i className="size-3 rounded" style={{ background: t.color }} /><span className="flex-1 text-sm font-semibold text-ink">{t.label}</span>
               <button type="button" className="btn-outline" aria-label={`Une équipe de moins : ${t.label}`} disabled={c[t.key] <= 0} onClick={() => setC({ ...c, [t.key]: c[t.key] - 1 })}>−</button>
               <b className="w-6 text-center" aria-live="polite">{c[t.key]}</b>
               <button type="button" className="btn-outline" aria-label={`Une équipe de plus : ${t.label}`} disabled={c[t.key] >= MAX_TEAMS} onClick={() => setC({ ...c, [t.key]: c[t.key] + 1 })}>＋</button>
@@ -982,9 +982,9 @@ function Fold({ open, color, icon, title, hint, badge, children }: { open?: bool
   <details open={open} className="group mb-2 overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: color }}>
     <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden" style={{ background: `${color}14` }}>
       <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-xl text-lg text-white" style={{ background: color }}>{icon}</span>
-      <span className="min-w-0 flex-1"><span className="block font-extrabold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
-      {badge ? <span className="grid min-w-6 place-items-center rounded-full px-2 py-0.5 text-xs font-black text-white" style={{ background: color }}>{badge}</span> : null}
-      <span aria-hidden className="text-lg font-black text-ink transition-transform group-open:rotate-90">›</span>
+      <span className="min-w-0 flex-1"><span className="block font-semibold text-ink">{title}</span>{hint ? <span className="block truncate text-xs font-semibold text-muted">{hint}</span> : null}</span>
+      {badge ? <span className="grid min-w-6 place-items-center rounded-full px-2 py-0.5 text-xs font-semibold text-white" style={{ background: color }}>{badge}</span> : null}
+      <span aria-hidden className="text-lg font-semibold text-ink transition-transform group-open:rotate-90">›</span>
     </summary>
     <div className="p-3">{children}</div>
   </details>
@@ -995,7 +995,7 @@ interface Sel { clubs?: Record<string, string>; title?: string; on: boolean; cou
 // Match par équipes : deux gros boutons « à domicile » / « en déplacement » (on retouche pour effacer)
 function VenuePick({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-bold text-ink" role="group" aria-label="Où se joue le match ?">
+    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink" role="group" aria-label="Où se joue le match ?">
       <span>📍 Où se joue le match ? <span className="font-normal text-muted">(facultatif)</span></span>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {([[VENUE_HOME, "🏠 À domicile", "au club"], [VENUE_AWAY, "🚌 En déplacement", "chez l'adversaire"]] as const).map(([v, l, s]) => (
@@ -1012,7 +1012,7 @@ function VenuePick({ value, onChange }: { value: string; onChange: (v: string) =
 // Match par équipes : sur quels terrains et à quelle heure (écrits sur l'affiche du mois)
 function MatchWhere({ courts, onCourts, time, onTime }: { courts: number[]; onCourts: (c: number[]) => void; time: string; onTime: (t: string) => void }) {
   return (
-    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-bold text-ink">
+    <div className="mb-4 rounded-xl border-2 border-line bg-white p-3 font-semibold text-ink">
       <span>🏟️ Sur quels terrains ? <span className="font-normal text-muted">(facultatif)</span></span>
       <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Terrains du match">
         {COURTS.map((c) => <Pill key={c.n} on={courts.includes(c.n)} onClick={() => onCourts(toggle(courts, c.n).sort())}>Court {c.n}</Pill>)}
@@ -1035,13 +1035,13 @@ function SkipDays({ start, end, value, onChange }: { start: string; end: string;
   const toggle = (d: string) => { if (off.includes(d)) onChange(off.filter((x) => x !== d)); else if (off.length < days.length - 1) onChange([...off, d].sort()); };
   return (
     <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-      <p className="m-0 mb-1 text-sm font-extrabold text-ink">🚫 Un jour sans l'événement ? <span className="font-normal text-muted">(facultatif)</span></p>
+      <p className="m-0 mb-1 text-sm font-semibold text-ink">🚫 Un jour sans l'événement ? <span className="font-normal text-muted">(facultatif)</span></p>
       <p className="m-0 mb-2 text-xs text-muted">Touche les jours où il n'a PAS lieu : ils seront barrés et vides dans le calendrier.</p>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Jours sans l'événement">
         {days.map((d) => { const o = off.includes(d); return <button key={d} type="button" aria-pressed={o} onClick={() => toggle(d)} title={o ? "Pas d'événement ce jour-là (toucher pour remettre)" : "Toucher pour retirer ce jour"}
-          className={`min-h-9 rounded-lg border-2 px-2 py-1 text-xs font-bold ${o ? "border-dashed border-[#6b6558] bg-[#eceae4] text-muted line-through" : "border-line bg-white text-ink hover:border-ink"}`}>{DAYS[weekdayOf(d)].slice(0, 3)} {+d.slice(8, 10)}</button>; })}
+          className={`min-h-9 rounded-lg border-2 px-2 py-1 text-xs font-semibold ${o ? "border-dashed border-[#6b6558] bg-[#eceae4] text-muted line-through" : "border-line bg-white text-ink hover:border-ink"}`}>{DAYS[weekdayOf(d)].slice(0, 3)} {+d.slice(8, 10)}</button>; })}
       </div>
-      {off.length > 0 && <p className="m-0 mt-2 text-xs font-bold text-ink">Pas d'événement : {skipNote({ skipDays: off }).replace("sauf ", "")}</p>}
+      {off.length > 0 && <p className="m-0 mt-2 text-xs font-semibold text-ink">Pas d'événement : {skipNote({ skipDays: off }).replace("sauf ", "")}</p>}
     </div>
   );
 }
@@ -1123,29 +1123,29 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
     <Modal title={chosen ? `📅 ${end === start ? fmtDay(start) : fmtRange(start, end)}` : "📅 Nouvel événement"} onClose={onClose}>
       {step === 1 ? (
         <div>
-          <p className="mb-3 mt-0 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-bold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
+          <p className="mb-3 mt-0 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-semibold text-white">Étape 1 sur 3 · Combien de jours dure l'événement ?</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
-            <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
-            <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-bold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
+            <button type="button" aria-pressed={!multi} onClick={() => { setMulti(false); setEnd(start); setPickEnd(false); }} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${!multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📅 Un seul jour</button>
+            <button type="button" aria-pressed={multi} onClick={() => setMulti(true)} className={`rounded-xl border-2 px-3 py-3 text-left font-semibold ${multi ? "border-[#2E86C1] bg-[#e8f3fb] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>📆 Plusieurs jours</button>
           </div>
           {(ask || multi) && (
             <div className="mb-3 rounded-xl border-2 border-line bg-white p-3">
-              <p className="m-0 mb-2 text-sm font-extrabold text-ink">{ask ? (multi ? "Touche le premier puis le dernier jour" : "Touche le jour de l'événement") : "Touche sur le calendrier le DERNIER jour de l'événement"}</p>
+              <p className="m-0 mb-2 text-sm font-semibold text-ink">{ask ? (multi ? "Touche le premier puis le dernier jour" : "Touche le jour de l'événement") : "Touche sur le calendrier le DERNIER jour de l'événement"}</p>
               <MiniCalendar start={start} end={end} onPick={ask ? (multi ? pickDate : (x: string) => { setChosen(true); setStart(x); setEnd(x); }) : pickLast} />
             </div>
           )}
-          <p className="mb-3 mt-0 text-sm font-bold text-ink">{!chosen ? "👉 Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
+          <p className="mb-3 mt-0 text-sm font-semibold text-ink">{!chosen ? "👉 Choisis d'abord la date." : nbDays === 1 ? `✔ Une seule journée : le ${fmtDay(start)}` : `✔ Du ${fmtDay(start)} au ${fmtDay(end)} (${nbDays} jours)`}</p>
           {chosen && nbDays > 1 && <SkipDays start={start} end={end} value={skip} onChange={setSkip} />}
           <button type="button" className="btn-clay" disabled={!chosen} onClick={() => setStep(2)}>Valider la durée →</button>
         </div>
       ) : (<>
-      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-bold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-extrabold text-[#17140f]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
+      <p className="mb-3 mt-0 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#17140f] px-3 py-2 text-sm font-semibold text-white"><span>Étape 2 sur 3 · Quel type d'événement veux-tu inscrire ? <span className="font-normal opacity-90">({nbDays === 1 ? "1 jour" : `${nbDays} jours`})</span></span><button type="button" className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-[#17140f]" onClick={() => setStep(1)}>↩ Changer la durée</button></p>
       {already.length > 0 && (
         <Fold color="#7b5d2a" icon="📌" title="Déjà prévu à ces dates" badge={already.length} hint={already.map((e) => titleOf(e)).join(" · ")}>
           <ul className="m-0 grid list-none gap-2 p-0">{already.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#fff6f0] p-2">
               <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: kindOf(e.kind).color }} />
-              <span className="min-w-0 flex-1 font-bold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block whitespace-pre-line text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
+              <span className="min-w-0 flex-1 font-semibold text-ink [overflow-wrap:anywhere]">{kindOf(e.kind).icon} {titleOf(e)} <span className="font-normal text-muted">· {fmtRange(e.startDate, e.endDate)}</span>{e.note ? <span className="mt-0.5 block whitespace-pre-line text-sm font-normal text-muted [overflow-wrap:anywhere]">📝 {e.note}</span> : null}</span>
               <button type="button" className="btn-outline" aria-label={`Gérer ${titleOf(e)}`} onClick={() => onEvent(e)}>Gérer ›</button>
             </li>))}
           </ul>
@@ -1160,7 +1160,7 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
               {gk.map((k) => { const c = sel[k.key] ?? { on: false }; return (
                 <button key={k.key} type="button" role="checkbox" aria-checked={!!c.on} onClick={() => { if (k.key === "EQUIPES" && !c.on) setMatchFlow(true); if (k.key === "TOURNOI" && !c.on && !c.id) setTourFlow(true); patch(k.key, { on: !c.on }); }}
                   style={c.on ? { borderColor: k.color, background: `${k.color}22` } : undefined}
-                  className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-bold text-ink hover:border-ink">
+                  className="flex items-center gap-3 rounded-xl border-2 border-line bg-white px-3 py-2.5 text-left font-semibold text-ink hover:border-ink">
                   <span aria-hidden className="grid size-5 shrink-0 place-items-center rounded-md border-2 text-xs text-white" style={{ background: c.on ? k.color : "#fff", borderColor: c.on ? k.color : "#aaa" }}>{c.on ? "✔" : ""}</span>
                   <span>{k.icon} {k.label}</span>
                 </button>
@@ -1173,32 +1173,32 @@ function DayMenu({ ask, endInit, day, events, counts, crew, onPeople, onClose, o
                 <div className="mt-3 rounded-xl border-l-8 bg-[#fbf8f2] p-3" style={{ borderColor: k.color }}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <b className="text-ink">{k.icon} {k.label}</b>
-                    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-bold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
+                    <button type="button" hidden={bureau} role="checkbox" aria-checked={!!c.tentative} onClick={() => patch(k.key, { tentative: !c.tentative })} className={`justify-self-start rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.tentative ? "border-dashed border-[#6b6558] bg-[#eceae4] text-ink" : "border-line bg-white text-ink hover:border-ink"}`}>{c.tentative ? "⏳" : "✅"} {c.tentative ? "Prévisionnel (pas validé)" : "Validé"}</button>
                     <button type="button" hidden={bureau} role="checkbox" aria-checked={c.star} onClick={() => patch(k.key, { star: !c.star })}
-                      className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
+                      className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-semibold ${c.star ? "border-[#d4a000] bg-[#fff3c4] text-[#5a4300]" : "border-line bg-white text-ink hover:border-ink"}`}>
                       <span aria-hidden>{c.star ? "⭐" : "☆"}</span> Mettre en avant <small className="font-normal text-muted">(3 max / mois)</small>
                     </button>
                   </div>
                   {k.key === "EQUIPES" ? <MatchCards c={c} patch={(p) => patch(k.key, p)} cats={cats} counts={counts} crew={crew} onPeople={onPeople} pastClubs={[...new Set(events.filter((x) => x.kind === "EQUIPES" && x.audience).map((x) => x.audience!))]} /> : (<>
                   {(k.key === "TOURNOI" || k.key === "ANIMATION" || k.key === "AUTRE") && (
-                    <label className="mb-2 block text-sm font-bold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
+                    <label className="mb-2 block text-sm font-semibold text-ink">🏷️ Nom {k.key === "TOURNOI" ? "du tournoi" : k.key === "AUTRE" ? "de ton événement" : "de l'animation"} {k.key === "AUTRE" ? "(obligatoire)" : "(facultatif)"}
                       <input aria-label={`Nom : ${k.label}`} maxLength={80} value={c.title ?? ""} onChange={(e) => patch(k.key, { title: e.target.value })} placeholder={k.key === "TOURNOI" ? "Ex. TMC messieurs de 15/1 à 4/6" : k.key === "AUTRE" ? "Ex. Repas des bénévoles" : "Ex. Soirée jeux"} className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 font-normal" />
                     </label>)}
                   {!POSTER_KINDS.includes(k.key) && (
                     <div className="rounded-xl border-2 border-line bg-white p-3">
-                      <label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+                      <label className="block text-sm font-semibold text-ink">📝 Description (facultatif)
                         <textarea aria-label={`Description : ${k.label}`} rows={2} maxLength={600} value={c.note} onChange={(e) => patch(k.key, { note: e.target.value })}
                           placeholder="Quelques mots sur cet événement"
                           className="mt-1 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-sm font-normal" />
                       </label>
                     </div>
                   )}
-                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-bold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
+                  <details className="mt-2 rounded-xl border-2 border-line bg-white p-2"><summary className="cursor-pointer text-sm font-semibold text-ink">👥 Qui s'en occupe ? ({c.who.length}) <span className="font-normal text-muted">(facultatif)</span></summary>
                     {ROLES.map((r) => { const list = crew.filter((x) => x.role === r.key); return list.length === 0 ? null : (
-                      <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-bold text-muted">{r.label}</span>
+                      <div key={r.key} className="mt-1.5 flex flex-wrap items-center gap-1.5"><span className="w-28 text-xs font-semibold text-muted">{r.label}</span>
                         {list.map((n) => <Pill key={n.name} on={c.who.includes(n.name)} onClick={() => patch(k.key, { who: toggle(c.who, n.name) })}>{n.name}</Pill>)}</div>
                     ); })}
-                    <button type="button" className="mt-2 text-xs font-bold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
+                    <button type="button" className="mt-2 text-xs font-semibold text-ink underline" onClick={onPeople}>＋ Ajouter un bénévole ou un membre du bureau</button>
                   </details>
                   </>)}
                 </div>
@@ -1222,9 +1222,9 @@ function PlacedModal({ e, onLater, onPoster }: { e: ClubEvent; onLater: () => vo
     <Modal title="✔ Événement enregistré" onClose={onLater}>
       <div className="px-2 py-4 text-center">
         <div aria-hidden className="mx-auto mb-3 grid size-16 place-items-center rounded-full bg-[#3fb97a] text-4xl text-white shadow-[0_0_0_8px_#3fb97a33]">✓</div>
-        <h3 className="m-0 text-2xl text-ink">C'est placé dans le planning !</h3>
+        <h3 className="m-0 text-2xl text-ink">C'est placé dans le planning</h3>
         <p className="mb-4 mt-1 text-muted">Tu peux maintenant fabriquer l'affiche.</p>
-        <p className="mx-auto mb-5 inline-block rounded-2xl border-2 bg-white px-4 py-2 font-extrabold text-ink" style={{ borderColor: k.color }}>{k.icon} {titleOf(e)} · {fmtRange(e.startDate, e.endDate)}</p>
+        <p className="mx-auto mb-5 inline-block rounded-2xl border-2 bg-white px-4 py-2 font-semibold text-ink" style={{ borderColor: k.color }}>{k.icon} {titleOf(e)} · {fmtRange(e.startDate, e.endDate)}</p>
         <div className="grid gap-2">
           <button type="button" className="btn-clay" onClick={onPoster}>🪧 Créer l'affiche maintenant</button>
           <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={onLater}>Plus tard</button>
@@ -1292,7 +1292,7 @@ export function EventPosterModal({ e, onClose, onSaved }: { e: ClubEvent; onClos
       formats={formats} format={format} onFormat={(f) => setFormat(f as PosterFormat)}
       content={hasSimpleForm(e.kind)
         ? <AnimationForm tournoi={isTournoi(e.kind)} start={e.startDate} end={e.endDate} title={title} onTitle={setTitle} note={note} onNote={setNote} value={info} onChange={setInfo} />
-        : <><label className="block text-sm font-bold text-ink">📝 Description (facultatif)
+        : <><label className="block text-sm font-semibold text-ink">📝 Description (facultatif)
             <textarea aria-label="Description de l'affiche" rows={2} maxLength={600} value={note} onChange={(x) => setNote(x.target.value)} className="mt-1 w-full rounded-md border-2 border-line bg-white px-3 py-2 text-sm font-normal" /></label>
           <EventPosterFields kind={e.kind} value={info} onChange={setInfo} /></>}
       look={<>
@@ -1320,9 +1320,9 @@ function EventActions({ e, onClose, onTentative, onStar, onEdit, onDelete, onPos
   const k = kindOf(e.kind);
   return (
     <Modal title={`${k.icon} ${titleOf(e)}`} onClose={onClose}>
-      {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-bold text-ink">⏳ Prévisionnel : pas encore validé</p>}
+      {e.tentative && <p className="mb-2 mt-0 rounded-xl border-2 border-dashed border-[#6b6558] bg-[#eceae4] px-3 py-2 text-sm font-semibold text-ink">⏳ Prévisionnel : pas encore validé</p>}
       {canValidate && !readOnly && <button type="button" className={e.tentative ? "btn-clay mb-2 w-full" : "btn-outline mb-2 w-full"} onClick={() => onTentative(e)}>{e.tentative ? "✅ Valider cet événement" : "⏳ Remettre en prévisionnel"}</button>}
-      <p className="mt-0 font-bold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
+      <p className="mt-0 font-semibold text-ink">📅 {fmtRange(e.startDate, e.endDate)}{skipNote(e) ? <span className="font-normal text-muted"> · {skipNote(e)}</span> : null}</p>
       {e.who.length > 0 && <p className="text-sm text-ink">👤 {e.who.join(", ")}</p>}
       {e.note ? <p className="rounded-xl bg-sand p-3 text-sm text-ink whitespace-pre-line [overflow-wrap:anywhere]">📝 {e.note}</p> : <p className="text-sm text-muted">Pas de description.</p>}
       {!viewer && <div className="mt-3 grid gap-2">
@@ -1364,18 +1364,18 @@ function ExportModal({ events: allEvents, season, month, onClose }: { events: Cl
   return (
     <Modal title="📤 Exporter le planning" onClose={onClose}>
       <p className="mt-0 text-sm text-ink">Le document est fabriqué sur ton ordinateur : rien n'est envoyé sur Internet.</p>
-      <p className="mb-1 text-sm font-extrabold text-ink">1. Quelle période ?</p>
+      <p className="mb-1 text-sm font-semibold text-ink">1. Quelle période ?</p>
       <div className="mb-3 flex flex-wrap gap-2">
         <Pill on={scope === "saison"} onClick={() => { setScope("saison"); setPageNo(0); }}>📆 Toute la saison {season} / {season + 1}</Pill>
         <Pill on={scope === "mois"} onClick={() => { setScope("mois"); setPageNo(0); }}>🗓️ {MONTHS[+month.slice(5, 7) - 1]} {month.slice(0, 4)} seulement</Pill>
       </div>
-      <p className="mb-1 text-sm font-extrabold text-ink">2. Options</p>
+      <p className="mb-1 text-sm font-semibold text-ink">2. Options</p>
       <div className="mb-3 flex flex-wrap gap-2">
         {scope === "saison" && <Pill on={cover} onClick={() => { setCover(!cover); setPageNo(0); }}>📘 Avec la couverture</Pill>}
         <Pill on={onlyTour} onClick={() => { setOnlyTour(!onlyTour); setPageNo(0); }}>🏆 Seulement les tournois (TMC et open)</Pill>
         <Pill on={withWho} onClick={() => setWithWho(!withWho)}>👤 Ajouter « Qui s'en occupe »</Pill>
       </div>
-      <p className="mb-1 text-sm font-extrabold text-ink">3. Le dossier de saison <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""} · {pages.length} page{pages.length > 1 ? "s" : ""})</span></p>
+      <p className="mb-1 text-sm font-semibold text-ink">3. Le dossier de saison <span className="font-normal text-muted">({n} événement{n > 1 ? "s" : ""} · {pages.length} page{pages.length > 1 ? "s" : ""})</span></p>
       {n > 0 && pages.length > 0 ? (<>
         <div className="mx-auto overflow-hidden rounded-lg border border-line shadow-lg" style={{ width: DOSSIER_W * scale, height: DOSSIER_H * scale }}>
           <div style={{ width: DOSSIER_W, height: DOSSIER_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>{pages[idx]}</div>
@@ -1417,10 +1417,10 @@ export function PosterModal({ events, initialMonth, onClose }: { events: ClubEve
         const put = (patch: { title?: string; note?: string }) => setEvText({ ...evText, [ev.id]: { ...o, ...patch } });
         return (
           <div className="mb-2 rounded-lg border-2 border-clay bg-white p-3">
-            <p className="m-0 mb-2 text-sm font-extrabold text-ink">✏️ Texte de cet événement sur l'affiche <span className="font-normal text-muted">({fmtRange(ev.startDate, ev.endDate)})</span></p>
-            <label className="block text-xs font-extrabold text-ink">Titre
+            <p className="m-0 mb-2 text-sm font-semibold text-ink">✏️ Texte de cet événement sur l'affiche <span className="font-normal text-muted">({fmtRange(ev.startDate, ev.endDate)})</span></p>
+            <label className="block text-xs font-semibold text-ink">Titre
               <textarea aria-label="Titre de l'événement sur l'affiche" rows={2} value={o.title ?? titleOf(ev)} onChange={(x) => put({ title: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
-            <label className="mt-2 block text-xs font-extrabold text-ink">Description (Entrée = nouvelle ligne)
+            <label className="mt-2 block text-xs font-semibold text-ink">Description (Entrée = nouvelle ligne)
               <textarea aria-label="Description de l'événement sur l'affiche" rows={3} value={o.note ?? ev.note ?? ""} onChange={(x) => put({ note: x.target.value })} className="mt-1 w-full rounded-md border-2 border-line bg-white px-2 py-1 text-sm font-normal" /></label>
             <div className="mt-2 flex flex-wrap gap-2">
               {evText[ev.id] && <button type="button" className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { const n = { ...evText }; delete n[ev.id]; setEvText(n); }}>↺ Remettre les textes d'origine</button>}
@@ -1478,7 +1478,7 @@ function PeopleModal({ people, onClose, onDone }: { people: { name: string; role
         <section key={r.key} className="mb-3 rounded-2xl border-2 border-line bg-white p-3"><b className="text-ink">{r.label}</b>
           {list.filter((x) => x.role === r.key).length === 0 && <p className="m-0 mt-1 text-sm text-muted">Personne pour le moment.</p>}
           {list.filter((x) => x.role === r.key).map((x) => (
-            <div key={x.name} className="mt-1.5 flex items-center gap-2"><span className="flex-1 font-bold text-ink">{x.name}</span>
+            <div key={x.name} className="mt-1.5 flex items-center gap-2"><span className="flex-1 font-semibold text-ink">{x.name}</span>
               <button type="button" className="btn-outline" aria-label={`Retirer ${x.name}`} onClick={() => setList(list.filter((y) => y.name !== x.name))}>🗑️</button></div>
           ))}
         </section>

@@ -17,7 +17,7 @@ export const EXAMPLE_PROFS: ProfCard[] = [
 ];
 
 // Pastille d'information (âge, classement…)
-const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-bold uppercase tracking-wider text-clay">{k}</b>{v}</div>;
+const Fact = ({ k, v }: { k: string; v: string }) => <div className="rounded-xl bg-sand px-3 py-1.5 text-sm"><b className="block text-[0.7rem] font-semibold  text-clay">{k}</b>{v}</div>;
 
 // Bandeau « terre battue » avec la balle et les étapes de la réservation
 export const DAY_STEPS = ["Professeur", "Heure", "Ton cours"]; // quand le jour est déjà choisi dans le calendrier
@@ -26,10 +26,10 @@ export function ClayHero({ title, text, step, labels }: { title: string; text: s
     <header className="relative overflow-hidden rounded-[1.4rem] bg-gradient-to-br from-clay to-clay-dark p-5 text-white sm:p-6">
       <span aria-hidden="true" className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-ball opacity-90" />
       <span aria-hidden="true" className="absolute right-4 top-2 h-28 w-28 rounded-full border-[3px] border-white/70 border-x-transparent" />
-      <h3 className="relative m-0 text-2xl font-black text-white sm:text-3xl">{title}</h3>
+      <h3 className="relative m-0 text-2xl font-semibold text-white sm:text-3xl">{title}</h3>
       <p className="relative m-0 mt-1 max-w-[80%] text-white/95">{text}</p>
       <ol className="relative m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Étapes de la réservation">
-        {(labels ?? ["Professeur", "Objectif", "Créneau"]).map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-bold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
+        {(labels ?? ["Professeur", "Objectif", "Créneau"]).map((x, i) => <li key={x} aria-current={step === i + 1 ? "step" : undefined} className={"rounded-full px-3 py-1 text-sm font-semibold " + (step === i + 1 ? "bg-ball text-ink" : "bg-white/20 text-white")}>{["①", "②", "③"][i]} {x}</li>)}
       </ol>
     </header>
   );
@@ -51,7 +51,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
   const allWeek = weekly.length === 7; // tous les jours : Lun Mar Mer Jeu Ven Sam Dim
   const dates = [...new Set(p.slots.flatMap((s) => (s.date ? [s.date] : [])))].sort();
   const pad = "px-3";
-  const label = "m-0 text-[0.65rem] font-black uppercase tracking-[0.12em] text-muted";
+  const label = "m-0 text-[0.65rem] font-semibold  text-muted";
   const free = p.freeThisWeek ?? 0;
   const facts = [p.age !== null ? `${p.age} ans` : "", p.ranking ? `classement ${p.ranking}` : "", p.bestRanking ? `meilleur ${p.bestRanking}` : ""].filter(Boolean).join(" · ");
   return (
@@ -64,21 +64,21 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
         </div>
         <div className={"flex items-end justify-between gap-2 " + pad}>
           <span className="relative z-10 -mt-6 rounded-full ring-2 ring-ball"><span className="block rounded-full ring-2 ring-white"><Avatar name={name} size={48} /></span></span>
-          {price ? <div className="pb-0.5 text-right leading-tight"><b className="font-display text-2xl font-black text-clay">{price} €</b><small className="ml-1 text-xs text-muted">la séance</small></div> : null}
+          {price ? <div className="pb-0.5 text-right leading-tight"><b className="font-display text-2xl font-semibold text-clay">{price} €</b><small className="ml-1 text-xs text-muted">la séance</small></div> : null}
         </div>
       </div>
       {/* 2 · nom, âge et classements sur deux lignes */}
       <div className={pad + " pt-1.5"}><h3 className="m-0 text-lg leading-tight">{name}</h3><small className="block text-muted">{facts || "Professeur du club"}</small></div>
       {/* 3 · état */}
-      <div className={pad + " pt-1.5"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-2.5 py-0.5 text-xs font-bold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : free > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-2.5 py-0.5 text-xs font-bold text-[#1c6b42]">● {free} créneau{free > 1 ? "x" : ""} libre{free > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
+      <div className={pad + " pt-1.5"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-2.5 py-0.5 text-xs font-semibold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : free > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-2.5 py-0.5 text-xs font-semibold text-[#1c6b42]">● {free} créneau{free > 1 ? "x" : ""} libre{free > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-semibold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
       {/* 4 · présentation (2 lignes au plus) */}
       <div className={pad + " pt-1.5"}>{p.bio && <p className="m-0 line-clamp-2 text-sm italic">« {p.bio} »</p>}</div>
       {/* 5 · jours disponibles + prochains créneaux libres */}
       <div className={pad + " pt-2"}>
         <p className={label}>Disponible le</p>
-        <div className="mt-1 flex flex-wrap gap-1" aria-label="Jours où il est disponible">{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-2 py-0.5 text-xs font-bold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-2 py-0 text-xs font-bold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}{weekly.length + dates.length === 0 && <span className="text-xs text-muted">Aucune pour le moment</span>}</div>
+        <div className="mt-1 flex flex-wrap gap-1" aria-label="Jours où il est disponible">{weekly.map((d) => <span key={d} className="rounded-full bg-ink px-2 py-0.5 text-xs font-semibold text-white">{allWeek ? WEEKDAYS[d].slice(0, 3) : WEEKDAYS[d]}</span>)}{allWeek && <span className="rounded-full bg-ball px-2 py-0.5 text-xs font-semibold text-ink">Tous les jours</span>}{dates.map((d) => <span key={d} className="rounded-full border-2 border-ink px-2 py-0 text-xs font-semibold text-ink">{new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>)}{weekly.length + dates.length === 0 && <span className="text-xs text-muted">Aucune pour le moment</span>}</div>
         <p className={label + " mt-2"}>Prochains créneaux libres</p>
-        <div className="mt-1 flex flex-wrap gap-1">{(p.nextFree ?? []).map((x) => <span key={x.date + x.time} className="rounded-lg border-2 border-[#b7dfc8] bg-[#e3f4ea] px-2 py-0 text-xs font-bold text-[#1c6b42]">{shortSlot(x)}</span>)}{(p.nextFree ?? []).length === 0 && <span className="text-xs text-muted">—</span>}</div>
+        <div className="mt-1 flex flex-wrap gap-1">{(p.nextFree ?? []).map((x) => <span key={x.date + x.time} className="rounded-lg border-2 border-[#b7dfc8] bg-[#e3f4ea] px-2 py-0 text-xs font-semibold text-[#1c6b42]">{shortSlot(x)}</span>)}{(p.nextFree ?? []).length === 0 && <span className="text-xs text-muted">—</span>}</div>
       </div>
       {/* 6 · bouton */}
       <div className={pad + " pb-3 pt-3"}>
@@ -121,7 +121,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
   async function answerMember(v: boolean) { if (!preview && !!me?.clubMember === v) { setAsked(true); return; } await toggleMember(v); setAsked(true); }
   if (date && !asked) return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-white p-4 shadow-sm sm:p-6" aria-label="Es-tu adhérent du TC Houdan ?">
-      <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={onClose}>← Retour au calendrier</button><small className="font-bold text-muted">Étape 1 sur 4 · {dayLong(date)}</small></div>
+      <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={onClose}>← Retour au calendrier</button><small className="font-semibold text-muted">Étape 1 sur 4 · {dayLong(date)}</small></div>
       <h3 className="m-0 font-display text-xl">Es-tu adhérent du TC Houdan ?</h3>
       <p className="m-0 text-sm text-muted">Cela change le tarif de la séance : {PRICE_MEMBER} € pour un adhérent, {PRICE_OTHER} € pour les autres (+ {SUNDAY_EXTRA} € le dimanche). Tu règles directement au professeur.</p>
       <Err msg={err} />
@@ -133,7 +133,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
   );
   return (
     <section className="grid gap-4 rounded-3xl border-2 border-clay bg-chalk p-3 shadow-sm sm:p-4" aria-label="Choisir mon professeur">
-      {date ? <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-ink underline" onClick={() => setAsked(false)}>← Retour</button><small className="font-bold text-muted">Étape 2 sur 4 · {dayLong(date)}</small></div> : null}
+      {date ? <div className="flex items-center justify-between gap-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-semibold text-ink underline" onClick={() => setAsked(false)}>← Retour</button><small className="font-semibold text-muted">Étape 2 sur 4 · {dayLong(date)}</small></div> : null}
       {date ? <h3 className="m-0 font-display text-xl">Quel professeur ?</h3> : <ClayHero labels={undefined} title="Réserver un cours particulier" text="Choisis ton professeur, puis le créneau qui t'arrange. On réserve au plus tard 24 h avant le cours. Ton professeur confirme ensuite (sous 48 h)." step={1} />}
       {date ? <p className="m-0 text-sm text-muted">{member ? "Tarif adhérent." : "Tarif non adhérent."} Tu vois pour chacun son niveau, sa présentation et ses heures libres ce jour-là. Ton professeur confirme ensuite (sous 48 h).</p> : <>
       <div className="flex justify-end"><button className="btn-outline btn-sm" onClick={onClose}>Annuler</button></div>
@@ -143,7 +143,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
       <PriceNote yourPrice={preview ? (pvMember ? PRICE_MEMBER : PRICE_OTHER) : yourPrice} /></>}
       <Err msg={err} />
       {!date && <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par jour">
-        {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-bold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
+        {[null, ...WEEKDAYS.map((_, i) => i)].map((d) => <button key={d ?? "all"} className={"rounded-full border-2 px-4 py-1.5 text-sm font-semibold " + (day === d ? "border-ink bg-ink text-white" : "border-ink bg-white text-ink")} aria-pressed={day === d} onClick={() => setDay(d)}>{d === null ? "Tous" : WEEKDAYS[d]}</button>)}
       </div>}
       {date ? (
         dayRows === null ? <div className="skeleton h-32" role="status" aria-label="Chargement en cours" /> : dayRows.length === 0 ? <Empty>Aucun professeur n'est visible pour le moment.</Empty> : (
@@ -152,8 +152,8 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
               <div className="flex items-center gap-3"><Avatar name={profName(r.prof)} /><strong className="font-display text-xl leading-tight">{profName(r.prof)}</strong></div>
               <small className="text-muted">{[r.prof.age ? `${r.prof.age} ans` : "", r.prof.ranking ? `classement ${r.prof.ranking}` : "", r.prof.bestRanking ? `meilleur classement ${r.prof.bestRanking}` : ""].filter(Boolean).join(" · ") || "Professeur du club"}</small>
               <p className="m-0 line-clamp-4 text-sm">{r.prof.bio || <span className="text-muted">Pas de présentation écrite.</span>}</p>
-              <p className="m-0 font-display text-3xl font-black">{priceOn(yp, date)} € <small className="text-sm font-bold text-muted">{member ? "ton tarif adhérent" : "la séance"}</small></p>
-              <div className="flex flex-wrap content-start items-start gap-1.5"><small className="w-full font-bold text-muted">{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-extrabold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
+              <p className="m-0 font-display text-3xl font-semibold">{priceOn(yp, date)} € <small className="text-sm font-semibold text-muted">{member ? "ton tarif adhérent" : "la séance"}</small></p>
+              <div className="flex flex-wrap content-start items-start gap-1.5"><small className="w-full font-semibold text-muted">{r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""} ce jour` : "Complet ce jour-là"}</small>{r.free.map((t) => <span key={t} className="h-fit rounded-lg border-2 border-[#bbe5c8] bg-[#e8f7ee] px-2.5 py-1 text-sm font-semibold text-[#166534]">{t.slice(0, 2).replace(/^0/, "")} h</span>)}</div>
               <button className={(r.free.length ? "btn-clay" : "btn-outline") + " self-end"} disabled={!r.free.length} onClick={() => onPick(r.prof, yp)}>{r.free.length ? `Choisir ${r.prof.firstName ?? "ce professeur"} →` : "Complet ce jour-là"}</button>
             </article>
           ))}</div>
@@ -204,7 +204,7 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
                 {DOC_KINDS.map((k) => { const d = p.documents.find((x) => x.kind === k.kind); return (
                   <li key={k.kind} className={"rounded-xl border-2 p-3 text-sm " + (d ? "border-line bg-white" : "border-dashed border-bad bg-[#fdf0ee]")}>
                     <strong>{k.icon} {k.label}</strong>
-                    {d ? <><br /><span className="text-muted">déposé le {fmtDate(d.uploadedAt)}</span>{d.validUntil && <><br /><span className={new Date(d.validUntil) < new Date() ? "font-bold text-bad" : "text-muted"}>valable jusqu'au {fmtDate(d.validUntil)}</span></>}<br /><a className="font-bold text-clay underline" href={`/api/profs/${p.id}/documents/${k.kind}`} target="_blank" rel="noopener noreferrer">Ouvrir le document ↗</a></> : <><br /><span className="font-bold text-bad">Manquant</span></>}
+                    {d ? <><br /><span className="text-muted">déposé le {fmtDate(d.uploadedAt)}</span>{d.validUntil && <><br /><span className={new Date(d.validUntil) < new Date() ? "font-semibold text-bad" : "text-muted"}>valable jusqu'au {fmtDate(d.validUntil)}</span></>}<br /><a className="font-semibold text-clay underline" href={`/api/profs/${p.id}/documents/${k.kind}`} target="_blank" rel="noopener noreferrer">Ouvrir le document ↗</a></> : <><br /><span className="font-semibold text-bad">Manquant</span></>}
                   </li>
                 ); })}
               </ul>
@@ -274,9 +274,9 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
   return (
     <div className="grid gap-3 rounded-3xl bg-gradient-to-b from-[#fdf6ee] to-[#f6ebdd] p-3 ring-1 ring-line sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        <button type="button" aria-label="Semaine précédente" disabled={wi <= 0} onClick={() => setWi(wi - 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-bold disabled:opacity-30">‹</button>
+        <button type="button" aria-label="Semaine précédente" disabled={wi <= 0} onClick={() => setWi(wi - 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-semibold disabled:opacity-30">‹</button>
         <strong className="text-center font-display text-base sm:text-lg">Semaine du {label(dates[0])} au {label(dates[6])}</strong>
-        <button type="button" aria-label="Semaine suivante" disabled={wi >= mondays.length - 1} onClick={() => setWi(wi + 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-bold disabled:opacity-30">›</button>
+        <button type="button" aria-label="Semaine suivante" disabled={wi >= mondays.length - 1} onClick={() => setWi(wi + 1)} className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink bg-white text-lg font-semibold disabled:opacity-30">›</button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full table-fixed border-separate border-spacing-[3px] sm:border-spacing-1">
@@ -286,9 +286,9 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
               <td className="w-8 sm:w-12" />
               {dates.map((d, k) => { const free = byDate.get(d)?.slots.filter((s) => s.free).length ?? 0; const now = d === today; return (
                 <th key={d} scope="col" className={"rounded-xl px-0 py-1 text-center " + (now ? "bg-ink text-white" : "bg-[#f3e7d9]")}>
-                  <small className={"block text-[0.65rem] font-bold uppercase tracking-wider sm:text-xs " + (now ? "text-champagne" : "text-muted")}>{DAY_NAMES[k]}</small>
+                  <small className={"block text-[0.65rem] font-semibold  sm:text-xs " + (now ? "text-champagne" : "text-muted")}>{DAY_NAMES[k]}</small>
                   <b className="font-display text-base leading-tight sm:text-xl">{Number(d.slice(8, 10))}</b>
-                  <small className={"block text-[0.6rem] font-bold " + (now ? "text-white/80" : free ? "text-[#1d6b43]" : "text-muted/70")}>{free ? `${free} libre${free > 1 ? "s" : ""}` : "—"}</small>
+                  <small className={"block text-[0.6rem] font-semibold " + (now ? "text-white/80" : free ? "text-[#1d6b43]" : "text-muted/70")}>{free ? `${free} libre${free > 1 ? "s" : ""}` : "—"}</small>
                 </th>
               ); })}
             </tr>
@@ -296,7 +296,7 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
           <tbody>
             {times.map((t) => (
               <tr key={t}>
-                <th scope="row" className="pr-1 text-right text-[0.7rem] font-bold text-muted sm:text-xs">{hour(t)}</th>
+                <th scope="row" className="pr-1 text-right text-[0.7rem] font-semibold text-muted sm:text-xs">{hour(t)}</th>
                 {dates.map((d) => {
                   const slot = byDate.get(d)?.slots.find((x) => x.time === t);
                   const sel = value?.date === d && value.time === t;
@@ -305,7 +305,7 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
                   if (!slot.free) return <td key={d} aria-label={`${when} : déjà réservé`} className="h-9 rounded-lg bg-[repeating-linear-gradient(135deg,#f3ece3,#f3ece3_5px,#e6dccf_5px,#e6dccf_10px)] text-center text-[0.55rem] text-[#9a8f84] sm:h-10 sm:text-[0.65rem]">réservé</td>;
                   return (
                     <td key={d} className="p-0">
-                      <button type="button" aria-pressed={sel} aria-label={`${when} : libre`} onClick={() => onChange(sel ? null : { date: d, time: t })} className={"h-9 w-full rounded-lg border-2 text-base font-bold transition sm:h-10 " + (sel ? "border-[#1d6b43] bg-[#1d6b43] text-white shadow-md" : "border-[#bfe3cd] bg-[#e8f6ee] hover:border-[#1d6b43] hover:bg-white")}>{sel ? "✔" : ""}</button>
+                      <button type="button" aria-pressed={sel} aria-label={`${when} : libre`} onClick={() => onChange(sel ? null : { date: d, time: t })} className={"h-9 w-full rounded-lg border-2 text-base font-semibold transition sm:h-10 " + (sel ? "border-[#1d6b43] bg-[#1d6b43] text-white shadow-md" : "border-[#bfe3cd] bg-[#e8f6ee] hover:border-[#1d6b43] hover:bg-white")}>{sel ? "✔" : ""}</button>
                     </td>
                   );
                 })}
@@ -321,7 +321,7 @@ export function PlanningPicker({ days, value, onChange }: { days: PlanDay[]; val
         <span><i className="mr-1.5 inline-block h-3 w-3 rounded bg-[#f6f1ea] align-[-1px]" />Pas disponible</span>
       </div>
       <div role="status" className={"flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 " + (chosen && value ? "bg-ink text-white" : "border-2 border-dashed border-line text-muted")}>
-        {chosen && value ? <><span className="grid"><small className="text-white/70">Ton créneau</small><b className="font-display text-lg font-black first-letter:uppercase">{fmtPlanSlot(value.date, chosen.time, chosen.end)}</b></span><span className="ml-auto rounded-full bg-ball px-3 py-1 text-sm font-bold text-ink">✔ Prêt à réserver</span></> : <span className="text-sm font-bold">Touche une case verte pour choisir ton créneau.</span>}
+        {chosen && value ? <><span className="grid"><small className="text-white/70">Ton créneau</small><b className="font-display text-lg font-semibold first-letter:uppercase">{fmtPlanSlot(value.date, chosen.time, chosen.end)}</b></span><span className="ml-auto rounded-full bg-ball px-3 py-1 text-sm font-semibold text-ink">✔ Prêt à réserver</span></> : <span className="text-sm font-semibold">Touche une case verte pour choisir ton créneau.</span>}
       </div>
     </div>
   );

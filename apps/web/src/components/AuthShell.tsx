@@ -25,9 +25,9 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
           </ul>
           {tour && (
             <button type="button" onClick={() => document.getElementById("tour")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
-              className="mt-1 flex items-center justify-between gap-3 rounded-[3px] border border-champagne/70 px-4 py-3 text-left font-ui text-xs font-semibold uppercase tracking-[0.14em] text-champagne hover:bg-champagne hover:text-ink">
+              className="mt-1 flex items-center justify-between gap-3 rounded-[3px] border border-champagne/70 px-4 py-3 text-left font-ui text-xs font-semibold  text-champagne hover:bg-champagne hover:text-ink">
               <span>À quoi sert CourtCoach ? Découvre le site</span>
-              <span aria-hidden="true" className="text-xl leading-none motion-safe:animate-bounce">⌄</span>
+              <span aria-hidden="true" className="text-xl leading-none">⌄</span>
             </button>
           )}
         </div>
@@ -93,7 +93,7 @@ export function PasswordInput({ id, name, autoComplete, minLength, required = tr
   return (
     <div className="relative">
       <input id={id} name={name} type={show ? "text" : "password"} required={required} minLength={minLength} maxLength={128} autoComplete={autoComplete} className="input !pr-24" />
-      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-[3px] px-3 font-ui text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-clay hover:bg-champagne-soft">{show ? "Masquer" : "Afficher"}</button>
+      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-[3px] px-3 font-ui text-[0.7rem] font-semibold  text-clay hover:bg-champagne-soft">{show ? "Masquer" : "Afficher"}</button>
     </div>
   );
 }

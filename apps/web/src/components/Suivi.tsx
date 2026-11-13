@@ -26,7 +26,7 @@ export function SkillBars({ axis, ev, prev, start }: { axis: EvalAxis; ev: Pick<
         return (
           <div key={k} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1">
             <span className="text-[0.95rem]">{label}</span>
-            <span className="text-right text-sm font-bold">{v}/5 {sv ? <small className="font-normal text-muted">(départ {sv}) </small> : null}{pv && v !== pv ? <small aria-label={v > pv ? "en progrès" : "en baisse"}>{v > pv ? "▲" : "▼"}</small> : null}</span>
+            <span className="text-right text-sm font-semibold">{v}/5 {sv ? <small className="font-normal text-muted">(départ {sv}) </small> : null}{pv && v !== pv ? <small aria-label={v > pv ? "en progrès" : "en baisse"}>{v > pv ? "▲" : "▼"}</small> : null}</span>
             <span className="col-span-2 h-2 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${label} : ${v} sur 5, ${RATING_LABELS[v]}`}>
               <span className="block h-full rounded-full" style={{ width: `${(v / 5) * 100}%`, background: axis.color }} />
             </span>
@@ -48,7 +48,7 @@ export function MatchTable({ matches }: { matches: MatchRow[] }) {
             <tr key={m.id} className="border-b border-line align-top">
               <td className="whitespace-nowrap p-2">{fmtDate(m.date)}</td>
               <td className="p-2">{m.tournament}{m.round && ` · ${m.round}`}{m.opponentRanking && <div className="hint">Adversaire classé {m.opponentRanking}</div>}{m.remark && <div className="hint">{m.remark}</div>}<AuthorBadge a={m} /></td>
-              <td className={"p-2 font-bold " + (m.result === "Victoire" ? "text-ok" : "text-bad")}>{m.result}</td>
+              <td className={"p-2 font-semibold " + (m.result === "Victoire" ? "text-ok" : "text-bad")}>{m.result}</td>
               <td className="whitespace-nowrap p-2">{m.score}</td>
             </tr>
           ))}

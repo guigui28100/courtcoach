@@ -135,7 +135,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         {KINDS.map((t) => (
           <div key={t.k} role="button" tabIndex={0} aria-pressed={pick === t.k} aria-label={`${t.label}, ${dur(t.k)} : glisse-le dans le planning ou touche-le puis touche le planning`}
             onPointerDown={(e) => begin(e, t.k)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPick((p) => (p === t.k ? null : t.k)); } }}
-            className="flex min-w-[9.5rem] cursor-grab select-none items-center gap-2 rounded border-2 px-3 py-2 font-bold text-white shadow-sm active:cursor-grabbing"
+            className="flex min-w-[9.5rem] cursor-grab select-none items-center gap-2 rounded border-2 px-3 py-2 font-semibold text-white shadow-sm active:cursor-grabbing"
             style={{ background: t.bg, borderColor: pick === t.k ? "#17140f" : t.bg, outline: pick === t.k ? "3px solid #c9ad77" : "none", touchAction: "none" }}>
             <span aria-hidden="true">⠿</span><span className="grid leading-tight">{t.label}<small className="font-normal opacity-90">{dur(t.k)}</small></span>
           </div>
@@ -150,23 +150,23 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         <button type="button" className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => setMonday(mondayOf(todayIso()))}>Cette semaine</button>
         <span className="text-xs text-muted">Les cours du club se répètent chaque semaine. Les cours particuliers (🎾 jaune / vert) sont à voir seulement : ils viennent des réservations.</span>
       </div>
-      {!ready ? (msg ? <p role="alert" className="m-0 font-bold text-bad">{msg.text}</p> : <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />) : (
+      {!ready ? (msg ? <p role="alert" className="m-0 font-semibold text-bad">{msg.text}</p> : <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />) : (
         <div className="overflow-x-auto">
           <div className="min-w-[720px]" style={{ display: "grid", gridTemplateColumns: "3.6rem repeat(7, minmax(0, 1fr))", columnGap: 4 }}>
             <div />
-            {DAYS.map((d, i) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-bold leading-tight text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span><small className="block font-normal opacity-80">{Number(weekDates[i].slice(8, 10))} {MONTHS[Number(weekDates[i].slice(5, 7)) - 1].slice(0, 4)}.</small></div>)}
-            <div className="self-center text-right text-[11px] font-bold leading-tight text-muted" title="Événements du club où ce prof est affecté" aria-hidden="true">🏆</div>
+            {DAYS.map((d, i) => <div key={d} className="rounded bg-ink px-1 py-1.5 text-center text-sm font-semibold leading-tight text-white">{d.slice(0, 3)}<span className="max-sm:hidden">{d.slice(3)}</span><small className="block font-normal opacity-80">{Number(weekDates[i].slice(8, 10))} {MONTHS[Number(weekDates[i].slice(5, 7)) - 1].slice(0, 4)}.</small></div>)}
+            <div className="self-center text-right text-[11px] font-semibold leading-tight text-muted" title="Événements du club où ce prof est affecté" aria-hidden="true">🏆</div>
             {weekDates.map((dt, i) => {
               const here = evs.filter((e) => e.startDate <= dt && e.endDate >= dt);
               return (
                 <div key={dt} className="grid min-h-8 content-start gap-0.5" aria-label={here.length ? `${DAYS[i]} : ${here.map((e) => titleOf(e)).join(", ")}` : undefined}>
-                  {here.map((e) => <span key={e.id} title={`${titleOf(e)}${e.time ? ` · ${e.time}` : ""}${e.place ? ` · ${e.place}` : ""}`} className="truncate rounded px-1 py-0.5 text-[11px] font-bold leading-tight text-white" style={{ background: colorOf(e) }}>{evKind(e.kind).icon} {titleOf(e)}</span>)}
+                  {here.map((e) => <span key={e.id} title={`${titleOf(e)}${e.time ? ` · ${e.time}` : ""}${e.place ? ` · ${e.place}` : ""}`} className="truncate rounded px-1 py-0.5 text-[11px] font-semibold leading-tight text-white" style={{ background: colorOf(e) }}>{evKind(e.kind).icon} {titleOf(e)}</span>)}
                 </div>
               );
             })}
             {/* axe des heures : une graduation toutes les demi-heures, alignée sur les cours */}
             <div className="relative select-none" style={{ height: ROWS * ROW }} aria-hidden="true">
-              {labels.map((m, i) => <span key={m} className={"absolute right-1 text-[11px] leading-none " + (m % 60 ? "text-muted" : "font-bold text-ink")} style={{ top: i * ROW - 5 }}>{hmFull(m)}</span>)}
+              {labels.map((m, i) => <span key={m} className={"absolute right-1 text-[11px] leading-none " + (m % 60 ? "text-muted" : "font-semibold text-ink")} style={{ top: i * ROW - 5 }}>{hmFull(m)}</span>)}
             </div>
             {DAYS.map((d, wd) => (
               <div key={d} ref={(el) => { cols.current[wd] = el; }} role="group" aria-label={d}
@@ -177,7 +177,7 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
                   const t = kindOf(b.kind); const moving = drag?.moved && drag.id === b.id;
                   return (
                     <div key={b.id} onPointerDown={t ? (e) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); begin(e, b.kind!, b.id, e.clientY - r.top); } : undefined}
-                      className={"absolute inset-x-0.5 overflow-hidden rounded px-1.5 py-1 text-xs font-bold text-white shadow " + (t ? "cursor-grab active:cursor-grabbing" : "") + (moving ? " opacity-30" : "")}
+                      className={"absolute inset-x-0.5 overflow-hidden rounded px-1.5 py-1 text-xs font-semibold text-white shadow " + (t ? "cursor-grab active:cursor-grabbing" : "") + (moving ? " opacity-30" : "")}
                       style={{ top: px(b.start - DAY_START), height: px(b.end - b.start) - 2, background: t?.bg ?? "#6b6455", outline: bad.has(b.id) ? "3px solid #d92d20" : "none", outlineOffset: -1, touchAction: t ? "none" : "auto" }}
                       aria-label={`${b.label || "Cours"}, ${d}, de ${hm(b.start)} à ${hm(b.end)}`}>
                       <span className="block pr-4 leading-tight">{b.label || "Cours"}</span>
@@ -189,13 +189,13 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
                 })}
                 {privBlocks.filter((p) => p.weekday === wd).map((p) => (
                   <div key={p.l.id} aria-label={`Cours particulier${p.l.status === "BOOKED" ? " à confirmer" : ""}, ${d}, de ${hm(p.start)} à ${hm(p.end)}, ${adultName(p.l.member, "adhérent")}`} title="Cours particulier : à voir seulement"
-                    className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded border-2 px-1 py-0.5 text-[11px] font-bold leading-tight"
+                    className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded border-2 px-1 py-0.5 text-[11px] font-semibold leading-tight"
                     style={{ top: px(p.start - DAY_START), height: px(PRIV_MIN) - 2, background: p.l.status === "BOOKED" ? "#fff0a8" : "#d7f0df", borderColor: p.l.status === "BOOKED" ? "#c9ac00" : "#1f7a45", color: "#17140f" }}>
                     <span className="block truncate">🎾 Particulier{p.l.status === "BOOKED" ? " · à confirmer" : ""}</span>
                     <span className="block truncate font-normal">{hm(p.start)} – {hm(p.end)} · {adultName(p.l.member, "adhérent")}</span>
                   </div>))}
                 {preview && preview.weekday === wd && drag && (
-                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0.5 z-10 rounded border-2 border-dashed px-1.5 py-1 text-xs font-bold"
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-x-0.5 z-10 rounded border-2 border-dashed px-1.5 py-1 text-xs font-semibold"
                     style={{ top: px(preview.start - DAY_START), height: px(preview.end - preview.start) - 2, background: preview.ok ? "rgba(31,122,69,.25)" : "rgba(217,45,32,.25)", borderColor: preview.ok ? "#1f7a45" : "#d92d20", color: preview.ok ? "#124d2b" : "#8a1c1c" }}>
                     {hm(preview.start)} – {hm(preview.end)}{preview.ok ? "" : " ✕"}
                   </div>
@@ -206,17 +206,17 @@ export function WeekPlanner({ id, name }: { id: string; name: string }) {
         </div>
       )}
 
-      {blocks.some((b) => privClash(b)) && <p role="status" className="m-0 rounded border-2 border-[#c9ac00] bg-[#fff8d6] p-2 text-sm font-bold text-[#5c4300]">⚠ Cette semaine, un cours du club tombe en même temps qu'un cours particulier ({blocks.filter((b) => privClash(b)).map((b) => `${DAYS[b.weekday].toLowerCase()} ${hm(b.start)}`).join(", ")}). Rien n'est bloqué : à toi de voir.</p>}
-      {preview && !preview.ok && <p role="alert" className="m-0 rounded border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-bold text-bad">⚠ {preview.reason} Si tu lâches ici, rien ne sera placé.</p>}
+      {blocks.some((b) => privClash(b)) && <p role="status" className="m-0 rounded border-2 border-[#c9ac00] bg-[#fff8d6] p-2 text-sm font-semibold text-[#5c4300]">⚠ Cette semaine, un cours du club tombe en même temps qu'un cours particulier ({blocks.filter((b) => privClash(b)).map((b) => `${DAYS[b.weekday].toLowerCase()} ${hm(b.start)}`).join(", ")}). Rien n'est bloqué : à toi de voir.</p>}
+      {preview && !preview.ok && <p role="alert" className="m-0 rounded border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-semibold text-bad">⚠ {preview.reason} Si tu lâches ici, rien ne sera placé.</p>}
       {drag && (
-        <div aria-hidden="true" className="pointer-events-none fixed z-[200] rounded px-3 py-1.5 text-sm font-bold text-white shadow-lg" style={{ left: drag.x + 12, top: drag.y + 8, background: kindOf(drag.kind)!.bg, opacity: drag.moved ? 0.92 : 0 }}>
+        <div aria-hidden="true" className="pointer-events-none fixed z-[200] rounded px-3 py-1.5 text-sm font-semibold text-white shadow-lg" style={{ left: drag.x + 12, top: drag.y + 8, background: kindOf(drag.kind)!.bg, opacity: drag.moved ? 0.92 : 0 }}>
           {kindOf(drag.kind)!.label} · {dur(drag.kind)}{preview ? ` · ${hm(preview.start)} – ${hm(preview.end)}` : ""}
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn-ink" disabled={!ready || !dirty} onClick={save}>🔄 Enregistrer le planning</button>
-        {dirty && <span className="text-sm font-bold text-[#8a6200]">● Modifications pas encore enregistrées</span>}
-        {msg && ready && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
+        {dirty && <span className="text-sm font-semibold text-[#8a6200]">● Modifications pas encore enregistrées</span>}
+        {msg && ready && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
       </div>
     </div>
   );

@@ -79,7 +79,7 @@ export function TournamentsTab({ players, isCoach }: { players: Player[]; isCoac
           <span>Montrer aux jeunes et à leur famille<small className="block font-normal text-muted">Par défaut, seuls le coach et les entraîneurs le voient. Si tu le partages, chaque famille verra le document en entier : il ne doit contenir que des informations qui la concernent (pas de nom d'autres enfants).</small></span>
         </label>
         <Err msg={err} />
-        {ok && <p role="status" className="m-0 font-bold text-ok">{ok}</p>}
+        {ok && <p role="status" className="m-0 font-semibold text-ok">{ok}</p>}
         <div><button className="btn-clay" disabled={busy}>{busy ? "Envoi…" : "Déposer le document"}</button></div>
       </form>
       {docs === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : docs.length === 0 ? <Empty>Aucun document déposé pour l'instant.</Empty> : (

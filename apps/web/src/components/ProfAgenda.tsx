@@ -95,7 +95,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
       <div className="agenda-hero flex flex-wrap items-center gap-3 px-4 py-4 text-white">
         <span aria-hidden className="text-3xl">🎾</span>
         <div className="min-w-[12rem] flex-1">
-          <h3 className="m-0 font-display text-xl font-black text-white">{title}</h3>
+          <h3 className="m-0 font-display text-xl font-semibold text-white">{title}</h3>
           <p className="m-0 text-sm text-white/90">{inPeriod.length === 0 ? "Aucun cours sur cette période" : `${inPeriod.length} cours${toConfirm ? ` · ${toConfirm} à confirmer` : ""}`}</p>
         </div>
         <div className="flex items-center gap-2 max-[480px]:w-full max-[480px]:justify-between">
@@ -106,10 +106,10 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
       </div>
 
       <div className="p-2 sm:p-4">
-        {err && <p role="alert" className="m-0 mb-2 rounded-xl border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-bold text-bad">{err}</p>}
+        {err && <p role="alert" className="m-0 mb-2 rounded-xl border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-semibold text-bad">{err}</p>}
         {pending.length > 0 && (
           <div className="mb-3 grid gap-2 rounded-2xl border-2 border-[#c9ac00] bg-[#fff8d6] p-3" aria-label="Demandes à confirmer">
-            <h4 className="m-0 text-base font-bold text-[#5c4300]">🔔 {pending.length} demande{pending.length > 1 ? "s" : ""} à confirmer</h4>
+            <h4 className="m-0 text-base font-semibold text-[#5c4300]">🔔 {pending.length} demande{pending.length > 1 ? "s" : ""} à confirmer</h4>
             <ul className="m-0 grid list-none gap-2 p-0">
               {pending.map((l) => (
                 <li key={l.id} className="grid gap-1 rounded-xl bg-white p-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-between">
@@ -175,11 +175,11 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
         </ul>
         {evList.length > 0 && (
           <div className="mt-3 grid gap-1">
-            <h4 className="m-0 flex flex-wrap items-center gap-2 text-base font-bold">🏆 Événements du club où tu es placé{ev.fresh.length > 0 && <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => ev.markSeen(evList)}>J'ai tout vu</button>}</h4>
+            <h4 className="m-0 flex flex-wrap items-center gap-2 text-base font-semibold">🏆 Événements du club où tu es placé{ev.fresh.length > 0 && <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => ev.markSeen(evList)}>J'ai tout vu</button>}</h4>
             <ul className="m-0 grid list-none gap-1 p-0">
               {evList.map((e) => { const st = ev.state(e); return (
                 <li key={e.id} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm">
-                  <b>{kindOf(e.kind).icon} {titleOf(e)}</b> {st === "nouveau" && <span className="rounded-full bg-champagne px-2 py-0.5 text-xs font-bold text-ink">Nouveau</span>}{st === "modifie" && <span className="rounded-full bg-[#ffe08a] px-2 py-0.5 text-xs font-bold text-ink">Modifié</span>}
+                  <b>{kindOf(e.kind).icon} {titleOf(e)}</b> {st === "nouveau" && <span className="rounded-full bg-champagne px-2 py-0.5 text-xs font-semibold text-ink">Nouveau</span>}{st === "modifie" && <span className="rounded-full bg-[#ffe08a] px-2 py-0.5 text-xs font-semibold text-ink">Modifié</span>}
                   <span className="block capitalize">{fmtRange(e.startDate, e.endDate)}{e.time ? ` · 🕒 ${e.time}` : ""}{e.place ? ` · 📍 ${e.place}` : ""}</span>
                   {e.note && <span className="block text-muted [overflow-wrap:anywhere]">📝 {e.note}</span>}
                 </li>); })}
@@ -188,11 +188,11 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
         )}
         {later.length > 0 && (
           <div className="mt-3 grid gap-1">
-            <h4 className="m-0 text-base font-bold">📆 Prochains cours (plus tard)</h4>
+            <h4 className="m-0 text-base font-semibold">📆 Prochains cours (plus tard)</h4>
             <ul className="m-0 grid list-none gap-1 p-0">
               {later.map((l) => (
                 <li key={l.id}><button className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-line bg-white px-3 py-2 text-left text-sm hover:border-ink" onClick={() => jump(l)}>
-                  <span><b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}</span><span className="font-bold text-clay">Voir →</span>
+                  <span><b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}</span><span className="font-semibold text-clay">Voir →</span>
                 </button></li>
               ))}
             </ul>

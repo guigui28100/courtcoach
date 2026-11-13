@@ -68,13 +68,13 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
             <input className="input min-w-52 flex-1" aria-label="Objectif" maxLength={200} placeholder="Ex. : Fiabiliser la première balle de service" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-sm font-bold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" value={stars} onChange={(e) => setStars(Math.max(3, Math.min(60, Number(e.target.value) || 10)))} /></label>
+            <label className="flex items-center gap-2 text-sm font-semibold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" value={stars} onChange={(e) => setStars(Math.max(3, Math.min(60, Number(e.target.value) || 10)))} /></label>
             <button className="btn-clay" disabled={title.trim().length < 2}>+ Ajouter à la bibliothèque</button>
           </div>
         </form>
       )}
       <Err msg={err} />
-      {result && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{result}</p>}
+      {result && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">{result}</p>}
       {list === null && <div className="skeleton h-24" role="status" aria-label="Chargement en cours" />}
       {list && list.length === 0 && (
         <Empty>
@@ -94,10 +94,10 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
                     {isCoach ? (
                       <>
                         <input className="input" aria-label="Objectif" defaultValue={t.title} maxLength={200} onBlur={(e) => e.target.value.trim().length >= 2 && e.target.value !== t.title && upd(t, { title: e.target.value.trim() })} />
-                        <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" defaultValue={t.targetStars} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== t.targetStars) upd(t, { targetStars: v }); }} /></label>
+                        <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">⭐ étoiles pour réussir <input type="number" min={3} max={60} className="input !w-24" defaultValue={t.targetStars} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== t.targetStars) upd(t, { targetStars: v }); }} /></label>
                       </>
                     ) : (
-                      <><strong>{t.title}</strong><span className="text-sm font-bold">⭐ {t.targetStars} étoiles pour réussir</span></>
+                      <><strong>{t.title}</strong><span className="text-sm font-semibold">⭐ {t.targetStars} étoiles pour réussir</span></>
                     )}
                     <div className="flex flex-wrap gap-2">
                       {only ? <button className="btn-clay btn-sm" disabled={busy} onClick={() => { setPicked([]); give(t); }}>🎁 Donner à {only.firstName} (T{tri})</button> : <button className="btn-clay btn-sm" aria-expanded={giving === t.id} onClick={() => { setGiving(giving === t.id ? null : t.id); setPicked([]); setResult(""); }}>🎁 Donner à des jeunes</button>}
@@ -105,7 +105,7 @@ export function GoalLibraryTab({ players, isCoach, only, trimester, onGiven }: {
                     </div>
                     {!only && giving === t.id && (
                       <div className="grid gap-2 rounded-xl bg-sand p-3">
-                        <p className="m-0 font-bold">À qui ? Pour quel trimestre ?</p>
+                        <p className="m-0 font-semibold">À qui ? Pour quel trimestre ?</p>
                         <div className="flex flex-wrap gap-2" role="group" aria-label="Trimestre">
                           {[1, 2, 3].map((n) => <button key={n} type="button" aria-pressed={tri === n} onClick={() => setTri(n)} className={"btn btn-sm " + (tri === n ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>Trimestre {n}</button>)}
                         </div>

@@ -15,7 +15,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={title} className="relative grid w-full max-w-md gap-3 rounded-3xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <button className="absolute right-4 top-3 text-2xl font-black text-muted hover:text-ink" aria-label="Fermer" onClick={onClose}>✕</button>
+        <button className="absolute right-4 top-3 text-2xl font-semibold text-muted hover:text-ink" aria-label="Fermer" onClick={onClose}>✕</button>
         <h3 className="m-0 pr-8 font-display text-2xl first-letter:uppercase">{title}</h3>
         {children}
       </div>
@@ -69,17 +69,17 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-center gap-3">
-        <button className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black hover:border-ink" aria-label="Mois précédent" onClick={() => step(-1)}>‹</button>
+        <button className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-semibold hover:border-ink" aria-label="Mois précédent" onClick={() => step(-1)}>‹</button>
         <strong className="min-w-[11rem] text-center font-display text-xl capitalize">{MONTHS[m - 1]} {y}</strong>
-        <button className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-black hover:border-ink" aria-label="Mois suivant" onClick={() => step(1)}>›</button>
+        <button className="grid size-10 place-items-center rounded-full border-2 border-line bg-white text-xl font-semibold hover:border-ink" aria-label="Mois suivant" onClick={() => step(1)}>›</button>
       </div>
       {!locked && avail && !cells.some((d) => d && d > today && (avail.counts.get(d) ?? 0) > 0) && (() => {
         const next = [...avail.counts.entries()].filter(([d, n]) => d > today && n > 0).map(([d]) => d).sort()[0];
         return next
-          ? <p role="status" className="m-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-bold">Aucun créneau libre ce mois-ci. <button type="button" className="font-extrabold text-ink underline" onClick={() => setMonth(next.slice(0, 7))}>Prochain créneau libre : {dayLong(next)} ›</button></p>
-          : <p role="status" className="m-0 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-bold">Aucun créneau libre pour le moment : reviens plus tard, les professeurs ajoutent leurs disponibilités.</p>;
+          ? <p role="status" className="m-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-semibold">Aucun créneau libre ce mois-ci. <button type="button" className="font-semibold text-ink underline" onClick={() => setMonth(next.slice(0, 7))}>Prochain créneau libre : {dayLong(next)} ›</button></p>
+          : <p role="status" className="m-0 rounded border border-line bg-champagne-soft px-3 py-2 text-center text-sm font-semibold">Aucun créneau libre pour le moment : reviens plus tard, les professeurs ajoutent leurs disponibilités.</p>;
       })()}
-      <div className="grid grid-cols-7 gap-1.5 text-center text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-muted sm:gap-2 sm:text-xs">{DAYS.map((d) => <span key={d}>{d}</span>)}</div>
+      <div className="grid grid-cols-7 gap-1.5 text-center text-[0.7rem] font-semibold  text-muted sm:gap-2 sm:text-xs">{DAYS.map((d) => <span key={d}>{d}</span>)}</div>
       <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {cells.map((d, i) => {
           if (!d) return <span key={i} />;
@@ -94,11 +94,11 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
               onClick={() => free && onDay(d)} onKeyDown={(e) => free && (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onDay(d))}
               className={"min-h-[4.5rem] rounded-xl border-2 p-1.5 sm:min-h-[5.5rem] sm:rounded-2xl sm:p-2 " + (off ? (d === today ? "border-ink " : "border-[#d6cdbb] ") + "bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_6px,#e9e3d5_6px,#e9e3d5_12px)] text-[#6f6757] " : d === today ? "border-clay bg-[#fff6ef] " : weekend ? "border-[#a89c88] bg-[#f1e8d9] " : "border-[#a89c88] bg-white ") + (free ? "cursor-pointer hover:border-clay hover:shadow-md" : "")}>
               <b className={"text-sm " + (off ? "text-[#6f6757]" : d === today ? "text-clay" : "")}>{Number(d.slice(8))}</b>
-              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-black text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-extrabold leading-tight text-[#14532d] sm:text-xs"><span className="sm:hidden">＋ {n}</span><span className="max-sm:hidden">{n > 1 ? "Créneaux" : "Créneau"} : {n}</span></span>)}
-              {closed && <span className="mt-1 block text-center text-[0.55rem] font-bold tracking-tight text-muted sm:text-xs"><span aria-hidden="true" className="sm:hidden">✕</span><span className="max-sm:sr-only">complet</span></span>}
+              {free && (n === undefined ? <span aria-hidden="true" className="mt-1 block text-center text-lg font-semibold text-clay/50">＋</span> : <span className="mt-1 block rounded-lg bg-[#dff3e5] px-0.5 py-1 text-center text-[0.7rem] font-semibold leading-tight text-[#14532d] sm:text-xs"><span className="sm:hidden">＋ {n}</span><span className="max-sm:hidden">{n > 1 ? "Créneaux" : "Créneau"} : {n}</span></span>)}
+              {closed && <span className="mt-1 block text-center text-[0.55rem] font-semibold tracking-tight text-muted sm:text-xs"><span aria-hidden="true" className="sm:hidden">✕</span><span className="max-sm:sr-only">complet</span></span>}
               <div className="mt-1 grid gap-1">
                 {here.map((l) => (
-                  <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-extrabold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
+                  <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); onLesson(l); }} aria-label={`${dayLong(d)}, ${hourOf(l.finalSlot!.time)} : voir le cours`} className={"rounded-lg px-1 py-0.5 text-left text-[0.65rem] font-semibold leading-tight sm:px-1.5 sm:py-1 sm:text-xs " + TONE[l.status as keyof typeof TONE]}>
                     <span aria-hidden="true">{MARK[l.status as keyof typeof MARK]} </span>{(l.seriesCount ?? 0) > 1 && "🔁 "}{hourOf(l.finalSlot!.time)}<span className="hidden sm:inline"> {l.prof?.firstName ?? ""}</span>
                   </button>
                 ))}
@@ -107,7 +107,7 @@ export function CourseCalendar({ lessons, onLesson, onDay, preview = false, lock
           );
         })}
       </div>
-      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre (on réserve jusqu'à 28 jours à l'avance, au plus tard la veille)</span></p>
+      <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-muted"><span>🟩 Confirmé</span><span>🟨 Le professeur doit confirmer</span><span>🟥 Refusé</span><span>🔁 chaque semaine</span><span>Créneaux : N = nombre de créneaux libres, touche le jour pour réserver</span><span><span aria-hidden="true" className="mr-1 inline-block size-3 rounded-sm border border-[#d6cdbb] bg-[repeating-linear-gradient(135deg,#f4f0e8,#f4f0e8_3px,#e9e3d5_3px,#e9e3d5_6px)] align-[-1px]" />Grisé : aucun créneau libre (on réserve jusqu'à 28 jours à l'avance, au plus tard la veille)</span></p>
     </div>
   );
 }
@@ -117,7 +117,7 @@ export function LessonSheet({ l, onClose, onCancel }: { l: Lesson; onClose: () =
   const slot = l.finalSlot!;
   const serie = (l.seriesCount ?? 0) > 1;
   const state = l.status === "ACCEPTED" ? ["✅ Confirmé par le professeur", "text-ok"] : l.status === "BOOKED" ? ["⏳ Le professeur doit confirmer (sous 48 h)", "text-[#7a5a00]"] : ["❌ Refusé ou annulé", "text-bad"];
-  const Row = ({ i, children }: { i: string; children: ReactNode }) => <p className="m-0 flex items-center gap-3 font-bold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">{i}</span><span>{children}</span></p>;
+  const Row = ({ i, children }: { i: string; children: ReactNode }) => <p className="m-0 flex items-center gap-3 font-semibold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">{i}</span><span>{children}</span></p>;
   return (
     <Sheet title={dayLong(slot.date)} onClose={onClose}>
       <p className="m-0 text-muted">Ton cours particulier{serie ? " · 🔁 chaque semaine" : ""}</p>
@@ -128,9 +128,9 @@ export function LessonSheet({ l, onClose, onCancel }: { l: Lesson; onClose: () =
       {l.price ? <Row i="💶">{l.price} € à régler directement avec le professeur</Row> : null}
       <Row i="ℹ️"><span className={state[1]}>{state[0]}</span></Row>
       <div className="mt-2 flex flex-wrap gap-2">
-        {onCancel && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-extrabold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l); }}>{l.status === "BOOKED" ? "Retirer ma demande" : "Annuler ce cours"}</button>}
-        {onCancel && serie && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-extrabold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l, true); }}>Arrêter toute la série</button>}
-        <button className="rounded-xl border-2 border-ink px-4 py-2.5 font-extrabold hover:bg-ink hover:text-white" onClick={onClose}>Fermer</button>
+        {onCancel && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-semibold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l); }}>{l.status === "BOOKED" ? "Retirer ma demande" : "Annuler ce cours"}</button>}
+        {onCancel && serie && l.status !== "REFUSED" && <button className="rounded-xl border-2 border-bad px-4 py-2.5 font-semibold text-bad hover:bg-bad hover:text-white" onClick={() => { onClose(); onCancel(l, true); }}>Arrêter toute la série</button>}
+        <button className="rounded-xl border-2 border-ink px-4 py-2.5 font-semibold hover:bg-ink hover:text-white" onClick={onClose}>Fermer</button>
       </div>
     </Sheet>
   );
@@ -165,12 +165,12 @@ export function DaySheet({ date, preview, onClose, onReserve }: { date: string; 
   return (
     <Sheet title={dayLong(date)} onClose={onClose}>
       <p className="m-0 text-muted">Aucun cours ce jour-là.</p>
-      {rows === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : rows.length === 0 ? <p className="m-0 font-bold">Aucun professeur n'est visible pour le moment.</p> : rows.map((r) => (
-        <p key={r.prof.id} className="m-0 flex items-center gap-3 font-bold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">👨‍🏫</span><span>{profName(r.prof)} : {r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""}` : <span className="text-muted">complet ce jour-là</span>}</span></p>
+      {rows === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : rows.length === 0 ? <p className="m-0 font-semibold">Aucun professeur n'est visible pour le moment.</p> : rows.map((r) => (
+        <p key={r.prof.id} className="m-0 flex items-center gap-3 font-semibold"><span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-xl bg-sand text-lg">👨‍🏫</span><span>{profName(r.prof)} : {r.free.length ? `${r.free.length} créneau${r.free.length > 1 ? "x" : ""} libre${r.free.length > 1 ? "s" : ""}` : <span className="text-muted">complet ce jour-là</span>}</span></p>
       ))}
       <div className="mt-2 flex flex-wrap gap-2">
         <button className="btn-clay" disabled={!any} onClick={onReserve}>Réserver ce jour-là →</button>
-        <button className="rounded-xl border-2 border-ink px-4 py-2.5 font-extrabold hover:bg-ink hover:text-white" onClick={onClose}>Fermer</button>
+        <button className="rounded-xl border-2 border-ink px-4 py-2.5 font-semibold hover:bg-ink hover:text-white" onClick={onClose}>Fermer</button>
       </div>
     </Sheet>
   );
@@ -187,12 +187,12 @@ export function DayHours({ day, value, onChange }: { day: PlanDay | undefined; v
           const on = value?.date === day.date && value.time === s.time;
           return (
             <li key={s.time} className="grid grid-cols-[7.5rem_1fr] items-center gap-3 sm:grid-cols-[9rem_1fr]">
-              <span className="whitespace-nowrap text-right font-display text-base font-bold text-muted sm:text-lg">{hourOf(s.time)} – {hourOf(s.end)}</span>
+              <span className="whitespace-nowrap text-right font-display text-base font-semibold text-muted sm:text-lg">{hourOf(s.time)} – {hourOf(s.end)}</span>
               {s.free ? (
                 <button type="button" aria-pressed={on} aria-label={`${hourOf(s.time)} à ${hourOf(s.end)} : libre`} onClick={() => onChange(on ? null : { date: day.date, time: s.time })}
-                  className={"min-h-12 rounded-xl border-2 px-3 font-extrabold " + (on ? "border-[#0f5f2d] bg-[#15803d] text-white shadow-md" : "border-[#bbe5c8] bg-[#e8f7ee] text-[#166534] hover:border-[#15803d]")}>{on ? "✔ Mon choix" : "Libre"}</button>
+                  className={"min-h-12 rounded-xl border-2 px-3 font-semibold " + (on ? "border-[#0f5f2d] bg-[#15803d] text-white shadow-md" : "border-[#bbe5c8] bg-[#e8f7ee] text-[#166534] hover:border-[#15803d]")}>{on ? "✔ Mon choix" : "Libre"}</button>
               ) : (
-                <span className="grid min-h-12 place-items-center rounded-xl border-2 border-[#e3dccd] bg-[repeating-linear-gradient(45deg,#f1ede4,#f1ede4_6px,#e7e0d1_6px,#e7e0d1_12px)] font-extrabold text-muted">Pris</span>
+                <span className="grid min-h-12 place-items-center rounded-xl border-2 border-[#e3dccd] bg-[repeating-linear-gradient(45deg,#f1ede4,#f1ede4_6px,#e7e0d1_6px,#e7e0d1_12px)] font-semibold text-muted">Pris</span>
               )}
             </li>
           );

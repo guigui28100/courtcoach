@@ -10,7 +10,7 @@ interface Trainer { id: string; email: string; firstName: string | null; kind?: 
 export function PlayerPicker({ players, value, onChange, name, label }: { players: Player[]; value: string[]; onChange: (ids: string[]) => void; name: string; label?: string }) {
   if (!players.length) return <p className="hint m-0">Aucun jeune pour l'instant : crée d'abord les fiches des jeunes.</p>;
   return (
-    <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-bold">{label ?? `Jeunes que ${name} peut voir`}</legend>
+    <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-semibold">{label ?? `Jeunes que ${name} peut voir`}</legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {players.map((p) => (
           <label key={p.id} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-3 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
@@ -27,7 +27,7 @@ export function PlayerPicker({ players, value, onChange, name, label }: { player
 function Secret({ email, password, onClose }: { email: string; password: string; onClose: () => void }) {
   return (
     <div role="status" className="rounded-2xl border-2 border-ok bg-[#eef8f1] p-4">
-      <p className="m-0 font-bold">✅ Note ces informations maintenant : le mot de passe ne sera plus affiché.</p>
+      <p className="m-0 font-semibold">✅ Note ces informations maintenant : le mot de passe ne sera plus affiché.</p>
       <p className="m-0 mt-2">Identifiant : <strong>{email}</strong></p>
       <p className="m-0">Mot de passe provisoire : <strong className="select-all font-mono text-lg">{password}</strong></p>
       <p className="hint m-0 mt-1">Transmets-les en main propre ou par message privé. L'entraîneur devra choisir son propre mot de passe à la première connexion.</p>
@@ -82,7 +82,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
             <Field label="Prénom" id="tr-first"><input id="tr-first" name="firstName" required maxLength={60} className="input" autoFocus /></Field>
             <Field label="Adresse e-mail (son identifiant)" id="tr-mail"><input id="tr-mail" name="email" type="email" required maxLength={200} className="input" autoComplete="off" /></Field>
           </div>
-          <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-bold">Type d'entraîneur</legend>
+          <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-semibold">Type d'entraîneur</legend>
             <div className="flex flex-wrap gap-2">
               {([["COMITE", "🏛️ Entraîneur de comité"], ["CLUB", "🎾 Entraîneur de club"]] as const).map(([v, l], i) => (
                 <label key={v} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-4 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="radio" name="kind" value={v} defaultChecked={i === 0} className="h-5 w-5 accent-clay" />{l}</label>
@@ -95,13 +95,13 @@ export function TrainersTab({ players }: { players: Player[] }) {
         </form>
       )}
       <Err msg={err} />
-      {saved && <p role="status" className="m-0 font-bold text-ok">{saved}</p>}
+      {saved && <p role="status" className="m-0 font-semibold text-ok">{saved}</p>}
       {list === null ? <div className="skeleton h-24" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <Empty>Aucun entraîneur pour l'instant.</Empty> : (
         <ul className="m-0 grid list-none gap-4 p-0">
           {list.map((t) => { const sel = edits[t.id] ?? t.playerIds; const dirty = !!edits[t.id]; return (
             <li key={t.id} className="card grid gap-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-bold text-muted">{t.kind === "CLUB" ? "🎾 Club" : "🏛️ Comité"}</span>{t.teaches && <span className="ml-1 rounded-full bg-[#eef8f1] px-2.5 py-0.5 align-middle text-xs font-bold text-ok">👩‍🏫 Donne des cours particuliers</span>}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
+                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-semibold text-muted">{t.kind === "CLUB" ? "🎾 Club" : "🏛️ Comité"}</span>{t.teaches && <span className="ml-1 rounded-full bg-[#eef8f1] px-2.5 py-0.5 align-middle text-xs font-semibold text-ok">👩‍🏫 Donne des cours particuliers</span>}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
                 <span className="flex flex-wrap gap-2"><button className="btn-outline btn-sm" onClick={() => reset(t)}>Nouveau mot de passe</button><button className="btn-danger btn-sm" onClick={() => remove(t)}>Supprimer le compte</button></span>
               </div>
               <div><button className="btn-ink btn-sm" aria-expanded={weekOf === t.id} onClick={() => setWeekOf(weekOf === t.id ? null : t.id)}>🗓️ {weekOf === t.id ? "Fermer son planning" : "Placer ses cours de la semaine"}</button></div>

@@ -70,7 +70,7 @@ export function ClubAccess() {
       <Err msg={err} />
       {link && (
         <div className="rounded-xl bg-sand p-3">
-          <p className="m-0 font-bold">Lien à envoyer (valable {link.days} jours, affiché une seule fois) :</p>
+          <p className="m-0 font-semibold">Lien à envoyer (valable {link.days} jours, affiché une seule fois) :</p>
           <input readOnly className="input mt-2" value={link.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
           <div className="mt-3"><MailLinks to={link.email} subject="Votre accès CourtCoach" lines={inviteLines(link.url, link.role, link.days)} /></div>
           <p className="hint m-0 mt-1">Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien. Rien n'est envoyé par le site : c'est toi qui envoies le message.</p>

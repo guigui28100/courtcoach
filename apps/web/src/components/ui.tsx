@@ -50,7 +50,7 @@ export function StatTile({ value, label, icon, to, tone = "clay" }: { value: num
   const body = (
     <>
       <span className={"grid h-12 w-12 place-items-center rounded-full text-2xl " + tones[tone]} aria-hidden="true">{icon}</span>
-      <span className="grid"><strong className="font-serif text-4xl font-semibold leading-none text-ink">{value}</strong><span className="font-ui text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted">{label}</span></span>
+      <span className="grid"><strong className="font-serif text-4xl font-semibold leading-none text-ink">{value}</strong><span className="font-ui text-[0.68rem] font-semibold  text-muted">{label}</span></span>
     </>
   );
   const cls = "card lift flex items-center gap-4 !p-4 no-underline border-t-2 border-t-champagne";
@@ -133,7 +133,7 @@ export function CoachHero({ eyebrow, title, subtitle, chips, actions, tone = "de
   );
 }
 
-export const HeroChip = ({ children }: { children: ReactNode }) => <span className="inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-white/5 px-3.5 py-1 font-ui text-xs font-semibold uppercase tracking-[0.1em] text-chalk">{children}</span>;
+export const HeroChip = ({ children }: { children: ReactNode }) => <span className="inline-flex items-center gap-1.5 rounded-full border border-champagne/40 bg-white/5 px-3.5 py-1 font-ui text-xs font-semibold  text-chalk">{children}</span>;
 
 // Grande tuile de raccourci (couleur, icône, titre, texte, pastille de nombre)
 export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: string; title: string; text: string; to: string; tone: "yellow" | "clay" | "blue" | "ink"; badge?: number }) {
@@ -145,7 +145,7 @@ export function ShortcutTile({ icon, title, text, to, tone, badge }: { icon: str
       <span className="text-3xl" aria-hidden="true">{icon}</span>
       <strong className="font-serif text-2xl font-semibold leading-tight">{title}</strong>
       <span className="text-sm text-muted">{text}</span>
-      {!!badge && <span className="absolute right-3 top-4 grid h-7 min-w-7 place-items-center rounded-full bg-ink px-2 font-ui text-xs font-bold text-champagne" aria-label={`${badge} à traiter`}>{badge}</span>}
+      {!!badge && <span className="absolute right-3 top-4 grid h-7 min-w-7 place-items-center rounded-full bg-ink px-2 font-ui text-xs font-semibold text-champagne" aria-label={`${badge} à traiter`}>{badge}</span>}
     </>
   );
   return to.startsWith("#") ? <a href={to} className={cls}>{inner}</a> : <Link to={to} className={cls}>{inner}</Link>;
@@ -193,7 +193,7 @@ export function authorColor(a: Authored | null | undefined) {
 }
 export function AuthorBadge({ a, prefix = "Saisi par" }: { a: Authored | null | undefined; prefix?: string }) {
   const c = authorColor(a); if (!c || !a) return null;
-  return <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ borderColor: c, color: c, background: `${c}14` }}><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />{prefix} {a.authorName}{a.authorRole === "COACH" ? " (coach)" : ""}</span>;
+  return <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={{ borderColor: c, color: c, background: `${c}14` }}><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />{prefix} {a.authorName}{a.authorRole === "COACH" ? " (coach)" : ""}</span>;
 }
 
 // Menu déroulant avec « Autre : je l'écris » : on choisit dans la liste ou on écrit sa propre réponse ; la valeur part dans un champ caché

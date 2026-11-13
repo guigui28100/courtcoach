@@ -57,7 +57,7 @@ export default function VideoReview() {
     <>
       <PageHead eyebrow={centre ? "Centre de compétition jeunes" : "Demandes de coaching"} title={v.title}>{who} · {v.shot} · {fmtDate(v.recordedAt)} · {fmtMo(v.sizeBytes)}</PageHead>
       <Page>
-        <BackLink fallback={centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"} className="font-bold text-ink underline">← Retour</BackLink>
+        <BackLink fallback={centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"} className="font-semibold text-ink underline">← Retour</BackLink>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
             {draft && (
@@ -65,7 +65,7 @@ export default function VideoReview() {
             )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && !v.fromCoach && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
-            <details className="text-sm"><summary className="cursor-pointer font-bold">⋯ Plus</summary>
+            <details className="text-sm"><summary className="cursor-pointer font-semibold">⋯ Plus</summary>
             {draft && <button type="button" className="btn-outline btn-sm mb-2 self-start" onClick={sendVideo}>📤 Envoyer la vidéo seule, sans analyse</button>}
             <p className="hint">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
             <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"); } }}>Supprimer la vidéo</button>
@@ -90,7 +90,7 @@ export default function VideoReview() {
                 <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
                 <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : "Envoyer l'analyse"}</button>
               </div>
-              {msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
+              {msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
               {!sent && <p className="hint m-0">Tant que l'analyse n'est pas envoyée, {centre ? "la famille" : "l'adhérent"} ne la voit pas et la discussion reste fermée.</p>}
             </form>
             )}
@@ -128,14 +128,14 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
         {v.goals.length === 0 && <p className="hint m-0">Aucune mission pour ce joueur : crée-en une dans « Définir les objectifs de travail ».</p>}
         <div className="flex flex-wrap gap-2" role="group" aria-label="Missions du joueur">{v.goals.map((g) => {
           const on = goalIds.includes(g.id), ax = AXES.find((a) => a.key === g.axis);
-          return <button key={g.id} type="button" aria-pressed={on} onClick={() => toggleGoal(g.id, !on)} className={"min-h-11 rounded-full border-2 px-4 text-left text-sm font-bold " + (on ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{on ? "✔ " : ""}{ax?.label} · {g.title}</button>;
+          return <button key={g.id} type="button" aria-pressed={on} onClick={() => toggleGoal(g.id, !on)} className={"min-h-11 rounded-full border-2 px-4 text-left text-sm font-semibold " + (on ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{on ? "✔ " : ""}{ax?.label} · {g.title}</button>;
         })}</div>
       </fieldset>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
         <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `📤 Envoyer à ${name}`}</button>
       </div>
-      {msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
+      {msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
       {!sent && <p className="hint m-0">L'envoi part avec la vidéo, l'analyse, les images et ta voix.</p>}
     </section>
   );
