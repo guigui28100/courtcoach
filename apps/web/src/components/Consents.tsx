@@ -53,7 +53,7 @@ export function ConsentsTab({ p }: { p: Player }) {
       <section className="card grid gap-2">
         <h2 className="m-0 text-xl">✅ Autorisations pour {p.firstName}</h2>
         <p className="m-0"><strong>Cette rubrique est pour le parent ou le responsable légal.</strong> Tu lis chaque accord, tu coches, tu écris ton nom et le mot de passe de ce compte pour confirmer : c'est enregistré tout de suite, avec la date. Tu peux les retirer quand tu veux. Le coach n'a plus de papier à remplir à ta place.</p>
-        <p className="hint m-0">Un papier à signer reste possible si tu préfères : demande-le au coach. <Link to="/confidentialite" className="font-bold text-clay underline">Lire la politique de confidentialité</Link></p>
+        <p className="hint m-0">Un papier à signer reste possible si tu préfères : demande-le au coach. <Link to="/confidentialite" className="font-semibold text-clay underline">Lire la politique de confidentialité</Link></p>
       </section>
 
       {list === null && <p className="m-0">Chargement…</p>}
@@ -88,11 +88,11 @@ export function ConsentsTab({ p }: { p: Player }) {
             <div className="field"><label htmlFor="c-name">Nom et prénom du parent ou responsable légal</label><input id="c-name" className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoComplete="name" /></div>
             <div className="field"><label htmlFor="c-pw">Mot de passe de ce compte</label><input id="c-pw" type="password" className="input" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /><small className="hint">Il confirme que c'est bien toi, le parent, qui donnes l'accord.</small></div>
           </div>
-          <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={busy || !chosen.length}>{busy ? "Enregistrement…" : chosen.length > 1 ? `✅ Je donne ces ${chosen.length} accords` : "✅ Je donne cet accord"}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+          <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={busy || !chosen.length}>{busy ? "Enregistrement…" : chosen.length > 1 ? `✅ Je donne ces ${chosen.length} accords` : "✅ Je donne cet accord"}</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
         </form>
       )}
-      {list && todo.length === 0 && <p className="card m-0 font-bold">🎉 Tous les accords sont donnés. Merci !</p>}
-      {msg?.ok && list && todo.length === 0 && <p role="status" className="m-0 font-bold text-ok">{msg.text}</p>}
+      {list && todo.length === 0 && <p className="card m-0 font-semibold">Tous les accords sont donnés. Merci</p>}
+      {msg?.ok && list && todo.length === 0 && <p role="status" className="m-0 font-semibold text-ok">{msg.text}</p>}
     </div>
   );
 }

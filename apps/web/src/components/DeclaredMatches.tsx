@@ -22,7 +22,7 @@ const MissionChecksLine = ({ m, goals }: { m: DeclaredMatch; goals: Goal[] }) =>
   return rows.length ? <span className="text-sm">🚀 Missions : {rows.map((g, i) => <span key={g.id}>{i > 0 && " · "}{g.title} <span title={MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[1]}>{MISSION_CHECKS[(m.missionChecks![g.id] ?? 1) - 1]?.[0]}</span></span>)}</span> : null;
 };
 
-const pill = (on: boolean) => "min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-bold transition-colors " + (on ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20");
+const pill = (on: boolean) => "min-h-11 rounded-full border-2 px-4 py-1.5 text-left font-semibold transition-colors " + (on ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20");
 
 // Formulaire de déclaration d'un match : surtout des boutons, aucun nom d'adversaire
 function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: DeclaredMatch; onDone: () => void; preview?: boolean }) {
@@ -51,27 +51,27 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
       onDone();
     } catch (x) { setMsg("⚠️ " + (x as Error).message); } finally { setBusy(false); }
   }
-  const step = (n: number, t: string) => <h4 className="m-0 text-base"><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-[#c9ad77] text-xs font-black text-ink" aria-hidden="true">{n}</span>{t}</h4>;
+  const step = (n: number, t: string) => <h4 className="m-0 text-base"><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-[#c9ad77] text-xs font-semibold text-ink" aria-hidden="true">{n}</span>{t}</h4>;
   return (
     <form onSubmit={save} className="grid gap-4 rounded-2xl bg-white/10 p-4" noValidate>
       <div className="grid gap-2">{step(1, "Quel match ?")}
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Type de match">{MATCH_KINDS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={kind === k} className={pill(kind === k)} onClick={() => setKind(k)}>{l}</button>)}</div>
         <div className="flex flex-wrap gap-3">
-          <label className="grid gap-1 text-sm font-bold">Date<input type="date" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} className="input !w-auto text-ink" /></label>
-          <label className="grid min-w-52 flex-1 gap-1 text-sm font-bold">Nom du tournoi ou du lieu (facultatif)<input value={event} maxLength={60} onChange={(e) => setEvent(e.target.value)} className="input text-ink" placeholder="Plateau de Dreux" /></label>
+          <label className="grid gap-1 text-sm font-semibold">Date<input type="date" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} className="input !w-auto text-ink" /></label>
+          <label className="grid min-w-52 flex-1 gap-1 text-sm font-semibold">Nom du tournoi ou du lieu (facultatif)<input value={event} maxLength={60} onChange={(e) => setEvent(e.target.value)} className="input text-ink" placeholder="Plateau de Dreux" /></label>
         </div>
       </div>
       <div className="grid gap-2">{step(2, "Comment ça s'est terminé ?")}
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Résultat">{(["Victoire", "Défaite"] as const).map((r) => <button key={r} type="button" role="radio" aria-checked={result === r} className={pill(result === r)} onClick={() => setResult(r)}>{r === "Victoire" ? "🏆 Victoire" : "😕 Défaite"}</button>)}</div>
-        <label className="grid gap-1 text-sm font-bold">Score (facultatif)<input value={score} maxLength={40} onChange={(e) => setScore(e.target.value)} className="input !w-52 text-ink" placeholder="6/3 4/6 10/8" /></label>
+        <label className="grid gap-1 text-sm font-semibold">Score (facultatif)<input value={score} maxLength={40} onChange={(e) => setScore(e.target.value)} className="input !w-52 text-ink" placeholder="6/3 4/6 10/8" /></label>
       </div>
       <div className="grid gap-2">{step(3, "Ton adversaire était…")}
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Niveau de l'adversaire">{MATCH_OPPONENTS.map(([k, l]) => <button key={k} type="button" role="radio" aria-checked={opponent === k} className={pill(opponent === k)} onClick={() => setOpponent(k)}>{l}</button>)}</div>
-        <label className="grid gap-1 text-sm font-bold">Son classement (facultatif)<select value={ranking} onChange={(e) => setRanking(e.target.value)} className="input !w-52 text-ink"><option value="">Je ne sais pas</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
+        <label className="grid gap-1 text-sm font-semibold">Son classement (facultatif)<select value={ranking} onChange={(e) => setRanking(e.target.value)} className="input !w-52 text-ink"><option value="">Je ne sais pas</option>{RANKINGS.map((r) => <option key={r} value={r}>{r}</option>)}</select></label>
         <small className="text-white/70">Pas de nom, s'il te plaît : seulement son niveau et son classement.</small>
       </div>
       <div className="grid gap-2">{step(4, "Comment as-tu joué ?")}
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ton ressenti">{FEELINGS.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={feeling === i + 1} onClick={() => setFeeling(i + 1)} className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-bold " + (feeling === i + 1 ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}</div>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ton ressenti">{FEELINGS.map(([e, t], i) => <button key={t} type="button" role="radio" aria-checked={feeling === i + 1} onClick={() => setFeeling(i + 1)} className={"grid min-h-14 min-w-[4.5rem] justify-items-center rounded-2xl border-2 px-2 py-1 text-sm font-semibold " + (feeling === i + 1 ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/40 bg-white/10 text-white hover:bg-white/20")}><span className="text-2xl" aria-hidden="true">{e}</span>{t}</button>)}</div>
       </div>
       {goals.length > 0 && (
         <div className="grid gap-2">{step(5, "Et mes missions ? (en un clic, facultatif)")}
@@ -93,7 +93,7 @@ function MatchForm({ p, initial, onDone, preview }: { p: Player; initial?: Decla
       <div className="flex flex-wrap items-center gap-3">
         <button className="gal-btn" disabled={busy}>{initial ? "💾 Enregistrer les changements" : "✅ Enregistrer ce match"}</button>
         <button type="button" className="btn btn-sm border-2 border-white/60 text-white hover:bg-white hover:text-ink" onClick={onDone}>Annuler</button>
-        {msg && <p role="status" className="m-0 font-bold text-[#c9ad77]">{msg}</p>}
+        {msg && <p role="status" className="m-0 font-semibold text-[#c9ad77]">{msg}</p>}
       </div>
     </form>
   );
@@ -109,7 +109,7 @@ function MatchCard({ m, p, onChanged, preview, goals }: { m: DeclaredMatch; p: P
       <span className="text-sm text-white/85">{fmtDate(m.day)}{m.score && ` · ${m.score}`} · adversaire : {matchLabel(MATCH_OPPONENTS, m.opponent).replace(/^\S+\s/, "").toLowerCase()}{m.opponentRanking && ` (${m.opponentRanking})`} · {FEELINGS[m.feeling - 1]?.[0]} {FEELINGS[m.feeling - 1]?.[1]}</span>
       {(m.wellDone.length > 0 || m.toImprove) && <span className="text-sm text-white/85">{m.wellDone.length > 0 && <>⭐ Bien : {m.wellDone.map((k) => matchLabel(MATCH_SKILLS, k).toLowerCase()).join(", ")}. </>}{m.toImprove && <>🎯 À améliorer : {matchLabel(MATCH_SKILLS, m.toImprove).toLowerCase()}.</>}</span>}
       <span className="text-sm text-white/85"><MissionChecksLine m={m} goals={goals} /></span>
-      {m.coachComment && <span className="rounded-xl bg-[#c9ad77] p-2 text-sm font-bold text-ink">💬 Ton coach : {m.coachComment}</span>}
+      {m.coachComment && <span className="rounded-xl bg-[#c9ad77] p-2 text-sm font-semibold text-ink">💬 Ton coach : {m.coachComment}</span>}
       <span className="flex flex-wrap items-center gap-2 text-sm">
         {m.editable ? (<>
           <button type="button" className="btn btn-sm border-2 border-white/60 text-white hover:bg-white hover:text-ink" onClick={() => setEdit(true)}>✏️ Modifier</button>
@@ -132,9 +132,9 @@ export function DeclaredMatchesSection({ p, preview = false }: { p: Player; prev
       <p className="m-0 text-white/85">Note ici tes matchs (tournoi, plateau…) : ton résultat, comment tu as joué, ce qui a bien marché. Seuls <strong>toi et ton coach</strong> les voyez. Tu peux corriger un match pendant 7 jours.</p>
       {!open && <div><button type="button" className="gal-btn" onClick={() => setOpen(true)}>+ J'ajoute un match</button></div>}
       {open && <MatchForm p={p} preview={preview} onDone={() => { setOpen(false); reload(); }} />}
-      {list === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Aucun match noté pour l'instant. Après ton prochain match, viens le raconter ici !</p> : (
+      {list === null ? <div className="skeleton h-20" role="status" aria-label="Chargement en cours" /> : list.length === 0 ? <p className="m-0 rounded-2xl bg-white/10 p-3">Aucun match noté pour l'instant. Après ton prochain match, viens le raconter ici.</p> : (
         <>
-          <p className="m-0 font-bold">{wins} victoire{wins > 1 ? "s" : ""} · {list.length - wins} défaite{list.length - wins > 1 ? "s" : ""}</p>
+          <p className="m-0 font-semibold">{wins} victoire{wins > 1 ? "s" : ""} · {list.length - wins} défaite{list.length - wins > 1 ? "s" : ""}</p>
           <ul className="m-0 grid gap-2 p-0">{list.map((m) => <MatchCard key={m.id} m={m} p={p} onChanged={reload} preview={preview} goals={goals} />)}</ul>
         </>
       )}

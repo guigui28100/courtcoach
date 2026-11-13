@@ -52,7 +52,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
     const txt = (k: string) => String(f.get(k) ?? "");
     try {
       await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings, comments: Object.fromEntries(Object.entries(comments).filter(([, v]) => v.trim())), strengths: txt("strengths"), improve: txt("improve"), next: txt("next"), appreciation: txt("appreciation") });
-      setMsg({ ok: true, text: "Évaluation enregistrée ✓" }); setVersion((v) => v + 1); onSaved?.();
+      setMsg({ ok: true, text: "Évaluation enregistrée" }); setVersion((v) => v + 1); onSaved?.();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
@@ -64,7 +64,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
       {evals && season === currentSeason() && (
         <section className={"card flex flex-wrap items-center justify-between gap-3 border-2 " + (startDone ? "border-line" : "!border-clay")} aria-label="Bilan de départ">
           <div className="grid gap-1">
-            <h3 className="m-0">📍 Bilan de départ de {p.firstName} (début de saison)</h3>
+            <h3 className="m-0">Bilan de départ de {p.firstName} (début de saison)</h3>
             <p className="m-0 text-sm text-muted">{startDone ? "Déjà rempli : le jeune le voit en haut de son onglet Missions." : "Pas encore rempli. C’est le point de départ de la saison : tu notes ses 5 domaines, il le verra dans son onglet Missions."}</p>
           </div>
           <button type="button" className={t === 0 ? "btn-ink btn-sm" : "btn-clay"} disabled={t === 0} onClick={() => { setSeason(currentSeason()); setT(0); }}>{t === 0 ? "Tu es sur le bilan de départ ↓" : startDone ? "Modifier le bilan de départ" : "Saisir le bilan de départ"}</button>
@@ -79,7 +79,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 
       {t > 0 && (
         <section className="card grid gap-3" aria-labelledby="ev-objectifs">
-          <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 id="ev-objectifs" className="m-0 text-xl">🎯 Missions fixées pour le trimestre {t}</h2><p className="hint m-0">Ce sont les missions que tu as fixées dans l'onglet Objectifs. Pour chacune, indique où elle en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et <strong>figure automatiquement sur le bulletin du trimestre {t}</strong>.</p></div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 id="ev-objectifs" className="m-0 text-xl">Missions fixées pour le trimestre {t}</h2><p className="hint m-0">Ce sont les missions que tu as fixées dans l'onglet Objectifs. Pour chacune, indique où elle en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et <strong>figure automatiquement sur le bulletin du trimestre {t}</strong>.</p></div>
             <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin du trimestre {t}</Link></div>
           {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
             <div className="grid gap-3 lg:grid-cols-2">
@@ -109,14 +109,14 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
     e.preventDefault();
     try {
       await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? (strong.length ? strong.slice(0, 6).join(" ; ") : saved?.strengths ?? "") : saved?.strengths ?? "", improve: t === 0 ? (todo.length ? todo.slice(0, 6).join(" ; ") : saved?.improve ?? "") : saved?.improve ?? "", next: saved?.next ?? "", appreciation: word });
-      setMsg({ ok: true, text: "Enregistré ✓" }); onSaved();
+      setMsg({ ok: true, text: "Enregistré" }); onSaved();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
       <p className="alert m-0">{t === 0 ? <><strong>Bilan de départ.</strong> Pour chaque point, touche le niveau actuel. C'est tout : le radar, les points forts et les priorités se calculent tout seuls. Les missions se donnent dans l'onglet « Définir les objectifs de travail ».</> : <><strong>Image du joueur à la fin du trimestre {t}.</strong> Pour chaque point, touche le niveau actuel : cela fait le radar du bulletin. Les missions se notent plus haut (atteinte, en cours, non atteinte).</>}</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Résumé">
-        {LEVELS.map((l, i) => <div key={l.label} className="rounded-2xl border-t-[5px] bg-white p-3 text-center shadow-sm" style={{ borderTopColor: l.color }}><b className="block text-3xl" style={{ color: l.color }}>{counts[i]}</b><span className="text-sm font-bold">{l.label}</span></div>)}
+        {LEVELS.map((l, i) => <div key={l.label} className="rounded-2xl border-t-[5px] bg-white p-3 text-center shadow-sm" style={{ borderTopColor: l.color }}><b className="block text-3xl" style={{ color: l.color }}>{counts[i]}</b><span className="text-sm font-semibold">{l.label}</span></div>)}
       </div>
       {EVAL_AXES.map((a) => {
         const items = START_ITEMS[a.key] ?? [];
@@ -125,17 +125,17 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
         return (
           <fieldset key={a.key} className="card grid gap-1 border-l-[8px]" style={{ borderLeftColor: a.color }}>
             <legend className="sr-only">{a.label}</legend>
-            <h3 className="m-0 flex items-center gap-2 text-xl" style={{ color: a.color }}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]}</span>{a.label}<small className="ml-auto rounded-full bg-sand px-3 py-1 text-sm font-bold text-muted">{done} sur {items.length} acquis</small></h3>
+            <h3 className="m-0 flex items-center gap-2 text-xl" style={{ color: a.color }}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]}</span>{a.label}<small className="ml-auto rounded-full bg-sand px-3 py-1 text-sm font-semibold text-muted">{done} sur {items.length} acquis</small></h3>
             {oldNote ? <p className="hint m-0">Ancienne note du domaine : {rt[a.key]}/5 (remplacée dès que tu notes un point ci-dessous).</p> : null}
             {items.map(([k, label]) => {
               const cur = levelOf(rt[itemKey(a.key, k)]);
               return (
                 <div key={k} role="radiogroup" aria-label={label} className="grid gap-2 border-t border-line py-2 sm:grid-cols-[170px_1fr] sm:items-center">
-                  <span className="font-bold">{label}</span>
+                  <span className="font-semibold">{label}</span>
                   <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                     {LEVELS.map((l, i) => (
                       <button key={l.label} type="button" role="radio" aria-checked={cur === i} onClick={() => setItem(a.key, itemKey(a.key, k), l.rating)}
-                        className={"min-h-11 rounded-xl border-2 px-1.5 text-center text-[13px] leading-tight " + (cur === i ? "font-black text-white shadow-md" : "border-line bg-sand font-bold text-muted hover:bg-white")}
+                        className={"min-h-11 rounded-xl border-2 px-1.5 text-center text-[13px] leading-tight " + (cur === i ? "font-semibold text-white shadow-md" : "border-line bg-sand font-semibold text-muted hover:bg-white")}
                         style={cur === i ? { background: l.color, borderColor: l.color } : undefined}>{l.label}</button>
                     ))}
                   </div>
@@ -145,11 +145,11 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
           </fieldset>
         );
       })}
-      {t === 0 && (strong.length > 0 || todo.length > 0) && <div className="grid gap-2 rounded-2xl border border-line bg-white p-3 text-sm sm:grid-cols-2"><p className="m-0"><strong>⭐ Points forts (automatique) :</strong> {strong.join(", ") || "—"}</p><p className="m-0"><strong>🎯 À travailler en priorité (automatique) :</strong> {todo.join(", ") || "—"}</p></div>}
-      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-bold">💬 Le mot du coach</legend>
+      {t === 0 && (strong.length > 0 || todo.length > 0) && <div className="grid gap-2 rounded-2xl border border-line bg-white p-3 text-sm sm:grid-cols-2"><p className="m-0"><strong>Points forts (automatique) :</strong> {strong.join(", ") || "—"}</p><p className="m-0"><strong>À travailler en priorité (automatique) :</strong> {todo.join(", ") || "—"}</p></div>}
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-semibold">Le mot du coach</legend>
         <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Un joueur plein d'envie, continue comme ça !" /></Field>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
 }
@@ -181,7 +181,7 @@ export function Matchs({ p }: { p: Player }) {
       </form>
       <Err msg={err} />
       <CoachDeclaredMatches p={p} />
-      {matches.length > 0 && <p className="m-0 font-bold">{wins} victoire{wins > 1 ? "s" : ""} · {matches.length - wins} défaite{matches.length - wins > 1 ? "s" : ""}</p>}
+      {matches.length > 0 && <p className="m-0 font-semibold">{wins} victoire{wins > 1 ? "s" : ""} · {matches.length - wins} défaite{matches.length - wins > 1 ? "s" : ""}</p>}
       <div className="card"><MatchTable matches={matches} />{!matches.length && <p className="m-0 text-muted">Aucun match enregistré.</p>}</div>
       {matches.length > 0 && (
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0">{matches.map((m: MatchRow) => <li key={m.id}><button className="btn-danger btn-sm" onClick={async () => { if (confirm(`Supprimer le match du ${fmtDate(m.date)} (${m.tournament}) ?`)) { await del(`/matches/${m.id}`); setVersion((v) => v + 1); } }}>Supprimer {fmtDate(m.date)} · {m.tournament}</button></li>)}</ul>

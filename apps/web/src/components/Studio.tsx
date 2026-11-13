@@ -209,10 +209,10 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
         {TOOLS.map(([k, label]) => <button key={k} type="button" aria-pressed={tool === k} onClick={() => { setTool(k); setDraft(null); }} className={"btn-sm btn " + (tool === k ? "bg-ink text-white" : "border-2 border-line bg-white text-ink")}>{label}</button>)}
       </div>
       <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Épaisseur du trait">
-        <span className="text-sm font-bold">{tool === "text" ? "Taille du texte" : "Épaisseur"} :</span>
+        <span className="text-sm font-semibold">{tool === "text" ? "Taille du texte" : "Épaisseur"} :</span>
         {SIZES.map(([label, v]) => (
           <button key={label} type="button" role="radio" aria-checked={size === v} onClick={() => setSize(v)} aria-label={label} title={label}
-            className={"flex h-10 min-w-16 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (size === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
+            className={"flex h-10 min-w-16 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-semibold " + (size === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
             {tool === "text" ? <span style={{ fontSize: `${10 + v * 5}px`, lineHeight: 1 }}>Aa</span> : <span aria-hidden="true" className="block w-7 rounded-full bg-current" style={{ height: `${Math.max(2, v * 3)}px` }} />}
           </button>
         ))}
@@ -224,7 +224,7 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
       </div>
       {shapes.length > 0 && (
         <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Tracés de l'image">
-          <strong>✏️ Les tracés de cette image</strong>
+          <strong>Les tracés de cette image</strong>
           <p className="hint m-0">Change le texte d'une étiquette ou retire un tracé, sans tout recommencer.</p>
           <ul className="m-0 grid list-none gap-2 p-0">
             {shapes.map((s, i) => (
@@ -232,8 +232,8 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
                 <span aria-hidden="true" className="h-4 w-4 shrink-0 rounded-full border border-line" style={{ background: s.color }} />
                 {s.tool === "text"
                   ? <input aria-label={`Texte n° ${i + 1}`} className="input !min-h-10 min-w-0 flex-1" maxLength={200} value={s.text ?? ""} onChange={(e) => setShapes((l) => l.map((x, k) => (k === i ? { ...x, text: e.target.value } : x)))} />
-                  : <span className="flex-1 text-sm font-bold">{TOOLS.find(([k]) => k === s.tool)?.[1] ?? s.tool}{s.tool === "angle" && s.pts.length === 3 ? ` : ${Math.round(angleOf(s.pts[0], s.pts[1], s.pts[2]))}°` : ""}</span>}
-                <button type="button" className="btn-outline btn-sm" onClick={() => setShapes((l) => l.filter((_, k) => k !== i))} aria-label={`Retirer le tracé n° ${i + 1}`}>🗑 Retirer</button>
+                  : <span className="flex-1 text-sm font-semibold">{TOOLS.find(([k]) => k === s.tool)?.[1] ?? s.tool}{s.tool === "angle" && s.pts.length === 3 ? ` : ${Math.round(angleOf(s.pts[0], s.pts[1], s.pts[2]))}°` : ""}</span>}
+                <button type="button" className="btn-outline btn-sm" onClick={() => setShapes((l) => l.filter((_, k) => k !== i))} aria-label={`Retirer le tracé n° ${i + 1}`}>Retirer</button>
               </li>
             ))}
           </ul>
@@ -241,15 +241,15 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
       )}
       <section className="grid gap-2 rounded-xl border-2 border-line bg-white p-3" aria-label="Squelette du joueur">
         <div className="flex flex-wrap items-center gap-2">
-          <strong>🦴 Squelette</strong>
-          <button type="button" className="btn-clay btn-sm" disabled={detecting} onClick={() => void detect()}>{detecting ? "Recherche du joueur…" : "🤖 Repérer le joueur automatiquement"}</button>
+          <strong>Squelette</strong>
+          <button type="button" className="btn-clay btn-sm" disabled={detecting} onClick={() => void detect()}>{detecting ? "Recherche du joueur…" : "Repérer le joueur automatiquement"}</button>
           {!skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(defaultSkeleton()); setSkMsg("Squelette posé : glisse chaque point blanc à sa place sur le joueur."); }}>Placer un squelette à la main</button>}
           {skel && <button type="button" className="btn-outline btn-sm" onClick={() => { setSkel(null); setSkMsg(""); }}>Retirer le squelette</button>}
         </div>
-        {skMsg && <p role="status" className="m-0 text-sm font-bold">{skMsg}</p>}
+        {skMsg && <p role="status" className="m-0 text-sm font-semibold">{skMsg}</p>}
         {skel && (
           <>
-            <div className="flex flex-wrap gap-4 text-sm font-bold">
+            <div className="flex flex-wrap gap-4 text-sm font-semibold">
               <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
               <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 accent-clay" checked={showMeasures} onChange={(e) => setShowMeasures(e.target.checked)} />Écrire les mesures sur l'image</label>
             </div>
@@ -273,7 +273,7 @@ function Annotator({ base, onCancel, onSave, initialSkeleton = null, initial }: 
         )}
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="grid gap-3" noValidate>
-        {busy && <p role="status" className="m-0 font-bold">{step || "Enregistrement…"}</p>}
+        {busy && <p role="status" className="m-0 font-semibold">{step || "Enregistrement…"}</p>}
         <Err msg={err} />
         <div className="flex flex-wrap gap-2"><button type="submit" className="btn-clay" disabled={busy}>{busy ? "Enregistrement…" : initial ? "Enregistrer les modifications" : "Enregistrer dans l'analyse"}</button><button type="button" className="btn-outline" onClick={onCancel} disabled={busy}>Annuler</button></div>
       </form>
@@ -327,7 +327,7 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
   const go = (t: number) => { const v = el(); if (!v) return; v.pause(); v.currentTime = Math.max(0, Math.min(Number.isFinite(v.duration) ? v.duration : t, t)); };
   return (
     <div className="grid content-start gap-2">
-      <p className="m-0 font-bold">{label}</p>
+      <p className="m-0 font-semibold">{label}</p>
       <div className="relative">
       <video ref={vref} src={src} playsInline preload="metadata" muted className="block w-full rounded-xl bg-black" aria-label={label}
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
@@ -335,11 +335,11 @@ function ComparePane({ label, src, vref, start, onStart, onTime, pose = false, g
         onTimeUpdate={(e) => { setPos(e.currentTarget.currentTime); onTime(); }} onSeeked={(e) => setPos(e.currentTarget.currentTime)} />
       <PoseOverlay video={vref} active={pose} guides={guides} onSkeleton={onSkeleton} />
       </div>
-      <label className="flex items-center gap-2 text-sm font-bold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
+      <label className="flex items-center gap-2 text-sm font-semibold">Position<input type="range" min={0} max={Math.max(dur, pos, 1)} step={1 / FPS} value={pos} className="flex-1 accent-clay" onChange={(e) => go(Number(e.target.value))} aria-label={`Position dans ${label}`} /><output>{fmtS(pos)}</output></label>
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn-outline btn-sm" onClick={() => go(pos - 1 / FPS)} aria-label={`${label} : reculer d'une image`}>◀ 1 image</button>
         <button className="btn-outline btn-sm" onClick={() => go(pos + 1 / FPS)} aria-label={`${label} : avancer d'une image`}>1 image ▶</button>
-        <button className="btn-clay btn-sm" onClick={() => onStart(el()?.currentTime ?? 0)}>🎯 Le geste démarre ici</button>
+        <button className="btn-clay btn-sm" onClick={() => onStart(el()?.currentTime ?? 0)}>Le geste démarre ici</button>
       </div>
       <p className="hint m-0">Départ du geste : <strong>{fmtS(start)}</strong></p>
     </div>
@@ -406,7 +406,7 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
   return (
     <section className="card grid gap-4" aria-label="Comparer deux vidéos">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-xl">Comparer deux vidéos</h2><button className="btn-outline btn-sm" onClick={onClose}>Fermer la comparaison</button></div>
-      {(() => { const last = ["T3", "T2", "T1"].map((k) => options.find((o) => o.shot === v.shot && o.mark === k)).find(Boolean); const ref = v.mark === "DEPART" ? last : options.find((o) => o.shot === v.shot && o.mark === "DEPART"); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? `🎯 Comparer avec le dernier geste (${GESTURE_MARKS.find((g) => g.key === ref.mark)?.label})` : "📍 Comparer avec le geste de départ"}</button></div> : null; })()}
+      {(() => { const last = ["T3", "T2", "T1"].map((k) => options.find((o) => o.shot === v.shot && o.mark === k)).find(Boolean); const ref = v.mark === "DEPART" ? last : options.find((o) => o.shot === v.shot && o.mark === "DEPART"); return ref && !otherId ? <div><button className="btn-clay btn-sm" onClick={() => { setOtherId(ref.id); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>{v.mark === "DEPART" ? `Comparer avec le dernier geste (${GESTURE_MARKS.find((g) => g.key === ref.mark)?.label})` : "Comparer avec le geste de départ"}</button></div> : null; })()}
       {options.length === 0 ? <p className="hint m-0">Il n'y a pas d'autre vidéo de {v.kind === "centre" ? "ce joueur" : "cet adhérent"} à comparer. Quand une deuxième vidéo aura été envoyée, tu pourras suivre l'évolution du geste ici.</p> : (
         <div className="field"><label htmlFor="cmp">Vidéo à comparer (de la plus ancienne à la plus récente)</label>
           <select id="cmp" className="input" value={otherId} onChange={(e) => { setOtherId(e.target.value); pauseBoth(); setStartA(0); setStartB(0); setT(0); setFrame(null); }}>
@@ -428,15 +428,15 @@ export function Compare({ v, onClose, onChanged }: { v: VideoDetail; onClose: ()
               <button className="btn-outline btn-sm" onClick={() => { pauseBoth(); seekBoth(t + 1 / FPS); }} aria-label="Avancer les deux d'une image">1 image ▶</button>
               {SPEEDS.map((x) => <button key={x} aria-pressed={speed === x} className={"btn btn-sm " + (speed === x ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(x)}>{x}×</button>)}
             </div>
-            <label className="flex items-center gap-3 text-sm font-bold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
+            <label className="flex items-center gap-3 text-sm font-semibold">Depuis le départ du geste<input type="range" min={tMin} max={tMax} step={1 / FPS} value={Math.max(tMin, Math.min(tMax, t))} className="flex-1 accent-clay" onChange={(e) => { pauseBoth(); seekBoth(Number(e.target.value)); }} aria-label="Moment du geste, commun aux deux vidéos" /><output>{t >= 0 ? "+" : ""}{fmtS(t)}</output></label>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>🦴 {pose ? "Arrêter le suivi du squelette" : "Suivre le squelette sur les deux vidéos"}</button>
-            {pose && <label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement</label>}
+            <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>{pose ? "Arrêter le suivi du squelette" : "Suivre le squelette sur les deux vidéos"}</button>
+            {pose && <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement</label>}
           </div>
-          <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>📸 Capturer la comparaison et annoter</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-clay" onClick={capture} disabled={!!frame}>Capturer la comparaison et annoter</button></div>
           <Err msg={err} />
-          {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
+          {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">{done}</p>}
           {frame && <Annotator base={frame} onCancel={() => setFrame(null)} onSave={async (blob, note, extra) => { await saveImage(v.id, blob, note, extra); setFrame(null); setDone("Comparaison enregistrée ✓ : elle est dans « Images de l'analyse » de la première vidéo."); onChanged(); }} />}
         </>
       )}
@@ -462,14 +462,14 @@ function GestureMark({ v, onChanged }: { v: VideoDetail; onChanged: () => void }
   }
   return (
     <details className="card" aria-labelledby="geste-mark" open={!!err}>
-      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">🎬 Geste : départ et fin de trimestre</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
+      <summary className="mb-1 cursor-pointer"><h3 id="geste-mark" className="m-0 inline text-base">Geste : départ et fin de trimestre</h3><span className="ml-2"><MarkBadge v={v} /></span></summary>
       <div className="mt-2 grid gap-3">
       <p className="hint m-0">{GESTURE_MARKS.some((g) => g.key === v.mark) ? `Cette vidéo est le geste « ${GESTURE_MARKS.find((g) => g.key === v.mark)!.label} » de ${v.player.firstName} (${v.shot.toLowerCase()}).` : `Marque cette vidéo pour que ${v.player.firstName} voie son progrès : le départ (septembre), puis le geste de chaque fin de trimestre. Ce que tu écris pour ${v.player.firstName} se met dans l'analyse, à droite.`}</p>
       <div className="flex flex-wrap gap-2">
         {GESTURE_MARKS.map((g) => <button key={g.key} className={g.key === "DEPART" ? "btn-clay btn-sm" : "btn-outline btn-sm"} disabled={busy} onClick={() => mark(g.key)}>{g.emoji} {v.mark === g.key ? "Enregistrer le mot" : g.key === "DEPART" ? "Départ (septembre)" : `${g.label} (${g.when})`}</button>)}
         {v.mark && v.mark !== "ANCIEN_DEPART" && <button className="btn-outline btn-sm" disabled={busy} onClick={() => mark(null)}>Retirer l'étiquette</button>}
       </div>
-      {history.length > 0 && <p className="hint m-0">🕘 Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
+      {history.length > 0 && <p className="hint m-0">Anciens départs (toi seul les vois) : {history.map((h) => `${h.title} (${frDate(h.recordedAt)})`).join(" · ")}</p>}
       <Err msg={err} />
       </div>
     </details>
@@ -520,7 +520,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
   async function saveEdit(blob: Blob, note: string, extra: SaveExtra) {
     if (!editing) return;
     await updateImage(v.id, editing.imageId, blob, note, { source: null, edit: extra.edit });
-    setEditing(null); setRev((r) => r + 1); setDone("Image modifiée ✓"); onChanged();
+    setEditing(null); setRev((r) => r + 1); setDone("Image modifiée"); onChanged();
     setTimeout(() => gallery.current?.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   }
   async function save(blob: Blob, note: string, extra: SaveExtra) {
@@ -543,14 +543,14 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
         {SPEEDS.map((s) => <button key={s} aria-pressed={speed === s} className={"btn btn-sm !px-3 " + (speed === s ? "bg-ink text-white" : "border-2 border-line bg-white")} onClick={() => setSpeed(s)}>{s}×</button>)}
       </div>
       <div className="flex flex-wrap gap-2">
-        <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>📸 Capturer l'image et annoter</button>
+        <button className="btn-clay btn-sm" onClick={() => { setDone(""); capture(); }} disabled={!!frame}>Capturer l'image et annoter</button>
         <button className="btn-outline btn-sm" aria-expanded={cmpOpen} onClick={onToggleCompare}>{cmpOpen ? "Fermer la comparaison" : "Comparer avec une autre vidéo"}</button>
-        <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>🦴 {pose ? "Arrêter le suivi du squelette" : "Suivre le squelette du joueur"}</button>
+        <button className={"btn btn-sm " + (pose ? "bg-ink text-white" : "border-2 border-ink bg-white text-ink")} aria-pressed={pose} onClick={() => setPose((x) => !x)}>{pose ? "Arrêter le suivi du squelette" : "Suivre le squelette du joueur"}</button>
       </div>
       {pose && (
         <div className="grid gap-1 rounded-xl bg-sand p-3 text-sm" role="group" aria-label="Suivi du squelette">
-          <label className="flex items-center gap-2 font-bold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
-          <p role="status" className="m-0">{poseStatus.s === "loading" ? "⏳ Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `⚠️ Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "✅ Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
+          <label className="flex items-center gap-2 font-semibold"><input type="checkbox" className="h-4 w-4 accent-clay" checked={guides} onChange={(e) => setGuides(e.target.checked)} />Repères d'alignement (verticale et ligne tête–bassin–pieds)</label>
+          <p role="status" className="m-0">{poseStatus.s === "loading" ? "Chargement du suivi automatique (la première fois, quelques secondes)…" : poseStatus.s === "error" ? `Le suivi automatique n'a pas pu démarrer : ${poseStatus.msg ?? ""}. Tu peux quand même capturer une image et placer le squelette à la main.` : "Le squelette suit le joueur : lis la vidéo, mets en pause ou avance image par image. Clique sur « Capturer » pour garder une image : tu pourras corriger les points et voir les mesures (angles, alignement)."}</p>
         </div>
       )}
       <Err msg={err} />
@@ -558,8 +558,8 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
       {frame && !editing && <Annotator base={frame} initialSkeleton={frameSk} onCancel={() => setFrame(null)} onSave={save} />}
       {editing && <Annotator key={editing.imageId} base={editing.base} initialSkeleton={editing.data.skeleton} initial={{ shapes: editing.data.shapes, guides: editing.data.guides, measures: editing.data.measures, note: editing.note }} onCancel={() => setEditing(null)} onSave={saveEdit} />}
       <section ref={gallery} className="grid gap-2" aria-label="Images de l'analyse">
-        <h3 className="m-0 text-base">🖼️ Images de l'analyse ({v.images.length}/8)</h3>
-        {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">{done}</p>}
+        <h3 className="m-0 text-base">Images de l'analyse ({v.images.length}/8)</h3>
+        {done && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">{done}</p>}
         {v.images.length === 0 ? <p className="hint m-0">Aucune image pour l'instant : utilise « 📸 Capturer ».</p> : (
           <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
             {v.images.map((i) => (
@@ -567,7 +567,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
                 <img src={`/api/videos/${v.id}/images/${i.id}?r=${rev}`} alt={i.note || "Image annotée"} className="w-full rounded-lg" loading="lazy" />
                 <div className="flex flex-wrap gap-2">
                   {i.editable
-                    ? <button className="btn-outline btn-sm" disabled={!!editing || !!frame} onClick={() => void openEdit(i.id, i.note)}>✏️ Modifier</button>
+                    ? <button className="btn-outline btn-sm" disabled={!!editing || !!frame} onClick={() => void openEdit(i.id, i.note)}>Modifier</button>
                     : <small className="hint self-center">Faite avant l'option « modifier » : pour la changer, refais-la.</small>}
                   <button className="btn-danger btn-sm" onClick={async () => { if (confirm("Supprimer cette image ?")) { await del(`/videos/${v.id}/images/${i.id}`); onChanged(); } }}>Supprimer</button>
                 </div>
@@ -576,7 +576,7 @@ export function VideoStudio({ v, onChanged, cmpOpen, onToggleCompare }: { v: Vid
           </ul>
         )}
       </section>
-      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-bold">🎙️ Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
+      <details className="rounded-xl border border-line bg-white p-3"><summary className="cursor-pointer font-semibold">Ma voix {v.audio ? "(une note est jointe)" : "(facultatif)"}</summary><div className="mt-2"><AudioRecorder v={v} onChanged={onChanged} /></div></details>
     </div>
   );
 }

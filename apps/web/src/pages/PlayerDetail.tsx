@@ -33,7 +33,7 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
     const f = Object.fromEntries(new FormData(e.currentTarget).entries());
     const body: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(f)) { if (k === "heightCm") { if (v) body[k] = Number(v); } else if (k === "birthDate") { if (v) body[k] = v; } else body[k] = String(v); }
-    try { await patch(`/players/${p.id}`, body); setMsg({ ok: true, text: "Enregistré ✓" }); onSaved(); } catch (er) { setMsg({ ok: false, text: (er as Error).message }); }
+    try { await patch(`/players/${p.id}`, body); setMsg({ ok: true, text: "Enregistré" }); onSaved(); } catch (er) { setMsg({ ok: false, text: (er as Error).message }); }
   }
   // Menu déroulant : une ancienne valeur saisie à la main reste proposée (elle n'est jamais perdue)
   const pick = (id: keyof Player, label: string, options: string[], extra?: { hint?: string; suffix?: string; type?: "text" | "number"; maxLength?: number }) => (
@@ -44,12 +44,12 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
   );
   return (
     <form onSubmit={save} className="grid gap-4" noValidate>
-      <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Identité</legend>
+      <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-semibold">Identité</legend>
         {t("firstName", "Prénom")}{t("lastName", "Nom")}
         <Field label="Date de naissance" id="birthDate"><input id="birthDate" name="birthDate" type="date" className="input" defaultValue={p.birthDate?.slice(0, 10) ?? ""} /></Field>
         {pick("sex", "Fille ou garçon", ["Fille", "Garçon"], { maxLength: 10 })}{t("club", "Club")}{t("licence", "N° de licence FFT")}{pick("heightCm", "Taille", HEIGHTS, { suffix: " cm", type: "number" })}
       </fieldset>
-      <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-bold">Tennis et compétition</legend>
+      <fieldset className="card grid gap-4 sm:grid-cols-2"><legend className="px-2 font-display font-semibold">Tennis et compétition</legend>
         {(["ranking", "targetRanking"] as const).map((k) => (
           <Field key={k} label={k === "ranking" ? "Classement actuel" : "Objectif de classement en fin d'année"} id={k}>
             <SelectOrText id={k} name={k} options={RANKINGS} value={p[k]} maxLength={20} />
@@ -57,15 +57,15 @@ function Profil({ p, onSaved }: { p: Player; onSaved: () => void }) {
         ))}
         {pick("hand", "Main", ["Droitier", "Gaucher"], { maxLength: 30 })}{pick("backhand", "Revers", ["À une main", "À deux mains"], { maxLength: 30 })}<Field label="Style de jeu" id="playStyle" hint="Plusieurs choix possibles"><MultiSelect id="playStyle" name="playStyle" options={PLAY_STYLES} value={p.playStyle} allowOther /></Field>{pick("training", "Volume d'entraînement", TRAINING_VOLUMES, { maxLength: 200 })}<Field label="Jours de cours habituels" id="courseDays" hint="Les étoiles se donnent ces jours-là, hors vacances scolaires (zone C, Paris)."><MultiSelect id="courseDays" name="courseDays" options={COURSE_WEEKDAYS} value={p.courseDays} /></Field>
       </fieldset>
-      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Santé (facultatif)</legend>
+      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-semibold">Santé (facultatif)</legend>
         <Field label="Blessures et points d'attention" id="health" hint="Seulement ce qui aide à adapter les exercices, jamais de diagnostic médical. Visible par le coach et les parents.">
           <textarea id="health" name="health" className="input" defaultValue={p.health ?? ""} maxLength={1000} />
         </Field>
       </fieldset>}
-      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-bold">Notes privées</legend>
+      {isCoach && <fieldset className="card grid gap-4"><legend className="px-2 font-display font-semibold">Notes privées</legend>
         <Field label="Notes du coach" id="coachNotes" hint="Seul toi peux les lire : jamais visibles par les familles."><textarea id="coachNotes" name="coachNotes" className="input" defaultValue={p.coachNotes ?? ""} maxLength={3000} /></Field>
       </fieldset>}
-      <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
     </form>
   );
 }
@@ -138,7 +138,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
     <div className="grid gap-4">
       <section className="card grid gap-3">
         <h3 className="m-0">Accords des parents</h3>
-        <p className="hint m-0">Fais signer le <Link to="/autorisation" target="_blank" className="font-bold text-clay underline">formulaire d'autorisation parentale</Link>, puis enregistre ici ce qui a été accordé. Sans accord « droit à l'image », aucune vidéo ne doit être ajoutée.</p>
+        <p className="hint m-0">Fais signer le <Link to="/autorisation" target="_blank" className="font-semibold text-clay underline">formulaire d'autorisation parentale</Link>, puis enregistre ici ce qui a été accordé. Sans accord « droit à l'image », aucune vidéo ne doit être ajoutée.</p>
         <ul className="m-0 grid list-none gap-2 p-0">
           {(["FOLLOW_UP", "IMAGE", "HEALTH", "ACCOUNT"] as const).map((k) => {
             const c = active(k);
@@ -169,12 +169,12 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
         {created && (
           <div className="alert" role="status">
             {created.existing ? (
-              <p className="m-0 font-bold">✅ {created.email} a déjà un compte : l'accès à cette fiche vient d'être ajouté (même mot de passe qu'avant).</p>
+              <p className="m-0 font-semibold">{created.email} a déjà un compte : l'accès à cette fiche vient d'être ajouté (même mot de passe qu'avant).</p>
             ) : (
               <>
-                <p className="m-0 font-bold">Accès créé. Note ces informations maintenant, elles ne seront plus affichées :</p>
+                <p className="m-0 font-semibold">Accès créé. Note ces informations maintenant, elles ne seront plus affichées :</p>
                 <p className="m-0 mt-2">Identifiant : <strong>{created.email}</strong></p>
-                <p className="m-0">Mot de passe provisoire : <code className="rounded bg-white px-2 py-1 text-base font-bold">{created.password}</code></p>
+                <p className="m-0">Mot de passe provisoire : <code className="rounded bg-white px-2 py-1 text-base font-semibold">{created.password}</code></p>
                 <p className="hint m-0 mt-2">Transmets-les de vive voix ou par message à la famille, puis supprime le message. Le mot de passe provisoire est à changer à la première connexion.</p>
               </>
             )}
@@ -206,7 +206,7 @@ function Accords({ p, onChanged }: { p: Player; onChanged: () => void }) {
         </form>
         {invite && (
           <div className="alert" role="status">
-            <p className="m-0 font-bold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
+            <p className="m-0 font-semibold">Lien à envoyer (valable {invite.days} jours, affiché une seule fois) :</p>
             <input readOnly className="input mt-2" value={invite.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
             <div className="mt-3"><MailLinks to={invite.email} subject="Invitation à CourtCoach" lines={inviteLines(invite)} rich={{ title: inviteContent(invite).youth ? "Ton espace CourtCoach t'attend." : "Votre enfant a son espace CourtCoach.", paragraphs: [inviteContent(invite).youth ? "Missions, étoiles, vidéos, matchs et bulletins : tout est là. Ton coach t'invite à l'ouvrir." : "Suivez ses progrès : objectifs, étoiles, vidéos du coach, matchs et bulletins. Le Tennis Club Houdan vous invite à l'ouvrir."], note: `${inviteContent(invite).youth ? "Ton lien est personnel" : "Votre lien est personnel"} : il ne fonctionne qu'une seule fois et reste valable ${invite.days} jours.`, about: { title: "Qu'est-ce que CourtCoach ?", text: inviteContent(invite).about }, steps: inviteContent(invite).steps, button: { label: "Choisir mon mot de passe →", url: invite.url }}} /></div>
             <p className="hint m-0 mt-1">Choisis comment ouvrir ta messagerie avec le message prêt : tu le relis, puis tu appuies sur « Envoyer ». Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien.</p>
@@ -236,7 +236,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const next = t + 1;
   const pick = (g: Goal): Choice => choice[g.id] ?? (statusAt(g, t) === "ACHIEVED" ? "close" : "keep");
-  const CHOICES: [Choice, string][] = [["close", "✅ Clore (atteint)"], ["keep", `🔁 Reconduire au T${next}`], ["replace", "✏️ Remplacer"]];
+  const CHOICES: [Choice, string][] = [["close", "Clore (atteint)"], ["keep", `Reconduire au T${next}`], ["replace", "Remplacer"]];
 
   async function apply() {
     setBusy(true); setMsg(null);
@@ -263,7 +263,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
 
   return (
     <details className="card" open={false}>
-      <summary className="cursor-pointer font-display text-lg font-bold">➡️ À la fin du trimestre {t} : préparer le trimestre {next}</summary>
+      <summary className="cursor-pointer font-display text-lg font-semibold">À la fin du trimestre {t} : préparer le trimestre {next}</summary>
       <div className="mt-3 grid gap-3">
         <p className="hint m-0">Pour chaque objectif du trimestre {t} : <strong>clore</strong> s'il est atteint, <strong>reconduire</strong> s'il ne l'est pas encore, ou le <strong>remplacer</strong> par un nouveau. Le bulletin du trimestre {t} ne change pas. Pense à évaluer d'abord chaque objectif dans l'onglet Évaluations.</p>
         {mine.length === 0 && <p className="m-0 text-muted">Aucun objectif à travailler ce trimestre.</p>}
@@ -288,7 +288,7 @@ function PrepareNext({ p, season, t, goals, onDone, onNext }: { p: Player; seaso
           ))}
           <button type="button" className="btn-outline btn-sm self-start" onClick={() => setNews((l) => [...l, { axis: "TECHNIQUE", title: "" }])}>+ Ajouter un nouvel objectif</button>
         </div>
-        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={busy} onClick={apply}>{busy ? "Préparation…" : `Préparer le trimestre ${next}`}</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}{msg?.ok && <button className="btn-outline btn-sm" onClick={onNext}>Voir le trimestre {next}</button>}</div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={busy} onClick={apply}>{busy ? "Préparation…" : `Préparer le trimestre ${next}`}</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}{msg?.ok && <button className="btn-outline btn-sm" onClick={onNext}>Voir le trimestre {next}</button>}</div>
       </div>
     </details>
   );
@@ -337,10 +337,10 @@ function Objectifs({ p }: { p: Player }) {
                 <article key={g.id} className={"grid gap-2 rounded-xl border border-line border-l-[6px] bg-chalk p-3 " + (goalApplies(g, t) ? "" : "opacity-70")} style={{ borderLeftColor: authorColor(g) ?? undefined }}>
                   <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" /></div>
                   <input className="input" aria-label="Objectif" defaultValue={g.title} maxLength={200} onBlur={(e) => e.target.value !== g.title && upd(g, { title: e.target.value })} />
-                  <label className="flex flex-wrap items-center gap-2 text-sm font-bold">⭐ Étoiles à gagner pour réussir cette mission
+                  <label className="flex flex-wrap items-center gap-2 text-sm font-semibold">Étoiles à gagner pour réussir cette mission
                     <input type="number" min={3} max={60} className="input !w-24" defaultValue={g.targetStars ?? 10} onBlur={(e) => { const v = Math.max(3, Math.min(60, Number(e.target.value) || 10)); if (v !== (g.targetStars ?? 10)) upd(g, { targetStars: v }); }} />
                     <span className="hint font-normal">Aide à décider « atteinte » en fin de trimestre.</span></label>
-                  <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"><legend className="mb-1 text-sm font-bold">À travailler au</legend>
+                  <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"><legend className="mb-1 text-sm font-semibold">À travailler au</legend>
                     {[1, 2, 3].map((n) => (
                       <label key={n} className="flex min-h-10 items-center gap-2 rounded-full border-2 border-line bg-white px-3 text-sm font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
                         <input type="checkbox" className="accent-clay" checked={g.trimesters?.includes(n) ?? false} onChange={(e) => upd(g, { trimesters: e.target.checked ? [...(g.trimesters ?? []), n].sort() : (g.trimesters ?? []).filter((x) => x !== n) })} />T{n}
@@ -350,19 +350,19 @@ function Objectifs({ p }: { p: Player }) {
                   </fieldset>
                   {goalApplies(g, t) ? (
                     <p className="m-0 flex flex-wrap items-center gap-2 text-sm">
-                      {isCarriedOver(g, t) && <span className="font-bold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</span>}
+                      {isCarriedOver(g, t) && <span className="font-semibold text-[#5b21b6]">Reconduit depuis le trimestre {t - 1}</span>}
                       <span className="badge" style={statusAt(g, t) ? { background: STATUS[statusAt(g, t)!].bg, color: STATUS[statusAt(g, t)!].ink } : undefined}>{statusAt(g, t) ? `${STATUS[statusAt(g, t)!].emoji} ${STATUS[statusAt(g, t)!].label} au T${t}` : `Pas encore évalué au T${t}`}</span>
                     </p>
                   ) : g.hiddenFrom && t >= g.hiddenFrom ? null : <p className="hint m-0">Cet objectif n'est pas prévu au trimestre {t}.</p>}
                   {goalApplies(g, t) && t < 3 && !!g.trimesters?.length && (g.trimesters.includes(t + 1) ? (
-                    <p className="m-0 flex flex-wrap items-center gap-2 rounded-xl bg-[#f3efff] p-2 text-sm"><span className="font-bold text-[#5b21b6]">↪ Prévue aussi au trimestre {t + 1}</span><button className="btn-outline btn-sm" onClick={() => upd(g, { trimesters: g.trimesters.filter((x) => x !== t + 1) })}>Ne pas la reporter</button></p>
+                    <p className="m-0 flex flex-wrap items-center gap-2 rounded-xl bg-[#f3efff] p-2 text-sm"><span className="font-semibold text-[#5b21b6]">↪ Prévue aussi au trimestre {t + 1}</span><button className="btn-outline btn-sm" onClick={() => upd(g, { trimesters: g.trimesters.filter((x) => x !== t + 1) })}>Ne pas la reporter</button></p>
                   ) : (
                     <button className="btn-outline btn-sm self-start" onClick={() => upd(g, { trimesters: [...g.trimesters, t + 1].sort() })}>↪ Reporter au trimestre {t + 1}</button>
                   ))}
                   {g.hiddenFrom ? (
-                    <p className="m-0 flex flex-wrap items-center gap-2 rounded-xl bg-sand p-2 text-sm"><span>🙈 Masquée à partir du trimestre {g.hiddenFrom} : le jeune et sa famille ne la voient plus à partir de là (bulletins déjà faits inchangés).</span><button className="btn-outline btn-sm" onClick={() => upd(g, { hiddenFrom: null })}>Réafficher</button></p>
+                    <p className="m-0 flex flex-wrap items-center gap-2 rounded-xl bg-sand p-2 text-sm"><span>Masquée à partir du trimestre {g.hiddenFrom} : le jeune et sa famille ne la voient plus à partir de là (bulletins déjà faits inchangés).</span><button className="btn-outline btn-sm" onClick={() => upd(g, { hiddenFrom: null })}>Réafficher</button></p>
                   ) : goalApplies(g, t) && statusAt(g, t) === "ACHIEVED" && t < 3 ? (
-                    <button className="btn-outline btn-sm self-start" onClick={() => upd(g, { hiddenFrom: t + 1 })}>🙈 Mission réussie : ne plus l'afficher à partir du trimestre {t + 1}</button>
+                    <button className="btn-outline btn-sm self-start" onClick={() => upd(g, { hiddenFrom: t + 1 })}>Mission réussie : ne plus l'afficher à partir du trimestre {t + 1}</button>
                   ) : null}
                   <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer cet objectif et son historique ?")) { await del(`/goals/${g.id}`); load(); } }}>Supprimer</button>
                 </article>
@@ -373,14 +373,14 @@ function Objectifs({ p }: { p: Player }) {
         })}
       </div>
       <details className="card group grid gap-3">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">📚 Ma bibliothèque d'objectifs <small className="font-normal text-muted">· en donner un à {p.firstName} en un clic</small></h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">Ma bibliothèque d'objectifs <small className="font-normal text-muted">· en donner un à {p.firstName} en un clic</small></h3><span aria-hidden="true" className="text-xl text-muted transition-transform group-open:rotate-180">▾</span></summary>
         <GoalLibraryTab players={[p]} isCoach={isCoach} only={p} trimester={t} onGiven={load} />
       </details>
       <details className="card grid gap-3 border-2 !border-clay" open={here.length === 0}>
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"><h3 className="m-0">＋ Nouvel objectif pour {p.firstName} · trimestre {t}</h3><span aria-hidden="true" className="text-xl">▾</span></summary>
       <form onSubmit={addQuick} className="grid gap-3" aria-labelledby="obj-add">
-        <h3 id="obj-add" className="m-0">🎯 Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
-        <p className="m-0 font-bold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
+        <h3 id="obj-add" className="m-0">Fixer un objectif pour {p.firstName} au trimestre {t}</h3>
+        <p className="m-0 font-semibold">{here.length === 0 ? `Aucun objectif pour le trimestre ${t} : ajoute le premier ici.` : `${here.length} objectif${here.length > 1 ? "s" : ""} à travailler au trimestre ${t}.`}</p>
         <div className="grid gap-1"><strong>1. Le domaine</strong>
           <div role="radiogroup" aria-label="Domaine" className="flex flex-wrap gap-2">
             {AXES.map((a) => <button key={a.key} type="button" role="radio" aria-checked={newAxis === a.key} onClick={() => { setNewAxis(a.key); setTopic(""); }} className={"btn btn-sm " + (newAxis === a.key ? "text-white" : "border-2 border-line bg-white text-ink")} style={newAxis === a.key ? { background: a.color } : undefined}>{a.label}</button>)}
@@ -401,7 +401,7 @@ function Objectifs({ p }: { p: Player }) {
           ))}
           {newObjs.length < 8 && <button type="button" className="btn-outline btn-sm self-start" onClick={() => setNewObjs((l) => [...l, ""])}>+ Ajouter un autre objectif</button>}
         </div>
-        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={!filled.length || saving}>{saving ? "Enregistrement…" : filled.length > 1 ? `Créer les ${filled.length} missions` : "Créer la mission"}</button>{added && <p role="status" className="m-0 font-bold text-ok">{added}</p>}</div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" disabled={!filled.length || saving}>{saving ? "Enregistrement…" : filled.length > 1 ? `Créer les ${filled.length} missions` : "Créer la mission"}</button>{added && <p role="status" className="m-0 font-semibold text-ok">{added}</p>}</div>
         <p className="hint m-0">Chaque trimestre ne montre que ses propres objectifs. Tu peux modifier un objectif, le <strong>reporter au trimestre suivant</strong> (ou non), ou le supprimer, dans les cartes par domaine plus bas. Pour les <strong>évaluer</strong> (statut, avancement, commentaire) à la fin du trimestre, et pour saisir le <strong>bilan de départ</strong> de la saison : onglet <strong>Évaluations</strong>.</p>
       </form>
       </details>
@@ -439,7 +439,7 @@ function StarsTab({ p }: { p: Player }) {
         <h3 className="m-0">Donner des étoiles à {p.firstName}</h3>
         <p className="hint m-0">Pour chaque objectif travaillé : 🙂 = 1 étoile, 😃 = 2 étoiles, ⬇️ retire une étoile. Pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat. −1, −2 ou −3 : « pas en progrès » dans un domaine (le joueur perd des étoiles et voit toujours ton explication). Pour tout le groupe d'un coup, utilise « ⭐ Fin de cours » dans le Centre.</p>
         <div className="field"><label htmlFor="st-day">Date du cours</label><input id="st-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
-        {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-bold text-ink">⚠️ {offDayReason(day, p.courseDays)} Tu pourras quand même enregistrer après confirmation.</p>}
+        {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-semibold text-ink">{offDayReason(day, p.courseDays)} Tu pourras quand même enregistrer après confirmation.</p>}
         <p className="hint m-0">Tu peux ajouter plusieurs lignes : à chaque ligne, un nombre d'étoiles, une raison et un domaine. Enregistrer remplace les étoiles de ce cours.</p>
         <StarLinesEditor who={p.firstName} lines={lines} goals={goals} allStars={stars ?? undefined} day={day} onChange={setLines} />
         {lines.length > 0 && <div><button className="btn-clay" onClick={save}>Enregistrer ces étoiles</button></div>}
@@ -478,12 +478,12 @@ function PlayerVideosTab({ p }: { p: Player }) {
       {!imageOk && <p className="alert m-0"><strong>Accord « droit à l'image » manquant.</strong> Aucune vidéo de ce joueur ne peut être envoyée tant que l'accord des parents n'est pas enregistré (onglet « Accords et famille »). Si l'accord est retiré plus tard, les vidéos du joueur sont supprimées.</p>}
       {imageOk && <><p className="hint m-0">Tu peux déposer une vidéo pour {p.firstName} (exemple à imiter, son match…). Elle reste en BROUILLON : {p.firstName} et sa famille ne la voient pas tant que tu ne l'as pas envoyée. Dès le dépôt, le studio d'analyse s'ouvre : tu l'analyses, puis tu l'envoies (bouton « Envoyer la vidéo », ou en envoyant ton analyse). Ses propres vidéos arrivent ici pour que tu les analyses.</p><VideoUpload playerId={p.id} toPlayer={p.firstName} onDone={(vid) => (vid ? nav(`/coach/videos/${vid}`) : setVersion((n) => n + 1))} /></>}
       <section className="grid gap-3 rounded-xl border-2 border-line bg-white p-3" aria-label="Gestes de départ">
-        <div><strong>📍 Gestes de {p.firstName} : {(() => { const n = DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length; return `${n} ${n > 1 ? "départs filmés" : "départ filmé"} sur ${DEPART_SHOTS.length}`; })()}</strong><p className="hint m-0">Touche un coup : tu vois son départ (septembre) et chaque fin de trimestre, et tu peux ajouter la vidéo qui manque.</p></div>
+        <div><strong>Gestes de {p.firstName} : {(() => { const n = DEPART_SHOTS.filter((s) => videos.some((v) => v.mark === "DEPART" && v.shot === s)).length; return `${n} ${n > 1 ? "départs filmés" : "départ filmé"} sur ${DEPART_SHOTS.length}`; })()}</strong><p className="hint m-0">Touche un coup : tu vois son départ (septembre) et chaque fin de trimestre, et tu peux ajouter la vidéo qui manque.</p></div>
         <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Coups">
           {DEPART_SHOTS.map((s) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === s), on = shot === s; return (
             <button key={s} type="button" role="tab" aria-selected={on} onClick={() => setShot(on ? null : s)}
-              className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-bold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
-              {s}{has ? " 📍" : ""}
+              className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-semibold " + (on ? "border-ink bg-ink text-white" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
+              {s}{has ? "" : ""}
             </button>
           ); })}
         </div>
@@ -493,10 +493,10 @@ function PlayerVideosTab({ p }: { p: Player }) {
               <div key={g.key} className="grid content-start gap-2 rounded-xl border border-line bg-sand/40 p-3">
                 <strong>{g.emoji} {g.key === "DEPART" ? "Départ" : g.label} <span className="font-normal text-muted">· {g.when}</span></strong>
                 {v ? <>
-                  <Link to={`/coach/videos/${v.id}`} className="font-bold text-ink underline">{v.title} · {fmtDate(v.recordedAt)} → ouvrir dans le studio</Link>
+                  <Link to={`/coach/videos/${v.id}`} className="font-semibold text-ink underline">{v.title} · {fmtDate(v.recordedAt)} → ouvrir dans le studio</Link>
                   {v.draft
-                    ? <div className="grid gap-1"><VideoBadge v={v} forCoach /><button type="button" className="btn-clay btn-sm self-start" onClick={async () => { await post(`/videos/${v.id}/send-to-player`); setVersion((x) => x + 1); }}>📤 Envoyer à {p.firstName}</button></div>
-                    : <span className="badge self-start !border-ok !text-ok">✅ Visible par {p.firstName}{g.key !== "DEPART" ? " à l'ouverture du trimestre" : ""}</span>}
+                    ? <div className="grid gap-1"><VideoBadge v={v} forCoach /><button type="button" className="btn-clay btn-sm self-start" onClick={async () => { await post(`/videos/${v.id}/send-to-player`); setVersion((x) => x + 1); }}>Envoyer à {p.firstName}</button></div>
+                    : <span className="badge self-start !border-ok !text-ok">Visible par {p.firstName}{g.key !== "DEPART" ? " à l'ouverture du trimestre" : ""}</span>}
                 </>
                   : imageOk ? <VideoUpload playerId={p.id} toPlayer={p.firstName} shot={shot} mark={g.key} label={`＋ Ajouter la vidéo ${g.key === "DEPART" ? "de départ" : g.label}`} onDone={(id) => { setVersion((x) => x + 1); if (id) nav(`/coach/videos/${id}`); }} />
                   : <p className="hint m-0">Accord « droit à l'image » manquant.</p>}
@@ -528,21 +528,21 @@ export default function PlayerDetail() {
   const setTab = (k: Tab) => { setSearch(k === "profil" ? {} : { onglet: k }); };
   const load = useCallback(() => { get<Player>(`/players/${id}`).then(setP).catch(() => setMissing(true)); }, [id]);
   useEffect(load, [load]);
-  const tabs: [Tab, string][] = ([["profil", "👤 Profil"], ["depart", "📍 Évaluation de début d'année"], ["objectifs", "🎯 Définir les objectifs de travail"], ["evaluations", "📊 Évaluations trimestrielles"], ["etoiles", "⭐ Donner des étoiles"], ["videos", "🎬 Vidéos"], ["matchs", "🏟️ Matchs"], ["bulletins", "📄 Bulletins"], ["accords", "👨‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
+  const tabs: [Tab, string][] = ([["profil", "Profil"], ["depart", "Évaluation de début d'année"], ["objectifs", "Définir les objectifs de travail"], ["evaluations", "Évaluations trimestrielles"], ["etoiles", "Donner des étoiles"], ["videos", "Vidéos"], ["matchs", "Matchs"], ["bulletins", "Bulletins"], ["accords", "‍👩‍👧 Accords et famille"]] as [Tab, string][]).filter(([k]) => isCoach || k !== "accords"); // les accords et comptes des familles sont réservés au coach
   const inSidebar = useRegisterSubNav((p ? tabs : []).map(([k, l]) => ({ key: k, label: l, active: tab === k, onSelect: () => setTab(k) })));
   if (missing || (viewAs && !viewAs.playerIds.includes(id))) return <Page><Empty>Ce joueur est introuvable.</Empty><BackLink fallback="/coach/centre" className="btn-clay no-underline">Retour</BackLink></Page>;
   if (!p) return <p className="p-8 text-center text-muted">Chargement…</p>;
   return (
     <>
       <PageHead eyebrow="Dossier du joueur" title={fullName(p)} icon={<Avatar name={fullName(p)} size={64} />}>
-        <div className="flex flex-wrap items-center gap-3"><BackLink fallback="/coach/centre" className="font-bold text-ink underline">← Retour</BackLink><Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link></div>
+        <div className="flex flex-wrap items-center gap-3"><BackLink fallback="/coach/centre" className="font-semibold text-ink underline">← Retour</BackLink><Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">Voir comme le jeune</Link></div>
       </PageHead>
       <Page>
         <SideLayout nav={
         <div className={"tabbar side" + (inSidebar ? " md:hidden" : "")}>
           <div role="tablist" aria-label="Sections du dossier">
             {tabs.map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-bold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}><TabLabel text={label} /></button>
+              <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { setTab(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"min-h-12 whitespace-nowrap border-b-4 px-4 font-semibold transition-colors " + (tab === k ? "border-clay text-clay" : "border-transparent text-muted hover:text-ink")}><TabLabel text={label} /></button>
             ))}
           </div>
         </div>

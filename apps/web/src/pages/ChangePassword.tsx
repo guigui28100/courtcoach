@@ -28,7 +28,7 @@ export default function ChangePassword() {
 
   return (
     <AuthShell eyebrow={forced ? "Première connexion" : "Mon compte"} title={forced ? "Choisis ton mot de passe" : "Changer mon mot de passe"} subtitle={forced ? "Le mot de passe que le club t'a donné est provisoire. Choisis-en un que toi seul connais : personne, pas même le coach, ne pourra le lire." : "Choisis un nouveau mot de passe."}>
-        {!forced && <BackLink fallback={me ? homeFor(me.role) : "/"} className="font-bold text-ink underline">← Retour</BackLink>}
+        {!forced && <BackLink fallback={me ? homeFor(me.role) : "/"} className="font-semibold text-ink underline">← Retour</BackLink>}
         <form onSubmit={submit} className="card grid gap-4 !p-6 shadow-[0_10px_30px_rgba(16,32,58,0.08)]" noValidate>
           {!forced && <Field label="Mot de passe actuel" id="current"><PasswordInput id="current" name="current" autoComplete="current-password" /></Field>}
           <Field label="Nouveau mot de passe" id="next" hint="10 caractères minimum. Une phrase facile à retenir est idéale."><PasswordInput id="next" name="next" minLength={10} autoComplete="new-password" /></Field>
@@ -36,7 +36,7 @@ export default function ChangePassword() {
           {forced && (
             <label className="flex items-start gap-3 text-sm">
               <input type="checkbox" name="policy" required className="mt-1 h-5 w-5 accent-clay" />
-              <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-bold text-clay underline">politique de confidentialité</Link>.</span>
+              <span>J'ai lu la <Link to="/confidentialite" target="_blank" className="font-semibold text-clay underline">politique de confidentialité</Link>.</span>
             </label>
           )}
           <Err msg={error} />
