@@ -65,6 +65,12 @@ describe("Affiches enregistrées en ligne : coach, président, bureau seulement"
     await A.coach.get(`/api/poster-drafts/${id}`).expect(404);
   });
 
+  it("accepte l'affiche de l'opération textile (coach) et la liste avec son type", async () => {
+    const id = (await A.coach.post("/api/poster-drafts").set(ORIGIN).send({ kind: "textile", name: "Opération textile", data: JSON.stringify({ d: { items: [] } }) }).expect(201)).body.id;
+    expect(((await A.coach.get("/api/poster-drafts").expect(200)).body as { id: string; kind: string }[]).find((x) => x.id === id)?.kind).toBe("textile");
+    await A.coach.delete(`/api/poster-drafts/${id}`).set(ORIGIN).expect(204);
+  });
+
   it("refuse une fausse photo, une photo trop lourde, un texte illisible et trop d'affiches", async () => {
     const id = (await A.coach.post("/api/poster-drafts").set(ORIGIN).send({ kind: "resultats", name: "Essai", data: "{}" }).expect(201)).body.id;
     await A.coach.post(`/api/poster-drafts/${id}/photos`).set(ORIGIN).set("Content-Type", "application/octet-stream").send(Buffer.from("<script>alert(1)</script>")).expect(400);

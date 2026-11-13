@@ -30,6 +30,12 @@ export function sanitizeTournoi(raw: unknown): Record<string, unknown> {
     courts: int(r.courts, 1, 12, 2),
     dur: int(r.dur, 1, 300, 38),
     avail: Math.min(12, Math.max(0.5, Number(r.avail) || 3)),
+    plan: Array.isArray(r.plan) && r.plan.length > 1
+      ? r.plan.slice(0, 5).map((q: unknown) => {
+          const o = q && typeof q === "object" ? (q as Record<string, unknown>) : {};
+          return { c: int(o.c, 1, 12, 2), h: Math.min(12, Math.max(0.5, Math.round((Number(o.h) || 1) * 2) / 2)) };
+        })
+      : null,
     start: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(r.start)) ? String(r.start) : "14:00",
     fmt: FORMATS.includes(String(r.fmt)) ? r.fmt : "poules",
     mode: MODES.includes(String(r.mode)) ? r.mode : "jeux",

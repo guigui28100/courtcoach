@@ -7,7 +7,11 @@ export const AXES: { key: Axis; label: string; color: string }[] = [
   { key: "PHYSIQUE", label: "Physique", color: "#3f7a56" },
   { key: "MENTAL", label: "Mental", color: "#6f5588" },
 ];
+export interface GestureConfig { custom: { key: string; label: string }[]; notes: Record<string, string> }
+export const customGestures = (p?: { gestureConfig?: GestureConfig | null } | null) => p?.gestureConfig?.custom ?? [];
+export const gestureNotes = (p?: { gestureConfig?: GestureConfig | null } | null) => p?.gestureConfig?.notes ?? {};
 export interface Player {
+  gestureConfig?: GestureConfig | null; // gestes ajoutés par le coach (thèmes de la toile) et précisions des coups habituels
   id: string; firstName: string; lastName: string; birthDate: string | null; sex: string | null; club: string | null; licence: string | null;
   heightCm: number | null; ranking: string | null; targetRanking: string | null; hand: string | null; backhand: string | null;
   committeeTrainer?: boolean; // suivi par un entraîneur de comité (oui / non seulement)
@@ -78,6 +82,8 @@ export const MISSION_TOPICS: Record<string, string[]> = {
   PHYSIQUE: ["Endurance", "Vitesse", "Explosivité"],
   MENTAL: ["Concentration", "Gestion des émotions", "Routines", "Confiance", "Combativité"],
 };
+// Points à noter d'un domaine pour CE joueur : les points habituels, plus (en technique) les gestes ajoutés par le coach
+export const itemsOf = (axis: string, p?: { gestureConfig?: GestureConfig | null } | null): [string, string][] => [...(START_ITEMS[axis] ?? []), ...(axis === "technique" ? customGestures(p).map((c) => [c.key, c.label] as [string, string]) : [])];
 export const itemKey = (axis: string, k: string) => `d_${axis}_${k}`;
 export const RATING_LABELS = ["", "À travailler", "En progrès", "Acquis", "Solide", "Point fort"];
 export interface Evaluation { authorId?: string | null; authorName?: string | null; authorRole?: string | null; id: string; playerId: string; season: string; trimester: number; ratings: Record<string, number>; comments: Record<string, string>; strengths: string; improve: string; next: string; appreciation: string; updatedAt: string; }

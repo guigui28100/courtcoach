@@ -522,6 +522,9 @@ export class VideosService {
     const old = new Date(now.getTime() - 365 * 24 * 3600 * 1000).toISOString();
     const parties = (await this.prisma.clubSetting.findMany({ where: { key: { startsWith: "tournoi:" } } })).filter((r) => { const u = (r.value as { updatedAt?: string } | null)?.updatedAt; return !u || u < old; });
     if (parties.length) await this.prisma.clubSetting.deleteMany({ where: { key: { in: parties.map((r) => r.key) } } });
-    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count, affiches: h.count, parties: parties.length };
+    // progressions de séances des profs : 12 mois sans modification
+    const progs = (await this.prisma.clubSetting.findMany({ where: { key: { startsWith: "prog:" } } })).filter((r) => { const u = (r.value as { updatedAt?: string } | null)?.updatedAt; return !u || u < old; });
+    if (progs.length) await this.prisma.clubSetting.deleteMany({ where: { key: { in: progs.map((r) => r.key) } } });
+    return { expired: a.count, incomplete: b.count, journal: c.count, tournois: d.count, sessions: e.count, invitations: f.count, cours: g.count, affiches: h.count, parties: parties.length, progressions: progs.length };
   }
 }

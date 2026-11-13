@@ -175,6 +175,9 @@ body{padding-block:0 90px}
 .wsub{font-size:20px;margin-top:6px}
 .wh{margin:0;color:var(--muted);font-size:14px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+.planrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0;padding:10px;border:2px solid var(--line,#d9d2c4);border-radius:12px;background:#fff}
+.planrow select{font:inherit;font-size:16px;padding:10px;border-radius:10px;border:2px solid #cfc7b6;background:#fff}
+.planrow small{flex:1 1 100%;opacity:.8}
 .tile{font:inherit;border:2px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:14px 8px;min-height:64px;cursor:pointer;display:grid;gap:2px;place-content:center;text-align:center}
 .tile b{font-size:19px}.tile small{font-size:12px;color:var(--muted)}
 .tile.on{border-color:var(--ink);background:var(--ink);color:var(--on-ink)}.tile.on small{color:#d9cfb9}
@@ -382,7 +385,7 @@ body{padding-block:0 90px}
   var $=function(id){return document.getElementById(id)};
   function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.textContent=h;return e;}
   var BUF=3; // minutes pour changer de côté, s'installer et appeler les joueurs
-  var S={dbl:false,n:11,courts:2,dur:38,avail:3,start:"14:00",fmt:"poules",names:[],mode:"jeux",opt:{jeux:"6",points:"9",temps:"20"},durManual:null,ver:0,nsig:"",csig:"",scores:{},pair:"hasard",perm:[],rounds:null,classif:"non"};
+  var S={dbl:false,n:11,courts:2,dur:38,avail:3,start:"14:00",fmt:"poules",names:[],mode:"jeux",opt:{jeux:"6",points:"9",temps:"20"},durManual:null,ver:0,nsig:"",csig:"",scores:{},pair:"hasard",perm:[],rounds:null,classif:"non",plan:null};
   var T=null;
   var FORMATS=[["poules","Poules"],["tmc","TMC"],["ko","Élimination directe"],["ladder","Montante-descendante"]];
   var OPTS={
@@ -499,9 +502,9 @@ body{padding-block:0 90px}
     return {matches:matches.concat(finals),info:{type:"poules",groups:groups,G:G,finals:finals.length,final:final,ranks:ranks}};
   }
   function autoRounds(){return Math.max(3,Math.min(8,Math.floor(S.avail*60/S.dur)));}
-  function ladderOK(){var n=nEnt(),k=Math.min(S.courts,Math.floor(n/2));return n>=4&&(n-2*k)<=4;}
+  function ladderOK(){var n=nEnt(),k=Math.min(lc(),Math.floor(n/2));return n>=4&&(n-2*k)<=4;}
   function buildLadder(n){
-    UID=0;var k=Math.min(S.courts,Math.floor(n/2)),R=Math.max(S.rounds||autoRounds(),n-2*k+1),matches=[],prev=[];
+    UID=0;var k=Math.min(lc(),Math.floor(n/2)),R=Math.max(S.rounds||autoRounds(),n-2*k+1),matches=[],prev=[];
     for(var r=0;r<R;r++){var ids=[];for(var c=0;c<k;c++){var m={id:"m"+(++UID),a:{t:"p",r:r,p:2*c},b:{t:"p",r:r,p:2*c+1},base:"Tour "+(r+1),rn:"Terrain "+(c+1),phase:"Tour "+(r+1)+" · terrain "+(c+1),deps:prev.slice(),players:[],order:r*10+c,round:r+1,lad:true,r:r,c:c};matches.push(m);ids.push(m.id);}prev=ids;}
     return {matches:matches,info:{type:"ladder",k:k,R:R,bench:n-2*k}};
   }
@@ -509,6 +512,7 @@ body{padding-block:0 90px}
 
   /* ---------- planning ---------- */
   function schedule(matches,C){
+    var cap=typeof C==="function"?C:function(){return C;};
     var slotOf={},remaining=matches.slice(),last={},played={},t=0,slots=[],guard=0;
     while(remaining.length&&guard++<20000){
       var ready=remaining.filter(function(m){return m.deps.every(function(d){return slotOf[d]!==undefined&&slotOf[d]<t;});});
@@ -519,7 +523,7 @@ body{padding-block:0 90px}
         return (a.order-b.order)||(matches.indexOf(a)-matches.indexOf(b));});
       var busy={},pick=[];
       ready.forEach(function(m){
-        if(pick.length>=C)return;
+        if(pick.length>=cap(t))return;
         if(m.players.some(function(p){return busy[p];}))return;
         m.players.forEach(function(p){busy[p]=1;});pick.push(m);});
       pick.forEach(function(m){slotOf[m.id]=t;m.players.forEach(function(p){last[p]=t;played[p]=(played[p]||0)+1;});});
@@ -546,13 +550,26 @@ body{padding-block:0 90px}
   }
   function nEnt(){return S.dbl?Math.floor(S.n/2):S.n;}
   function calc(f){
-    var n=nEnt(),B=build(f,n),res=schedule(B.matches,S.courts),M=metrics(f,B,res,S.dur);
+    var n=nEnt(),B=build(f,n),res=schedule(B.matches,capFn()),M=metrics(f,B,res,S.dur);
     return {n:n,B:B,res:res,M:M,total:res.slots.length*S.dur,count:B.matches.length};
   }
   function hhmm(min){var h=Math.floor(min/60)%24,m=min%60;return (h<10?"0":"")+h+" h "+(m<10?"0":"")+m;}
   function startMin(){var p=S.start.split(":");return (+p[0])*60+(+p[1]||0);}
   function hm(mins){mins=Math.round(mins);return mins>=60?Math.floor(mins/60)+" h "+("0"+(mins%60)).slice(-2):mins+" min";}
-  function altTotal(f){var save=S.courts;S.courts=Math.min(4,save+1);var t=calc(f).total;S.courts=save;return t;}
+  function altTotal(f){var save=S.courts,sp=S.plan;S.courts=Math.min(4,save+1);if(sp)S.plan=sp.map(function(q){return {c:Math.min(4,q.c+1),h:q.h};});var t=calc(f).total;S.courts=save;S.plan=sp;return t;}
+  /* ---------- terrains qui changent pendant le tournoi (ex. 3 terrains pendant 2 h, puis 2) ---------- */
+  function planOn(){return !!(S.plan&&S.plan.length>1);}
+  function lc(){if(!planOn())return S.courts;var m=9;S.plan.forEach(function(q){m=Math.min(m,q.c);});return m;}
+  function syncPlan(){if(!S.plan)return;var mx=1,sum=0;S.plan.forEach(function(q){mx=Math.max(mx,q.c);sum+=q.h;});S.courts=mx;S.avail=Math.min(12,sum);}
+  function capFn(){
+    if(!planOn())return function(){return S.courts;};
+    var ph=[],t=0;S.plan.forEach(function(q){ph.push({a:t,b:t+q.h*60,c:q.c});t+=q.h*60;});
+    var last=S.plan[S.plan.length-1].c;
+    return function(slot){var a=slot*S.dur,b=a+S.dur,c=99;ph.forEach(function(q){if(a<q.b&&b>q.a)c=Math.min(c,q.c);});return c===99?last:c;};
+  }
+  function courtsAt(slot){return capFn()(slot);}
+  function courtsTxt(){if(!planOn())return S.courts+" terrain"+(S.courts>1?"s":"");return S.plan.map(function(q){return q.c;}).join(" puis ")+" terrains";}
+  function planText(){var t=startMin();return S.plan.map(function(q){var a=t;t+=q.h*60;return q.c+" terrain"+(q.c>1?"s":"")+" de "+hhmm(a)+" à "+hhmm(t);}).join(", ");}
 
   /* ---------- scores et résultats ---------- */
   function sc(id){var s=S.scores[id];if(!s)return null;var a=s.a,b=s.b;if(a===""||b===""||a===undefined||b===undefined)return null;return {a:+a,b:+b};}
@@ -791,7 +808,7 @@ body{padding-block:0 90px}
     var n=nEnt();
     if(document.activeElement!==$("n-out"))$("n-out").value=S.n;$("c-out").textContent=S.courts;
     $("b-simple").setAttribute("aria-pressed",String(!S.dbl));$("b-double").setAttribute("aria-pressed",String(S.dbl));
-    $("info").textContent=S.dbl?(n+" équipes ("+S.n+" joueurs) · "+S.courts+" terrain"+(S.courts>1?"s":"")+" · "+(S.courts*4)+" joueurs sur les courts en même temps"):(S.n+" joueurs · "+S.courts+" terrain"+(S.courts>1?"s":"")+" · "+(S.courts*2)+" joueurs sur les courts en même temps");
+    $("info").textContent=S.dbl?(n+" équipes ("+S.n+" joueurs) · "+courtsTxt()+" · "+(S.courts*4)+" joueurs sur les courts en même temps"):(S.n+" joueurs · "+courtsTxt()+" · "+(S.courts*2)+" joueurs sur les courts en même temps");
     var w=$("warn");
     if(S.dbl&&S.n%2){w.hidden=false;w.textContent="Nombre de joueurs impair : un joueur n'a pas de partenaire. Ajoute un joueur ou prévois un remplaçant (le dernier de la liste est laissé de côté).";}
     else if(n<3){w.hidden=false;w.textContent="Il faut au moins 3 "+(S.dbl?"équipes":"joueurs")+" pour faire un tournoi.";}
@@ -816,8 +833,8 @@ body{padding-block:0 90px}
     var rec=null;["poules","tmc","ko"].forEach(function(f){if(!rec&&R[f].total<=S.avail*60)rec=f;});
     if(!rec){rec="ko";["poules","tmc","ko"].forEach(function(f){if(R[f].total<R[rec].total)rec=f;});}
     var recName=FORMATS.filter(function(f){return f[0]===rec;})[0][1],rr=R[rec];
-    var ladderTip=n>=4&&n<=2*S.courts?" Astuce : avec "+S.courts+" terrain"+(S.courts>1?"s":"")+" pour "+n+(S.dbl?" équipes":" joueurs")+", la montante-descendante fait jouer tout le monde sans aucune attente.":"";
-    $("advice").textContent="Notre conseil avec "+S.courts+" terrain"+(S.courts>1?"s":"")+" : "+recName+" ("+rr.count+" matchs, fini vers "+hhmm(startMin()+rr.total)+")"+(rr.total<=S.avail*60?". C'est le format le plus complet qui tient dans ton temps.":". Aucun format classique ne tient dans ton temps : celui-ci est le plus court. Ajoute un terrain ou raccourcis les matchs.")+ladderTip;
+    var ladderTip=n>=4&&n<=2*S.courts?" Astuce : avec "+courtsTxt()+" pour "+n+(S.dbl?" équipes":" joueurs")+", la montante-descendante fait jouer tout le monde sans aucune attente.":"";
+    $("advice").textContent="Notre conseil avec "+courtsTxt()+" : "+recName+" ("+rr.count+" matchs, fini vers "+hhmm(startMin()+rr.total)+")"+(rr.total<=S.avail*60?". C'est le format le plus complet qui tient dans ton temps.":". Aucun format classique ne tient dans ton temps : celui-ci est le plus court. Ajoute un terrain ou raccourcis les matchs.")+ladderTip;
     var DESC={poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Un tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors. Les moins bons jouent peu.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
     var box=$("fmts");box.innerHTML="";
     list.forEach(function(f){
@@ -854,7 +871,7 @@ body{padding-block:0 90px}
     var rd=$("ready");rd.innerHTML="";
     var fname=FORMATS.filter(function(f){return f[0]===S.fmt;})[0][1],okfit=cur.total<=S.avail*60;
     rd.appendChild(el("small",null,okfit?"✅ Ton tournoi est prêt":"⚠️ Ton tournoi est prêt, mais un peu long"));
-    rd.appendChild(el("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+S.courts+" terrain"+(S.courts>1?"s":"")+" · "+fname));
+    rd.appendChild(el("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+courtsTxt()+" · "+fname));
     rd.appendChild(el("small",null,cur.count+" matchs, "+S.dur+" min par tour, de "+hhmm(startMin())+" à "+hhmm(startMin()+cur.total)+"."+(okfit?"":" Tu peux changer de format ou ajouter un terrain ci-dessus.")));
     var gob=el("button","btn","Passer à l'étape ② : lancer les matchs →");gob.type="button";gob.onclick=function(){$("p2").scrollIntoView({behavior:"smooth",block:"start"});};rd.appendChild(gob);
     var st=$("struct");st.innerHTML="";
@@ -874,7 +891,7 @@ body{padding-block:0 90px}
       "Choisis le nombre de joueurs et de terrains ci-dessus, écris les noms, fais le tirage au sort. Ensuite, tu n'as plus rien à régler.",
       "Annonce aux joueurs comment on joue : "+ruleText(),
       I.type==="poules"?"Montre les "+I.G+" poule"+(I.G>1?"s":"")+" et le tableau des tours : chaque joueur doit voir à quel tour il joue.":I.type==="ladder"?"Explique le principe : « Tu gagnes, tu montes d'un terrain. Tu perds, tu descends. Le terrain 1 est le plus fort. »":"Montre le tableau et la liste des matchs : chaque joueur doit voir quand son match est lancé.",
-      "Prépare "+S.courts+" terrain"+(S.courts>1?"s":"")+" (numéros 1"+(S.courts>1?" à "+S.courts:"")+"), des balles par terrain, un stylo, un chronomètre ou ton téléphone"+(S.mode==="temps"?" (indispensable : le jeu est au temps)":"")+"."
+      "Prépare "+courtsTxt()+" (numéros 1"+(S.courts>1?" à "+S.courts:"")+"), des balles par terrain, un stylo, un chronomètre ou ton téléphone"+(S.mode==="temps"?" (indispensable : le jeu est au temps)":"")+"."
     ]);
     sec("Pendant le tournoi",[
       "À "+hhmm(startMin())+", lance le tour 1 : "+fl+". Le bandeau noir « Prochain tour à lancer » te dit toujours quoi annoncer.",
@@ -998,7 +1015,7 @@ body{padding-block:0 90px}
   /* ----- la meilleure formule pour tenir dans le temps ----- */
   var advCache={k:"",v:null};
   function advise(){
-    var key=[S.dbl,S.n,S.courts,S.avail,S.start,S.mode].join("|");
+    var key=[S.dbl,S.n,S.courts,S.avail,S.start,S.mode,JSON.stringify(S.plan)].join("|");
     if(advCache.k===key)return advCache.v;
     var kO=S.opt[S.mode],kD=S.durManual,kDur=S.dur,kF=S.fmt,kC=S.classif,n=nEnt(),best=null,shortest=null;
     var fm=["poules","tmc","ko"];if(ladderOK())fm.push("ladder");
@@ -1082,10 +1099,33 @@ body{padding-block:0 90px}
       card.appendChild(tiles(q,S.n,function(v){setN(v);upd();}));
       if(S.dbl)card.appendChild(H("p","wh","= "+Math.floor(S.n/2)+" équipes de 2."));
     }else if(k==="when"){
-      card.appendChild(H("h2","wsub","Combien de terrains sont disponibles ?"));
-      card.appendChild(tiles([1,2,3,4].map(function(x){return {v:x,l:x+(x>1?" terrains":" terrain")};}),S.courts,function(v){S.courts=+v;upd();}));
-      card.appendChild(H("h2","wsub","De combien de temps disposes-tu ?"));
-      card.appendChild(tiles([["1","1 h"],["1.5","1 h 30"],["2","2 h"],["3","3 h"],["4","4 h"],["5","5 h"],["6","6 h"]].map(function(x){return {v:x[0],l:x[1]};}),String(S.avail),function(v){S.avail=+v;upd();}));
+      if(!S.plan){
+        card.appendChild(H("h2","wsub","Combien de terrains sont disponibles ?"));
+        card.appendChild(tiles([1,2,3,4].map(function(x){return {v:x,l:x+(x>1?" terrains":" terrain")};}),S.courts,function(v){S.courts=+v;upd();}));
+        card.appendChild(H("h2","wsub","De combien de temps disposes-tu ?"));
+        card.appendChild(tiles([["1","1 h"],["1.5","1 h 30"],["2","2 h"],["3","3 h"],["4","4 h"],["5","5 h"],["6","6 h"]].map(function(x){return {v:x[0],l:x[1]};}),String(S.avail),function(v){S.avail=+v;upd();}));
+        card.appendChild(B("➕ Le nombre de terrains change pendant le tournoi","chipx",function(){S.plan=[{c:S.courts,h:Math.max(0.5,Math.min(S.avail,S.avail>=2?Math.floor(S.avail/2):S.avail/2))},{c:Math.max(1,S.courts-1),h:Math.max(0.5,S.avail-Math.max(0.5,Math.min(S.avail,S.avail>=2?Math.floor(S.avail/2):S.avail/2)))}];syncPlan();upd();}));
+      }else{
+        card.appendChild(H("h2","wsub","Les terrains disponibles, heure par heure"));
+        var tcur=startMin();
+        S.plan.forEach(function(q,qi){
+          var row=H("div","planrow"),t0=tcur;tcur+=q.h*60;
+          var sc=document.createElement("select");sc.setAttribute("aria-label","Nombre de terrains, plage "+(qi+1));
+          [1,2,3,4].forEach(function(x){var o=document.createElement("option");o.value=x;o.textContent=x+(x>1?" terrains":" terrain");if(x===q.c)o.selected=true;sc.appendChild(o);});
+          sc.onchange=function(){q.c=+sc.value;syncPlan();upd();};
+          var sh=document.createElement("select");sh.setAttribute("aria-label","Durée de la plage "+(qi+1));
+          [0.5,1,1.5,2,2.5,3,4,5,6].forEach(function(x){var o=document.createElement("option");o.value=x;o.textContent=hm(x*60).replace(" 00","");if(x===q.h)o.selected=true;sh.appendChild(o);});
+          if(![0.5,1,1.5,2,2.5,3,4,5,6].some(function(x){return x===q.h;})){var oo=document.createElement("option");oo.value=q.h;oo.textContent=hm(q.h*60);oo.selected=true;sh.appendChild(oo);}
+          sh.onchange=function(){q.h=+sh.value;syncPlan();upd();};
+          row.appendChild(sc);row.appendChild(H("span",null,"pendant"));row.appendChild(sh);
+          row.appendChild(H("small",null,"de "+hhmm(t0)+" à "+hhmm(tcur)));
+          row.appendChild(B("✕","chipx",function(){S.plan.splice(qi,1);if(S.plan.length<2){var one=S.plan[0];S.plan=null;if(one){S.courts=one.c;S.avail=Math.min(12,one.h);}}else syncPlan();upd();}));
+          card.appendChild(row);
+        });
+        if(S.plan.length<5)card.appendChild(B("＋ Ajouter une plage","chipx",function(){var l=S.plan[S.plan.length-1];S.plan.push({c:Math.max(1,l.c-1),h:1});syncPlan();upd();}));
+        card.appendChild(H("p","wh","Total : "+hm(S.avail*60)+" · "+planText()+". Les matchs sont placés pour ne jamais dépasser le nombre de terrains de chaque période."));
+        card.appendChild(B("Revenir à un nombre fixe de terrains","chipx",function(){S.courts=S.plan[0].c;S.avail=Math.min(6,Math.max(1,Math.round(S.avail)));S.plan=null;upd();}));
+      }
       card.appendChild(H("h2","wsub","À quelle heure on commence ?"));
       var ti=document.createElement("input");ti.type="time";ti.className="bigtime";ti.value=S.start;ti.onchange=function(){S.start=ti.value||"14:00";upd();};card.appendChild(ti);
     }else if(k==="names"){
@@ -1100,7 +1140,7 @@ body{padding-block:0 90px}
     }else if(k==="format"){
       var list=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();}),R={};list.forEach(function(f){R[f[0]]=calc(f[0]);});
       card.appendChild(adviceCard());
-      card.appendChild(H("p","wh","Règle actuelle : "+optLabel()+" (≈ "+playMin()+" min par match). Touche le format voulu : le temps tient compte de tes "+S.courts+" terrain"+(S.courts>1?"s":"")+"."));
+      card.appendChild(H("p","wh","Règle actuelle : "+optLabel()+" (≈ "+playMin()+" min par match). Touche le format voulu : le temps tient compte de tes "+courtsTxt()+"."));
       var g=H("div","fcards"),a0=advise();
       list.forEach(function(f){var r=R[f[0]],fit=r.total<=S.avail*60;
         var c=B("","fcard"+(S.fmt===f[0]?" on":""),function(){S.fmt=f[0];upd();});
@@ -1118,7 +1158,7 @@ body{padding-block:0 90px}
     }else{
       var cur=calc(S.fmt),ok=cur.total<=S.avail*60;
       var rc2=H("div","recap");
-      rc2.appendChild(H("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+S.courts+" terrain"+(S.courts>1?"s":"")));
+      rc2.appendChild(H("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+courtsTxt()));
       rc2.appendChild(H("span",null,fname(S.fmt)+(S.classif==="oui"?" + matchs de classement":"")+" · "+optLabel()));
       rc2.appendChild(H("span",null,cur.count+" matchs · "+S.dur+" min par tour · de "+hhmm(startMin())+" à "+hhmm(startMin()+cur.total)));
       rc2.appendChild(H("span",null,"Règle : "+ruleText()));
@@ -1175,6 +1215,7 @@ body{padding-block:0 90px}
     nv.appendChild(H("div","tti","Tour "+(idx+1)+" sur "+slots.length+" · "+hhmm(startMin()+idx*S.dur)));
     nv.appendChild(B("▶","sb",function(){V.slot=Math.min(slots.length-1,idx+1);skin(true);}));
     body.appendChild(nv);
+    if(planOn()){var c0=courtsAt(idx),c1=courtsAt(idx+1),np=H("p","wh","🎾 Ce tour : "+c0+" terrain"+(c0>1?"s":"")+" disponible"+(c0>1?"s":"")+(idx+1<slots.length&&c1!==c0?" · dès le tour suivant ("+hhmm(startMin()+(idx+1)*S.dur)+") : "+c1+" terrain"+(c1>1?"s":""):"")+".");body.appendChild(np);}
     if(V.slot!=null&&V.slot!==auto&&!all)body.appendChild(B("↩ Revenir au tour en cours (tour "+(auto+1)+")","chipx",function(){V.slot=null;skin(true);}));
     var say=[];sl.forEach(function(m){if(ready(m))say.push("Terrain "+T.court[m.id]+" : "+label(m.a)+" contre "+label(m.b));});
     if(say.length&&!slotFin(sl)){var an=H("div","announce");an.appendChild(H("small",null,"📣 À dire aux joueurs"));an.appendChild(H("p",null,"« Tour "+(idx+1)+". "+say.join(". ")+". "+(S.mode==="temps"?"On joue "+S.opt.temps+" minutes, je lance le chrono. ":"")+"Bonne chance à tous ! »"));body.appendChild(an);}

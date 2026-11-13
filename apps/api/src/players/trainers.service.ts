@@ -78,6 +78,7 @@ export class TrainersService {
       this.prisma.profProfile.deleteMany({ where: { userId: id } }), // présentation, disponibilités et pièces justificatives (carte pro, diplôme, auto-entrepreneur)
       this.prisma.lessonRequest.updateMany({ where: { profId: id }, data: { profId: null } }), // les demandes en cours reviennent au coach
       this.prisma.refreshToken.deleteMany({ where: { userId: id } }),
+      this.prisma.clubSetting.deleteMany({ where: { key: `prog:${id}` } }), // sa progression de séances
       this.prisma.user.update({ where: { id }, data: { email: `supprime-${id}@invalid`, firstName: null, lastName: null, passwordHash: "-", totpEnabled: false, deletedAt: new Date() } }),
     ]);
     forgetUser(id);

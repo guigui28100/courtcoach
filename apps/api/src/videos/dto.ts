@@ -1,5 +1,5 @@
 import { Transform, Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from "class-validator";
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 
 const trim = ({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value);
 // « Volée » reste accepté pour les anciennes vidéos
@@ -8,7 +8,8 @@ export const MAX_VIDEO_BYTES = 80 * 1024 * 1024; // 80 Mo par vidéo
 
 export class CreateVideoDto {
   @Transform(trim) @IsString() @MaxLength(80) title: string;
-  @IsIn(SHOTS) shot: string;
+  // Un des coups de la liste, ou un geste écrit par le coach (40 caractères)
+  @Transform(trim) @IsString() @MinLength(1) @MaxLength(40) shot: string;
   @IsOptional() @IsString() @MaxLength(500) question?: string;
   @Type(() => Number) @IsInt() @Min(1024) @Max(MAX_VIDEO_BYTES) sizeBytes: number;
   @IsOptional() @IsString() @MaxLength(40) playerId?: string;

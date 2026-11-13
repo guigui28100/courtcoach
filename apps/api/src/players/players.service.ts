@@ -8,7 +8,7 @@ import { AuditService } from "../common/audit.service";
 import { AuthUser, isStaff } from "../common/auth.types";
 import { sha256, POLICY_VERSION } from "../auth/auth.service";
 import { offDayReason } from "./school-days";
-import { FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { GesturesDto, FamilyInfoDto, GoalTemplateDto, QualitiesDto, STAR_NEG_REASONS, StarLineDto, CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, SelfEvaluationDto, StarsDayDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 
 const INVITATION_TTL_MS = 7 * 24 * 3600 * 1000;
 const SEASON = /^\d{4}-\d{4}$/;
@@ -88,6 +88,31 @@ export class PlayersService {
     const p = await this.prisma.player.update({ where: { id }, data: { ...rest, ...(birthDate ? { birthDate: new Date(birthDate) } : {}), lastActivityAt: new Date() } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
     await this.audit.log(user.id, "update", "Player", id);
     return p;
+  }
+
+  // Gestes ajoutés par le coach (thèmes de la toile, rangés dans « Technique ») et précisions des coups habituels
+  async setGestures(user: AuthUser, id: string, dto: GesturesDto) {
+    await this.assertStaffFor(user, id);
+    const slug = (label: string) => label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 22).replace(/_+$/, "");
+    const custom: { key: string; label: string }[] = [];
+    for (const g of dto.custom) {
+      const s = slug(g.label);
+      if (!s) throw new BadRequestException("Nom de geste invalide");
+      const key = `x_${s}`;
+      if (custom.some((c) => c.key === key)) throw new BadRequestException("Ce geste est déjà dans la liste");
+      custom.push({ key, label: g.label });
+    }
+    const notes: Record<string, string> = {};
+    const allowed = new Set(["Coup droit", "Revers", "Service", "Volée de coup droit", "Volée de revers", "Smash", ...custom.map((c) => c.label)]);
+    for (const [k, v] of Object.entries(dto.notes ?? {})) {
+      if (!allowed.has(k) || typeof v !== "string") throw new BadRequestException("Coup inconnu");
+      const t = v.trim();
+      if (t.length > 40) throw new BadRequestException("Précision trop longue (40 caractères)");
+      if (t) notes[k] = t;
+    }
+    const p = await this.prisma.player.update({ where: { id }, data: { gestureConfig: { custom, notes }, lastActivityAt: new Date() } }).catch(() => { throw new NotFoundException("Fiche introuvable"); });
+    await this.audit.log(user.id, "update", "Player", id);
+    return p.gestureConfig;
   }
 
   // Bibliothèque d'objectifs modèles

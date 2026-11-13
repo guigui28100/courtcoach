@@ -2,7 +2,7 @@ import { del, get, post, put, api, apiBlob } from "../api";
 
 // Affiches enregistrées EN LIGNE (coach, président, bureau) : le texte part en JSON, chaque photo est envoyée à part (une demande par photo).
 export interface OnlineInfo { id: string; kind: string; name: string; authorName: string | null; updatedAt: string; photos: number }
-export type PosterKind = "resultats" | "bilan";
+export type PosterKind = "resultats" | "bilan" | "textile";
 
 // Comment trouver (et remplacer) les photos dans les données d'une affiche
 export interface PhotoAccess<T> { photos(s: T): string[]; remap(s: T, f: (p: string) => string): T; prune?(s: T): T } // prune : retire les photos vides (perdues)

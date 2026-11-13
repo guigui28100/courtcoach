@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { AuthUser } from "../common/auth.types";
 import { Role } from "@prisma/client";
 import { CurrentUser, Roles } from "../common/decorators";
-import { CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, TournamentReportDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, GoalTemplateDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
+import { GesturesDto, CheckpointDto, ConsentDto, OnlineConsentDto, CreatePlayerDto, EvaluationDto, GoalDto, InvitationDto, DeclaredMatchDto, MatchCommentDto, MatchDto, TournamentReportDto, SelfEvaluationDto, StarsDayDto, StarLineDto, QualitiesDto, FamilyInfoDto, GoalTemplateDto, SignatureDto, UpdateGoalDto, UpdatePlayerDto } from "./dto";
 import { PlayersService } from "./players.service";
 import { TournamentReportsService } from "./reports.service";
 
@@ -18,6 +18,7 @@ export class PlayersController {
   @Get("players/:id") get(@CurrentUser() u: AuthUser, @Param("id") id: string) { return this.svc.get(u, id); }
   @Roles(Role.GUARDIAN) @Put("players/:id/renseignements") familyInfo(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: FamilyInfoDto) { return this.svc.updateFamilyInfo(u, id, dto); }
   // Signature du coach, en bas des bulletins : écriture réservée au coach ; lecture par ceux qui ont accès à la fiche
+  @Roles(Role.COACH, Role.TRAINER) @Put("players/:id/gestures") setGestures(@CurrentUser() u: AuthUser, @Param("id") id: string, @Body() dto: GesturesDto) { return this.svc.setGestures(u, id, dto); }
   @Roles(Role.COACH) @Put("signature") setSignature(@CurrentUser() u: AuthUser, @Body() dto: SignatureDto) { return this.svc.setSignature(u, dto.image); }
   @Roles(Role.COACH) @Delete("signature") @HttpCode(204) clearSignature(@CurrentUser() u: AuthUser) { return this.svc.clearSignature(u); }
   @Roles(Role.COACH) @Get("signature") mySignature(@CurrentUser() u: AuthUser) { return this.svc.mySignature(u); }

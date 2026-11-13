@@ -13,7 +13,7 @@ export function useVideos(version = 0) {
 }
 
 // Envoi d'une vidéo, morceau par morceau (2 Mo), avec barre de progression.
-export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label }: { playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string; shot?: string; mark?: string; label?: string }) {
+export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label, subject }: { subject?: string; playerId?: string; onDone: (videoId?: string) => void; who?: string; toPlayer?: string; shot?: string; mark?: string; label?: string }) {
   const [err, setErr] = useState("");
   const [pct, setPct] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -30,7 +30,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
     if (blob.size < 1024) return setErr("Ce fichier est vide.");
     setPct(0);
     try {
-      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? String(f.get("shot")) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
+      const c = await post<{ id: string; chunkSize: number; chunkCount: number }>("/videos", { title: toPlayer ? (String(f.get("subject") || f.get("shot")).trim() || String(f.get("shot"))) : String(f.get("title")), shot: String(f.get("shot")), question: String(f.get("question") || "") || undefined, sizeBytes: blob.size, playerId });
       for (let i = 0; i < c.chunkCount; i++) {
         const part = blob.slice(i * c.chunkSize, (i + 1) * c.chunkSize);
         for (let attempt = 1; ; attempt++) {
@@ -58,6 +58,7 @@ export function VideoUpload({ playerId, onDone, who, toPlayer, shot, mark, label
           )}
           <div className={"grid gap-4 " + (toPlayer ? "" : "sm:grid-cols-2")}>
             {!toPlayer && <Field label="Titre" id="v-title"><input id="v-title" name="title" required maxLength={80} className="input" placeholder="Mon service de ce matin" /></Field>}
+            {shot && toPlayer && <Field label="Texte de la carte (tu peux le changer ou le compléter)" id="v-subject"><input id="v-subject" name="subject" maxLength={80} defaultValue={subject ?? shot} className="input" placeholder="Ex. Service kické, revers à une main…" /></Field>}
             {shot ? <input type="hidden" name="shot" value={shot} /> : <Field label={toPlayer ? "Sujet de la vidéo" : "Coup à analyser"} id="v-shot"><select id="v-shot" name="shot" className="input">{SHOTS.map((s) => <option key={s}>{s}</option>)}</select></Field>}
           </div>
           {!toPlayer && <Field label="Une question pour le coach ? (facultatif)" id="v-q"><textarea id="v-q" name="question" maxLength={500} className="input" /></Field>}
@@ -232,10 +233,11 @@ export function gestureVideo(v: VideoRow, all: VideoRow[]) {
 
 // Chez le joueur et sa famille, tout en haut de « Mes vidéos » : un onglet par coup (départ de septembre puis chaque fin de trimestre).
 // Rien n'est ouvert ni chargé tant que le joueur ne touche pas un coup ; chaque geste s'ouvre avec son analyse et sa discussion.
-export function GestureBeforeAfter({ videos, openId, onChanged, preview = false }: { videos: VideoRow[]; openId?: string | null; onChanged: () => void; preview?: boolean }) {
+export function GestureBeforeAfter({ videos, openId, onChanged, preview = false, config }: { config?: { custom: { key: string; label: string }[]; notes: Record<string, string> } | null; videos: VideoRow[]; openId?: string | null; onChanged: () => void; preview?: boolean }) {
   const [sel, setSel] = useState<string | null>(() => { const o = openId ? videos.find((v) => v.id === openId) : undefined; return o && gestureVideo(o, videos) ? o.shot : null; });
   // Les 6 gestes sont toujours prévus, même sans vidéo ; un autre coup marqué « départ » s'ajoute à la suite
-  const slots = [...DEPART_SHOTS, ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)];
+  const notes = config?.notes ?? {};
+  const slots = [...DEPART_SHOTS, ...(config?.custom ?? []).map((c) => c.label), ...videos.filter((v) => v.mark === "DEPART" && !DEPART_SHOTS.includes(v.shot)).map((v) => v.shot)].filter((s, i, a) => a.indexOf(s) === i);
   const dep = sel ? videos.find((v) => v.mark === "DEPART" && v.shot === sel) : undefined;
   const cell = (g: (typeof GESTURE_MARKS)[number]) => {
     const v = videos.find((x) => x.mark === g.key && x.shot === sel);
@@ -258,7 +260,7 @@ export function GestureBeforeAfter({ videos, openId, onChanged, preview = false 
         {slots.map((shot) => { const has = videos.some((v) => v.mark === "DEPART" && v.shot === shot), on = sel === shot, fresh = videos.some((v) => v.shot === shot && GESTURE_MARKS.some((g) => g.key === v.mark) && !v.seenAt && (v.fromCoach || v.analysis?.sentAt)); return (
           <button key={shot} type="button" role="tab" aria-selected={on} onClick={() => setSel(on ? null : shot)}
             className={"min-h-11 shrink-0 whitespace-nowrap rounded-full border-2 px-3 text-sm font-semibold " + (on ? "border-ink bg-ink text-white" : fresh ? "border-ok bg-[#eef8f1] text-ink" : has ? "border-line bg-white text-ink hover:bg-sand" : "border-dashed border-line bg-white/70 text-muted hover:bg-sand")}>
-            {shot}{has ? "" : ""}{fresh ? "" : ""}
+            {shot}{notes[shot] ? ` · ${notes[shot]}` : ""}
           </button>
         ); })}
       </div>
