@@ -56,8 +56,8 @@ export function Brand({ light = false }: { light?: boolean }) {
     <Link to="/" className={"flex items-center gap-2.5 no-underline sm:gap-3 " + (light ? "text-white" : "text-ink")} aria-label="CourtCoach, accueil">
       <ClubLogo className={"size-9 sm:size-11 " + (light ? "text-white" : "text-ink")} />
       <span className="grid leading-none">
-        <span className={"font-serif text-[1.2rem] font-semibold uppercase tracking-[0.14em] sm:text-[1.55rem] sm:tracking-[0.2em] " + (light ? "text-[#c9ad77]" : "text-ink")}>CourtCoach</span>
-        <span className={"mt-1 font-ui text-[0.52rem] font-semibold uppercase tracking-[0.26em] sm:text-[0.6rem] sm:tracking-[0.34em] " + (light ? "text-white/70" : "text-clay")}>Tennis Club Houdan</span>
+        <span className={"font-serif text-[1.2rem] font-semibold  sm:text-[1.55rem] sm:tracking-[0.2em] " + (light ? "text-[#c9ad77]" : "text-ink")}>CourtCoach</span>
+        <span className={"mt-1 font-ui text-[0.52rem] font-semibold  sm:text-[0.6rem] sm:tracking-[0.34em] " + (light ? "text-white/70" : "text-clay")}>Tennis Club Houdan</span>
       </span>
     </Link>
   );
@@ -88,7 +88,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const galaxy = ((me?.role === "YOUTH" || me?.role === "GUARDIAN") && pathname === "/suivi") || ((me?.role === "COACH" || me?.role === "TRAINER") && /^\/coach\/centre\/[^/]+\/apercu$/.test(pathname)) || pathname.includes("/bulletin/"); // univers « galaxie » de l'espace jeune
   const link = ({ isActive }: { isActive: boolean }) =>
-    "inline-flex items-center gap-1.5 whitespace-nowrap px-0.5 py-2.5 border-b-2 no-underline transition-colors " + (galaxy ? "font-bold " + (isActive ? "text-white border-[#c9ad77]" : "text-white/80 border-transparent hover:text-white") : "font-ui text-[0.74rem] font-semibold uppercase tracking-[0.14em] " + (isActive ? "text-ink border-champagne-deep" : "text-muted border-transparent hover:text-ink hover:border-champagne"));
+    "inline-flex items-center gap-1.5 whitespace-nowrap px-0.5 py-2.5 border-b-2 no-underline transition-colors " + (galaxy ? "font-semibold " + (isActive ? "text-white border-[#c9ad77]" : "text-white/80 border-transparent hover:text-white") : "font-ui text-[0.74rem] font-semibold  " + (isActive ? "text-ink border-champagne-deep" : "text-muted border-transparent hover:text-ink hover:border-champagne"));
 
   // Barre de navigation à gauche (ordinateur) pour le coach, les entraîneurs, le président et le bureau, sauf sur le planning du club (calendrier pleine largeur)
   const side = !!me && ["COACH", "TRAINER", "PRESIDENT", "BUREAU"].includes(me.role) && !galaxy && pathname !== "/coach/club";
@@ -104,14 +104,14 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <NetLoader />
-      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-champagne-soft border-b border-champagne px-4 py-2 text-center font-bold text-ink print:hidden">👀 Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
+      {viewAs && <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-champagne-soft border-b border-champagne px-4 py-2 text-center font-semibold text-ink print:hidden">Aperçu : tu vois l'espace {viewAs.role ? viewAs.name : `de ${viewAs.name}`}, en lecture seule (rien n'est enregistré).<button className="btn-ink btn-sm" onClick={() => { const to = viewAs.role ? "/coach/securite" : "/coach/centre?onglet=entraineurs"; stopViewAs(); window.setTimeout(() => nav(to), 50); }}>Quitter l'aperçu</button></div>}
       <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-3 focus:text-white">Aller au contenu</a>
       <div className={side ? "flex flex-1 flex-col md:flex-row" : "contents"}>
       {side && me && (
         <aside aria-label="Menu principal" className="print:hidden sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto bg-ink px-3 py-5 text-chalk md:flex">
           <Link to="/" className="mb-4 flex items-center gap-2.5 border-b border-champagne/40 px-2 pb-5 no-underline" aria-label="CourtCoach, accueil">
             <ClubLogo className="size-10 shrink-0 text-white" />
-            <span className="grid leading-none"><span className="font-serif text-lg font-semibold uppercase tracking-[0.12em] text-champagne">CourtCoach</span><span className="mt-1 font-ui text-[0.5rem] font-semibold uppercase tracking-[0.22em] text-white/70">Tennis Club Houdan</span></span>
+            <span className="grid leading-none"><span className="font-serif text-lg font-semibold  text-champagne">CourtCoach</span><span className="mt-1 font-ui text-[0.5rem] font-semibold  text-white/70">Tennis Club Houdan</span></span>
           </Link>
           {items.map((i) => (
             <div key={i.to} className="grid gap-1">
@@ -159,11 +159,11 @@ export function Layout({ children }: { children: ReactNode }) {
       {me && (
         <nav aria-label="Menu principal" className={"print:hidden fixed inset-x-0 bottom-0 z-40 grid border-t pb-[env(safe-area-inset-bottom)] md:hidden " + (galaxy ? "gal-bar border-white/30" : "border-line bg-white/97")} style={{ gridTemplateColumns: `repeat(${items.length + 1}, 1fr)` }}>
           {items.map((i) => (
-            <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-bold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#c9ad77]" : "text-white/80") : (isActive ? "bg-champagne-soft text-ink" : "text-muted"))}>
+            <NavLink key={i.to} to={i.to} end className={({ isActive }) => "flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-center text-xs font-semibold no-underline transition-colors " + (galaxy ? (isActive ? "bg-white/10 text-[#c9ad77]" : "text-white/80") : (isActive ? "bg-champagne-soft text-ink" : "text-muted"))}>
               <Icon name={i.icon} />{i.short ?? i.label}
             </NavLink>
           ))}
-          <button className={"flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs font-bold " + (galaxy ? "text-white/80" : "text-muted")} onClick={async () => { await logout(); nav("/"); }}><Icon name="out" />Quitter</button>
+          <button className={"flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs font-semibold " + (galaxy ? "text-white/80" : "text-muted")} onClick={async () => { await logout(); nav("/"); }}><Icon name="out" />Quitter</button>
         </nav>
       )}
 
@@ -172,7 +172,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <footer className="print:hidden border-t-2 border-champagne bg-ink px-4 py-8 lg:px-10 2xl:px-14 text-sm text-chalk/85">
         <div className="mx-auto flex max-w-[2400px] flex-wrap items-center gap-x-8 gap-y-3">
-          <p className="m-0 whitespace-nowrap font-serif text-xl font-semibold uppercase tracking-[0.18em] text-champagne">CourtCoach</p>
+          <p className="m-0 whitespace-nowrap font-serif text-xl font-semibold  text-champagne">CourtCoach</p>
           <p className="m-0 whitespace-nowrap"><strong className="font-semibold text-chalk">Tennis Club Houdan</strong></p>
           <p className="m-0">
             Association à but non lucratif · <Link to="/confidentialite" className="underline decoration-champagne underline-offset-4">Confidentialité</Link>

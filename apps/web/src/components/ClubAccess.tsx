@@ -6,7 +6,7 @@ import { Err } from "./ui";
 import { MailLinks } from "./MailParent";
 
 type Access = { users: { id: string; email: string; firstName: string | null; role: "PRESIDENT" | "BUREAU"; createdAt: string }[]; invitations: { id: string; email: string; role: "PRESIDENT" | "BUREAU"; expiresAt: string }[] };
-const LABEL = { PRESIDENT: "👔 Président", BUREAU: "📋 Membre du bureau" } as const;
+const LABEL = { PRESIDENT: "Président", BUREAU: "Membre du bureau" } as const;
 
 // Message d'invitation préparé (le coach l'envoie lui-même : rien n'est envoyé par le site ; le mot de passe n'y figure jamais)
 function inviteLines(url: string, role: "PRESIDENT" | "BUREAU", days: number) {
@@ -42,11 +42,11 @@ export function ClubAccess() {
 
   return (
     <section className="card grid gap-3" aria-labelledby="s-club">
-      <h2 id="s-club" className="m-0">🔑 Accès du club</h2>
+      <h2 id="s-club" className="m-0">Accès du club</h2>
       <p className="hint m-0">Le <strong>président</strong> gère le planning du club et voit les cours particuliers (professeurs et demandes de cours). Les <strong>membres du bureau</strong> voient seulement le planning du club : ils ne peuvent rien créer ni modifier. Aucun des deux n'a accès aux jeunes du Centre de compétition ni aux vidéos.</p>
       <div className="flex flex-wrap gap-2">
-        <button className="btn-clay" onClick={() => { startViewAs({ name: "du président", playerIds: [], role: "PRESIDENT" }); nav("/president"); }}>👀 Voir comme le président</button>
-        <button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { startViewAs({ name: "d'un membre du bureau", playerIds: [], role: "BUREAU" }); nav("/coach/club"); }}>👀 Voir comme un membre du bureau</button>
+        <button className="btn-clay" onClick={() => { startViewAs({ name: "du président", playerIds: [], role: "PRESIDENT" }); nav("/president"); }}>Voir comme le président</button>
+        <button className="btn-outline bg-white hover:bg-ink hover:text-white" onClick={() => { startViewAs({ name: "d'un membre du bureau", playerIds: [], role: "BUREAU" }); nav("/coach/club"); }}>Voir comme un membre du bureau</button>
       </div>
       {data && (data.users.length > 0 || data.invitations.length > 0) && (
         <ul className="m-0 grid list-none gap-2 p-0">
@@ -64,13 +64,13 @@ export function ClubAccess() {
       {data && data.users.length === 0 && data.invitations.length === 0 && <p className="m-0 text-muted">Aucun accès pour l'instant.</p>}
       <form onSubmit={invite} className="grid gap-2 sm:grid-cols-[1fr_auto_auto]" noValidate>
         <input name="email" type="email" required maxLength={254} className="input" placeholder="E-mail de la personne" aria-label="E-mail de la personne à inviter" />
-        <select name="role" className="input" aria-label="Rôle"><option value="PRESIDENT">👔 Président (gère)</option><option value="BUREAU">📋 Bureau (voit seulement)</option></select>
+        <select name="role" className="input" aria-label="Rôle"><option value="PRESIDENT">Président (gère)</option><option value="BUREAU">Bureau (voit seulement)</option></select>
         <button className="btn-clay">Inviter</button>
       </form>
       <Err msg={err} />
       {link && (
         <div className="rounded-xl bg-sand p-3">
-          <p className="m-0 font-bold">Lien à envoyer (valable {link.days} jours, affiché une seule fois) :</p>
+          <p className="m-0 font-semibold">Lien à envoyer (valable {link.days} jours, affiché une seule fois) :</p>
           <input readOnly className="input mt-2" value={link.url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien d'invitation" />
           <div className="mt-3"><MailLinks to={link.email} subject="Votre accès CourtCoach" lines={inviteLines(link.url, link.role, link.days)} /></div>
           <p className="hint m-0 mt-1">Le mot de passe n'est jamais dans le mail : la personne le choisit elle-même en cliquant sur le lien. Rien n'est envoyé par le site : c'est toi qui envoies le message.</p>

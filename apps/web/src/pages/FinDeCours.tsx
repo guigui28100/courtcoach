@@ -57,7 +57,7 @@ export default function FinDeCours() {
       }
       const ids = new Set(list.map((p) => p.id));
       setRows((all) => Object.fromEntries(Object.entries(all).map(([id, r]) => [id, ids.has(id) ? { ...r, lines: activeLines(r.lines), had: activeLines(r.lines).length > 0, dirty: false } : r])));
-      setMsg({ ok: true, text: list.length === 1 ? `✅ Étoiles de ${list[0].firstName} enregistrées.` : `✅ Modifications enregistrées pour ${list.length} joueur${list.length > 1 ? "s" : ""}.` });
+      setMsg({ ok: true, text: list.length === 1 ? `Étoiles de ${list[0].firstName} enregistrées.` : `Modifications enregistrées pour ${list.length} joueur${list.length > 1 ? "s" : ""}.` });
       return true;
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); return false; } finally { setBusy(false); }
   }
@@ -66,11 +66,11 @@ export default function FinDeCours() {
 
   return (
     <>
-      <PageHead eyebrow="Centre de compétition jeunes" title="⭐ Fin de cours">Touche un joueur : tu vois <strong>ses objectifs</strong>. Un bouton par objectif travaillé : ⬇️ retire une étoile (avec une explication que le joueur verra), 😕 ne change rien, 🙂 donne 1 étoile, 😃 en donne 2. Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
+      <PageHead eyebrow="Centre de compétition jeunes" title="Fin de cours">Touche un joueur : tu vois <strong>ses objectifs</strong>. Un bouton par objectif travaillé : ⬇️ retire une étoile (avec une explication que le joueur verra), 😕 ne change rien, 🙂 donne 1 étoile, 😃 en donne 2. Toujours pour l'effort, l'attitude ou un progrès, jamais pour le seul résultat.</PageHead>
       <Page>
         <div className="flex flex-wrap items-center gap-3">
           <div className="field"><label htmlFor="fc-day">Date du cours</label><input id="fc-day" type="date" className="input !w-auto" value={day} max={todayIso()} onChange={(e) => e.target.value && setDay(e.target.value)} /></div>
-          <BackLink fallback="/coach/centre" className="font-bold text-ink underline">← Retour</BackLink>
+          <BackLink fallback="/coach/centre" className="font-semibold text-ink underline">← Retour</BackLink>
         </div>
         {players === null && <div className="skeleton h-32" role="status" aria-label="Chargement en cours" />}
         {players && !players.length && <Empty>Aucun joueur pour l'instant.</Empty>}
@@ -78,8 +78,8 @@ export default function FinDeCours() {
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Joueurs du cours">
             {players.map((p) => { const r = rows[p.id] ?? EMPTY; const on = (sel ?? players[0].id) === p.id; return (
               <button key={p.id} type="button" role="tab" aria-selected={on} onClick={() => setSel(p.id)}
-                className={"min-h-11 rounded-full border-2 px-4 font-bold " + (on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>
-                {p.firstName}{r.dirty ? " ✏️" : r.had ? " ✔" : ""}
+                className={"min-h-11 rounded-full border-2 px-4 font-semibold " + (on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>
+                {p.firstName}{r.dirty ? "" : r.had ? " ✔" : ""}
               </button>
             ); })}
           </div>
@@ -87,20 +87,20 @@ export default function FinDeCours() {
         {(players ?? []).filter((p) => p.id === (sel ?? players?.[0]?.id)).map((p) => { const r = rows[p.id] ?? EMPTY; const idx = (players ?? []).findIndex((x) => x.id === p.id), next = (players ?? [])[idx + 1]; return (
           <section key={p.id} className="card grid gap-3" aria-label={`Fin de cours de ${p.firstName}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">⚠️ pas encore enregistré</span>}</span>
-              <strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>⭐ +{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>
+              <span className="flex items-center gap-3"><Avatar name={fullName(p)} size={44} /><strong className="text-lg">{p.firstName} {p.lastName}</strong>{r.had && !r.dirty && <span className="badge">déjà enregistré</span>}{r.dirty && <span className="badge !border-[#e0b100] !bg-[#fff3b0]">pas encore enregistré</span>}</span>
+              <strong aria-live="polite">{(() => { const gain = r.lines.filter((l) => l.stars > 0).reduce((n, l) => n + l.stars, 0), lost = r.lines.filter((l) => l.stars < 0).reduce((n, l) => n - l.stars, 0); return <>+{gain}{lost > 0 && <span className="text-[#b3261e]"> · 📉 −{lost}</span>} ce cours</>; })()}</strong>
             </div>
-            {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-bold text-ink">⚠️ {offDayReason(day, p.courseDays)} Une confirmation te sera demandée.</p>}
+            {offDayReason(day, p.courseDays) && <p role="status" className="m-0 rounded-xl border-2 border-[#e0b100] bg-[#fff3b0] p-3 font-semibold text-ink">{offDayReason(day, p.courseDays)} Une confirmation te sera demandée.</p>}
             <StarLinesEditor who={p.firstName} lines={r.lines} goals={goals[p.id] ?? []} allStars={allStars[p.id]} day={day} onChange={(lines) => set(p.id, { lines })} />
             <div className="flex flex-wrap gap-2">
-              <button className="btn-clay" disabled={busy || !r.dirty} onClick={async () => { if (await saveRows([p]) && next) setSel(next.id); }}>{next ? `💾 Enregistrer ${p.firstName} et passer à ${next.firstName} →` : `💾 Enregistrer ${p.firstName}`}</button>
+              <button className="btn-clay" disabled={busy || !r.dirty} onClick={async () => { if (await saveRows([p]) && next) setSel(next.id); }}>{next ? `Enregistrer ${p.firstName} et passer à ${next.firstName} →` : `Enregistrer ${p.firstName}`}</button>
             </div>
           </section>
         ); })}
         {players && players.length > 0 && (
           <div className="sticky bottom-[72px] z-20 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur md:bottom-3">
-            <button className="btn-clay" onClick={save} disabled={busy || dirtyPlayers.length === 0}>{busy ? "Enregistrement…" : dirtyPlayers.length ? `Enregistrer les modifications (${dirtyPlayers.length})` : "Tout est enregistré ✓"}</button>
-            {msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
+            <button className="btn-clay" onClick={save} disabled={busy || dirtyPlayers.length === 0}>{busy ? "Enregistrement…" : dirtyPlayers.length ? `Enregistrer les modifications (${dirtyPlayers.length})` : "Tout est enregistré"}</button>
+            {msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
           </div>
         )}
         <Err msg={msg && !msg.ok ? msg.text : ""} />

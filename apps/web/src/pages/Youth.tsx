@@ -51,8 +51,8 @@ function Hero({ p, done, wins, starsTotal }: { p: Player; done: number; wins: nu
   return (
     <section className="gal-pop glass hero-card grid items-center gap-4 sm:grid-cols-[1fr_220px]" aria-labelledby="gal-titre">
       <div className="grid gap-3">
-        <p className="m-0 text-sm font-bold uppercase tracking-[0.2em] text-[#c9ad77]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
-        <h1 id="gal-titre" className="m-0 text-4xl font-black text-white sm:text-5xl">Bonjour {p.firstName} !</h1>
+        <p className="m-0 text-sm font-semibold  text-[#c9ad77]">{isTeen(p) ? "Mon espace joueur" : "Ma galaxie tennis"}</p>
+        <h1 id="gal-titre" className="m-0 text-4xl font-semibold text-white sm:text-5xl">Bonjour {p.firstName} !</h1>
         <p className="m-0 max-w-xl text-lg text-white/85">Bienvenue dans ton espace joueur : ton carnet de progression de tennis.</p>
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mes étoiles">
           {starsTotal > 0 && <li className="gal-chip">⭐ {starsTotal} étoile{starsTotal > 1 ? "s" : ""}</li>}
@@ -83,9 +83,9 @@ function StartBilan({ p, base, goals, stars }: { p: Player; base: string; goals:
       ) : (
         <section className="glass gal-pop grid gap-3" aria-labelledby="gal-depart">
           <h2 id="gal-depart" className="m-0 text-2xl">📍 Mon point de départ</h2>
-          <p className="m-0 font-bold">Bilan de début d'année · saison {season.replace("-", "/")}</p>
+          <p className="m-0 font-semibold">Bilan de début d'année · saison {season.replace("-", "/")}</p>
           <p className="m-0 text-white/85">C'est ton coach qui l'a rempli : c'est là que tu commences la saison. Tes missions viennent de là, et tu peux voir ta progression sur ta toile, juste en dessous.</p>
-          {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-bold text-clay">💬 Le mot de ton coach</footer></blockquote>}
+          {start.appreciation && <blockquote className="m-0 rounded-2xl rounded-bl-none bg-white p-4 text-ink"><p className="m-0 text-lg">« {start.appreciation} »</p><footer className="mt-1 text-sm font-semibold text-clay">💬 Le mot de ton coach</footer></blockquote>}
           <div className="grid gap-3 sm:grid-cols-2">
             {start.strengths && <p className="m-0"><strong className="text-[#c9ad77]">⭐ Tes points forts : </strong>{start.strengths}</p>}
             {start.improve && <p className="m-0"><strong className="text-[#c9ad77]">🎯 Pour progresser : </strong>{start.improve}</p>}
@@ -169,8 +169,8 @@ function Celebration({ goal, name, teen, onClose }: { goal: Goal; name: string; 
         <>
           <span aria-hidden="true" className="cele-ball">🎾</span>
           <div className="cele-card cele-teen" onClick={(e) => e.stopPropagation()}>
-            <p id="cele-t" className="m-0 text-3xl font-black">✔ Mission validée</p>
-            <p className="m-0 text-lg font-bold">{goal.title}</p>
+            <p id="cele-t" className="m-0 text-3xl font-semibold">✔ Mission validée</p>
+            <p className="m-0 text-lg font-semibold">{goal.title}</p>
             <p className="m-0">Bien joué {name} : tu as toutes les étoiles.</p>
             <button ref={btn} type="button" className="gal-btn" onClick={onClose}>Continuer</button>
           </div>
@@ -180,10 +180,10 @@ function Celebration({ goal, name, teen, onClose }: { goal: Goal; name: string; 
           <span aria-hidden="true" className="cele-rocket">🚀</span>
           <div className="cele-card" onClick={(e) => e.stopPropagation()}>
             <div aria-hidden="true" className="cele-burst">{BURST.map((b, i) => <span key={i} style={{ ["--dx" as string]: `${b.dx}px`, ["--dy" as string]: `${b.dy}px`, animationDelay: `${900 + b.d}ms` }}>{b.e}</span>)}</div>
-            <p id="cele-t" className="m-0 text-3xl font-black">🎉 Mission accomplie !</p>
-            <p className="m-0 text-lg font-bold">{goal.title}</p>
+            <p id="cele-t" className="m-0 text-3xl font-semibold">Mission accomplie</p>
+            <p className="m-0 text-lg font-semibold">{goal.title}</p>
             <p className="m-0">Bravo {name}, tu as gagné toutes les étoiles !</p>
-            <button ref={btn} type="button" className="gal-btn" onClick={onClose}>Super !</button>
+            <button ref={btn} type="button" className="gal-btn" onClick={onClose}>Fermer</button>
           </div>
         </>
       )}
@@ -322,7 +322,7 @@ function BulletinsTab({ p, goals, base, selfEvals, pending, preview, onSaved }: 
         </ul>
         <p className="m-0 rounded-xl bg-white/10 p-3"><strong>💡 Pourquoi remplir mon bulletin ?</strong> Pour réfléchir à mon jeu : ce dont je suis fier, ce que je veux améliorer, ce que j'aimerais faire. Ton coach le lit et ça l'aide à mieux t'aider. <strong>Il n'y a pas de mauvaise réponse</strong>, et ça ne change pas ta note. Compte 10 minutes ; tu peux enregistrer un brouillon et finir plus tard.</p>
         {!preview && (pending !== null
-          ? <p role="status" className="m-0 rounded-xl bg-[#c9ad77] p-3 text-lg font-bold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend en bas : clique sur « ✍️ Mon bulletin à remplir » pour l'ouvrir !</p>
+          ? <p role="status" className="m-0 rounded-xl bg-[#c9ad77] p-3 text-lg font-semibold text-ink">✨ C'est le moment : ton bulletin du trimestre {pending} t'attend en bas : clique sur « ✍️ Mon bulletin à remplir » pour l'ouvrir !</p>
           : <p className="m-0 text-white/85">🗓️ Ton bulletin s'ouvre le <strong>1er décembre</strong> (trimestre 1), le <strong>1er mars</strong> (trimestre 2) et le <strong>1er juin</strong> (trimestre 3).</p>)}
       </section>
       <section className="glass gal-pop grid gap-4" aria-labelledby="gal-bulletins-coach">
@@ -351,8 +351,8 @@ function Videos({ p, mine, fresh, refresh, openId }: { p: Player; mine: VideoRow
     <section className="gal-pop grid gap-3 rounded-3xl bg-white p-5 text-ink shadow-[0_10px_40px_rgba(201, 173, 119, 0.193)]" aria-labelledby="gal-videos">
       <h2 id="gal-videos" className="m-0 text-2xl">🎬 Mes vidéos</h2>
       <VideosIntro who="jeune" />
-      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
-      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-bold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
+      {fresh.some((v) => v.fromCoach && !v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">🎓 Ton coach t'a envoyé {fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "des vidéos" : "une vidéo"} : ouvre-{fresh.filter((v) => v.fromCoach && !v.analysis?.sentAt).length > 1 ? "les" : "la"} ci-dessous !</p>}
+      {fresh.some((v) => !!v.analysis?.sentAt) && <p role="status" className="m-0 rounded-xl border-2 border-ok bg-[#eef8f1] p-3 font-semibold">✅ Ton coach a analysé {fresh.filter((v) => !!v.analysis?.sentAt).length > 1 ? `${fresh.filter((v) => !!v.analysis?.sentAt).length} vidéos` : "une vidéo"} : ouvre-la ci-dessous !</p>}
       <GestureBeforeAfter videos={mine} openId={openId} onChanged={refresh} config={p.gestureConfig} />
       <VideoUpload playerId={p.id} onDone={refresh} />
       <VideoList videos={mine.filter((v) => !gestureVideo(v, mine))} openId={openId} onChanged={refresh} empty={mine.length ? "" : "Pas encore de vidéo ici. Envoie-en une à ton coach, ou attends celles que ton coach t'enverra !"} />
@@ -367,7 +367,7 @@ function Step({ n, icon, title, text, to, go, hot = false, teen = false }: { n: 
   return (
     <li className="list-none">
       <button type="button" onClick={() => go(to)} className={"step-card lift relative grid h-full w-full content-start gap-2 text-left text-white " + (hot ? "hot" : "")}>
-        {hot && <span className="step-new">Nouveau !</span>}
+        {hot && <span className="step-new">Nouveau</span>}
         <span className="flex items-center gap-3"><span aria-hidden="true" className="step-ico"><em>{teen ? `0${n}` : n}</em>{teen ? <TeenIcon e={icon} size={24} /> : icon}</span><strong className="text-lg leading-tight">{title}</strong></span>
         <span className="step-text">{text}</span>
         <span className="step-go">Ouvrir →</span>
@@ -469,7 +469,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
             <nav className="gal-tabs side" aria-label="Mon espace">
               <div role="tablist">
                 {TABS.filter(([k]) => ((k !== "renseignements" && k !== "autorisations") || isParent) && (k !== "tournois" || !!p.committeeTrainer)).map(([k, icon, label]) => (
-                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-bold transition-colors " + (tab === k ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
+                  <button key={k} role="tab" aria-selected={tab === k} onClick={(e) => { go(k); e.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }} className={"relative min-h-11 whitespace-nowrap rounded-full border-2 px-4 font-semibold transition-colors " + (tab === k ? "border-[#c9ad77] bg-[#c9ad77] text-ink" : "border-white/30 bg-white/10 text-white hover:bg-white/20")}>
                     <span className="tab-ico" aria-hidden="true">{isTeen(p) ? <TeenIcon e={icon} /> : icon}</span><span className="tab-txt">{label}</span>
                     {dot(k) && tab !== k && <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#17140f] bg-[#b3925a]" aria-label="Nouveau" />}
                   </button>
@@ -512,7 +512,7 @@ export default function YouthSpace({ previewId }: { previewId?: string }) {
                   {!previewId && (
                     <section className="glass grid gap-3" aria-labelledby="gal-donnees">
                       <h2 id="gal-donnees" className="m-0 text-2xl">🔒 Mon compte et mes données</h2>
-                      <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-bold text-[#c9ad77] underline">Politique de confidentialité</Link></p>
+                      <p className="m-0 text-white/85">{me?.email} · <Link to="/confidentialite" className="font-semibold text-[#c9ad77] underline">Politique de confidentialité</Link></p>
                       <p className="m-0 text-sm text-white/80">Pour demander une copie des données ou la suppression du dossier, écris au club.</p>
                       <div className="flex flex-wrap gap-2">
                         <Link to="/mot-de-passe" className="btn btn-sm border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Changer mon mot de passe</Link>

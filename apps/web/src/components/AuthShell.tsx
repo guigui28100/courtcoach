@@ -25,9 +25,9 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
           </ul>
           {tour && (
             <button type="button" onClick={() => document.getElementById("tour")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" })}
-              className="mt-1 flex items-center justify-between gap-3 rounded-[3px] border border-champagne/70 px-4 py-3 text-left font-ui text-xs font-semibold uppercase tracking-[0.14em] text-champagne hover:bg-champagne hover:text-ink">
+              className="mt-1 flex items-center justify-between gap-3 rounded-[3px] border border-champagne/70 px-4 py-3 text-left font-ui text-xs font-semibold  text-champagne hover:bg-champagne hover:text-ink">
               <span>À quoi sert CourtCoach ? Découvre le site</span>
-              <span aria-hidden="true" className="text-xl leading-none motion-safe:animate-bounce">⌄</span>
+              <span aria-hidden="true" className="text-xl leading-none">⌄</span>
             </button>
           )}
         </div>
@@ -53,9 +53,9 @@ export function AuthShell({ eyebrow, title, subtitle, children, tour }: { eyebro
 const TOUR: { icon: string; title: string; who: string; items: string[] }[] = [
   { icon: "🙋", title: "Adultes", who: "Inscription libre, depuis cette page", items: ["Réserver un cours particulier : tu choisis ton professeur, puis un créneau libre dans son planning", "Le professeur confirme, tu vois le tarif avant de réserver (adhérent ou non)", "Envoyer une vidéo de ton jeu : le coach l'analyse et te répond, avec une discussion liée à l'analyse", "Ton profil, le téléchargement et la suppression de tes données à tout moment"] },
   { icon: "🚀", title: "Jeunes du Centre de compétition", who: "Accès créé par le coach, sur invitation", items: ["Tes missions du trimestre et tes étoiles gagnées après chaque cours", "Ta toile de progrès : ton point de départ et où tu en es", "Tes vidéos analysées, ton geste de départ et son évolution", "Tes matchs, tes bilans de tournoi, tes bulletins et ton auto-évaluation"] },
-  { icon: "👨‍👩‍👧", title: "Parents", who: "Accès par invitation du coach", items: ["Le même espace que l'enfant, pour suivre ses progrès", "Les autorisations (suivi, droit à l'image) données en ligne et retirables à tout moment", "La fiche de renseignements à compléter", "Jamais l'accès aux données d'un autre enfant"] },
-  { icon: "👩‍🏫", title: "Professeurs et entraîneurs", who: "Comptes créés par le coach", items: ["Un agenda des cours particuliers : confirmer, libérer un créneau, arrêter une série", "Régler ses disponibilités et sa présentation", "Pour les entraîneurs du Centre : objectifs, étoiles, bilans et analyses vidéo de LEURS jeunes seulement"] },
-  { icon: "🏟️", title: "Gestion du club", who: "Coach, président et bureau", items: ["Le planning de la saison : tournois, matchs par équipes, stages, animations, bulle, fêtes", "Les affiches des événements et du mois, à imprimer ou à partager en image", "Le dossier de saison en PDF et l'agenda pour le téléphone", "Le président gère les cours particuliers ; le bureau consulte le planning en lecture seule"] },
+  { icon: "‍👩‍👧", title: "Parents", who: "Accès par invitation du coach", items: ["Le même espace que l'enfant, pour suivre ses progrès", "Les autorisations (suivi, droit à l'image) données en ligne et retirables à tout moment", "La fiche de renseignements à compléter", "Jamais l'accès aux données d'un autre enfant"] },
+  { icon: "‍🏫", title: "Professeurs et entraîneurs", who: "Comptes créés par le coach", items: ["Un agenda des cours particuliers : confirmer, libérer un créneau, arrêter une série", "Régler ses disponibilités et sa présentation", "Pour les entraîneurs du Centre : objectifs, étoiles, bilans et analyses vidéo de LEURS jeunes seulement"] },
+  { icon: "️", title: "Gestion du club", who: "Coach, président et bureau", items: ["Le planning de la saison : tournois, matchs par équipes, stages, animations, bulle, fêtes", "Les affiches des événements et du mois, à imprimer ou à partager en image", "Le dossier de saison en PDF et l'agenda pour le téléphone", "Le président gère les cours particuliers ; le bureau consulte le planning en lecture seule"] },
 ];
 
 // Présentation de tout ce que fait le site, sous le formulaire de connexion (rien de personnel, aucun appel extérieur).
@@ -93,7 +93,7 @@ export function PasswordInput({ id, name, autoComplete, minLength, required = tr
   return (
     <div className="relative">
       <input id={id} name={name} type={show ? "text" : "password"} required={required} minLength={minLength} maxLength={128} autoComplete={autoComplete} className="input !pr-24" />
-      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-[3px] px-3 font-ui text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-clay hover:bg-champagne-soft">{show ? "Masquer" : "Afficher"}</button>
+      <button type="button" onClick={() => setShow(!show)} aria-pressed={show} className="absolute right-1.5 top-1/2 min-h-9 -translate-y-1/2 rounded-[3px] px-3 font-ui text-[0.7rem] font-semibold  text-clay hover:bg-champagne-soft">{show ? "Masquer" : "Afficher"}</button>
     </div>
   );
 }

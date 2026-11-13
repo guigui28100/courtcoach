@@ -40,26 +40,26 @@ export function LessonRow({ l, onDone, asProf = false }: { l: Lesson; onDone: ()
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <strong>{adultName(l.member, "Adhérent")} — {TYPES[l.type] ?? "Cours"} · {l.objective}</strong>
-          {serie && <p className="m-0 text-sm font-bold text-clay">🔁 Série « toute l'année » : {everyDay(l.finalSlot!)} · {l.seriesCount} cours {l.status === "BOOKED" ? "à confirmer" : l.status === "REFUSED" ? "annulés" : "à venir"}</p>}
-          <p className="m-0 flex flex-wrap gap-x-4 text-sm font-bold text-ink"><span>🙋 {adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">📞 {l.member.phone}</a>}</p>
-          {!asProf && l.prof && <p className="m-0 text-sm font-bold text-ink">👩‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
-          {!!l.price && <p className="m-0 text-sm font-bold text-ink">💶 {l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
-          {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-bold text-ink">👥 Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
-          <p className="m-0 text-sm text-muted">📅 {(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
+          {serie && <p className="m-0 text-sm font-semibold text-clay">Série « toute l'année » : {everyDay(l.finalSlot!)} · {l.seriesCount} cours {l.status === "BOOKED" ? "à confirmer" : l.status === "REFUSED" ? "annulés" : "à venir"}</p>}
+          <p className="m-0 flex flex-wrap gap-x-4 text-sm font-semibold text-ink"><span>{adultFacts(l.member) || <span className="font-normal text-muted">Âge et niveau non renseignés</span>}</span>{l.member?.phone && <a href={`tel:${l.member.phone.replace(/[^0-9+]/g, "")}`} className="text-clay underline">{l.member.phone}</a>}</p>
+          {!asProf && l.prof && <p className="m-0 text-sm font-semibold text-ink">‍🏫 Choisi par l'adulte : {profName(l.prof)}</p>}
+          {!!l.price && <p className="m-0 text-sm font-semibold text-ink">{l.price} € la séance · {l.memberDeclared ? "adhérent du TC Houdan (déclaré par l'adulte)" : "tarif non-adhérent"}</p>}
+          {l.type === "duo" && l.partnerFirstName && <p className="m-0 text-sm font-semibold text-ink">Partenaire : {l.partnerFirstName} {l.partnerLastName}{l.partnerAge ? ` · ${l.partnerAge} ans` : ""}{l.partnerLevel ? ` · ${l.partnerLevel}` : ""}</p>}
+          <p className="m-0 text-sm text-muted">{(l.days.length ? l.days.join(", ") : "Jours à définir") + " · " + l.moment}</p>
           {l.message && <p className="m-0 text-sm text-muted">« {l.message} »</p>}
         </div>
         {badge && <span className={"badge " + badge[1]}>{badge[0]}</span>}
       </div>
 
-      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-bold text-[#7a5a00]">🔔 Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
-      {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-bold text-[#1d6b43]">{freshConfirm ? "🔔 Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
-      {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">💬 « {l.coachReply} »</p>}
+      {l.status === "BOOKED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#fff8e1] p-3 font-semibold text-[#7a5a00]">Réservé par l'adulte : {fmtSlot(l.finalSlot)}. {serie ? "Toute la série : " : ""}{asProf ? "À toi de confirmer" : "Le professeur doit confirmer"} avant {fmtDeadline(l.createdAt)} : sans réponse, le créneau est libéré.</p>}
+      {l.status === "ACCEPTED" && l.finalSlot && <p className="m-0 rounded-xl bg-[#eef8f1] p-3 font-semibold text-[#1d6b43]">{freshConfirm ? "Nouveau : " : ""}✅ Confirmé{l.confirmedAt ? ` le ${new Date(l.confirmedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""} : {fmtSlot(l.finalSlot)}{l.place ? ` · ${l.place}` : ""}</p>}
+      {l.status !== "PENDING" && l.coachReply && <p className="m-0 text-sm text-muted">« {l.coachReply} »</p>}
 
       {l.status !== "REFUSED" && (!ask ? (
         <div className="flex flex-wrap gap-2">
-          {l.status === "BOOKED" && viewer?.role !== "PRESIDENT" && <button className="btn-clay btn-sm !bg-ok !text-white" onClick={confirmBooking}>{serie ? "✅ Je confirme toute la série" : "✅ Je confirme ce cours"}</button>}
-          <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "❌ Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
-          {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>⛔ Arrêter la série</button>}
+          {l.status === "BOOKED" && viewer?.role !== "PRESIDENT" && <button className="btn-clay btn-sm !bg-ok !text-white" onClick={confirmBooking}>{serie ? "Je confirme toute la série" : "Je confirme ce cours"}</button>}
+          <button className="btn-danger btn-sm" onClick={() => setAsk("REFUSED")}>{l.status === "PENDING" ? "Refuser" : l.status === "BOOKED" ? "Je ne peux pas" : serie ? "Libérer ce créneau (un seul cours)" : "Annuler le cours"}</button>
+          {serie && l.status !== "BOOKED" && l.status !== "PENDING" && <button className="btn-danger btn-sm" onClick={stopSeries}>Arrêter la série</button>}
         </div>
       ) : (
         <div className="grid gap-3 rounded-2xl border-2 border-line bg-chalk p-3">
@@ -82,7 +82,7 @@ function VideoQueue({ videos, label, mode }: { videos: VideoRow[]; label: (v: Vi
       {list.map((v) => (
         <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{label(v)} · {v.shot} · {fmtDate(v.recordedAt)}{v.question ? " · avec une question" : ""}</small></span><span className="btn-clay btn-sm">{v.analysis?.sentAt ? "Ouvrir" : v.analysis ? "Terminer l'analyse" : "Analyser"}</span></Link></li>
       ))}
-      {!list.length && <li><Empty>{mode === "todo" ? "Aucune vidéo à analyser 🎾" : "Aucune vidéo analysée pour l'instant."}</Empty></li>}
+      {!list.length && <li><Empty>{mode === "todo" ? "Aucune vidéo à analyser" : "Aucune vidéo analysée pour l'instant."}</Empty></li>}
     </ul>
   );
 }
@@ -99,19 +99,19 @@ function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player
     <div className="grid gap-6">
       {replies.length > 0 && (
         <section className="grid gap-2" aria-label="Messages à lire">
-          <h2 className="m-0 text-lg">💬 Nouveaux messages ({replies.length})</h2>
+          <h2 className="m-0 text-lg">Nouveaux messages ({replies.length})</h2>
           <ul className="m-0 grid list-none gap-2 p-0">
-            {replies.map((v) => <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 border-2 border-clay no-underline hover:shadow-md"><span><strong>💬 Nouveau message de {v.player?.firstName ?? "un joueur"}</strong><small className="hint block">{v.title}</small></span><span className="btn-clay btn-sm">Répondre</span></Link></li>)}
+            {replies.map((v) => <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 border-2 border-clay no-underline hover:shadow-md"><span><strong>Nouveau message de {v.player?.firstName ?? "un joueur"}</strong><small className="hint block">{v.title}</small></span><span className="btn-clay btn-sm">Répondre</span></Link></li>)}
           </ul>
         </section>
       )}
       <section className="grid gap-2" aria-label="Vidéos à analyser">
-        <h2 className="m-0 text-lg">📥 À analyser</h2>
+        <h2 className="m-0 text-lg">À analyser</h2>
         <VideoQueue videos={videos} label={(v) => v.player?.firstName ?? "Joueur"} mode="todo" />
       </section>
       {drafts.length > 0 && (
         <section className="grid gap-2" aria-label="Brouillons à envoyer">
-          <h2 className="m-0 text-lg">📝 À envoyer ({drafts.length})</h2>
+          <h2 className="m-0 text-lg">À envoyer ({drafts.length})</h2>
           <p className="hint m-0">Déposées par toi : les joueurs ne les voient pas encore.</p>
           <ul className="m-0 grid list-none gap-2 p-0">
             {drafts.map((v) => <li key={v.id}><Link to={`/coach/videos/${v.id}`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{v.title}</strong><small className="hint block">{v.player?.firstName ?? "Joueur"} · {v.shot} · {fmtDate(v.recordedAt)}</small></span><span className="flex items-center gap-2"><MarkBadge v={v} /><span className="btn-clay btn-sm">Ouvrir et envoyer</span></span></Link></li>)}
@@ -120,11 +120,11 @@ function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player
       )}
       <section className="grid gap-3" aria-label="Gestes des joueurs">
         <div>
-          <h2 className="m-0 text-lg">🎬 Gestes des joueurs</h2>
+          <h2 className="m-0 text-lg">Gestes des joueurs</h2>
           <p className="hint m-0">Choisis un rendez-vous : ✅ = déjà filmé (touche pour l'ouvrir), ＋ = à filmer (touche pour l'ajouter). {filmed} sur {players.length * DEPART_SHOTS.length}.</p>
         </div>
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Rendez-vous">
-          {GESTURE_MARKS.map((m) => <button key={m.key} type="button" role="tab" aria-selected={rdv === m.key} onClick={() => setRdv(m.key)} className={"min-h-11 rounded-full border-2 px-4 text-sm font-bold " + (rdv === m.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>{m.emoji} {m.key === "DEPART" ? "Départ (septembre)" : `${m.label} (${m.when})`}</button>)}
+          {GESTURE_MARKS.map((m) => <button key={m.key} type="button" role="tab" aria-selected={rdv === m.key} onClick={() => setRdv(m.key)} className={"min-h-11 rounded-full border-2 px-4 text-sm font-semibold " + (rdv === m.key ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>{m.emoji} {m.key === "DEPART" ? "Départ (septembre)" : `${m.label} (${m.when})`}</button>)}
         </div>
         {players.length === 0 ? <Empty>Aucun joueur pour l'instant.</Empty> : (
           <div className="overflow-x-auto rounded-xl border-2 border-line bg-white">
@@ -134,11 +134,11 @@ function CentreVideos({ videos, players }: { videos: VideoRow[]; players: Player
               <tbody>
                 {players.map((p) => (
                   <tr key={p.id} className="border-t border-line">
-                    <th scope="row" className="p-2 text-left"><Link to={`/coach/centre/${p.id}?onglet=videos`} className="font-bold text-ink underline">{p.firstName}</Link></th>
+                    <th scope="row" className="p-2 text-left"><Link to={`/coach/centre/${p.id}?onglet=videos`} className="font-semibold text-ink underline">{p.firstName}</Link></th>
                     {DEPART_SHOTS.map((sh) => { const v = done(p.id, sh); return (
                       <td key={sh} className="p-1 text-center">
-                        {v ? <Link to={`/coach/videos/${v.id}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-ok bg-[#eef8f1] px-2 py-1 font-bold text-ok no-underline" aria-label={`${p.firstName} : ${sh}, déjà filmé${v.draft ? " (brouillon)" : ""}`}>{v.draft ? "📝" : "✅"}</Link>
-                          : <Link to={`/coach/centre/${p.id}?onglet=videos&coup=${encodeURIComponent(sh)}&rdv=${rdv}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-dashed border-line px-2 py-1 font-bold text-muted no-underline hover:bg-sand" aria-label={`${p.firstName} : ${sh}, à filmer`}>＋</Link>}
+                        {v ? <Link to={`/coach/videos/${v.id}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-ok bg-[#eef8f1] px-2 py-1 font-semibold text-ok no-underline" aria-label={`${p.firstName} : ${sh}, déjà filmé${v.draft ? " (brouillon)" : ""}`}>{v.draft ? "📝" : "✅"}</Link>
+                          : <Link to={`/coach/centre/${p.id}?onglet=videos&coup=${encodeURIComponent(sh)}&rdv=${rdv}`} className="inline-block min-h-9 min-w-9 rounded-lg border border-dashed border-line px-2 py-1 font-semibold text-muted no-underline hover:bg-sand" aria-label={`${p.firstName} : ${sh}, à filmer`}>＋</Link>}
                       </td>
                     ); })}
                   </tr>
@@ -198,13 +198,13 @@ export function CoachHome() {
   type Todo = { space: "Adultes" | "Jeunes" | "Compte"; text: string; to: string; cta: string };
   const todos: Todo[] = [
     ...d.pending.map((l) => ({ space: "Adultes" as const, text: `Ancienne demande de ${adultName(l.member, "un adhérent")} : à clôturer (les demandes libres n'existent plus)`, to: "/coach/adultes", cta: "Voir" })),
-    ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `✅ ${adultName(l.member, "Un adhérent")} cours confirmé : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
-    ...(d.profsWaiting ? [{ space: "Adultes" as const, text: `👩‍🏫 ${d.profsWaiting} professeur${d.profsWaiting > 1 ? "s" : ""} à valider (documents déposés)`, to: "/coach/adultes?onglet=profs", cta: "Vérifier" }] : []),
+    ...d.upcoming.filter((l) => l.confirmedAt && Date.now() - new Date(l.confirmedAt).getTime() < FRESH_MS).map((l) => ({ space: "Adultes" as const, text: `${adultName(l.member, "Un adhérent")} cours confirmé : ${fmtSlot(l.finalSlot!)}`, to: "/coach/adultes", cta: "Voir" })),
+    ...(d.profsWaiting ? [{ space: "Adultes" as const, text: `‍🏫 ${d.profsWaiting} professeur${d.profsWaiting > 1 ? "s" : ""} à valider (documents déposés)`, to: "/coach/adultes?onglet=profs", cta: "Vérifier" }] : []),
     ...adultWait.map((v) => ({ space: "Adultes" as const, text: `${adultName(v.owner, "Un adhérent")} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
     ...youthWait.map((v) => ({ space: "Jeunes" as const, text: `${v.player?.firstName ?? "Un joueur"} a envoyé une vidéo : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Analyser" })),
-    ...[...d.adultVideos, ...d.youthVideos].filter((v) => v.awaitingReply).map((v) => ({ space: (v.kind === "centre" ? "Jeunes" : "Adultes") as "Jeunes" | "Adultes", text: `💬 Nouveau message de ${v.kind === "centre" ? (v.player?.firstName ?? "un joueur") : adultName(v.owner, "un adhérent")} : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Répondre" })),
-    ...(d.youthVideos.some((v) => v.draft) ? [{ space: "Jeunes" as const, text: `📝 ${d.youthVideos.filter((v) => v.draft).length} vidéo${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} déposée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} par toi, pas encore envoyée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""}`, to: "/coach/centre?onglet=videos", cta: "Voir" }] : []),
-    ...(d.reports.length ? [{ space: "Jeunes" as const, text: `🏆 ${d.reports.length} bilan${d.reports.length > 1 ? "s" : ""} de tournoi à valider`, to: "/coach/centre?onglet=bilans", cta: "Valider" }] : []),
+    ...[...d.adultVideos, ...d.youthVideos].filter((v) => v.awaitingReply).map((v) => ({ space: (v.kind === "centre" ? "Jeunes" : "Adultes") as "Jeunes" | "Adultes", text: `Nouveau message de ${v.kind === "centre" ? (v.player?.firstName ?? "un joueur") : adultName(v.owner, "un adhérent")} : ${v.title}`, to: `/coach/videos/${v.id}`, cta: "Répondre" })),
+    ...(d.youthVideos.some((v) => v.draft) ? [{ space: "Jeunes" as const, text: `${d.youthVideos.filter((v) => v.draft).length} vidéo${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} déposée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""} par toi, pas encore envoyée${d.youthVideos.filter((v) => v.draft).length > 1 ? "s" : ""}`, to: "/coach/centre?onglet=videos", cta: "Voir" }] : []),
+    ...(d.reports.length ? [{ space: "Jeunes" as const, text: `${d.reports.length} bilan${d.reports.length > 1 ? "s" : ""} de tournoi à valider`, to: "/coach/centre?onglet=bilans", cta: "Valider" }] : []),
     ...d.selfEvals.map((x) => ({ space: "Jeunes" as const, text: `${x.player.firstName} a envoyé son bulletin du trimestre ${x.ev.trimester}`, to: `/coach/centre/${x.player.id}?onglet=evaluations`, cta: "Lire" })),
     ...(d.inactive.length ? [{ space: "Jeunes" as const, text: `${d.inactive.length} dossier${d.inactive.length > 1 ? "s" : ""} inactif${d.inactive.length > 1 ? "s" : ""} depuis plus de 12 mois`, to: "/coach/centre?onglet=dossiers", cta: "Voir" }] : []),
     ...(holidaysDaysLeft(todayIso()) < HOLIDAYS_WARN_DAYS ? [{ space: "Compte" as const, text: `Les dates de vacances scolaires s'arrêtent le ${fmtDay(holidaysLastDay())} : ajoute la nouvelle année pour que les cours ne soient pas proposés pendant les vacances`, to: "/coach/securite", cta: "Voir" }] : []),
@@ -237,22 +237,22 @@ export function CoachHome() {
     <div className="bg-[#1f1a12] text-white print:bg-white print:text-ink">
       <div className="mx-auto flex max-w-[2400px] gap-0 max-lg:flex-col lg:min-h-[calc(100dvh-8.75rem)]">
         <aside aria-label="Raccourcis" className={(homeInSidebar ? "md:hidden " : "") + "min-w-0 shrink-0 border-[#3a3326] bg-[#17140f] p-3 lg:w-56 lg:border-r lg:p-4 print:hidden"}>
-          <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#a89c82] lg:block">Menu</p>
+          <p className="m-0 mb-2 hidden px-2 text-[11px] font-semibold  text-[#a89c82] lg:block">Menu</p>
           <ul className="m-0 flex list-none gap-2 overflow-x-auto p-0 lg:grid lg:gap-1.5 lg:overflow-visible">
-            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-bold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
+            {menu.map(([ic, label, to], i) => <li key={label} className="max-lg:shrink-0"><Link to={to} aria-current={i === 0 ? "page" : undefined} className={"flex items-center gap-3 rounded px-3 py-2.5 text-sm font-semibold no-underline max-lg:whitespace-nowrap " + (i === 0 ? "bg-champagne text-ink" : "text-[#d6cdbb] hover:bg-[#2b261d] hover:text-white")}><Ico n={ic} />{label}</Link></li>)}
           </ul>
         </aside>
         <div className="min-w-0 flex-1 px-4 py-6 lg:px-8">
           <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
+              <p className="m-0 text-xs font-semibold  text-ball">{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</p>
               <h1 className="m-0 mt-1 text-3xl leading-tight text-white sm:text-4xl">{h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir"} {first}</h1>
               <p className="m-0 mt-1 text-[#d6cdbb]">{line2}</p>
             </div>
             <div className="flex flex-wrap gap-2.5">
-              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded bg-champagne px-4 py-2.5 font-display font-bold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
-              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="film" />Analyser une vidéo</Link>
-              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-extrabold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
+              <Link to="/coach/centre/fin-de-cours" className="inline-flex items-center gap-2 rounded bg-champagne px-4 py-2.5 font-display font-semibold text-ink no-underline shadow-md hover:brightness-95"><Ico n="star" />Fin de cours</Link>
+              <Link to="/coach/centre?onglet=videos" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-semibold text-white no-underline hover:bg-[#3a3326]"><Ico n="film" />Analyser une vidéo</Link>
+              <Link to="/coach/prof" className="inline-flex items-center gap-2 rounded bg-[#2b261d] px-4 py-2.5 font-display font-semibold text-white no-underline hover:bg-[#3a3326]"><Ico n="cal" />Mon agenda</Link>
             </div>
           </header>
           <ClubNotice />
@@ -263,8 +263,8 @@ export function CoachHome() {
             {stat(d.players.length, d.players.length > 1 ? "Jeunes suivis" : "Jeune suivi", "text-[#8fb89a]")}
           </div>
           <div className="mb-4 grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-            <HomeFold id="todo" title="À faire aujourd'hui" count={String(todos.length)} preview={todos.length ? `${todos.slice(0, 2).map((t) => t.text).join(" · ")}${todos.length > 2 ? ` · +${todos.length - 2}` : ""}` : "Tout est à jour 🎾"}>
-              {todos.length === 0 ? <p className="m-0 border-t border-[#3a3326] pt-3 text-center text-[#d6cdbb]">Tout est à jour 🎾</p> : (
+            <HomeFold id="todo" title="À faire aujourd'hui" count={String(todos.length)} preview={todos.length ? `${todos.slice(0, 2).map((t) => t.text).join(" · ")}${todos.length > 2 ? ` · +${todos.length - 2}` : ""}` : "Tout est à jour"}>
+              {todos.length === 0 ? <p className="m-0 border-t border-[#3a3326] pt-3 text-center text-[#d6cdbb]">Tout est à jour</p> : (
                 <ul className="m-0 grid list-none p-0">
                   {todos.slice(0, 6).map((t, i) => (
                     <li key={i} className="flex items-center gap-3 border-t border-[#3a3326] py-2">
@@ -288,17 +288,17 @@ export function CoachHome() {
                   ))}
                 </ul>
               )}
-              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a3326] pt-2 text-sm font-bold text-[#c9ad77] no-underline hover:underline">Voir mon agenda →</Link>
+              <Link to="/coach/prof" className="mt-1 inline-block border-t border-[#3a3326] pt-2 text-sm font-semibold text-[#c9ad77] no-underline hover:underline">Voir mon agenda →</Link>
             </HomeFold>
           </div>
           <section className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2" aria-label="Mes deux espaces">
             <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#2b261d" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{toDo}</b> <span className="font-bold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold ">Espace 1</span><h2 className="m-0 mt-2 text-2xl text-white">Adultes · Coaching</h2><p className="m-0 mt-1 text-white/90">Cours particuliers, vidéos, professeurs</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{toDo}</b> <span className="font-semibold">à traiter</span><small className="block text-white/85">{d.booked.length} cours à confirmer · {adultWait.length} vidéo{adultWait.length > 1 ? "s" : ""} · {d.profsWaiting} prof à valider</small></div><Link to="/coach/adultes" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
             <div className="relative grid min-h-44 content-between gap-3 overflow-hidden rounded border border-[#4a4234] p-5 text-white" style={{ background: "#26211a" }}>
-              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
-              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{d.players.length}</b> <span className="font-bold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
+              <div><span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold ">Espace 2</span><h2 className="m-0 mt-2 text-2xl text-white">Jeunes · Centre de compétition</h2><p className="m-0 mt-1 text-white/90">Dossiers, objectifs, bulletins, étoiles</p></div>
+              <div className="flex items-end justify-between gap-3"><div><b className="font-display text-4xl font-semibold leading-none">{d.players.length}</b> <span className="font-semibold">jeune{d.players.length > 1 ? "s" : ""} suivi{d.players.length > 1 ? "s" : ""}</span><small className="block text-white/85">{youthWait.length} vidéo{youthWait.length > 1 ? "s" : ""} à analyser</small></div><Link to="/coach/centre" className="home-open inline-flex items-center gap-2 no-underline">Ouvrir <Ico n="arrow" cls="size-4" /></Link></div>
             </div>
           </section>
         </div>
@@ -336,17 +336,17 @@ export function AdultsPage() {
   const owner = (v: VideoRow) => [adultName(v.owner), adultFacts(v.owner)].filter(Boolean).join(" · ");
   return (
     <>
-      <CoachHero tone="adultes" eyebrow="Espace adultes" title="👥 Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<><Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un adulte</Link><Link to="/coach/adultes/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un professeur</Link></>} />
+      <CoachHero tone="adultes" eyebrow="Espace adultes" title="Demandes de coaching" subtitle="Les adhérents adultes qui te contactent : cours particuliers et vidéos à analyser. Cet espace est totalement séparé des jeunes du Centre." actions={<><Link to="/coach/adultes/apercu" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Voir comme un adulte</Link><Link to="/coach/adultes/apercu-prof" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Voir comme un professeur</Link></>} />
       <Page>
-        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "📅 Cours particuliers", d.pending.length + d.booked.length], ["videos", "🎬 Vidéos à analyser", waiting.length], ["profs", "👩‍🏫 Professeurs", d.profsWaiting], ["historique", "🗂️ Historique"]]} />
+        <TabsBar side={false} label="Sections de l'espace adultes" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["demandes", "Cours particuliers", d.pending.length + d.booked.length], ["videos", "Vidéos à analyser", waiting.length], ["profs", "‍🏫 Professeurs", d.profsWaiting], ["historique", "Historique"]]} />
         {tab === "demandes" && (
           <div className="grid gap-6">
             <ul className="m-0 grid list-none gap-3 p-0">
               {d.pending.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}
-              {!d.pending.length && <li><Empty>Aucune ancienne demande à clôturer 🎾</Empty></li>}
+              {!d.pending.length && <li><Empty>Aucune ancienne demande à clôturer</Empty></li>}
             </ul>
-            {d.booked.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">🔔 Réservés, le professeur doit confirmer ({d.booked.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.booked.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
-            {d.upcoming.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">✅ Prochains cours confirmés ({d.upcoming.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.upcoming.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
+            {d.booked.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">Réservés, le professeur doit confirmer ({d.booked.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.booked.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
+            {d.upcoming.length > 0 && <section className="grid gap-2"><h2 className="m-0 text-lg">Prochains cours confirmés ({d.upcoming.length})</h2><ul className="m-0 grid list-none gap-2 p-0">{d.upcoming.map((l) => <LessonRow key={l.id} l={l} onDone={d.reload} />)}</ul></section>}
           </div>
         )}
         {tab === "videos" && <VideoQueue videos={d.adultVideos} label={owner} mode="todo" />}
@@ -418,14 +418,14 @@ export function Centre() {
       <CoachHero
         tone="jeunes"
         eyebrow="Espace jeunes · Centre de compétition"
-        title="🏆 Mes jeunes compétiteurs"
+        title="Mes jeunes compétiteurs"
         subtitle={isCoach ? "Profil, objectifs de l'année, accords des parents et accès des familles." : "Les jeunes que le coach te confie : objectifs, missions, bilans, bulletins, étoiles et vidéos."}
-        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-champagne text-ink no-underline hover:bg-champagne-deep">⭐ Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">👀 Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
+        actions={<><Link to="/coach/centre/fin-de-cours" className="btn bg-champagne text-ink no-underline hover:bg-champagne-deep">Fin de cours</Link>{isCoach && <Link to="/coach/centre/apercu-entraineur" className="btn border-2 border-white/70 text-white no-underline hover:bg-white hover:text-ink">Voir comme un entraîneur de comité</Link>}{isCoach && <button className="btn border-2 border-white/70 text-white hover:bg-white hover:text-ink" aria-expanded={open} onClick={() => { setTab("joueurs"); setOpen(!open); }}>+ Ajouter un joueur</button>}</>}
       />
       <Page>
         {!isCoach && <ClubNotice />}
         <p className="alert m-0">{isCoach ? <><strong>Données de mineurs.</strong> Avant de filmer ou de suivre un jeune, enregistre l'accord écrit de son responsable légal dans sa fiche (onglet « Accords »).</> : <><strong>Données de mineurs.</strong> Tu ne vois que les jeunes que le coach t'a confiés. Ne partage rien de ce que tu vois en dehors du club.</>}</p>
-        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "🏆 Mes joueurs", players.length], ["videos", "🎬 Vidéos et gestes", youthWait.length + youthDrafts + youthReplies], ["bulletins", "✍️ Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "🏆 Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "📅 Tournois"], ...(isCoach ? [["dossiers", "🗓️ Dossiers à vérifier", inactive.length], ["entraineurs", "👥 Entraîneurs"]] as [string, string, number?][] : [])]} />}>
+        <SideLayout nav={<TabsBar label="Sections du Centre" active={tab} onChange={(k) => setTab(k as typeof tab)} tabs={[["joueurs", "Mes joueurs", players.length], ["videos", "Vidéos et gestes", youthWait.length + youthDrafts + youthReplies], ["bulletins", "Bulletins reçus", d.selfEvals.length], ...(isCoach ? [["bilans", "Bilans de tournoi", d.reports.length] as [string, string, number?]] : []), ["tournois", "Tournois"], ...(isCoach ? [["dossiers", "Dossiers à vérifier", inactive.length], ["entraineurs", "Entraîneurs"]] as [string, string, number?][] : [])]} />}>
 
         {tab === "joueurs" && (
           <>
@@ -452,22 +452,22 @@ export function Centre() {
                 </span>
               </Link>
               <div className="flex flex-wrap gap-1.5 px-5">
-                {p.ranking ? <span className="badge">🎾 {p.ranking}{p.targetRanking ? ` → ${p.targetRanking}` : ""}</span> : <span className="badge text-muted">Fiche à compléter</span>}
+                {p.ranking ? <span className="badge">{p.ranking}{p.targetRanking ? ` → ${p.targetRanking}` : ""}</span> : <span className="badge text-muted">Fiche à compléter</span>}
                 {p.hand && <span className="badge">{p.hand}</span>}
               </div>
               <div className="flex flex-wrap gap-2 px-5 pb-5">
                 <Link to={`/coach/centre/${p.id}`} className="btn-outline btn-sm no-underline">Ouvrir le dossier</Link>
-                <Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">👀 Voir comme le jeune</Link>
+                <Link to={`/coach/centre/${p.id}/apercu`} className="btn-ink btn-sm no-underline">Voir comme le jeune</Link>
               </div>
             </div>
           ))}
               {!players.length && <div className="sm:col-span-2 lg:col-span-3"><Empty>{isCoach ? "Aucun joueur pour l'instant. Ajoute le premier avec le bouton « + Ajouter un joueur » ci-dessus." : "Le coach ne t'a pas encore confié de jeune."}</Empty></div>}
             </div>
             {isCoach && <details className="card">
-              <summary className="cursor-pointer font-bold text-muted">Pour essayer : créer un joueur fictif</summary>
+              <summary className="cursor-pointer font-semibold text-muted">Pour essayer : créer un joueur fictif</summary>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Créer un joueur d'exemple (début de saison)"}</button>
-                <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "✨ Exemple en fin de trimestre (fictif)"}</button>
+                <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample()}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "Créer un joueur d'exemple (début de saison)"}</button>
+                <button className="btn-outline btn-sm" disabled={busyExample} onClick={async () => { setBusyExample(true); setErr(""); try { nav(`/coach/centre/${await createExample("fin")}/apercu`); } catch (x) { setErr((x as Error).message); setBusyExample(false); } }}>{busyExample ? "Création…" : "Exemple en fin de trimestre (fictif)"}</button>
               </div>
             </details>}
           </>
@@ -480,7 +480,7 @@ export function Centre() {
             {d.selfEvals.map((x) => (
               <li key={x.ev.id}><Link to={`/coach/centre/${x.player.id}?onglet=evaluations`} className="card flex flex-wrap items-center justify-between gap-2 no-underline hover:shadow-md"><span><strong>{x.player.firstName} {x.player.lastName}</strong><small className="hint block">Auto-évaluation du trimestre {x.ev.trimester} · saison {x.ev.season.replace("-", "/")} · envoyée le {fmtDate(x.ev.sentAt ?? x.ev.updatedAt)}</small></span><span className="btn-clay btn-sm">Lire</span></Link></li>
             ))}
-            {!d.selfEvals.length && <li><Empty>Aucun nouveau bulletin d'auto-évaluation à lire ✍️</Empty></li>}
+            {!d.selfEvals.length && <li><Empty>Aucun nouveau bulletin d'auto-évaluation à lire</Empty></li>}
           </ul>
         )}
 
@@ -493,8 +493,8 @@ export function Centre() {
           <section className="card grid gap-2">
             <h2 className="m-0 text-lg">Dossiers inactifs depuis plus de 12 mois</h2>
             <p className="hint m-0">Les données d'un jeune qui a quitté le club ne doivent pas être gardées : télécharge une copie si besoin, puis supprime.</p>
-            {inactive.map((p) => <Link key={p.id} to={`/coach/centre/${p.id}`} className="font-bold text-clay underline">{fullName(p)} — dernière activité le {fmtDate(p.lastActivityAt)}</Link>)}
-            {!inactive.length && <Empty>Aucun dossier à vérifier : tout est récent 👍</Empty>}
+            {inactive.map((p) => <Link key={p.id} to={`/coach/centre/${p.id}`} className="font-semibold text-clay underline">{fullName(p)} — dernière activité le {fmtDate(p.lastActivityAt)}</Link>)}
+            {!inactive.length && <Empty>Aucun dossier à vérifier : tout est récent</Empty>}
           </section>
         )}
         <Err msg={err} />

@@ -50,13 +50,13 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
   const todo = (lessons ?? []).filter((l) => l.status === "BOOKED").length;
   const missing = p ? p.status === "missing" || p.status === "expired" : false;
   const go = (k: string) => { setParams(k === "demandes" ? {} : { onglet: k }); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const st: [string, string] | null = p ? (me?.role === "COACH" && p.status === "waiting" ? ["⏳ Tes 3 documents sont là : valide ta fiche dans « Adultes · Coaching », onglet « 👩‍🏫 Professeurs ». Tu n'es pas encore visible.", "warn"] : STATUS_TEXT[p.status]) : null;
+  const st: [string, string] | null = p ? (me?.role === "COACH" && p.status === "waiting" ? ["Tes 3 documents sont là : valide ta fiche dans « Adultes · Coaching », onglet « 👩‍🏫 Professeurs ». Tu n'es pas encore visible.", "warn"] : STATUS_TEXT[p.status]) : null;
   return (
     <>
       {preview && (
         <div role="note" className="border-b-4 border-[#c08a00] bg-[#fff3cd] px-4 py-3 text-[#5c4300]">
           <div className="mx-auto flex max-w-[2400px] flex-wrap items-center justify-between gap-3">
-            <p className="m-0"><strong>👀 Aperçu : voici ce que voit un entraîneur qui donne des cours particuliers.</strong> Fiche, demandes et documents sont des exemples inventés, rien n'est enregistré. Essaie le bouton « Je souhaite donner des cours » puis « Arrêter ».</p>
+            <p className="m-0"><strong>Aperçu : voici ce que voit un entraîneur qui donne des cours particuliers.</strong> Fiche, demandes et documents sont des exemples inventés, rien n'est enregistré. Essaie le bouton « Je souhaite donner des cours » puis « Arrêter ».</p>
             <BackLink fallback={me?.role === "PRESIDENT" ? "/president" : "/coach/adultes"} className="btn-ink btn-sm no-underline">← Retour</BackLink>
           </div>
         </div>
@@ -66,7 +66,7 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
         <Err msg={err} />
         {resp && !resp.optedIn && (
           <section className="card grid gap-4 border-2 !border-clay" aria-labelledby="po-h">
-            <h2 id="po-h" className="m-0 text-xl">🎾 Tu souhaites donner des cours particuliers ?</h2>
+            <h2 id="po-h" className="m-0 text-xl">Tu souhaites donner des cours particuliers ?</h2>
             <p className="m-0">Les adultes du club peuvent choisir un professeur et lui demander un cours. Si tu es d'accord, voici comment ça marche :</p>
             <ol className="m-0 grid gap-1 pl-5">
               <li>Tu remplis ta <strong>présentation</strong> (nom, classement, meilleur classement…) et tes <strong>disponibilités</strong>.</li>
@@ -75,12 +75,12 @@ export function ProfSpace({ preview = false }: { preview?: boolean }) {
               <li>Les adultes réservent eux-mêmes un créneau libre dans ton planning : le créneau est mis de côté et tu le confirmes (sous 48 h). Tarif : {PRICE_MEMBER} € la séance pour un adhérent du TC Houdan, {PRICE_OTHER} € pour les autres, +{SUNDAY_EXTRA} € le dimanche, réglés directement avec toi.</li>
             </ol>
             <p className="hint m-0">Tu peux arrêter quand tu veux : tout ce que tu as déposé est alors effacé.</p>
-            <div><button className="btn-clay" onClick={optIn}>✋ Je souhaite donner des cours particuliers</button></div>
+            <div><button className="btn-clay" onClick={optIn}>Je souhaite donner des cours particuliers</button></div>
           </section>
         )}
-        {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-bold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
+        {st && <p role="status" className={"m-0 rounded-2xl border-2 p-3 font-semibold " + (st[1] === "ok" ? "border-ok bg-[#eef8f1] text-ok" : st[1] === "bad" ? "border-bad bg-[#fdf0ee] text-bad" : "border-[#c08a00] bg-[#fff8e1] text-[#7a5a00]")}>{st[0]}</p>}
         {p && (
-          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "📅 Ton agenda", todo], ["dispos", "📅 Mes disponibilités"], ["presentation", "🙋 Ma présentation"], ["documents", "📎 Mes documents", missing ? 1 : 0]]} />}>
+          <SideLayout nav={<TabsBar label="Mes cours particuliers" active={tab} onChange={go} tabs={[["demandes", "Ton agenda", todo], ["dispos", "Mes disponibilités"], ["presentation", "Ma présentation"], ["documents", "Mes documents", missing ? 1 : 0]]} />}>
             {tab === "demandes" && <Requests lessons={lessons} reload={loadLessons} slots={p.slots} skipHolidays={p.skipHolidays !== false} preview={preview} />}
             {tab === "dispos" && <Availability p={p} onSaved={setP} />}
             {tab === "presentation" && <><Presentation p={p} onSaved={setP} /><div className="card grid gap-2 border-dashed"><strong>Arrêter les cours particuliers</strong><p className="m-0 text-sm text-muted">Tes cours à venir sont annulés (les adultes sont prévenus), ta fiche, tes disponibilités et tes documents sont effacés. Tu pourras recommencer plus tard, mais il faudra tout ressaisir et le coach devra te revalider. Pour une simple coupure, utilise la « Pause » dans « Mes disponibilités ».</p><div><button className="btn-danger btn-sm" onClick={optOut}>Arrêter les cours particuliers</button></div></div></>}
@@ -103,22 +103,22 @@ function Requests({ lessons, reload, slots, skipHolidays, preview }: { lessons: 
   const group = (title: string, hint: string | null, list: Lesson[]) => list.length > 0 && <section className="grid gap-2"><h3 className="m-0 text-lg">{title} ({list.length})</h3>{hint && <p className="hint m-0">{hint}</p>}<ul className="m-0 grid list-none gap-3 p-0">{list.map((l) => <LessonRow key={l.id} l={l} onDone={reload} asProf />)}</ul></section>;
   return (
     <section className="grid gap-5" aria-labelledby="pr-h">
-      <div className="grid gap-1"><h2 id="pr-h" className="m-0">📅 Ton agenda</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré). Tu peux ensuite libérer un cours ou arrêter une série.</p></div>
+      <div className="grid gap-1"><h2 id="pr-h" className="m-0">Ton agenda</h2><p className="m-0 text-muted">Les adultes choisissent <strong>eux-mêmes</strong> un créneau libre dans ton planning. Le créneau est mis de côté, et c'est <strong>à toi de le confirmer</strong> (sous 48 h : sans réponse, il est libéré). Tu peux ensuite libérer un cours ou arrêter une série.</p></div>
       <div className="grid grid-cols-3 gap-3 rounded-2xl border-2 border-line bg-white p-4 text-center" aria-label="Résumé">
-        <div><b className="block font-display text-3xl font-black text-clay">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).length}</b><small className="text-muted">cours à venir</small></div>
-        <div><b className="block font-display text-3xl font-black text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
-        <div><b className="block font-display text-3xl font-black">{collapseSeries(lessons.filter((l) => l.status === "BOOKED")).length}</b><small className="text-muted">à confirmer</small></div>
+        <div><b className="block font-display text-3xl font-semibold text-clay">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).length}</b><small className="text-muted">cours à venir</small></div>
+        <div><b className="block font-display text-3xl font-semibold text-ok">{lessons.filter((l) => l.status === "ACCEPTED" && (!l.finalSlot || l.finalSlot.date >= today)).reduce((n, l) => n + (l.price ?? 0), 0)} €</b><small className="text-muted">à encaisser</small></div>
+        <div><b className="block font-display text-3xl font-semibold">{collapseSeries(lessons.filter((l) => l.status === "BOOKED")).length}</b><small className="text-muted">à confirmer</small></div>
       </div>
       <div className="flex gap-2" role="group" aria-label="Affichage">
-        <button className={view === "agenda" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "agenda"} onClick={() => setView("agenda")}>🗓️ Agenda</button>
-        <button className={view === "liste" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "liste"} onClick={() => setView("liste")}>📋 Liste</button>
+        <button className={view === "agenda" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "agenda"} onClick={() => setView("agenda")}>Agenda</button>
+        <button className={view === "liste" ? "btn-ink btn-sm" : "btn-outline btn-sm bg-white hover:bg-ink hover:text-white"} aria-pressed={view === "liste"} onClick={() => setView("liste")}>Liste</button>
       </div>
       <PriceNote />
-      {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant 🎾</Empty>}
+      {lessons.length === 0 && <Empty>Aucun cours réservé pour l'instant</Empty>}
       {view === "agenda" && <ProfAgenda lessons={lessons} slots={slots} skipHolidays={skipHolidays} reload={reload} preview={preview} />}
-      {view === "agenda" && !preview && me?.role === "COACH" && <details className="rounded border-2 border-line bg-white p-3"><summary className="cursor-pointer font-bold">🗓️ Placer mes cours du club (cours adultes, compétition jeunes, école de tennis)</summary><div className="mt-3"><WeekPlanner id={me.id} name="moi" /></div></details>}
+      {view === "agenda" && !preview && me?.role === "COACH" && <details className="rounded border-2 border-line bg-white p-3"><summary className="cursor-pointer font-semibold">Placer mes cours du club (cours adultes, compétition jeunes, école de tennis)</summary><div className="mt-3"><WeekPlanner id={me.id} name="moi" /></div></details>}
       {view === "liste" && <>
-      {group("🔔 À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
+      {group("À confirmer", "Un adulte a réservé ces créneaux. Confirme-les, ou dis que tu ne peux pas : le créneau est alors libéré et l'adulte est prévenu. Sans réponse sous 48 h, ils sont libérés tout seuls.", collapseSeries(lessons.filter((l) => l.status === "BOOKED")).sort(byDate))}
       {group("Cours confirmés à venir", null, booked)}
       {group("Annulés ou refusés", null, collapseSeries(lessons.filter((l) => l.status === "REFUSED")))}
       </>}
@@ -139,11 +139,11 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
   }
   async function save() {
     setMsg(null);
-    try { const saved = await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { const saved = await put<ProfMe>("/profs/me/slots", { slots: slots.map((s) => (s.weekday !== null ? { weekday: s.weekday, start: s.start, end: s.end } : { date: s.date, start: s.start, end: s.end })) }); onSaved(saved); setMsg({ ok: true, text: saved.outsideCount ? `Disponibilités actualisées ✓ — attention : ${saved.outsideCount} cours déjà réservé${saved.outsideCount > 1 ? "s" : ""} ne tombe${saved.outsideCount > 1 ? "nt" : ""} plus dans tes disponibilités. Rien n'est annulé : préviens le coach ou l'adulte si tu ne peux pas.` : "Disponibilités actualisées" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function setHolidays(v: boolean) {
     setMsg(null);
-    try { onSaved(await put<ProfMe>("/profs/me", { skipHolidays: v })); setMsg({ ok: true, text: v ? "Pas de cours en vacances ni les jours fériés ✓" : "Tes créneaux sont aussi proposés pendant les vacances ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { onSaved(await put<ProfMe>("/profs/me", { skipHolidays: v })); setMsg({ ok: true, text: v ? "Pas de cours en vacances ni les jours fériés" : "Tes créneaux sont aussi proposés pendant les vacances" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function pause(v: boolean) {
     setMsg(null);
@@ -151,10 +151,10 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
   }
   return (
     <section className="grid gap-4" aria-labelledby="pd-h">
-      <div className="grid gap-1"><h2 id="pd-h" className="m-0">🕒 Mes disponibilités</h2><p className="m-0 text-muted">Les adultes voient ces créneaux sur ta carte. Ajoute des créneaux qui reviennent chaque semaine, ou une date précise. Tu peux les <strong>actualiser à tout moment</strong>.</p>{p.updatedAt && <p className="m-0 text-sm font-bold text-ink">Dernière mise à jour : {new Date(p.updatedAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).replace(":", " h ")}</p>}</div>
+      <div className="grid gap-1"><h2 id="pd-h" className="m-0">Mes disponibilités</h2><p className="m-0 text-muted">Les adultes voient ces créneaux sur ta carte. Ajoute des créneaux qui reviennent chaque semaine, ou une date précise. Tu peux les <strong>actualiser à tout moment</strong>.</p>{p.updatedAt && <p className="m-0 text-sm font-semibold text-ink">Dernière mise à jour : {new Date(p.updatedAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).replace(":", " h ")}</p>}</div>
       <div className="card grid gap-3">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Type de créneau">
-          {([["week", "🔁 Chaque semaine"], ["date", "📆 Une date précise"]] as const).map(([k, l]) => <button key={k} aria-pressed={mode === k} className={"rounded-full border-2 px-4 py-2 font-bold " + (mode === k ? "border-clay bg-[#fdf1ea] text-clay" : "border-line bg-white")} onClick={() => setMode(k)}>{l}</button>)}
+          {([["week", "Chaque semaine"], ["date", "Une date précise"]] as const).map(([k, l]) => <button key={k} aria-pressed={mode === k} className={"rounded-full border-2 px-4 py-2 font-semibold " + (mode === k ? "border-clay bg-[#fdf1ea] text-clay" : "border-line bg-white")} onClick={() => setMode(k)}>{l}</button>)}
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           {mode === "week"
@@ -166,18 +166,18 @@ function Availability({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
         <div><button className="btn-outline btn-sm" onClick={add}>+ Ajouter ce créneau</button></div>
       </div>
       {slots.length === 0 ? <Empty>Aucun créneau : les adultes verront « Aucune disponibilité indiquée ».</Empty> : (
-        <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">{slots.map((s, i) => <li key={i} className="flex items-center justify-between gap-2 rounded-xl border-2 border-ok bg-[#f1faf5] px-3 py-2 font-bold text-[#1d6b43]">{fmtProfSlot(s)}<button className="btn-outline btn-sm" aria-label={`Retirer le créneau ${fmtProfSlot(s)}`} onClick={() => setSlots(slots.filter((_, j) => j !== i))}>✕</button></li>)}</ul>
+        <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">{slots.map((s, i) => <li key={i} className="flex items-center justify-between gap-2 rounded-xl border-2 border-ok bg-[#f1faf5] px-3 py-2 font-semibold text-[#1d6b43]">{fmtProfSlot(s)}<button className="btn-outline btn-sm" aria-label={`Retirer le créneau ${fmtProfSlot(s)}`} onClick={() => setSlots(slots.filter((_, j) => j !== i))}>✕</button></li>)}</ul>
       )}
-      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={save}>🔄 Actualiser mes disponibilités</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+      <div className="flex flex-wrap items-center gap-3"><button className="btn-clay" onClick={save}>Actualiser mes disponibilités</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       <div className="card grid gap-1 text-sm"><strong>Ce qui se passe quand tu actualises</strong><ul className="m-0 grid gap-1 pl-5"><li>Les <strong>nouveaux créneaux</strong> sont proposés aux adultes tout de suite.</li><li>Les <strong>cours déjà réservés ne bougent pas</strong>.</li><li>Si un cours déjà réservé ne tombe plus dans tes disponibilités, on te le signale : rien n'est annulé tout seul.</li></ul></div>
       <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-line bg-white p-4 has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]">
         <input type="checkbox" className="mt-1 h-5 w-5 accent-clay" checked={p.skipHolidays !== false} onChange={(e) => setHolidays(e.target.checked)} />
-        <span className="grid"><strong>🏖️ Je ne donne pas de cours pendant les vacances scolaires et les jours fériés</strong><span className="text-sm text-muted">Vacances de la zone C (Paris) et jours fériés : tes créneaux « chaque semaine » ne sont pas proposés ces jours-là. Décoche si tu donnes cours en vacances (stages…). Une date précise que tu ajoutes est toujours proposée.</span></span>
+        <span className="grid"><strong>Je ne donne pas de cours pendant les vacances scolaires et les jours fériés</strong><span className="text-sm text-muted">Vacances de la zone C (Paris) et jours fériés : tes créneaux « chaque semaine » ne sont pas proposés ces jours-là. Décoche si tu donnes cours en vacances (stages…). Une date précise que tu ajoutes est toujours proposée.</span></span>
       </label>
       <div className="card grid gap-2 border-dashed">
-        <strong>⏸ Pause</strong>
+        <strong>Pause</strong>
         <p className="m-0 text-sm text-muted">Si tu ne veux plus recevoir de demandes pour le moment, mets-toi en pause : les adultes te voient toujours, mais ne peuvent plus te demander de cours.</p>
-        <div><button className={p.paused ? "btn-clay btn-sm" : "btn-outline btn-sm"} onClick={() => pause(!p.paused)}>{p.paused ? "▶ Reprendre les demandes" : "⏸ Je ne prends plus de demandes pour le moment"}</button></div>
+        <div><button className={p.paused ? "btn-clay btn-sm" : "btn-outline btn-sm"} onClick={() => pause(!p.paused)}>{p.paused ? "▶ Reprendre les demandes" : "Je ne prends plus de demandes pour le moment"}</button></div>
       </div>
     </section>
   );
@@ -191,13 +191,13 @@ function Presentation({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
   async function save(e: FormEvent) {
     e.preventDefault(); setMsg(null);
-    try { onSaved(await put<ProfMe>("/profs/me", { ...(me?.role === "COACH" && firstName.trim() ? { firstName: firstName.trim() } : {}), lastName: form.lastName, birthYear: Number(form.birthYear) || undefined, showAge: form.showAge, ranking: form.ranking, bestRanking: form.bestRanking, bio: form.bio })); await reload(); setMsg({ ok: true, text: "Enregistré ✓" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { onSaved(await put<ProfMe>("/profs/me", { ...(me?.role === "COACH" && firstName.trim() ? { firstName: firstName.trim() } : {}), lastName: form.lastName, birthYear: Number(form.birthYear) || undefined, showAge: form.showAge, ranking: form.ranking, bestRanking: form.bestRanking, bio: form.bio })); await reload(); setMsg({ ok: true, text: "Enregistré" }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   const age = form.showAge && Number(form.birthYear) ? new Date().getFullYear() - Number(form.birthYear) : null;
   const preview: ProfCard = { id: "me", firstName: (me?.role === "COACH" ? firstName : me?.firstName) ?? p.firstName, lastName: form.lastName || null, age, ranking: form.ranking || null, bestRanking: form.bestRanking || null, bio: form.bio, paused: p.paused, slots: p.slots };
   return (
     <section className="grid gap-4" aria-labelledby="pp-h">
-      <div className="grid gap-1"><h2 id="pp-h" className="m-0">🙋 Ma présentation</h2><p className="m-0 text-muted">Ce que les adultes lisent sur ta carte. Ton âge n'est montré que si tu le décides.</p></div>
+      <div className="grid gap-1"><h2 id="pp-h" className="m-0">Ma présentation</h2><p className="m-0 text-muted">Ce que les adultes lisent sur ta carte. Ton âge n'est montré que si tu le décides.</p></div>
       <form onSubmit={save} className="card grid gap-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" id="pp-first" hint={me?.role === "COACH" ? "Le prénom que les adultes verront." : "Donné par le coach à la création de ton compte."}><input id="pp-first" className="input" maxLength={60} value={firstName} disabled={me?.role !== "COACH"} onChange={(e) => setFirstName(e.target.value)} /></Field>
@@ -208,9 +208,9 @@ function Presentation({ p, onSaved }: { p: ProfMe; onSaved: (p: ProfMe) => void 
           <Field label="Meilleur classement" id="pp-best"><select id="pp-best" className="input" value={form.bestRanking} onChange={(e) => set("bestRanking", e.target.value)}><option value="">—</option>{PROF_LEVELS.map((r) => <option key={r}>{r}</option>)}</select></Field>
         </div>
         <Field label={`Un mot sur moi (${form.bio.length}/200)`} id="pp-bio"><textarea id="pp-bio" className="input" maxLength={200} value={form.bio} onChange={(e) => set("bio", e.target.value)} placeholder="Ex. : à l'aise avec les débutants, service et coup droit" /></Field>
-        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-bold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">Enregistrer</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>
       </form>
-      <h3 className="m-0 text-lg">👀 Voici comment les adultes te voient</h3>
+      <h3 className="m-0 text-lg">Voici comment les adultes te voient</h3>
       <div className="prof-grid grid max-w-sm"><ProfCardView p={preview} /></div>
     </section>
   );
@@ -231,13 +231,13 @@ function Documents({ p, id, onChanged }: { p: ProfMe; id: string; onChanged: (p:
   }
   return (
     <section className="grid gap-4" aria-labelledby="pdoc-h">
-      <div className="grid gap-1"><h2 id="pdoc-h" className="m-0">📎 Mes documents</h2><p className="m-0 text-muted">Pour être visible des adultes, dépose ces 3 pièces. <strong>Seul le coach les voit</strong>, jamais les adultes ni les autres professeurs. PDF ou photo (JPEG, PNG), 3 Mo maximum. Quand tu remplaces une pièce, le coach doit la revalider.</p></div>
+      <div className="grid gap-1"><h2 id="pdoc-h" className="m-0">Mes documents</h2><p className="m-0 text-muted">Pour être visible des adultes, dépose ces 3 pièces. <strong>Seul le coach les voit</strong>, jamais les adultes ni les autres professeurs. PDF ou photo (JPEG, PNG), 3 Mo maximum. Quand tu remplaces une pièce, le coach doit la revalider.</p></div>
       <Err msg={err} />
       <ul className="m-0 grid list-none gap-3 p-0">
         {DOC_KINDS.map((k) => { const d = p.documents.find((x) => x.kind === k.kind); const expired = d?.validUntil ? new Date(d.validUntil) < new Date() : false; return (
           <li key={k.kind} className={"card grid gap-3 " + (d && !expired ? "" : "!border-2 !border-dashed !border-bad")}>
             <div className="grid gap-0.5"><strong className="text-lg">{k.icon} {k.label} {d && !expired ? <span className="text-ok">✓</span> : null}</strong><small className="hint">{k.help}</small></div>
-            {d && <p className="m-0 text-sm">Déposé le {fmtDate(d.uploadedAt)} · {d.fileName}{d.validUntil && <> · <span className={expired ? "font-bold text-bad" : ""}>valable jusqu'au {fmtDate(d.validUntil)}{expired ? " (expirée)" : ""}</span></>}</p>}
+            {d && <p className="m-0 text-sm">Déposé le {fmtDate(d.uploadedAt)} · {d.fileName}{d.validUntil && <> · <span className={expired ? "font-semibold text-bad" : ""}>valable jusqu'au {fmtDate(d.validUntil)}{expired ? " (expirée)" : ""}</span></>}</p>}
             {k.kind === "CARTE_PRO" && <Field label="Date de fin de validité de la carte" id="doc-valid"><input id="doc-valid" type="date" className="input max-w-xs" min={todayIso()} value={valid} onChange={(e) => setValid(e.target.value)} /></Field>}
             <div className="flex flex-wrap items-center gap-2">
               <label className="btn-clay btn-sm cursor-pointer">{d ? "Remplacer" : "Déposer"}<input type="file" accept="application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => upload(k.kind, e)} /></label>
@@ -247,7 +247,7 @@ function Documents({ p, id, onChanged }: { p: ProfMe; id: string; onChanged: (p:
           </li>
         ); })}
       </ul>
-      <p className="hint m-0">🔒 Ces pièces sont gardées dans la base du club, tant que ton compte existe, et supprimées avec lui. <a href="/confidentialite" className="font-bold text-clay underline">Politique de confidentialité</a></p>
+      <p className="hint m-0">Ces pièces sont gardées dans la base du club, tant que ton compte existe, et supprimées avec lui. <a href="/confidentialite" className="font-semibold text-clay underline">Politique de confidentialité</a></p>
     </section>
   );
 }

@@ -11,7 +11,7 @@ export function AudioPlayer({ v }: { v: Pick<VideoRow, "id" | "audio"> }) {
   if (!v.audio) return null;
   return (
     <section className="grid gap-1 rounded-xl border-2 border-clay/40 bg-[#fff6ef] p-3" aria-label="Commentaire audio du coach">
-      <strong>🎙️ Le coach t'a laissé un commentaire audio{v.audio.seconds ? ` (${fmt(v.audio.seconds)})` : ""}</strong>
+      <strong>Le coach t'a laissé un commentaire audio{v.audio.seconds ? ` (${fmt(v.audio.seconds)})` : ""}</strong>
       <audio controls preload="none" src={`/api/videos/${v.id}/audio`} className="w-full" aria-label="Écouter le commentaire audio du coach" />
     </section>
   );
@@ -61,7 +61,7 @@ export function AudioRecorder({ v, onChanged }: { v: VideoRow; onChanged: () => 
         </div>
       )}
       {!supported && <p className="hint m-0">Ce navigateur ne permet pas d'enregistrer la voix. Essaie avec Chrome, Edge, Firefox ou Safari récent.</p>}
-      {supported && phase === "idle" && <div><button className="btn-clay btn-sm" onClick={start}>{v.audio ? "🎙️ Refaire l'enregistrement" : "🎙️ Enregistrer ma voix"}</button><p className="hint m-0 mt-1">Jusqu'à 3 minutes. L'élève l'entendra avec ton analyse (ou tout de suite si la vidéo vient de toi). Rien n'est envoyé tant que tu n'as pas cliqué sur « Joindre ».</p></div>}
+      {supported && phase === "idle" && <div><button className="btn-clay btn-sm" onClick={start}>{v.audio ? "Refaire l'enregistrement" : "Enregistrer ma voix"}</button><p className="hint m-0 mt-1">Jusqu'à 3 minutes. L'élève l'entendra avec ton analyse (ou tout de suite si la vidéo vient de toi). Rien n'est envoyé tant que tu n'as pas cliqué sur « Joindre ».</p></div>}
       {phase === "rec" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-clay bg-[#fff6ef] p-3" role="status">
           <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-danger" aria-hidden="true" /><strong>Enregistrement… {fmt(secs)}</strong>
@@ -70,9 +70,9 @@ export function AudioRecorder({ v, onChanged }: { v: VideoRow; onChanged: () => 
       )}
       {phase === "review" && (
         <div className="grid gap-2 rounded-xl border border-line bg-white p-3">
-          <p className="m-0 font-bold">Écoute avant d'envoyer ({fmt(secs)}) :</p>
+          <p className="m-0 font-semibold">Écoute avant d'envoyer ({fmt(secs)}) :</p>
           <audio controls src={url} className="w-full" aria-label="Écouter ton enregistrement" />
-          <div className="flex flex-wrap gap-2"><button className="btn-clay btn-sm" disabled={busy} onClick={attach}>✅ Joindre à l'analyse</button><button className="btn-outline btn-sm" disabled={busy} onClick={again}>Recommencer</button></div>
+          <div className="flex flex-wrap gap-2"><button className="btn-clay btn-sm" disabled={busy} onClick={attach}>Joindre à l'analyse</button><button className="btn-outline btn-sm" disabled={busy} onClick={again}>Recommencer</button></div>
         </div>
       )}
       <Err msg={err} />

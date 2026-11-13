@@ -26,7 +26,7 @@ export function ReportBody({ r }: { r: Pick<TournamentReport, "matches" | "theme
       {well.length > 0 && <p className="m-0"><strong>👍 Ce qui était bien :</strong> {well.map((t) => `${t.label}${r.themes[t.key].level === "tres-bien" ? " (très bien)" : ""}`).join(", ")}</p>}
       {work.length > 0 && <p className="m-0"><strong>🎯 À travailler :</strong> {work.map((t) => t.label).join(", ")}</p>}
       {r.summary && <p className="m-0">💬 « {r.summary} »</p>}
-      {stars > 0 && <p className="m-0 font-bold">⭐ {stars} étoile{stars > 1 ? "s" : ""} en match (×2)</p>}
+      {stars > 0 && <p className="m-0 font-semibold">⭐ {stars} étoile{stars > 1 ? "s" : ""} en match (×2)</p>}
     </div>
   );
 }
@@ -94,9 +94,9 @@ export function ReportForm({ p, initial, preview = false, goals: goalsProp, onDo
       </section>
 
       <fieldset className="m-0 grid gap-2 border-0 p-0">
-        <legend className="mb-1 font-display font-bold">Comment ça s'est passé ?</legend>
+        <legend className="mb-1 font-display font-semibold">Comment ça s'est passé ?</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {REPORT_FEELINGS.map((f) => <button key={f.n} type="button" aria-pressed={feeling === f.n} onClick={() => setFeeling(f.n)} className={"min-h-12 rounded-xl border-2 px-2 font-bold " + (feeling === f.n ? "border-[#2f8f5b] bg-[#2f8f5b] text-white" : "border-ink bg-white")}>{f.emoji} {f.label}</button>)}
+          {REPORT_FEELINGS.map((f) => <button key={f.n} type="button" aria-pressed={feeling === f.n} onClick={() => setFeeling(f.n)} className={"min-h-12 rounded-xl border-2 px-2 font-semibold " + (feeling === f.n ? "border-[#2f8f5b] bg-[#2f8f5b] text-white" : "border-ink bg-white")}>{f.emoji} {f.label}</button>)}
         </div>
       </fieldset>
 
@@ -107,7 +107,7 @@ export function ReportForm({ p, initial, preview = false, goals: goalsProp, onDo
         </div>
         {REPORT_AXES.map((ax) => (
           <details key={ax.key} open={ax.key === "technique"} className="rounded-2xl border-2 border-line bg-white p-3">
-            <summary className="cursor-pointer font-bold">{ax.emoji} {ax.label} <small className="font-normal text-muted">({REPORT_THEMES.filter((t) => t.axis === ax.key && themes[t.key]).length} noté{REPORT_THEMES.filter((t) => t.axis === ax.key && themes[t.key]).length > 1 ? "s" : ""})</small></summary>
+            <summary className="cursor-pointer font-semibold">{ax.emoji} {ax.label} <small className="font-normal text-muted">({REPORT_THEMES.filter((t) => t.axis === ax.key && themes[t.key]).length} noté{REPORT_THEMES.filter((t) => t.axis === ax.key && themes[t.key]).length > 1 ? "s" : ""})</small></summary>
             <div className="mt-2 grid gap-2">
               {REPORT_THEMES.filter((t) => t.axis === ax.key).map((t) => {
                 const lvl = themes[t.key], g = lvl && lvl !== "a-travailler" ? missionOfTheme(goals, t.label, to) : undefined, st = lvl === "bien" ? 2 : lvl === "tres-bien" ? 4 : 0;
@@ -116,7 +116,7 @@ export function ReportForm({ p, initial, preview = false, goals: goalsProp, onDo
                     <strong>{t.label}</strong>
                     <div className="grid gap-1">
                       <div className="grid grid-cols-3 gap-1.5">
-                        {LEVEL_BTN.map((l) => <button key={l.key} type="button" aria-pressed={lvl === l.key} onClick={() => pick(t.key, l.key as ReportLevel)} className={"min-h-11 rounded-xl border-2 px-1 text-sm font-bold " + (lvl === l.key ? (l.key === "a-travailler" ? "border-[#e08a00] bg-[#e08a00] text-white" : "border-[#2f8f5b] bg-[#2f8f5b] text-white") : "border-ink bg-white")}>{l.label}{l.stars ? ` · +${l.stars} ⭐` : ""}</button>)}
+                        {LEVEL_BTN.map((l) => <button key={l.key} type="button" aria-pressed={lvl === l.key} onClick={() => pick(t.key, l.key as ReportLevel)} className={"min-h-11 rounded-xl border-2 px-1 text-sm font-semibold " + (lvl === l.key ? (l.key === "a-travailler" ? "border-[#e08a00] bg-[#e08a00] text-white" : "border-[#2f8f5b] bg-[#2f8f5b] text-white") : "border-ink bg-white")}>{l.label}{l.stars ? ` · +${l.stars} ⭐` : ""}</button>)}
                       </div>
                       {st > 0 && <small className="text-muted">{g ? `→ +${st} ⭐ sur la mission « ${g.title} »` : `→ +${st} ⭐ hors mission (${ax.label})`}</small>}
                     </div>
@@ -126,7 +126,7 @@ export function ReportForm({ p, initial, preview = false, goals: goalsProp, onDo
             </div>
           </details>
         ))}
-        <p className="m-0 font-bold" role="status">⭐ Total prévu : {total} étoile{total > 1 ? "s" : ""} (données à la validation du coach)</p>
+        <p className="m-0 font-semibold" role="status">⭐ Total prévu : {total} étoile{total > 1 ? "s" : ""} (données à la validation du coach)</p>
       </section>
 
       <Field label="Le petit mot de bilan (300 caractères maximum, ton bienveillant)" id="r-sum"><textarea id="r-sum" className="input min-h-24" maxLength={300} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Beau tournoi ! Service et combativité au top. On travaille le retour pour la prochaine fois." /></Field>
@@ -155,7 +155,7 @@ export function ReportItem({ r, p, onChanged, preview = false, asRole }: { r: To
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="m-0 text-lg">🏆 {r.name}</h3>
         <span className="text-sm text-muted">{fmtPeriod(r.dateFrom, r.dateTo)}</span>
-        <span className={"rounded-full px-2.5 py-0.5 text-xs font-bold " + (r.status === "VALIDATED" ? "bg-[#e6f4ea] text-[#1c6b3a]" : "bg-[#fff3b0] text-[#6b4e00]")}>{r.status === "VALIDATED" ? "✅ Validé · visible de la famille" : "⏳ À valider par le coach"}</span>
+        <span className={"rounded-full px-2.5 py-0.5 text-xs font-semibold " + (r.status === "VALIDATED" ? "bg-[#e6f4ea] text-[#1c6b3a]" : "bg-[#fff3b0] text-[#6b4e00]")}>{r.status === "VALIDATED" ? "✅ Validé · visible de la famille" : "⏳ À valider par le coach"}</span>
         <AuthorBadge a={r} />
       </div>
       <ReportBody r={r} />
@@ -228,14 +228,14 @@ function ReportCard({ r }: { r: TournamentReport }) {
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-[#17140f] bg-white text-[#17140f]">
       <div className="flex items-center justify-between gap-3 border-b-4 border-[#c9ad77] bg-[#17140f] px-5 py-4 text-white">
-        <div><p className="m-0 text-xs font-bold tracking-[0.2em]" style={{ color: "#c9ad77" }}>BILAN DE TOURNOI</p><p className="m-0 mt-1 text-2xl font-extrabold leading-tight" style={{ color: "#ffffff" }}>{r.name}</p><p className="m-0 mt-0.5 text-sm" style={{ color: "#e3f1e8" }}>{fmtPeriod(r.dateFrom, r.dateTo)}</p></div>
-        {medal && <div className="text-center" aria-label={medal.label}><div className="text-5xl leading-none">{medal.icon}</div><p className="m-0 mt-1 text-xs font-bold" style={{ color: "#ffffff" }}>{medal.label}</p></div>}
+        <div><p className="m-0 text-xs font-semibold" style={{ color: "#c9ad77" }}>BILAN DE TOURNOI</p><p className="m-0 mt-1 text-2xl font-semibold leading-tight" style={{ color: "#ffffff" }}>{r.name}</p><p className="m-0 mt-0.5 text-sm" style={{ color: "#e3f1e8" }}>{fmtPeriod(r.dateFrom, r.dateTo)}</p></div>
+        {medal && <div className="text-center" aria-label={medal.label}><div className="text-5xl leading-none">{medal.icon}</div><p className="m-0 mt-1 text-xs font-semibold" style={{ color: "#ffffff" }}>{medal.label}</p></div>}
       </div>
       <div className="grid gap-4 p-5">
         <div className="flex flex-wrap gap-2">{tiles.map(([a, b]) => <div key={b} className="min-w-[7rem] flex-1 rounded-xl bg-[#f6f1e6] px-3 py-3 text-center"><b className="block text-2xl text-[#17140f]">{a}</b><span className="text-xs text-[#5e574a]">{b}</span></div>)}</div>
-        {rows.length > 0 && <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#17140f]">FORME PAR THÈME</p>
+        {rows.length > 0 && <div><p className="m-0 text-xs font-semibold text-[#17140f]">FORME PAR THÈME</p>
           <ul className="m-0 mt-2 grid list-none gap-2 p-0">{rows.map((t) => { const b = THEME_BARS[t.lvl]; return <li key={t.key} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 text-[15px] sm:grid-cols-[minmax(6rem,9rem)_1fr_5.5rem]"><span>{t.label}</span><b className="text-right sm:order-3" style={{ color: b.text }}>{b.label}</b><span aria-hidden="true" className="col-span-2 h-3 rounded-full bg-[#ddd3c0] sm:order-2 sm:col-span-1"><span className="block h-3 rounded-full" style={{ width: `${b.w}%`, background: b.color }} /></span></li>; })}</ul></div>}
-        <div><p className="m-0 text-xs font-bold tracking-[0.15em] text-[#17140f]">LES MATCHS</p>
+        <div><p className="m-0 text-xs font-semibold text-[#17140f]">LES MATCHS</p>
           <table className="mt-1 w-full border-collapse text-[15px]"><thead><tr className="text-left text-xs text-[#5e574a]"><th className="py-1 font-normal">TOUR</th><th className="font-normal">SCORE</th><th className="font-normal">ADV.</th><th className="text-right font-normal"><span className="sm:hidden">RÉS.</span><span className="hidden sm:inline">RÉSULTAT</span></th></tr></thead>
             <tbody>{r.matches.map((m, i) => <tr key={i} className="border-t border-[#ddd3c0]"><td className="py-2 pr-2">{m.round || "—"}</td><td className="pr-2">{m.score || "—"}</td><td>{m.opponentRanking || "—"}</td><td className="whitespace-nowrap text-right"><b className={m.result === "Victoire" ? "text-[#17140f]" : "text-[#c2352b]"}><span className="sm:hidden">{m.result === "Victoire" ? "V" : "D"}</span><span className="hidden sm:inline">{m.result === "Victoire" ? "Victoire" : "Défaite"}</span></b></td></tr>)}</tbody></table></div>
         {r.summary && <blockquote className="m-0 border-l-[5px] border-[#17140f] py-1 pl-4 text-base italic leading-relaxed">« {r.summary} »<footer className="mt-1 text-xs not-italic text-[#5e574a]">— ton entraîneur</footer></blockquote>}
@@ -250,14 +250,14 @@ export function ChildReports({ playerId, hideEmpty = false }: { playerId: string
   useEffect(() => { get<TournamentReport[]>(`/players/${playerId}/tournament-reports`).then(setList).catch(() => setList([])); }, [playerId]);
   if (list === null) return hideEmpty ? null : <p className="text-center text-white/80">Chargement…</p>;
   if (!list.length && hideEmpty) return null;
-  if (!list.length) return <section className="glass grid gap-2" aria-labelledby="child-rep"><h2 id="child-rep" className="m-0 text-2xl">🏆 Les bilans de mes tournois</h2><p className="m-0">Quand un entraîneur t'accompagne en tournoi, il écrit un petit bilan : tes matchs, ce qui était bien et ce qu'on travaille. Après la validation de ton coach, tu le retrouves ici. Pas encore de bilan pour l'instant !</p></section>;
+  if (!list.length) return <section className="glass grid gap-2" aria-labelledby="child-rep"><h2 id="child-rep" className="m-0 text-2xl">🏆 Les bilans de mes tournois</h2><p className="m-0">Quand un entraîneur t'accompagne en tournoi, il écrit un petit bilan : tes matchs, ce qui était bien et ce qu'on travaille. Après la validation de ton coach, tu le retrouves ici. Pas encore de bilan pour l'instant.</p></section>;
   return (
     <section className="glass grid gap-3" aria-labelledby="child-rep">
       <h2 id="child-rep" className="m-0 text-2xl">🏆 Les bilans de mes tournois</h2>
       {list.map((r) => {
         return (
           <details key={r.id} className="group rounded-2xl border-2 border-white/50 bg-white/10 text-white">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="transition-transform group-open:rotate-90">▶</span><span className="text-lg font-bold">{r.name} <small className="font-normal text-white/80">· {fmtPeriod(r.dateFrom, r.dateTo)}</small></span></summary>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden"><span aria-hidden="true" className="transition-transform group-open:rotate-90">▶</span><span className="text-lg font-semibold">{r.name} <small className="font-normal text-white/80">· {fmtPeriod(r.dateFrom, r.dateTo)}</small></span></summary>
             <div className="px-3 pb-3"><ReportCard r={r} /></div>
           </details>
         );
@@ -266,4 +266,4 @@ export function ChildReports({ playerId, hideEmpty = false }: { playerId: string
   );
 }
 
-export function ReportTag({ children }: { children?: ReactNode }) { return <span className="rounded-full bg-[#c9ad77] px-2 py-0.5 text-xs font-extrabold text-[#17140f]">{children ?? "⚔️ En match ×2"}</span>; }
+export function ReportTag({ children }: { children?: ReactNode }) { return <span className="rounded-full bg-[#c9ad77] px-2 py-0.5 text-xs font-semibold text-[#17140f]">{children ?? "⚔️ En match ×2"}</span>; }

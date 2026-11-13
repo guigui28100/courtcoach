@@ -93,9 +93,9 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
   return (
     <section className="overflow-hidden rounded-3xl border-2 border-line bg-white shadow-sm" aria-label="Ton agenda">
       <div className="agenda-hero flex flex-wrap items-center gap-3 px-4 py-4 text-white">
-        <span aria-hidden className="text-3xl">🎾</span>
+        <span aria-hidden className="text-3xl"></span>
         <div className="min-w-[12rem] flex-1">
-          <h3 className="m-0 font-display text-xl font-black text-white">{title}</h3>
+          <h3 className="m-0 font-display text-xl font-semibold text-white">{title}</h3>
           <p className="m-0 text-sm text-white/90">{inPeriod.length === 0 ? "Aucun cours sur cette période" : `${inPeriod.length} cours${toConfirm ? ` · ${toConfirm} à confirmer` : ""}`}</p>
         </div>
         <div className="flex items-center gap-2 max-[480px]:w-full max-[480px]:justify-between">
@@ -106,19 +106,19 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
       </div>
 
       <div className="p-2 sm:p-4">
-        {err && <p role="alert" className="m-0 mb-2 rounded-xl border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-bold text-bad">{err}</p>}
+        {err && <p role="alert" className="m-0 mb-2 rounded-xl border-2 border-bad bg-[#fdf0ee] p-2 text-sm font-semibold text-bad">{err}</p>}
         {pending.length > 0 && (
           <div className="mb-3 grid gap-2 rounded-2xl border-2 border-[#c9ac00] bg-[#fff8d6] p-3" aria-label="Demandes à confirmer">
-            <h4 className="m-0 text-base font-bold text-[#5c4300]">🔔 {pending.length} demande{pending.length > 1 ? "s" : ""} à confirmer</h4>
+            <h4 className="m-0 text-base font-semibold text-[#5c4300]">{pending.length} demande{pending.length > 1 ? "s" : ""} à confirmer</h4>
             <ul className="m-0 grid list-none gap-2 p-0">
               {pending.map((l) => (
                 <li key={l.id} className="grid gap-1 rounded-xl bg-white p-2 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-between">
                   <span className="min-w-0">
-                    <b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}{l.type === "duo" ? " · 👥" : ""}
+                    <b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}{l.type === "duo" ? " · " : ""}
                     <small className="block text-muted">À confirmer avant {fmtDeadline(l.createdAt)}</small>
                   </span>
                   <span className="flex flex-wrap gap-2">
-                    <button className="btn-clay btn-sm !bg-ok !text-white" onClick={() => confirmNow(l)}>✅ Je confirme</button>
+                    <button className="btn-clay btn-sm !bg-ok !text-white" onClick={() => confirmNow(l)}>Je confirme</button>
                     <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => jump(l)}>Voir dans l'agenda</button>
                   </span>
                 </li>
@@ -133,7 +133,7 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
             <div key={d} className={"agenda-day " + (d === today ? "is-today" : "")} role="columnheader">
               <small>{WEEKDAYS[weekdayOf(d)].slice(0, 3)}</small>
               <b>{dayNum(d)}</b>
-              {eventsOn(d).length > 0 && <small aria-label="Événement du club ce jour-là">🏆</small>}
+              {eventsOn(d).length > 0 && <small aria-label="Événement du club ce jour-là"></small>}
             </div>
           ))}
           {hours.map((h) => (
@@ -150,13 +150,13 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
                       aria-label={`${wait ? "À confirmer" : "Cours confirmé"} : ${name}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)} ${monthOf(d)} à ${fmtTime(l.finalSlot!.time)}`}>
                       <span className="min-w-0 text-left leading-tight">
                         <b className="block truncate">{name}</b>
-                        <small className="block truncate">{wait ? "⏳ À confirmer" : "✅ " + fmtTime(l.finalSlot!.time)}{l.seriesId ? " · 🔁" : ""}{l.type === "duo" ? " · 👥" : ""}</small>
+                        <small className="block truncate">{wait ? "À confirmer" : "" + fmtTime(l.finalSlot!.time)}{l.seriesId ? " · " : ""}{l.type === "duo" ? " · " : ""}</small>
                       </span>
                     </button>
                   );
                 }
                 const cc = clubAt(d, h);
-                if (cc) return <div key={d + h} role="gridcell" className="agenda-lesson cursor-default" style={{ background: KIND_COLOR[cc.kind ?? ""] ?? "#4a4437", color: "#fff" }} aria-label={`${cc.label}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h`}><span className="min-w-0 text-left leading-tight"><b className="block truncate">{cc.label || "Cours du club"}</b><small className="block truncate">🎾 {fmtTime(cc.start)} – {fmtTime(cc.end)}</small></span></div>;
+                if (cc) return <div key={d + h} role="gridcell" className="agenda-lesson cursor-default" style={{ background: KIND_COLOR[cc.kind ?? ""] ?? "#4a4437", color: "#fff" }} aria-label={`${cc.label}, ${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h`}><span className="min-w-0 text-left leading-tight"><b className="block truncate">{cc.label || "Cours du club"}</b><small className="block truncate">{fmtTime(cc.start)} – {fmtTime(cc.end)}</small></span></div>;
                 return free(d, h)
                   ? <div key={d + h} role="gridcell" className="agenda-free" aria-label={`${WEEKDAYS[weekdayOf(d)]} ${dayNum(d)}, ${h} h : libre`}><span>libre</span></div>
                   : <div key={d + h} role="gridcell" className="agenda-off" aria-hidden />;
@@ -170,36 +170,36 @@ export function ProfAgenda({ lessons, slots, skipHolidays = true, reload, previe
           <li><i className="agenda-dot bg-[#f2d230]" />À confirmer</li>
           <li><i className="agenda-dot border border-[#b5dcbf] bg-[#e7f4ea]" />Libre</li>
           <li><i className="agenda-dot border border-line bg-[#f1ece1]" />Pas disponible</li>
-          <li>🔁 série · 👥 à deux</li>
+          <li>série · à deux</li>
           {club.length > 0 && <li><i className="agenda-dot" style={{ background: "#2f5f9e" }} />Cours du club</li>}
         </ul>
         {evList.length > 0 && (
           <div className="mt-3 grid gap-1">
-            <h4 className="m-0 flex flex-wrap items-center gap-2 text-base font-bold">🏆 Événements du club où tu es placé{ev.fresh.length > 0 && <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => ev.markSeen(evList)}>J'ai tout vu</button>}</h4>
+            <h4 className="m-0 flex flex-wrap items-center gap-2 text-base font-semibold">Événements du club où tu es placé{ev.fresh.length > 0 && <button className="btn-outline btn-sm bg-white hover:bg-ink hover:text-white" onClick={() => ev.markSeen(evList)}>J'ai tout vu</button>}</h4>
             <ul className="m-0 grid list-none gap-1 p-0">
               {evList.map((e) => { const st = ev.state(e); return (
                 <li key={e.id} className="rounded-xl border-2 border-line bg-white px-3 py-2 text-sm">
-                  <b>{kindOf(e.kind).icon} {titleOf(e)}</b> {st === "nouveau" && <span className="rounded-full bg-champagne px-2 py-0.5 text-xs font-bold text-ink">Nouveau</span>}{st === "modifie" && <span className="rounded-full bg-[#ffe08a] px-2 py-0.5 text-xs font-bold text-ink">Modifié</span>}
-                  <span className="block capitalize">{fmtRange(e.startDate, e.endDate)}{e.time ? ` · 🕒 ${e.time}` : ""}{e.place ? ` · 📍 ${e.place}` : ""}</span>
-                  {e.note && <span className="block text-muted [overflow-wrap:anywhere]">📝 {e.note}</span>}
+                  <b>{kindOf(e.kind).icon} {titleOf(e)}</b> {st === "nouveau" && <span className="rounded-full bg-champagne px-2 py-0.5 text-xs font-semibold text-ink">Nouveau</span>}{st === "modifie" && <span className="rounded-full bg-[#ffe08a] px-2 py-0.5 text-xs font-semibold text-ink">Modifié</span>}
+                  <span className="block capitalize">{fmtRange(e.startDate, e.endDate)}{e.time ? ` · ${e.time}` : ""}{e.place ? ` · ${e.place}` : ""}</span>
+                  {e.note && <span className="block text-muted [overflow-wrap:anywhere]">{e.note}</span>}
                 </li>); })}
             </ul>
           </div>
         )}
         {later.length > 0 && (
           <div className="mt-3 grid gap-1">
-            <h4 className="m-0 text-base font-bold">📆 Prochains cours (plus tard)</h4>
+            <h4 className="m-0 text-base font-semibold">Prochains cours (plus tard)</h4>
             <ul className="m-0 grid list-none gap-1 p-0">
               {later.map((l) => (
                 <li key={l.id}><button className="flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-line bg-white px-3 py-2 text-left text-sm hover:border-ink" onClick={() => jump(l)}>
-                  <span><b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `🔁 ${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}</span><span className="font-bold text-clay">Voir →</span>
+                  <span><b>{shortName(l.member)}</b> · {(l.seriesCount ?? 0) > 1 ? `${everyDay(l.finalSlot!)} · ${l.seriesCount} cours` : fmtSlot(l.finalSlot!)}</span><span className="font-semibold text-clay">Voir →</span>
                 </button></li>
               ))}
             </ul>
           </div>
         )}
-        {skipHolidays && offLabel && <p className="m-0 mt-2 rounded-xl bg-[#fff3cd] p-2 text-sm text-[#5c4300]">🏖️ {offLabel} : tes créneaux « chaque semaine » ne sont pas proposés aux adultes ces jours-là (case « pas de cours pendant les vacances » dans Mes disponibilités).</p>}
-        <p className="m-0 mt-2 text-sm text-muted">👉 Touche un cours pour voir l'adulte, son téléphone, le tarif et pour le confirmer ou le libérer.</p>
+        {skipHolidays && offLabel && <p className="m-0 mt-2 rounded-xl bg-[#fff3cd] p-2 text-sm text-[#5c4300]">{offLabel} : tes créneaux « chaque semaine » ne sont pas proposés aux adultes ces jours-là (case « pas de cours pendant les vacances » dans Mes disponibilités).</p>}
+        <p className="m-0 mt-2 text-sm text-muted">Touche un cours pour voir l'adulte, son téléphone, le tarif et pour le confirmer ou le libérer.</p>
       </div>
 
       {open && (

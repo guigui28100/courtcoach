@@ -31,7 +31,7 @@ export function MailParent({ email, firstName, initialTopic = "etoiles" }: { ema
       {open && (
         <span className="grid gap-2 rounded-xl border-2 border-line bg-white p-3">
           <fieldset className="m-0 grid gap-1 border-0 p-0">
-            <legend className="mb-1 font-bold">De quoi veux-tu prévenir ?</legend>
+            <legend className="mb-1 font-semibold">De quoi veux-tu prévenir ?</legend>
             {TOPICS.map((x) => (
               <label key={x.key} className="flex min-h-10 items-center gap-2"><input type="radio" name={`mail-${email}`} checked={topic === x.key} onChange={() => setTopic(x.key)} />{x.label}</label>
             ))}

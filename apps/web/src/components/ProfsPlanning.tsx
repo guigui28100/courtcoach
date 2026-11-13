@@ -12,8 +12,8 @@ export function ProfsPlanning() {
   const name = (p: { firstName: string; role: string }) => (p.firstName || "Entraîneur") + (p.role === "COACH" ? " (coach)" : "");
   return (
     <section className="grid gap-3">
-      <div><h2 className="m-0 text-xl">🗓️ Planning des profs</h2><p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine : cours adultes, compétition jeunes, école de tennis. Elle les voit dans « Ton agenda ».</p></div>
-      <div className="flex flex-wrap gap-2">{staff.map((p) => <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={"rounded-full border-2 px-3 py-1 text-sm font-bold " + (who === p.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>{name(p)}</button>)}</div>
+      <div><h2 className="m-0 text-xl">Planning des profs</h2><p className="m-0 mt-1 text-sm text-muted">Choisis la personne, puis place ses cours de la semaine : cours adultes, compétition jeunes, école de tennis. Elle les voit dans « Ton agenda ».</p></div>
+      <div className="flex flex-wrap gap-2">{staff.map((p) => <button key={p.id} type="button" aria-pressed={who === p.id} onClick={() => setWho(p.id)} className={"rounded-full border-2 px-3 py-1 text-sm font-semibold " + (who === p.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>{name(p)}</button>)}</div>
       {who ? <WeekPlanner key={who} id={who} name={name(staff.find((p) => p.id === who)!)} /> : <p className="text-muted">Aucun entraîneur pour le moment.</p>}
     </section>
   );

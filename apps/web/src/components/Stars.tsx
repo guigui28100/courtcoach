@@ -31,7 +31,7 @@ export function ReasonPicker({ value, onChange, negative = false }: { value: str
     <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={negative ? "Qu'est-ce qui n'a pas été ?" : "Pourquoi ces étoiles ?"}>
       {(negative ? STAR_NEG_REASONS : STAR_REASONS).map((r) => (
         <button key={r.id} type="button" role="radio" aria-checked={value === r.id} title={r.hint} onClick={() => onChange(r.id)}
-          className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (value === r.id ? (negative ? "border-[#b3261e] bg-[#b3261e] text-white" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{r.emoji} </span>{r.label}</button>
+          className={"min-h-10 rounded-full border-2 px-3 text-sm font-semibold " + (value === r.id ? (negative ? "border-[#b3261e] bg-[#b3261e] text-white" : "border-ink bg-ink text-white") : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{r.emoji} </span>{r.label}</button>
       ))}
     </div>
   );
@@ -43,7 +43,7 @@ export function DomainPicker({ value, onChange }: { value: string; onChange: (id
     <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Quel domaine du radar fait-elle grandir ?">
       {EVAL_AXES.map((a) => (
         <button key={a.key} type="button" role="radio" aria-checked={value === a.key} onClick={() => onChange(a.key)}
-          className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (value === a.key ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</button>
+          className={"min-h-10 rounded-full border-2 px-3 text-sm font-semibold " + (value === a.key ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}><span aria-hidden="true">{DOMAIN_EMOJI[a.key]} </span>{a.label}</button>
       ))}
     </div>
   );
@@ -76,9 +76,9 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
               {[-3, -2, -1, 0, 1, 2, 3].map((n) => (
                 <button key={n} type="button" role="radio" aria-checked={l.stars === n} aria-label={n < 0 ? `Retirer ${-n} étoile${n < -1 ? "s" : ""} (pas en progrès)` : n === 0 ? "Aucune étoile" : `${n} étoile${n > 1 ? "s" : ""}`}
                   onClick={() => set(i, { stars: n, ...(n !== 0 && (n < 0) !== (l.stars < 0) ? { reason: "" } : {}) })}
-                  className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-bold " + (l.stars === n ? (n < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (n === 0 ? " mx-1" : "")}>{n < 0 ? `−${-n}` : n === 0 ? "0" : "⭐".repeat(n)}</button>
+                  className={"min-h-11 min-w-12 rounded-xl border-2 px-2 text-lg font-semibold " + (l.stars === n ? (n < 0 ? "border-[#b3261e] bg-[#fdecea] text-[#b3261e]" : "border-[#e0b100] bg-[#fff3b0]") : "border-line bg-white text-ink hover:bg-sand") + (n === 0 ? " mx-1" : "")}>{n < 0 ? `−${-n}` : n === 0 ? "0" : "⭐".repeat(n)}</button>
               ))}
-              <span className={"text-sm font-bold " + (l.stars < 0 ? "text-[#b3261e]" : "")}>{l.stars === 0 ? "aucune étoile : cette ligne ne sera pas enregistrée" : l.stars < 0 ? `📉 pas en progrès : ${who} perd ${-l.stars} étoile${l.stars < -1 ? "s" : ""} dans ce domaine` : `${l.stars} étoile${l.stars > 1 ? "s" : ""}`}</span>
+              <span className={"text-sm font-semibold " + (l.stars < 0 ? "text-[#b3261e]" : "")}>{l.stars === 0 ? "aucune étoile : cette ligne ne sera pas enregistrée" : l.stars < 0 ? `📉 pas en progrès : ${who} perd ${-l.stars} étoile${l.stars < -1 ? "s" : ""} dans ce domaine` : `${l.stars} étoile${l.stars > 1 ? "s" : ""}`}</span>
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={() => onChange(lines.filter((_, j) => j !== i))}>✕ Retirer cette ligne</button>
           </div>
@@ -90,17 +90,17 @@ function OtherLinesEditor({ lines, onChange, who, goals = [] }: { lines: StarLin
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sur quelle mission ?">
               {goals.map((g) => (
                 <button key={g.id} type="button" role="radio" aria-checked={l.goalId === g.id} onClick={() => set(i, { goalId: g.id, domain: g.axis.toLowerCase() })}
-                  className={"min-h-10 rounded-full border-2 px-3 text-left text-sm font-bold " + (l.goalId === g.id ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</button>
+                  className={"min-h-10 rounded-full border-2 px-3 text-left text-sm font-semibold " + (l.goalId === g.id ? "border-clay bg-clay text-white" : "border-line bg-white text-ink hover:bg-sand")}>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</button>
               ))}
               <button type="button" role="radio" aria-checked={!l.goalId} onClick={() => set(i, { goalId: undefined })}
-                className={"min-h-10 rounded-full border-2 px-3 text-sm font-bold " + (!l.goalId ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>Autre (sans mission)</button>
+                className={"min-h-10 rounded-full border-2 px-3 text-sm font-semibold " + (!l.goalId ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:bg-sand")}>Autre (sans mission)</button>
             </div>
           </>}
           {!l.goalId && <>
             <p className="hint m-0">{l.stars < 0 ? "Quel domaine du radar n'est pas en progrès ?" : "Quel domaine du radar fait-elle grandir ?"}</p>
             <DomainPicker value={l.domain} onChange={(id) => set(i, { domain: id })} />
           </>}
-          <label className="grid gap-1 text-sm font-bold">{l.stars < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+          <label className="grid gap-1 text-sm font-semibold">{l.stars < 0 ? `Explique en une phrase (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
             <input className="input" maxLength={300} value={l.comment} onChange={(e) => set(i, { comment: e.target.value })} placeholder={l.stars < 0 ? "Ex. : Tu as discuté pendant l'exercice, on en reparle mardi." : "Ex. : Super service aujourd'hui !"} /></label>
           </>}
         </div>
@@ -119,7 +119,7 @@ function QuickButtons({ value, onPick, who, name }: { value: number | null; onPi
         <button key={q.n} type="button" role="radio" aria-checked={value === q.n} onClick={() => onPick(q.n)}
           className={"flex min-h-14 flex-col items-center justify-center rounded-xl border-2 px-1 text-center leading-tight " + (value === q.n ? "text-white shadow-md" : "border-line bg-sand text-muted hover:bg-white")}
           style={value === q.n ? { background: q.color, borderColor: q.color } : undefined}>
-          <span className="text-xl" aria-hidden="true">{q.emoji}</span><span className="text-xs font-bold">{q.label}</span>
+          <span className="text-xl" aria-hidden="true">{q.emoji}</span><span className="text-xs font-semibold">{q.label}</span>
         </button>
       ))}
     </div>
@@ -144,7 +144,7 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
     onChange(cur ? lines.map((l) => (l === cur ? next : l)) : [...lines, next]);
   };
   const noteField = (n: number, l: StarLine | undefined, set: (p: Partial<StarLine>) => void) => n !== 0 && (
-    <label className="grid gap-1 text-sm font-bold">{n < 0 ? `✏️ Explique pourquoi (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
+    <label className="grid gap-1 text-sm font-semibold">{n < 0 ? `✏️ Explique pourquoi (obligatoire : ${who} la verra)` : "Un petit mot (facultatif)"}
       <input className="input" maxLength={300} value={l?.comment ?? ""} onChange={(e) => set({ comment: e.target.value })} placeholder={n < 0 ? "Ex. : Beaucoup de balles dans le filet, on en reparle." : "Ex. : Belle série de revers aujourd'hui !"} /></label>
   );
   // Une carte par objectif : 4 gros boutons (recul −1, pas encore 0, ça progresse +1, réussi +2)
@@ -158,9 +158,9 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
     return (
       <div key={g.id} className="grid gap-2 rounded-2xl border-2 border-line bg-white p-3" style={{ borderLeftWidth: 7, borderLeftColor: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }}>
         <strong>{DOMAIN_EMOJI[g.axis.toLowerCase()]} {g.title}</strong>
-        {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-bold text-muted" aria-live="polite">{got} sur {target} ⭐{day && n !== 0 && <span className={n > 0 ? " text-ok" : " text-bad"}> ({n > 0 ? "+" : "−"}{Math.abs(n)} ce cours)</span>}</small></div>}
+        {allStars && <div className="flex items-center gap-2"><div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand" role="img" aria-label={`${got} étoiles sur ${target}`}><div className="h-full" style={{ width: `${pct}%`, background: DOMAIN_COLOR[g.axis.toLowerCase()] ?? "#999" }} /></div><small className="whitespace-nowrap font-semibold text-muted" aria-live="polite">{got} sur {target} ⭐{day && n !== 0 && <span className={n > 0 ? " text-ok" : " text-bad"}> ({n > 0 ? "+" : "−"}{Math.abs(n)} ce cours)</span>}</small></div>}
         <QuickButtons who={who} name={g.title} value={l ? n : null} onPick={(k) => set({ stars: k })} />
-        {n !== 0 && !QUICK.some((q) => q.n === n) && <small className="font-bold text-muted">Actuellement : {n} ⭐ (choisis un bouton pour changer)</small>}
+        {n !== 0 && !QUICK.some((q) => q.n === n) && <small className="font-semibold text-muted">Actuellement : {n} ⭐ (choisis un bouton pour changer)</small>}
         {noteField(n, l, set)}
       </div>
     );
@@ -172,8 +172,8 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
     return (
       <div key={q.key} className="grid gap-2">
         <div className="grid grid-cols-2 gap-2" role="group" aria-label={`${q.label} de ${who}`}>
-          <button type="button" aria-pressed={n > 0} title={q.hint} onClick={() => set({ stars: n > 0 ? 0 : 1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n > 0 ? "border-[#e0a800] bg-[#f5c518] text-[#4a3800]" : "border-line bg-white text-ink hover:bg-sand")}>🌟 {q.key === "attitude" ? "Super attitude" : "Super concentration"}</button>
-          <button type="button" aria-pressed={n < 0} onClick={() => set({ stars: n < 0 ? 0 : -1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-bold " + (n < 0 ? "border-[#b3925a] bg-[#b3925a] text-white" : "border-line bg-white text-ink hover:bg-sand")}>⬇️ {q.key === "attitude" ? "Attitude à revoir" : "Concentration à revoir"}</button>
+          <button type="button" aria-pressed={n > 0} title={q.hint} onClick={() => set({ stars: n > 0 ? 0 : 1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-semibold " + (n > 0 ? "border-[#e0a800] bg-[#f5c518] text-[#4a3800]" : "border-line bg-white text-ink hover:bg-sand")}>🌟 {q.key === "attitude" ? "Super attitude" : "Super concentration"}</button>
+          <button type="button" aria-pressed={n < 0} onClick={() => set({ stars: n < 0 ? 0 : -1 })} className={"flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 px-2 text-sm font-semibold " + (n < 0 ? "border-[#b3925a] bg-[#b3925a] text-white" : "border-line bg-white text-ink hover:bg-sand")}>⬇️ {q.key === "attitude" ? "Attitude à revoir" : "Concentration à revoir"}</button>
         </div>
         {noteField(n, l, set)}
       </div>
@@ -181,12 +181,12 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
   };
   return (
     <div className="grid gap-3">
-      {goals.length > 0 ? <h4 className="m-0 font-bold">🚀 Les objectifs de {who}</h4> : <p className="hint m-0">{who} n'a pas encore d'objectif pour ce trimestre.</p>}
+      {goals.length > 0 ? <h4 className="m-0 font-semibold">🚀 Les objectifs de {who}</h4> : <p className="hint m-0">{who} n'a pas encore d'objectif pour ce trimestre.</p>}
       {goals.map(missionRow)}
-      <h4 className="m-0 font-bold">🌟 Attitude et concentration</h4>
+      <h4 className="m-0 font-semibold">🌟 Attitude et concentration</h4>
       {QUALITIES.map(qualityRow)}
       <details className="rounded-2xl border border-line bg-white p-3" open={others.length > 0}>
-        <summary className="cursor-pointer font-bold">Autre étoile, hors mission et hors qualités</summary>
+        <summary className="cursor-pointer font-semibold">Autre étoile, hors mission et hors qualités</summary>
         <div className="mt-2"><OtherLinesEditor lines={others} who={who} onChange={(o) => onChange([...lines.filter((l) => !others.includes(l)), ...o])} /></div>
       </details>
     </div>
@@ -195,7 +195,7 @@ export function StarLinesEditor({ lines, onChange, who, goals = [], allStars, da
 
 // Nombre d'étoiles en chiffres (+2, 0, −1…), pour les listes : date d'abord, puis ce nombre, puis le domaine
 export const StarCount = ({ n }: { n: number }) => <b className={"inline-block min-w-14 whitespace-nowrap rounded-full px-2.5 py-0.5 text-center " + (n < 0 ? "bg-[#fde8e6] text-[#b3261e]" : "bg-[#fff3b0] text-[#6b4e00]")} aria-label={n < 0 ? `${-n} étoile${n < -1 ? "s" : ""} en moins` : `${n} étoile${n > 1 ? "s" : ""}`}>{n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0"} ⭐</b>;
-export const StarsLine = ({ n }: { n: number }) => n < 0 ? <span className="font-black text-[#b3261e]" aria-label={`${-n} étoile${n < -1 ? "s" : ""} en moins`}>📉 −{-n} ⭐</span> : <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
+export const StarsLine = ({ n }: { n: number }) => n < 0 ? <span className="font-semibold text-[#b3261e]" aria-label={`${-n} étoile${n < -1 ? "s" : ""} en moins`}>📉 −{-n} ⭐</span> : <span aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>{"⭐".repeat(n)}</span>;
 
 // Carte « Mes étoiles » (lecture seule) pour le jeune (fond sombre) et pour sa famille
 export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: CourseStar[] | null; dark?: boolean; who?: "jeune" | "famille" }) {
@@ -210,7 +210,7 @@ export function StarsCard({ stars, dark = false, who = "jeune" }: { stars: Cours
       <p className={"m-0 " + sub}>{who === "jeune" ? "Ton coach te donne 1 à 3 étoiles à la fin d'un cours, pour ton effort, ton attitude ou un progrès. Quand un domaine n'est pas en progrès, tu peux en perdre : il t'explique toujours pourquoi, pour t'aider à progresser. Ce n'est jamais une note, et personne d'autre que toi (et tes parents) ne les voit." : "Le coach donne 1 à 3 étoiles à la fin d'un cours, pour l'effort, l'attitude ou un progrès. Quand un domaine n'est pas en progrès, il peut en retirer, toujours avec une explication. Ce n'est jamais une note."}</p>
       {stars.length === 0 ? <p className={"m-0 rounded-2xl p-3 " + row}>Pas encore d'étoile : {who === "jeune" ? "ton coach en donne" : "le coach en donne"} à la fin des cours.</p> : (
         <>
-          <p className="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1"><strong className="text-4xl font-black">⭐ {totalStars(stars)}</strong><span className={sub}>étoile{totalStars(stars) > 1 ? "s" : ""} en tout · {thisMonth} ce mois-ci</span></p>
+          <p className="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1"><strong className="text-4xl font-semibold">⭐ {totalStars(stars)}</strong><span className={sub}>étoile{totalStars(stars) > 1 ? "s" : ""} en tout · {thisMonth} ce mois-ci</span></p>
           <ul className="m-0 grid list-none gap-2 p-0">
             {stars.slice(0, 12).map((s) => { const r = starReason(s.reason); const neg = s.stars < 0; return (
               <li key={s.id} className={"grid gap-0.5 rounded-2xl p-3 " + row + (neg ? " border-l-4 border-[#ff8a80]" : "")}>
