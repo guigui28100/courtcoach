@@ -30,7 +30,7 @@ export default function VideoReview() {
   const draft = !!v.draft; // vidéo déposée par le coach : le joueur ne la voit pas encore
   async function sendVideo() {
     setMsg(null);
-    try { await post(`/videos/${id}/send-to-player`); setMsg({ ok: true, text: `Vidéo envoyée à ${v!.player?.firstName ?? "le joueur"} ✓` }); load(); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
+    try { await post(`/videos/${id}/send-to-player`); setMsg({ ok: true, text: `Vidéo envoyée à ${v!.player?.firstName ?? "le joueur"}` }); load(); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
   // Rattacher / détacher une mission : enregistré tout de suite (le joueur retrouve la vidéo en cliquant sur la mission)
@@ -47,7 +47,7 @@ export default function VideoReview() {
     try {
       await put(`/videos/${id}/analysis`, centre ? { observation: mot, strengths: bien, improve: travaille, goalIds } : { observation: String(f.get("observation") || ""), strengths: String(f.get("strengths") || ""), improve: String(f.get("improve") || ""), exercises: exercises.filter((x) => x.trim()) });
       if (thenSend) await post(`/videos/${id}/analysis/send`);
-      setMsg({ ok: true, text: thenSend ? (sent ? "Analyse mise à jour ✓" : draft ? "Vidéo et analyse envoyées ✓ : le joueur les voit dans son espace." : "Analyse envoyée ✓ : l'élève est prévenu dans son espace.") : "Brouillon enregistré ✓" }); load();
+      setMsg({ ok: true, text: thenSend ? (sent ? "Analyse mise à jour" : draft ? "Vidéo et analyse envoyées ✓ : le joueur les voit dans son espace." : "Analyse envoyée ✓ : l'élève est prévenu dans son espace.") : "Brouillon enregistré" }); load();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   async function say(e: FormEvent) { e.preventDefault(); await post(`/videos/${id}/messages`, { text }); setText(""); load(); }
@@ -61,12 +61,12 @@ export default function VideoReview() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid content-start gap-3">
             {draft && (
-              <p className="alert m-0" role="status"><strong>📝 Brouillon :</strong> {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</p>
+              <p className="alert m-0" role="status"><strong>Brouillon :</strong> {v.player?.firstName} et sa famille ne voient pas encore cette vidéo.</p>
             )}
             <VideoStudio v={v} onChanged={load} cmpOpen={cmp} onToggleCompare={() => setCmp((x) => !x)} />
             {v.question && !v.fromCoach && <p className="card m-0"><strong>Question posée :</strong> {v.question}</p>}
             <details className="text-sm"><summary className="cursor-pointer font-semibold">⋯ Plus</summary>
-            {draft && <button type="button" className="btn-outline btn-sm mb-2 self-start" onClick={sendVideo}>📤 Envoyer la vidéo seule, sans analyse</button>}
+            {draft && <button type="button" className="btn-outline btn-sm mb-2 self-start" onClick={sendVideo}>Envoyer la vidéo seule, sans analyse</button>}
             <p className="hint">Supprimée automatiquement le {v.deleteAfter ? fmtDate(v.deleteAfter) : "—"}.</p>
             <button className="btn-danger btn-sm self-start" onClick={async () => { if (confirm("Supprimer définitivement cette vidéo ?")) { await del(`/videos/${id}`); nav(centre && v.player ? `/coach/centre/${v.player.id}?onglet=videos` : "/coach/adultes?onglet=videos"); } }}>Supprimer la vidéo</button>
             </details>
@@ -120,10 +120,10 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
   return (
     <section className="card grid gap-4" aria-labelledby="vr-simple">
       <h2 id="vr-simple" className="m-0 text-xl">Mon analyse {v.analysis?.authorName && <AuthorBadge a={v.analysis} prefix="Rédigée par" />} {sent ? <span className="badge ml-2 !border-ok !text-ok">Envoyée</span> : <span className="badge ml-2">Brouillon</span>}</h2>
-      <Field label="👍 Ce qui est bien" id="vr-bien" hint="Une phrase, simple et encourageante."><textarea id="vr-bien" className="input min-h-20" maxLength={2000} value={bien} onChange={(e) => setBien(e.target.value)} placeholder="Ex. : Belle rotation d'épaules sur ton coup droit !" /></Field>
-      <Field label="🎯 Ce que tu dois travailler" id="vr-trav" hint="Une phrase : le point sur lequel on se concentre."><textarea id="vr-trav" className="input min-h-20" maxLength={2000} value={travaille} onChange={(e) => setTravaille(e.target.value)} placeholder="Ex. : Lancer la balle un peu plus haut au service." /></Field>
-      {mot.trim() && <Field label={`💬 Ancien mot pour ${name}`} id="vr-mot" hint="Écrit avant : il reste visible. Tu peux le vider."><textarea id="vr-mot" className="input" maxLength={3000} value={mot} onChange={(e) => setMot(e.target.value)} /></Field>}
-      <fieldset className="field"><legend>🚀 Relier à une mission</legend>
+      <Field label="Ce qui est bien" id="vr-bien" hint="Une phrase, simple et encourageante."><textarea id="vr-bien" className="input min-h-20" maxLength={2000} value={bien} onChange={(e) => setBien(e.target.value)} placeholder="Ex. : Belle rotation d'épaules sur ton coup droit !" /></Field>
+      <Field label="Ce que tu dois travailler" id="vr-trav" hint="Une phrase : le point sur lequel on se concentre."><textarea id="vr-trav" className="input min-h-20" maxLength={2000} value={travaille} onChange={(e) => setTravaille(e.target.value)} placeholder="Ex. : Lancer la balle un peu plus haut au service." /></Field>
+      {mot.trim() && <Field label={`Ancien mot pour ${name}`} id="vr-mot" hint="Écrit avant : il reste visible. Tu peux le vider."><textarea id="vr-mot" className="input" maxLength={3000} value={mot} onChange={(e) => setMot(e.target.value)} /></Field>}
+      <fieldset className="field"><legend>Relier à une mission</legend>
         <p className="hint m-0">{name} verra un bouton « 🎬 Voir la vidéo » sur la mission, dans « Mes missions ». C'est enregistré tout de suite.</p>
         {v.goals.length === 0 && <p className="hint m-0">Aucune mission pour ce joueur : crée-en une dans « Définir les objectifs de travail ».</p>}
         <div className="flex flex-wrap gap-2" role="group" aria-label="Missions du joueur">{v.goals.map((g) => {
@@ -133,7 +133,7 @@ function SimpleAnalysis({ v, sent, draft, bien, setBien, travaille, setTravaille
       </fieldset>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" className="btn-outline" onClick={() => save(false)}>Enregistrer le brouillon</button>
-        <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `📤 Envoyer à ${name}`}</button>
+        <button type="button" className="btn-clay" onClick={() => save(true)}>{sent ? "Mettre à jour l'analyse" : `Envoyer à ${name}`}</button>
       </div>
       {msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}
       {!sent && <p className="hint m-0">L'envoi part avec la vidéo, l'analyse, les images et ta voix.</p>}

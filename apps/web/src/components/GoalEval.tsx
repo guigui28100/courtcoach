@@ -26,16 +26,16 @@ export function GoalEvalCard({ g, t, season, stars, color, label, onUpdate }: { 
       <div className="flex flex-wrap items-start justify-between gap-2"><strong>{g.title}</strong><span className="text-sm font-semibold" style={{ color }}>{label}</span></div>
       <div className="flex flex-wrap gap-2"><AuthorBadge a={g} prefix="Fixé par" />{checkpointAt(g, t) && <AuthorBadge a={checkpointAt(g, t)} prefix="Évalué par" />}</div>
       {g.indicator && <p className="hint m-0">Mesuré par : {g.indicator}</p>}
-      {isCarriedOver(g, t) && <p className="m-0 text-sm font-semibold text-[#5b21b6]">🔁 Reconduit depuis le trimestre {t - 1}</p>}
+      {isCarriedOver(g, t) && <p className="m-0 text-sm font-semibold text-[#5b21b6]">Reconduit depuis le trimestre {t - 1}</p>}
       <div className="grid gap-1 rounded-xl bg-white p-2">
-        <p className="m-0 flex flex-wrap items-baseline justify-between gap-2 text-sm font-semibold"><span>⭐ {earned} étoile{earned > 1 ? "s" : ""} sur {target} à gagner</span><span>{pct} %</span></p>
+        <p className="m-0 flex flex-wrap items-baseline justify-between gap-2 text-sm font-semibold"><span>{earned} étoile{earned > 1 ? "s" : ""} sur {target} à gagner</span><span>{pct} %</span></p>
         <ProgressBar value={pct} color={color} />
         <p className="hint m-0">{pct >= 100 ? "Objectif d'étoiles atteint : « atteinte » est conseillé." : `Il manque ${target - earned} étoile${target - earned > 1 ? "s" : ""} : « en cours » est conseillé pour l'instant.`} La décision t'appartient.</p>
       </div>
       <div role="radiogroup" aria-label={`Bilan de « ${g.title} » au trimestre ${t}`} className="flex flex-wrap gap-2">
         {(["ACHIEVED", "IN_PROGRESS", "NOT_ACHIEVED"] as GoalStatus[]).map((k) => { const on = status === k; return (
           <button key={k} type="button" role="radio" aria-checked={on} onClick={() => save({ status: k })} className={"btn btn-sm " + (on ? "" : "border-2 border-line bg-white text-ink")} style={on ? { background: STATUS[k].bg, color: STATUS[k].ink, border: `2px solid ${STATUS[k].ink}` } : undefined}>
-            {k === "ACHIEVED" ? "✅ Atteinte" : k === "IN_PROGRESS" ? "🔄 En cours" : "❌ Non atteinte"}{!status && k === advice ? " · conseillé" : ""}
+            {k === "ACHIEVED" ? "Atteinte" : k === "IN_PROGRESS" ? "En cours" : "Non atteinte"}{!status && k === advice ? " · conseillé" : ""}
           </button>
         ); })}
       </div>

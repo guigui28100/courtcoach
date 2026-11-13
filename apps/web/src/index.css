@@ -161,8 +161,8 @@
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
 @keyframes pop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: no-preference) {
-  .stars.stars2 { animation: twinkle 3.5s ease-in-out infinite alternate; }
-  .planet-float { animation: float 7s ease-in-out infinite; }
+  .stars.stars2 {  }
+  .planet-float {  }
   .gal-pop { animation: pop 0.5s ease-out both; }
 }
 /* ---------- Thème « ados » (plus de 10 ans) : sobre, graphite, lignes de court — choisi d'après la date de naissance ---------- */
@@ -519,7 +519,7 @@ html[data-mode="light"] .galaxy-sky .bul-body figure:has(> svg[role="img"]), htm
 .agenda-lesson:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,.18); }
 .agenda-lesson:focus-visible { outline: 3px solid #17140f; outline-offset: 2px; }
 .agenda-lesson.is-ok { background: #1f7a3d; color: #fff; }
-.agenda-lesson.is-wait { background: #f2d230; color: #3a3200; border-color: #c9ac00; animation: agenda-pulse 2.4s ease-in-out infinite; }
+.agenda-lesson.is-wait { background: #f2d230; color: #3a3200; border-color: #c9ac00; }
 .agenda-lesson b { font-size: 0.8rem; }
 .agenda-lesson small { font-size: 0.68rem; opacity: .95; }
 .agenda-free { display: grid; place-items: center; background: #e7f4ea; border: 1px solid #b5dcbf; color: #2d6a3e; font-size: 0.68rem; font-weight: 600; }

@@ -13,7 +13,7 @@ export function StartEvalPanel({ p, onGoto, onSaved }: { p: Player; onGoto?: (ta
   return (
     <div className="grid gap-4">
       <StartBilan key={`${p.id}-${evals ? "ok" : "chargement"}`} p={p} season={season} t={0} saved={saved} onSaved={() => { setVersion((v) => v + 1); onSaved?.(); }} onGoto={onGoto} />
-      <p className="m-0"><Link to={`/coach/centre/${p.id}/bulletin/${season}/0`} className="btn-outline btn-sm no-underline">📄 Voir le bulletin de départ</Link></p>
+      <p className="m-0"><Link to={`/coach/centre/${p.id}/bulletin/${season}/0`} className="btn-outline btn-sm no-underline">Voir le bulletin de départ</Link></p>
     </div>
   );
 }

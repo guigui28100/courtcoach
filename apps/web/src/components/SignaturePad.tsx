@@ -26,7 +26,7 @@ export function SignaturePad() {
   async function remove() { setErr(""); setBusy(true); try { await del("/signature"); setSaved(null); } catch (x) { setErr((x as Error).message); } finally { setBusy(false); } }
   return (
     <section className="card grid gap-3" aria-labelledby="s-sign">
-      <h2 id="s-sign" className="m-0">✍️ Ma signature sur les bulletins</h2>
+      <h2 id="s-sign" className="m-0">Ma signature sur les bulletins</h2>
       <p className="hint m-0">Dessine ta signature une seule fois (à la souris ou au doigt). Elle apparaît ensuite en bas de tous les bulletins, à côté de « Signature du coach ».</p>
       {saved && <div className="grid gap-1"><strong>Signature enregistrée :</strong><img src={saved} alt="Ta signature enregistrée" className="h-20 w-auto max-w-full justify-self-start rounded-xl border-2 border-line bg-white p-2" /></div>}
       <canvas ref={canvas} width={500} height={160} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} aria-label="Zone pour dessiner ta signature" className="h-auto w-full max-w-lg touch-none rounded-xl border-2 border-dashed border-line bg-white" />

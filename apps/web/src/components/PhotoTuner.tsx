@@ -9,7 +9,7 @@ export function PhotoTuner({ value, onChange, label, withSize = false }: { value
   const mv = (dx: number, dy: number) => onChange({ focus: [clamp(f[0] + dx, 0, 100), clamp(f[1] + dy, 0, 100)] });
   return (
     <div className="grid gap-2 rounded-xl border-2 border-ink bg-white p-2" role="group" aria-label={`Réglage de la photo : ${label}`}>
-      <p className="m-0 text-sm font-extrabold text-ink">🖼️ Régler la photo</p>
+      <p className="m-0 text-sm font-extrabold text-ink">Régler la photo</p>
       <div className="flex flex-wrap items-center gap-3">
         <div className="grid grid-cols-3 gap-1">
           <span /><button type="button" className={b} aria-label="Monter la photo" onClick={() => mv(0, 10)}>▲</button><span />

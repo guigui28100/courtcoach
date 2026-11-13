@@ -52,7 +52,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
     const txt = (k: string) => String(f.get(k) ?? "");
     try {
       await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings, comments: Object.fromEntries(Object.entries(comments).filter(([, v]) => v.trim())), strengths: txt("strengths"), improve: txt("improve"), next: txt("next"), appreciation: txt("appreciation") });
-      setMsg({ ok: true, text: "Évaluation enregistrée ✓" }); setVersion((v) => v + 1); onSaved?.();
+      setMsg({ ok: true, text: "Évaluation enregistrée" }); setVersion((v) => v + 1); onSaved?.();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
@@ -64,7 +64,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
       {evals && season === currentSeason() && (
         <section className={"card flex flex-wrap items-center justify-between gap-3 border-2 " + (startDone ? "border-line" : "!border-clay")} aria-label="Bilan de départ">
           <div className="grid gap-1">
-            <h3 className="m-0">📍 Bilan de départ de {p.firstName} (début de saison)</h3>
+            <h3 className="m-0">Bilan de départ de {p.firstName} (début de saison)</h3>
             <p className="m-0 text-sm text-muted">{startDone ? "Déjà rempli : le jeune le voit en haut de son onglet Missions." : "Pas encore rempli. C’est le point de départ de la saison : tu notes ses 5 domaines, il le verra dans son onglet Missions."}</p>
           </div>
           <button type="button" className={t === 0 ? "btn-ink btn-sm" : "btn-clay"} disabled={t === 0} onClick={() => { setSeason(currentSeason()); setT(0); }}>{t === 0 ? "Tu es sur le bilan de départ ↓" : startDone ? "Modifier le bilan de départ" : "Saisir le bilan de départ"}</button>
@@ -79,7 +79,7 @@ export function Evaluations({ p, onSaved, onGoto }: { p: Player; onSaved?: () =>
 
       {t > 0 && (
         <section className="card grid gap-3" aria-labelledby="ev-objectifs">
-          <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 id="ev-objectifs" className="m-0 text-xl">🎯 Missions fixées pour le trimestre {t}</h2><p className="hint m-0">Ce sont les missions que tu as fixées dans l'onglet Objectifs. Pour chacune, indique où elle en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et <strong>figure automatiquement sur le bulletin du trimestre {t}</strong>.</p></div>
+          <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 id="ev-objectifs" className="m-0 text-xl">Missions fixées pour le trimestre {t}</h2><p className="hint m-0">Ce sont les missions que tu as fixées dans l'onglet Objectifs. Pour chacune, indique où elle en est : statut, avancement et ton commentaire. C'est enregistré tout de suite et <strong>figure automatiquement sur le bulletin du trimestre {t}</strong>.</p></div>
             <Link to={`/coach/centre/${p.id}/bulletin/${season}/${t}`} className="btn-outline btn-sm no-underline">Voir le bulletin du trimestre {t}</Link></div>
           {here.length === 0 ? <p className="alert m-0">Aucun objectif n'est prévu au trimestre {t}. Fixe-les dans l'onglet <strong>Objectifs</strong>.</p> : (
             <div className="grid gap-3 lg:grid-cols-2">
@@ -109,7 +109,7 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
     e.preventDefault();
     try {
       await put(`/players/${p.id}/evaluations/${season}/${t}`, { ratings: { ...(saved?.ratings ?? {}), ...rt }, comments: saved?.comments ?? {}, strengths: t === 0 ? (strong.length ? strong.slice(0, 6).join(" ; ") : saved?.strengths ?? "") : saved?.strengths ?? "", improve: t === 0 ? (todo.length ? todo.slice(0, 6).join(" ; ") : saved?.improve ?? "") : saved?.improve ?? "", next: saved?.next ?? "", appreciation: word });
-      setMsg({ ok: true, text: "Enregistré ✓" }); onSaved();
+      setMsg({ ok: true, text: "Enregistré" }); onSaved();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
   return (
@@ -145,8 +145,8 @@ export function StartBilan({ p, season, t, saved, onSaved, onGoto }: { p: Player
           </fieldset>
         );
       })}
-      {t === 0 && (strong.length > 0 || todo.length > 0) && <div className="grid gap-2 rounded-2xl border border-line bg-white p-3 text-sm sm:grid-cols-2"><p className="m-0"><strong>⭐ Points forts (automatique) :</strong> {strong.join(", ") || "—"}</p><p className="m-0"><strong>🎯 À travailler en priorité (automatique) :</strong> {todo.join(", ") || "—"}</p></div>}
-      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-semibold">💬 Le mot du coach</legend>
+      {t === 0 && (strong.length > 0 || todo.length > 0) && <div className="grid gap-2 rounded-2xl border border-line bg-white p-3 text-sm sm:grid-cols-2"><p className="m-0"><strong>Points forts (automatique) :</strong> {strong.join(", ") || "—"}</p><p className="m-0"><strong>À travailler en priorité (automatique) :</strong> {todo.join(", ") || "—"}</p></div>}
+      <fieldset className="card grid gap-3"><legend className="px-2 font-display text-lg font-semibold">Le mot du coach</legend>
         <Field label="Un commentaire pour le bulletin (facultatif)" id="b-word"><textarea id="b-word" className="input" maxLength={3000} value={word} onChange={(e) => setWord(e.target.value)} placeholder="Ex. : Un joueur plein d'envie, continue comme ça !" /></Field>
       </fieldset>
       <div className="flex flex-wrap items-center gap-3"><button className="btn-clay">{t === 0 ? "Enregistrer le bilan" : "Enregistrer l'image du joueur"}</button>{msg && <p role="status" className={"m-0 font-semibold " + (msg.ok ? "text-ok" : "text-bad")}>{msg.text}</p>}</div>

@@ -27,7 +27,7 @@ export function PlayerPicker({ players, value, onChange, name, label }: { player
 function Secret({ email, password, onClose }: { email: string; password: string; onClose: () => void }) {
   return (
     <div role="status" className="rounded-2xl border-2 border-ok bg-[#eef8f1] p-4">
-      <p className="m-0 font-semibold">✅ Note ces informations maintenant : le mot de passe ne sera plus affiché.</p>
+      <p className="m-0 font-semibold">Note ces informations maintenant : le mot de passe ne sera plus affiché.</p>
       <p className="m-0 mt-2">Identifiant : <strong>{email}</strong></p>
       <p className="m-0">Mot de passe provisoire : <strong className="select-all font-mono text-lg">{password}</strong></p>
       <p className="hint m-0 mt-1">Transmets-les en main propre ou par message privé. L'entraîneur devra choisir son propre mot de passe à la première connexion.</p>
@@ -57,7 +57,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
   }
   async function savePlayers(t: Trainer) {
     setErr(""); setSaved("");
-    try { await put(`/trainers/${t.id}/players`, { playerIds: edits[t.id] ?? t.playerIds }); setEdits((o) => { const n = { ...o }; delete n[t.id]; return n; }); setSaved(`Jeunes de ${t.firstName ?? t.email} enregistrés ✓`); load(); } catch (x) { setErr((x as Error).message); }
+    try { await put(`/trainers/${t.id}/players`, { playerIds: edits[t.id] ?? t.playerIds }); setEdits((o) => { const n = { ...o }; delete n[t.id]; return n; }); setSaved(`Jeunes de ${t.firstName ?? t.email} enregistrés`); load(); } catch (x) { setErr((x as Error).message); }
   }
   async function reset(t: Trainer) {
     if (!confirm(`Donner un nouveau mot de passe provisoire à ${t.firstName ?? t.email} ? Il sera déconnecté.`)) return;
@@ -71,7 +71,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
   return (
     <section className="grid gap-4" aria-labelledby="tr-h">
       <div className="grid gap-1">
-        <h2 id="tr-h" className="m-0 text-xl">👥 Entraîneurs (comité et club)</h2>
+        <h2 id="tr-h" className="m-0 text-xl">Entraîneurs (comité et club)</h2>
         <p className="hint m-0">Un entraîneur (de comité ou de club) a son propre compte. Il ne voit <strong>que les jeunes que tu coches</strong> (les autres n'existent pas pour lui), n'a <strong>aucun accès</strong> aux demandes de coaching des adultes, et peut saisir objectifs, missions, bilans, bulletins, étoiles, matchs et analyses de vidéos de ses jeunes. Il ne voit pas la santé ni tes notes privées, et ne peut ni créer ni supprimer un jeune, ni gérer les accords et les comptes des familles.</p>
       </div>
       {secret && <Secret email={secret.email} password={secret.password} onClose={() => setSecret(null)} />}
@@ -84,7 +84,7 @@ export function TrainersTab({ players }: { players: Player[] }) {
           </div>
           <fieldset className="m-0 grid gap-2 border-0 p-0"><legend className="mb-1 font-semibold">Type d'entraîneur</legend>
             <div className="flex flex-wrap gap-2">
-              {([["COMITE", "🏛️ Entraîneur de comité"], ["CLUB", "🎾 Entraîneur de club"]] as const).map(([v, l], i) => (
+              {([["COMITE", "Entraîneur de comité"], ["CLUB", "Entraîneur de club"]] as const).map(([v, l], i) => (
                 <label key={v} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line bg-white px-4 font-semibold has-[:checked]:border-clay has-[:checked]:bg-[#fdf1ea]"><input type="radio" name="kind" value={v} defaultChecked={i === 0} className="h-5 w-5 accent-clay" />{l}</label>
               ))}
             </div>
@@ -101,10 +101,10 @@ export function TrainersTab({ players }: { players: Player[] }) {
           {list.map((t) => { const sel = edits[t.id] ?? t.playerIds; const dirty = !!edits[t.id]; return (
             <li key={t.id} className="card grid gap-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-semibold text-muted">{t.kind === "CLUB" ? "🎾 Club" : "🏛️ Comité"}</span>{t.teaches && <span className="ml-1 rounded-full bg-[#eef8f1] px-2.5 py-0.5 align-middle text-xs font-semibold text-ok">👩‍🏫 Donne des cours particuliers</span>}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
+                <span className="flex items-center gap-3"><Avatar name={t.firstName ?? t.email} size={44} /><span><strong className="block text-lg">{t.firstName ?? "Entraîneur"} <span className="ml-1 rounded-full bg-sand px-2.5 py-0.5 align-middle text-xs font-semibold text-muted">{t.kind === "CLUB" ? "Club" : "Comité"}</span>{t.teaches && <span className="ml-1 rounded-full bg-[#eef8f1] px-2.5 py-0.5 align-middle text-xs font-semibold text-ok">‍🏫 Donne des cours particuliers</span>}</strong><small className="hint">{t.email} · {t.lastLoginAt ? `dernière connexion le ${fmtDate(t.lastLoginAt)}` : t.mustChangePassword ? "pas encore connecté" : "jamais connecté"}{t.twoFactor ? " · 🔐 double authentification" : ""}</small></span></span>
                 <span className="flex flex-wrap gap-2"><button className="btn-outline btn-sm" onClick={() => reset(t)}>Nouveau mot de passe</button><button className="btn-danger btn-sm" onClick={() => remove(t)}>Supprimer le compte</button></span>
               </div>
-              <div><button className="btn-ink btn-sm" aria-expanded={weekOf === t.id} onClick={() => setWeekOf(weekOf === t.id ? null : t.id)}>🗓️ {weekOf === t.id ? "Fermer son planning" : "Placer ses cours de la semaine"}</button></div>
+              <div><button className="btn-ink btn-sm" aria-expanded={weekOf === t.id} onClick={() => setWeekOf(weekOf === t.id ? null : t.id)}>{weekOf === t.id ? "Fermer son planning" : "Placer ses cours de la semaine"}</button></div>
               {weekOf === t.id && <WeekPlanner id={t.id} name={t.firstName ?? "l'entraîneur"} />}
               <PlayerPicker players={players} value={sel} onChange={(ids) => setEdits((o) => ({ ...o, [t.id]: ids }))} name={t.firstName ?? "lui"} />
               <div className="flex flex-wrap items-center gap-3">

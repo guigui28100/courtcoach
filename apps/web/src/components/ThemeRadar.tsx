@@ -90,7 +90,7 @@ export function ThemeRadar({ ratings, goals, stars, dark = false, who = "jeune",
   const series: RadarSerie[] = [{ label: me ? "Mon départ" : "Départ", values: start, color: dark ? "#ffffff" : "#2a2720", dashed: true }, { label: me ? "Mon niveau maintenant" : "Maintenant", values: now, color: dark ? "#c9ad77" : "#e0b100" }];
   return (
     <section className={dark ? "glass grid gap-3" : "card grid gap-3"} aria-labelledby="theme-radar">
-      <h2 id="theme-radar" className="m-0 text-2xl">📍 {me ? "Ma toile" : "La toile du joueur"} · trimestre {t}</h2>
+      <h2 id="theme-radar" className="m-0 text-2xl">{me ? "Ma toile" : "La toile du joueur"} · trimestre {t}</h2>
       <p className={"m-0 " + sub}>Chaque pointe est un thème (coup droit, revers, service, montées au filet…). Le trait en pointillés est {me ? "ton départ (le bilan de ton coach)" : "le départ (le bilan du coach)"} ; le trait plein est {me ? "ton niveau maintenant" : "le niveau maintenant"} : le départ, plus les étoiles gagnées sur les missions du thème. <strong>12 étoiles = 1 point de plus.</strong> Elle repart du bilan de départ à chaque trimestre.</p>
       {n < 3 ? <p className={box}>{me ? "La toile apparaît dès que ton coach a noté au moins 3 points dans ton bilan de départ, ou fixé des missions sur 3 thèmes." : "La toile apparaît dès que le bilan de départ note au moins 3 points, ou que des missions couvrent 3 thèmes."}</p> : (
         <figure className="m-0 grid justify-items-center gap-2">

@@ -35,14 +35,14 @@ export default function Securite() {
       <Page>
         {me?.role === "COACH" && holidaysDaysLeft(todayIso()) < HOLIDAYS_WARN_DAYS && (
           <section className="grid gap-2 rounded border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-vac">
-            <h2 id="s-vac" className="m-0 text-lg">⚠️ Les dates de vacances scolaires s'arrêtent bientôt</h2>
+            <h2 id="s-vac" className="m-0 text-lg">Les dates de vacances scolaires s'arrêtent bientôt</h2>
             <p className="m-0">Les vacances (zone C) sont connues jusqu'au <strong>{fmtDay(holidaysLastDay())}</strong>. Après cette date, les plannings de cours ne sauteront plus les vacances et les étoiles ne préviendront plus.</p>
             <p className="m-0"><strong>À faire une fois par an :</strong> demande-moi d'ajouter la nouvelle année (dates officielles sur education.gouv.fr). Fichiers concernés : <code>apps/api/src/players/school-days.ts</code> et <code>apps/web/src/schoolDays.ts</code> (la même liste dans les deux).</p>
           </section>
         )}
         {me?.role === "COACH" && me.totpKeyShared && (
           <section className="grid gap-2 rounded-2xl border-2 border-[#e0b100] bg-[#fff3b0] p-4" role="status" aria-labelledby="s-cle">
-            <h2 id="s-cle" className="m-0 text-lg">⚠️ La clé de ta double authentification n'a pas sa propre clé</h2>
+            <h2 id="s-cle" className="m-0 text-lg">La clé de ta double authentification n'a pas sa propre clé</h2>
             <p className="m-0">Elle dépend du secret de connexion (<code>JWT_SECRET</code>). Si tu changes un jour ce secret, ta double authentification ne marcherait plus et tu pourrais être enfermé dehors.</p>
             <p className="m-0"><strong>À faire une fois :</strong> dans Vercel, projet <strong>courtcoach-api</strong>, ajoute une variable <code>TOTP_KEY</code> avec une longue phrase secrète au hasard (au moins 32 caractères, jamais copiée dans un message), puis redéploie. Personne n'est déconnecté, et ta double authentification continue de marcher. Une fois qu'elle existe, ne la change plus.</p>
           </section>
@@ -58,15 +58,15 @@ export default function Securite() {
         {me?.role === "COACH" && <SignaturePad />}
         {me?.role === "COACH" && <ClubAccess />}
         <section className="card grid gap-3" aria-labelledby="s-2fa">
-          <h2 id="s-2fa" className="m-0">Double authentification {on ? "✅ activée" : "⚠️ pas encore activée"}</h2>
+          <h2 id="s-2fa" className="m-0">Double authentification {on ? "activée" : "pas encore activée"}</h2>
           <p className="m-0">À chaque connexion, en plus de ton mot de passe, tu entres un code à 6 chiffres qui change toutes les 30 secondes et qui s'affiche sur ton téléphone. Même si quelqu'un devine ton mot de passe, il ne peut pas entrer.</p>
 
           {codes && (
             <div role="status" className="rounded-2xl border-2 border-ok bg-[#eef8f1] p-4">
-              <p className="m-0 font-semibold">✅ C'est activé. Note ces 8 codes de secours maintenant : ils ne seront plus affichés.</p>
+              <p className="m-0 font-semibold">C'est activé. Note ces 8 codes de secours maintenant : ils ne seront plus affichés.</p>
               <p className="m-0 text-sm">Chaque code ne sert qu'une fois, si tu perds ton téléphone. Garde-les sur papier, dans un endroit sûr (pas dans ton téléphone).</p>
               <ul className="m-0 mt-2 grid list-none grid-cols-2 gap-2 p-0 font-mono text-lg font-semibold">{codes.map((c) => <li key={c} className="rounded bg-white px-2 py-1">{c}</li>)}</ul>
-              <button className="btn-outline btn-sm mt-3" onClick={() => window.print()}>🖨️ Imprimer</button>
+              <button className="btn-outline btn-sm mt-3" onClick={() => window.print()}>Imprimer</button>
             </div>
           )}
 

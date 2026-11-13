@@ -14,7 +14,7 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
     const f = Object.fromEntries(new FormData(e.currentTarget).entries());
     const body: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(f)) { if (k === "heightCm") { if (v) body[k] = Number(v); } else body[k] = String(v); }
-    try { onSaved(await put<Player>(`/players/${p.id}/renseignements`, body)); setMsg({ ok: true, text: "✅ Merci, c'est enregistré. Le coach le voit tout de suite." }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } finally { setBusy(false); }
+    try { onSaved(await put<Player>(`/players/${p.id}/renseignements`, body)); setMsg({ ok: true, text: "Merci, c'est enregistré. Le coach le voit tout de suite." }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } finally { setBusy(false); }
   }
   const text = (id: keyof Player, label: string, extra?: { hint?: string; type?: string; placeholder?: string }) => (
     <Field label={label} id={id} hint={extra?.hint}><input id={id} name={id} type={extra?.type ?? "text"} defaultValue={(p[id] as string | number | null) ?? ""} className="input" placeholder={extra?.placeholder} /></Field>
@@ -25,7 +25,7 @@ export function FamilyInfo({ p, onSaved }: { p: Player; onSaved: (p: Player) => 
   return (
     <form onSubmit={save} className="grid gap-4" noValidate key={p.id}>
       <section className="card grid gap-2">
-        <h2 className="m-0 text-xl">📝 Fiche de renseignements de {p.firstName}</h2>
+        <h2 className="m-0 text-xl">Fiche de renseignements de {p.firstName}</h2>
         <p className="m-0">Le coach a créé la fiche. <strong>C'est à vous de compléter le reste</strong> : cela l'aide à mieux accompagner votre enfant. Rien n'est obligatoire.</p>
         <dl className="m-0 grid gap-1 rounded-xl bg-sand/60 p-3 text-sm sm:grid-cols-3">
           <div><dt className="font-semibold">Prénom</dt><dd className="m-0">{p.firstName}</dd></div>

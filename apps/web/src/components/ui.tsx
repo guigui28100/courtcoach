@@ -207,7 +207,7 @@ export function SelectOrText({ id, name, options, value, suffix = "", type = "te
       <select id={id} className="input" value={custom ? OTHER : val} onChange={(e) => { if (e.target.value === OTHER) { setCustom(true); setVal(""); } else { setCustom(false); setVal(e.target.value); } }}>
         <option value="">Choisir…</option>
         {options.map((o) => <option key={o} value={o}>{o}{suffix}</option>)}
-        <option value={OTHER}>✏️ Autre : je l'écris moi-même</option>
+        <option value={OTHER}>Autre : je l'écris moi-même</option>
       </select>
       {custom && <input type={type} className="input" aria-label="Ma réponse" placeholder="Écris ta réponse ici" maxLength={maxLength} value={val} onChange={(e) => setVal(e.target.value)} />}
       <input type="hidden" name={name} value={val} />
@@ -235,7 +235,7 @@ export function MultiSelect({ id, name, options, value, allowOther }: { id: stri
         ))}
         {allowOther && (
           <div className="flex gap-2 px-1 pt-1">
-            <input className="input !min-h-11" aria-label="Autre : je l'écris moi-même" placeholder="✏️ Autre : je l'écris" maxLength={40} value={extra} onChange={(e) => setExtra(e.target.value)}
+            <input className="input !min-h-11" aria-label="Autre : je l'écris moi-même" placeholder="Autre : je l'écris" maxLength={40} value={extra} onChange={(e) => setExtra(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
             <button type="button" className="btn-outline btn-sm" onClick={add}>Ajouter</button>
           </div>

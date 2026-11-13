@@ -70,7 +70,7 @@ export function ProfCardView({ p, onPick, preview, price, selected }: { p: ProfC
       {/* 2 · nom, âge et classements sur deux lignes */}
       <div className={pad + " pt-1.5"}><h3 className="m-0 text-lg leading-tight">{name}</h3><small className="block text-muted">{facts || "Professeur du club"}</small></div>
       {/* 3 · état */}
-      <div className={pad + " pt-1.5"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-2.5 py-0.5 text-xs font-semibold text-[#7a5a00]">⏸ Ne prend plus de demandes</span> : free > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-2.5 py-0.5 text-xs font-semibold text-[#1c6b42]">● {free} créneau{free > 1 ? "x" : ""} libre{free > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-semibold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
+      <div className={pad + " pt-1.5"}>{p.paused ? <span className="inline-block rounded-full bg-[#fff3cd] px-2.5 py-0.5 text-xs font-semibold text-[#7a5a00]">Ne prend plus de demandes</span> : free > 0 ? <span className="inline-block rounded-full bg-[#dff3e8] px-2.5 py-0.5 text-xs font-semibold text-[#1c6b42]">● {free} créneau{free > 1 ? "x" : ""} libre{free > 1 ? "s" : ""} cette semaine</span> : <span className="inline-block rounded-full bg-sand px-2.5 py-0.5 text-xs font-semibold">{(p.nextFree?.length ?? 0) > 0 ? "Prochains créneaux ci-dessous" : p.slots.length ? "Pas de créneau libre pour le moment" : "Aucune disponibilité indiquée"}</span>}</div>
       {/* 4 · présentation (2 lignes au plus) */}
       <div className={pad + " pt-1.5"}>{p.bio && <p className="m-0 line-clamp-2 text-sm italic">« {p.bio} »</p>}</div>
       {/* 5 · jours disponibles + prochains créneaux libres */}
@@ -126,7 +126,7 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
       <p className="m-0 text-sm text-muted">Cela change le tarif de la séance : {PRICE_MEMBER} € pour un adhérent, {PRICE_OTHER} € pour les autres (+ {SUNDAY_EXTRA} € le dimanche). Tu règles directement au professeur.</p>
       <Err msg={err} />
       <div className="grid gap-3 sm:grid-cols-2">
-        {([[true, "✅ Oui, je suis adhérent", `${priceOn(PRICE_MEMBER, date)} € la séance`], [false, "🙋 Non, pas adhérent", `${priceOn(PRICE_OTHER, date)} € la séance`]] as const).map(([v, t, sub]) => (
+        {([[true, "Oui, je suis adhérent", `${priceOn(PRICE_MEMBER, date)} € la séance`], [false, "Non, pas adhérent", `${priceOn(PRICE_OTHER, date)} € la séance`]] as const).map(([v, t, sub]) => (
           <button key={String(v)} type="button" onClick={() => answerMember(v)} aria-pressed={member === v} className={"grid gap-1 rounded-2xl border-2 p-4 text-left transition-colors " + (member === v ? "border-clay bg-[#fdf1ea]" : "border-line bg-white hover:border-clay/60")}><strong className="font-display text-lg">{t}</strong><small className="text-muted">{sub}</small></button>))}
       </div>
     </section>
@@ -166,11 +166,11 @@ export function ProfChooser({ preview, date, onPick, onClose }: { preview: boole
 }
 
 const STATUS_BADGE: Record<ProfStatus, [string, string]> = {
-  visible: ["✅ Visible des adultes", "!border-ok !text-ok"],
-  paused: ["⏸ En pause", "!border-[#c08a00] !text-[#7a5a00]"],
-  waiting: ["⏳ À valider", "!border-[#c08a00] !text-[#7a5a00]"],
-  missing: ["📎 Documents manquants", "!border-bad !text-bad"],
-  expired: ["⚠ Carte expirée", "!border-bad !text-bad"],
+  visible: ["Visible des adultes", "!border-ok !text-ok"],
+  paused: ["En pause", "!border-[#c08a00] !text-[#7a5a00]"],
+  waiting: ["À valider", "!border-[#c08a00] !text-[#7a5a00]"],
+  missing: ["Documents manquants", "!border-bad !text-bad"],
+  expired: ["Carte expirée", "!border-bad !text-bad"],
 };
 
 // Coach : tous les professeurs, leurs documents, validation
@@ -188,7 +188,7 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
   return (
     <section className="grid gap-4" aria-labelledby="pa-h">
       <div className="grid gap-1">
-        <h2 id="pa-h" className="m-0 text-xl">👩‍🏫 Professeurs de cours particuliers</h2>
+        <h2 id="pa-h" className="m-0 text-xl">‍🏫 Professeurs de cours particuliers</h2>
         <p className="hint m-0">Tu crées les comptes dans <strong>Jeunes · Centre de compétition → 👥 Entraîneurs</strong> ; c'est l'entraîneur qui clique « Je souhaite donner des cours particuliers » dans son espace. Un professeur n'est visible des adultes que si les <strong>3 documents</strong> sont déposés, que la <strong>carte professionnelle est valable</strong> et que <strong>tu l'as validé</strong> ici. Si un document est remplacé, tu dois revalider. Le site ne peut pas vérifier la carte auprès de l'administration : c'est à toi de contrôler les pièces.</p>
       </div>
       <Err msg={err} />
@@ -209,7 +209,7 @@ export function ProfsAdmin({ onChanged }: { onChanged?: () => void }) {
                 ); })}
               </ul>
               <div className="flex flex-wrap items-center gap-2">
-                {canApprove && p.status === "waiting" && <button className="btn-clay btn-sm" onClick={() => approve(p, true)}>✅ J'ai vérifié : rendre visible</button>}
+                {canApprove && p.status === "waiting" && <button className="btn-clay btn-sm" onClick={() => approve(p, true)}>J'ai vérifié : rendre visible</button>}
                 {canApprove && (p.status === "visible" || p.status === "paused") && <button className="btn-outline btn-sm" onClick={() => approve(p, false)}>Retirer de la liste</button>}
                 {p.status === "missing" && <span className="hint">En attente des documents.</span>}
                 {p.status === "expired" && <span className="hint">Carte expirée : le professeur doit déposer la nouvelle.</span>}
