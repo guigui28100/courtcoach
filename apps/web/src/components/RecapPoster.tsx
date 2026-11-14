@@ -89,6 +89,10 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4);
   const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontStretch: "normal", fontSize: teamsMode ? `min(${p(sq ? 66 : 76)}, ${Math.floor((w - px * 2 - 4) / (name.length * 0.5))}px)` : `min(${p(sq ? 74 : 88)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: 900, letterSpacing: "-0.02em", color: NAVY };
   const card: CSSProperties = { flexShrink: 0, border: `2px solid ${LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: "#fff", padding: `${p(12)} ${p(18)}` };
+  // Sur un fond choisi, les cartes des rencontres sont transparentes : on voit le fond à travers, le texte garde un halo clair pour rester lisible
+  const clear = bg !== "";
+  const HALO = clear ? "0 0 4px rgba(255,255,255,1), 0 0 10px rgba(255,255,255,.95), 0 0 22px rgba(255,255,255,.8)" : undefined;
+  const mcard: CSSProperties = clear ? { ...card, background: "rgba(255,255,255,.12)", border: `2px solid rgba(255,255,255,.7)`, borderLeftWidth: 10 } : card;
   const head = (t: string) => <div style={{ fontSize: p(15), fontWeight: 900, letterSpacing: "0.16em", color: acc, marginBottom: p(8) }}>{t}</div>;
 
   // Photos : de 1 à 8, rangées égales ; en prévisualisation, glisser une photo déplace le cadrage dedans
@@ -149,19 +153,19 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const dayTxt = (m.date || e.startDate) ? fmtDay(m.date || e.startDate).replace(/^./, (c) => c.toUpperCase()) : "";
                 return (
                   <div key={i}>
-                  {dayTxt && <div data-fmt={`dt-${i}`} style={{ fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
-                  <div style={{ ...card, display: "flex", alignItems: "stretch", gap: p(16), borderLeft: `10px solid ${oc}`, padding: p(10) }}>
+                  {dayTxt && <div data-fmt={`dt-${i}`} style={{ textShadow: HALO, fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
+                  <div style={{ ...mcard, display: "flex", alignItems: "stretch", gap: p(16), borderLeftColor: oc, borderLeftStyle: "solid", borderLeftWidth: 10, padding: p(10) }}>
                     {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
                       <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
                       {num && <div data-fmt={`nu-${i}`} style={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", padding: `${p(18)} ${p(6)} ${p(6)}`, background: "linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.72))", color: "#fff", fontSize: p(one ? 24 : 20), fontWeight: 900, letterSpacing: "0.06em", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>{txt(fmt, `nu-${i}`, num)}</div>}
                     </div>}
-                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0` }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0`, textShadow: HALO }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
                         <div style={{ lineHeight: 1.15, minWidth: 0, flex: 1 }}>
                           <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
                           {num && !ph && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
                         </div>
-                        {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
+                        {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", textShadow: "none", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: p(14) }}>
                         <div data-fmt={`ph-${i}`} data-fit style={{ flex: 1, minWidth: 0, fontSize: `calc(${p(one ? 34 : many ? 22 : 26)} * var(--fs, 1))`, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
