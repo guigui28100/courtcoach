@@ -776,13 +776,46 @@
       if(S.fmt==="ladder"){card.appendChild(H("h2","wsub","Combien de tours ?"));card.appendChild(tiles([2,3,4,5,6,7,8].map(function(x){return {v:x,l:String(x)};}),S.rounds||autoRounds(),function(v){S.rounds=+v;upd();}));}
     }else{
       var cur=calc(S.fmt),ok=cur.total<=S.avail*60;
-      if(V.restored)card.appendChild(H("div","resume","📂 Préparation retrouvée"));
+      var subs=["names"];if(S.dbl)subs.push("teams");subs.push("format","go");V.subs=subs;
+      if(V.sub===undefined)V.sub=(V.restored&&!readyMiss().length)?subs.length-1:0;
+      if(V.sub>subs.length-1)V.sub=subs.length-1;if(V.sub<0)V.sub=0;
+      var sub=subs[V.sub],miss=readyMiss();
+      var SUBT={names:"Qui joue ? Les noms",teams:"Les équipes",format:"Choisis ta formule",go:miss.length?"Presque prêt":"C'est prêt !"};
+      card.querySelector(".wq").textContent=SUBT[sub];
+      card.querySelector(".wstep").textContent="Étape 3 sur 3 · carte "+(V.sub+1)+" sur "+subs.length;
+      card.className+=" sub-"+sub;
+      if(sub==="names"){
+        card.appendChild(AD.players);
+      }else if(sub==="teams"){
+        drawTeams(card);
+      }else if(sub==="format"){
+        card.className=card.className.replace(" wready","")+" wready";
+      var fsec=H("div","fsec");fsec.appendChild(H("h2","wsub","Choisis ta formule"));
+      var adv=adviceCard();adv.firstChild.textContent="💡 Conseil (indicatif)";fsec.appendChild(adv);
+      var fl=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();});
+      fsec.appendChild(tiles(fl.map(function(f){var r=calc(f[0]);return {v:f[0],l:f[1],s:r.count+" matchs · fin "+hhmm(startMin()+r.total)+(r.total<=S.avail*60?" ✔":" ⚠ trop long")};}),S.fmt,function(v){S.fmt=v;upd();}));
+      var canC2=(S.fmt==="poules"&&n>5)||(S.fmt==="ko"&&n>=4);
+      if(canC2){var kp=S.classif,a2,b3;S.classif="non";a2=calc(S.fmt);S.classif="oui";b3=calc(S.fmt);S.classif=kp;
+        fsec.appendChild(tiles([{v:"non",l:"Sans matchs de classement"},{v:"oui",l:"Avec classement",s:"+"+(b3.count-a2.count)+" matchs"}],S.classif,function(v){S.classif=v;upd();}));}
+        card.appendChild(fsec);
+        var dtr=document.createElement("details");dtr.className="fold";if(V.open&&V.open.rules)dtr.open=true;dtr.ontoggle=function(){V.open=V.open||{};V.open.rules=dtr.open;};var smr=document.createElement("summary");smr.textContent="⏱️ Durée des matchs";dtr.appendChild(smr);var inr=H("div","foldin");body(inr,"rules");dtr.appendChild(inr);card.appendChild(dtr);
+      }else{
+        if(V.restored&&V.sub===subs.length-1&&!miss.length)card.appendChild(H("div","resume","📂 Préparation retrouvée"));
       var rc2=H("div","recap");
       rc2.appendChild(H("b",null,n+(S.dbl?" équipes":" joueurs")+" · "+courtsTxt()));
       rc2.appendChild(H("span",null,fname(S.fmt)+(S.classif==="oui"?" + matchs de classement":"")+" · "+optLabel()));
       rc2.appendChild(H("span",null,cur.count+" matchs · "+S.dur+" min par tour · de "+hhmm(startMin())+" à "+hhmm(startMin()+cur.total)));
       card.appendChild(rc2);
-      
+      var todo=H("div","todo"+(V.tryGo&&miss.length?" bad":""));
+      todo.appendChild(H("h2","wsub","Avant de lancer"));
+      function trow(st,txt,key,lab){var rw=H("div","trow "+st);rw.appendChild(H("span","tk",st==="ok"?"✔":st==="warn"?"⚠":"○"));rw.appendChild(H("span","tt",txt));
+        if(key)rw.appendChild(B("Compléter","tgo",function(){V.sub=subs.indexOf(key);V.tryGo=false;skin(true);scrollTop();}));
+        return rw;}
+      todo.appendChild(trow(miss.indexOf("names")<0?"ok":"no","Noms des joueurs : "+namesFilled()+" sur "+S.n,miss.indexOf("names")<0?null:"names","Noms des joueurs"));
+      if(S.dbl)todo.appendChild(trow(miss.indexOf("teams")<0?"ok":"no","Équipes formées",miss.indexOf("teams")<0?null:"teams","Équipes"));
+      todo.appendChild(trow("ok","Formule : "+fname(S.fmt)+" · "+cur.count+" matchs",null,""));
+      todo.appendChild(trow(ok?"ok":"warn",ok?"Le tournoi tient dans le temps prévu":"Plus long que le temps prévu : tu peux lancer quand même, ou changer la formule",null,""));
+        card.appendChild(todo);
       if(T){
         var I=T.B.info;
         if(I.type==="poules"){var pdt=document.createElement("details");pdt.className="fold";var psm=document.createElement("summary");psm.textContent="👥 Voir les poules";pdt.appendChild(psm);var pg=H("div","pgrid");I.groups.forEach(function(gr){var d=H("div","pgrp");d.appendChild(H("b",null,"Poule "+String.fromCharCode(65+gr.id)));gr.players.forEach(function(i){d.appendChild(H("span",null,T.E[i]));});pg.appendChild(d);});pdt.appendChild(pg);card.appendChild(pdt);}
@@ -791,41 +824,22 @@
         T.res.slots.forEach(function(sl,i){var h3=H("div","oh","Tour "+(i+1)+" · "+hhmm(startMin()+i*S.dur));ol.appendChild(h3);sl.forEach(function(m){ol.appendChild(H("div","om","Terrain "+T.court[m.id]+" : "+label(m.a)+" – "+label(m.b)));});});
         odt.appendChild(ol);card.appendChild(odt);
       }
-      var fsec=H("div","fsec");fsec.appendChild(H("h2","wsub","Choisis ta formule"));
-      var adv=adviceCard();adv.firstChild.textContent="💡 Conseil (indicatif)";fsec.appendChild(adv);
-      var fl=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();});
-      fsec.appendChild(tiles(fl.map(function(f){var r=calc(f[0]);return {v:f[0],l:f[1],s:r.count+" matchs · fin "+hhmm(startMin()+r.total)+(r.total<=S.avail*60?" ✔":" ⚠ trop long")};}),S.fmt,function(v){S.fmt=v;upd();}));
-      var canC2=(S.fmt==="poules"&&n>5)||(S.fmt==="ko"&&n>=4);
-      if(canC2){var kp=S.classif,a2,b3;S.classif="non";a2=calc(S.fmt);S.classif="oui";b3=calc(S.fmt);S.classif=kp;
-        fsec.appendChild(tiles([{v:"non",l:"Sans matchs de classement"},{v:"oui",l:"Avec classement",s:"+"+(b3.count-a2.count)+" matchs"}],S.classif,function(v){S.classif=v;upd();}));}
-      card.insertBefore(fsec,rc2);
-      var miss=readyMiss();
-      if(miss.indexOf("names")>=0&&(!V.open||V.open.names===undefined)){V.open=V.open||{};V.open.names=true;}
-      var todo=H("div","todo"+(V.tryGo&&miss.length?" bad":""));
-      todo.appendChild(H("h2","wsub","Avant de lancer"));
-      function trow(st,txt,key,lab){var rw=H("div","trow "+st);rw.appendChild(H("span","tk",st==="ok"?"✔":st==="warn"?"⚠":"○"));rw.appendChild(H("span","tt",txt));
-        if(key)rw.appendChild(B("Compléter","tgo",function(){V.open=V.open||{};V.open[key]=true;skin(true);setTimeout(function(){var ds=app.querySelectorAll("details.fold");for(var z=0;z<ds.length;z++){if(ds[z].textContent.indexOf(lab)>=0){ds[z].scrollIntoView({behavior:"smooth",block:"center"});break;}}},60);}));
-        return rw;}
-      todo.appendChild(trow(miss.indexOf("names")<0?"ok":"no","Noms des joueurs : "+namesFilled()+" sur "+S.n,miss.indexOf("names")<0?null:"names","Noms des joueurs"));
-      if(S.dbl)todo.appendChild(trow(miss.indexOf("teams")<0?"ok":"no","Équipes formées",miss.indexOf("teams")<0?null:"teams","Équipes"));
-      todo.appendChild(trow("ok","Formule : "+fname(S.fmt)+" · "+cur.count+" matchs",null,""));
-      todo.appendChild(trow(ok?"ok":"warn",ok?"Le tournoi tient dans le temps prévu":"Plus long que le temps prévu : tu peux lancer quand même, ou changer la formule",null,""));
-      card.insertBefore(todo,card.children[2]);
-      [["names","✏️ Noms des joueurs"],S.dbl?["teams","👥 Équipes"]:null,["rules","⏱️ Durée des matchs"]].forEach(function(x){
-        if(!x)return;var dt=document.createElement("details");dt.className="fold";if(V.open&&V.open[x[0]])dt.open=true;
-        dt.ontoggle=function(){V.open=V.open||{};V.open[x[0]]=dt.open;};
-        var sm=document.createElement("summary");sm.textContent=x[1];dt.appendChild(sm);var inner=H("div","foldin");
-        body(inner,x[0]);
-        dt.appendChild(inner);card.appendChild(dt);});
       card.appendChild(B("🚀 Lancer le tournoi","big go"+(miss.length?" off":""),function(){if(n<3)return;if(miss.length){V.tryGo=true;skin(true);scrollTop();return;}V.tryGo=false;S.live=true;V.mode="live";V.tab="now";V.slot=null;refresh();skin(true);scrollTop();}));
       if(miss.length)card.appendChild(H("p","hint gohint","Pour lancer : remplis les noms de tous les joueurs"+(miss.indexOf("teams")>=0?" et forme toutes les équipes":"")+"."));
+      }
     }
     }
     app.appendChild(card);
     var nav=H("div","wnav");
-    if(st>0)nav.appendChild(B("← Retour","nbk",function(){V.step--;skin(true);scrollTop();}));else nav.appendChild(H("span"));
-    if(st<ks.length-1){var nx=B("Suivant →","big nx",function(){if(nEnt()<3)return;if(k==="teams"&&!pairsComplete()){V.warnPairs=true;skin(true);return;}V.warnPairs=false;V.step++;skin(true);scrollTop();});nav.appendChild(nx);}
+    if(st>0)nav.appendChild(B("← Retour","nbk",function(){if(k==="ready"&&V.sub>0)V.sub--;else{V.step--;}V.warnSub=null;skin(true);scrollTop();}));else nav.appendChild(H("span"));
+    if(st<ks.length-1){var nx=B("Suivant →","big nx",function(){if(nEnt()<3)return;if(k==="teams"&&!pairsComplete()){V.warnPairs=true;skin(true);return;}V.warnPairs=false;V.step++;V.sub=undefined;V.restored=false;skin(true);scrollTop();});nav.appendChild(nx);}
     if(k==="teams"&&V.warnPairs&&!pairsComplete())card.appendChild(H("div","warnb","Il reste des joueurs sans partenaire : forme toutes les équipes pour continuer."));
+    if(k==="ready"&&V.subs&&V.sub<V.subs.length-1){var cs=V.subs[V.sub];
+      nav.appendChild(B("Continuer →","big nx",function(){
+        if(cs==="names"&&namesFilled()<S.n){V.warnSub="Écris le nom des "+S.n+" joueurs pour continuer ("+namesFilled()+" sur "+S.n+").";skin(true);return;}
+        if(cs==="teams"&&!pairsComplete()){V.warnSub="Il reste des joueurs sans partenaire : forme toutes les équipes pour continuer.";skin(true);return;}
+        V.warnSub=null;V.sub++;skin(true);scrollTop();}));
+      if(V.warnSub)card.appendChild(H("div","warnb",V.warnSub));}
     app.appendChild(nav);
   }
 
