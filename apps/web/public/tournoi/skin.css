@@ -159,3 +159,8 @@
 #tournoi-root .wready .todo{order:0}
 #tournoi-root .wready .big.go{order:3}
 #tournoi-root .wready .gohint{order:4}
+
+/* Création du tournoi : une carte à la fois, barre de progression */
+#tournoi-root .wtop .dots{display:none}
+#tournoi-root .pbar{height:8px;border-radius:99px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:12px;max-width:420px}
+#tournoi-root .pbar i{display:block;height:100%;background:#fff6dc;border-radius:99px;transition:width .25s}
