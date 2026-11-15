@@ -70,6 +70,7 @@ export default function Tournoi() {
   useEffect(() => {
     if (!ev || initial === undefined) return;
     const css = document.createElement("link"); css.rel = "stylesheet"; css.href = `/tournoi/tournoi.css?v=${Date.now()}`; document.head.appendChild(css);
+    const skin = document.createElement("link"); skin.rel = "stylesheet"; skin.href = `/tournoi/skin.css?v=${Date.now()}`; document.head.appendChild(skin); // habillage, chargé après
     const hours = parseHours(ev.time);
     const day = new Date(`${ev.startDate}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     window.__tournoiHost = {
@@ -82,7 +83,7 @@ export default function Tournoi() {
     return () => {
       window.clearTimeout(timer.current);
       if (latest.current && latest.current !== lastSent.current) void send(latest.current); // on n'oublie pas le dernier score en quittant la page
-      s.remove(); css.remove(); delete window.__tournoiHost; document.body.removeAttribute("data-pr");
+      s.remove(); css.remove(); skin.remove(); delete window.__tournoiHost; document.body.removeAttribute("data-pr");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ev, initial]);
