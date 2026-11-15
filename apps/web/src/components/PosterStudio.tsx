@@ -4,6 +4,7 @@ import { BgPicker } from "./PosterBackdrop";
 import { FmtFloat, FmtItem, FmtPanel, SelOutline } from "./FmtPanel";
 import { Fmts } from "./posterFmt";
 import { posterToPdf, posterToPng } from "./exportPoster";
+import { Anec, AnecCtx, AnecdoteFields, ANEC_TITLES } from "./Anecdote";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LE STUDIO D'AFFICHE : une seule fenêtre, rangée pareil pour TOUTES les affiches (événement, mois, bilan, résultats).
@@ -87,6 +88,7 @@ export interface StudioProps {
   save?: SaveState;                       // état de l'enregistrement automatique
   topExtra?: ReactNode;                   // ex. « Mes affiches »
   noPrint?: boolean;
+  noAnecdote?: boolean;                   // pas d'encadré « anecdote » sur cette affiche
   intro?: ReactNode;                      // avertissement (droit à l'image…)
   notice?: ReactNode;                     // alerte au-dessus de l'aperçu (ex. « trop de texte »)
 }
@@ -96,6 +98,8 @@ export function PosterStudio(p: StudioProps) {
   const [barOn, setBarOn] = useState(false);
   const [menu, setMenu] = useState(false);
   const [msg, setMsg] = useState("");
+  const [an, setAn] = useState({ title: ANEC_TITLES[0], text: "" });
+  const anec: Anec = { ...an, sig: an.text.trim() ? `${an.title}|${an.text}` : "" };
   const area = useRef<HTMLDivElement>(null); const holder = useRef<HTMLDivElement>(null);
   const cur = p.formats.find((f) => f.id === p.format) ?? p.formats[0];
   const { w, h } = cur;
@@ -117,6 +121,7 @@ export function PosterStudio(p: StudioProps) {
 
   const pick = (k: string) => { p.fmt?.onSelect(k); setTab("textes"); setBarOn(true); };
   const textsShown = !!p.fmt && tab === "textes";
+  const fmtItems = p.fmt ? (anec.sig ? [...p.fmt.items, { key: "anec-t", label: "Anecdote · titre", edit: true }, { key: "anec", label: "Anecdote · texte", edit: true }] : p.fmt.items) : [];
 
   // Barre d'outils : posée au-dessus (ou dessous) du texte touché
   const [barPos, setBarPos] = useState<React.CSSProperties | null>(null);
@@ -185,7 +190,7 @@ export function PosterStudio(p: StudioProps) {
             <div role="tabpanel" id="panel-contenu" aria-labelledby="tab-contenu" hidden={tab !== "contenu"}>
               <h3 className="m-0 font-serif text-lg text-ink">Ce qui est écrit</h3>
               {p.intro}
-              <div className="mt-3 grid gap-3">{p.content}</div>
+              <div className="mt-3 grid gap-3">{p.content}{!p.noAnecdote && <AnecdoteFields value={an} onChange={setAn} />}</div>
             </div>
             <div role="tabpanel" id="panel-apparence" aria-labelledby="tab-apparence" hidden={tab !== "apparence"}>
               <h3 className="m-0 mb-3 font-serif text-lg text-ink">L'allure de l'affiche</h3>
@@ -198,7 +203,7 @@ export function PosterStudio(p: StudioProps) {
                 <h3 className="m-0 font-serif text-lg text-ink">Les textes</h3>
                 <p className="mb-3 mt-1 text-sm text-muted">👆 <b>Touche un texte sur l'affiche</b> : une petite barre apparaît juste à côté. Ou choisis-le ici. Gardé dans ce navigateur.</p>
                 {p.textsExtra}
-                <FmtPanel flat items={p.fmt.items} fmt={p.fmt.value} onChange={p.fmt.onChange} selected={p.fmt.selected} onSelect={(k) => { p.fmt!.onSelect(k); setBarOn(true); }} />
+                <FmtPanel flat items={fmtItems} fmt={p.fmt.value} onChange={p.fmt.onChange} selected={p.fmt.selected} onSelect={(k) => { p.fmt!.onSelect(k); setBarOn(true); }} />
               </div>)}
           </div>
         </aside>
@@ -212,14 +217,14 @@ export function PosterStudio(p: StudioProps) {
           <div ref={area} onPointerDown={(e) => { if (e.target === e.currentTarget) setBarOn(false); }} className="relative grid h-[58vh] min-h-[320px] place-items-center overflow-hidden md:h-auto md:min-h-0 md:flex-1">
             <SelOutline sel={textsShown && p.fmt ? p.fmt.selected : ""} />
             <div className="overflow-hidden rounded-sm border border-[#cfc7b2] bg-white shadow-[0_14px_40px_rgba(0,0,0,.3)]" style={{ width: w * scale, height: h * scale }}>
-              <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}>{p.preview({ pick, goTab: setTab })}</div>
+              <div className="pf-prev" ref={holder} style={{ width: w, height: h, transform: `scale(${scale})`, transformOrigin: "top left" }}><AnecCtx.Provider value={anec}>{p.preview({ pick, goTab: setTab })}</AnecCtx.Provider></div>
             </div>
-            {barOn && tab === "textes" && barPos && p.fmt && <FmtFloat items={p.fmt.items} fmt={p.fmt.value} onChange={p.fmt.onChange} selected={p.fmt.selected} style={barPos} onClose={() => setBarOn(false)} />}
+            {barOn && tab === "textes" && barPos && p.fmt && <FmtFloat items={fmtItems} fmt={p.fmt.value} onChange={p.fmt.onChange} selected={p.fmt.selected} style={barPos} onClose={() => setBarOn(false)} />}
           </div>
           <p className="m-0 min-h-6 shrink-0 px-3 pb-2 text-center text-sm font-bold text-ink" role="status">{msg}</p>
         </main>
       </div>
-      {!p.noPrint && p.printNode && createPortal(<div className="affiche-print">{p.printNode}</div>, document.body)}
+      {!p.noPrint && p.printNode && createPortal(<div className="affiche-print"><AnecCtx.Provider value={anec}>{p.printNode}</AnecCtx.Provider></div>, document.body)}
     </div>,
     document.body,
   );

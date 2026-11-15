@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Backdrop } from "./PosterBackdrop";
@@ -64,7 +65,8 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
 
   // On mesure le contenu, puis on l'agrandit ou on le réduit pour remplir la place libre (comme les autres affiches)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1); const [f, setF] = useState(1);
-  const sig = JSON.stringify([format, data, logos.length, bg, aspects.map((a) => Math.round(a * 100))]);
+  const anec = useAnec();
+  const sig = JSON.stringify([anec.sig, format, data, logos.length, bg, aspects.map((a) => Math.round(a * 100))]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -143,6 +145,7 @@ export function ResultsPoster({ format, data, partners, bg = "" }: { format: Res
               </div>);
           })}
           {data.message.trim() && <p style={{ margin: 0, flexShrink: 0, borderLeft: `6px solid ${ACC}`, paddingLeft: p(16), fontSize: p(22), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word", whiteSpace: "pre-line" }}>{glue(data.message.trim())}</p>}
+          {anec.sig !== "" && <AnecdoteBox scale={format === "CARRE" ? 0.75 : 0.85} />}
         </div>
       </div>
       {logos.length > 0 && (

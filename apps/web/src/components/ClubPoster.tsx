@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { Backdrop } from "./PosterBackdrop";
 import { SERIF } from "./posterFonts";
 import { glue, teamParts } from "./posterCopy";
@@ -316,7 +317,7 @@ function CalendarModel({ m, list, showWho, extra = 0 }: { m: string; list: ClubE
 }
 
 // Zone libre entre l'en-tête et le bandeau bleu du bas (modèle « liste »).
-const BODY_TOP = 296, BODY_BOTTOM = 112, PARTNER_H = 78;
+const BODY_TOP = 296, BODY_BOTTOM = 112, PARTNER_H = 78, ANEC_H = 132;
 function ListBody({ list, month, showWho, extra = 0, fmt }: { list: ClubEvent[]; month: string; showWho: boolean; extra?: number; fmt?: Fmts }) {
   const g = stepZoom(fmt?.tout?.size);
   const cards = list.length <= 8 || list.some((e) => e.featured);
@@ -379,7 +380,7 @@ export type EvText = Record<string, { title?: string; note?: string }>;
 export function ClubPoster({ events: rawEvents, month, model, showWho, partners, bg = "", fmt, onPick, evText, onPickEv }: { evText?: EvText; onPickEv?: (id: string) => void; events: ClubEvent[]; month: string; model: PosterModel; showWho: boolean; partners?: string[]; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
   const events = evText ? rawEvents.map((e) => { const o = evText[e.id]; return o ? { ...e, title: o.title ?? e.title, note: o.note ?? e.note } : e; }) : rawEvents;
   const list = monthEvents(events, month);
-  const logos = partners ?? []; const extra = logos.length ? PARTNER_H : 0;
+  const logos = partners ?? []; const anec = useAnec(); const hasAnec = anec.sig !== "" && list.length > 0; const extra = (logos.length ? PARTNER_H : 0) + (hasAnec ? ANEC_H : 0);
   return (
     <div onClick={(ev) => { const el = (ev.target as HTMLElement).closest?.("[data-ev]"); if (el && onPickEv) { onPickEv(el.getAttribute("data-ev") ?? ""); return; } pickFmt(ev, onPick); }} style={{ position: "relative", width: POSTER_W, height: POSTER_H, background: "#fbf5ea", color: "#222", overflow: "hidden", fontFamily: "system-ui, sans-serif", WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <FmtStyle fmts={fmt} />
@@ -396,6 +397,7 @@ export function ClubPoster({ events: rawEvents, month, model, showWho, partners,
           </div>
         </div>
       )}
+      {hasAnec && <div style={{ position: "absolute", left: 40, right: 44, bottom: 96 + (logos.length ? PARTNER_H : 0) + 14 }}><AnecdoteBox fmt={fmt} scale={0.72} style={{ margin: 0 }} /></div>}
       <Footer events={list} />
     </div>
   );

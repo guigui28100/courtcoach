@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useLayoutEffect, useRef, useState } from "react";
 import qrcode from "qrcode-generator";
 import { SERIF } from "./posterFonts";
@@ -100,7 +101,8 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
   const body = useRef<HTMLDivElement>(null); const root = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
   const FZ = ["titre", "date", "infos", "tarifs", "texte", "equipe", "numero", "type", "accroche"] as const; // tailles réglées à la main : le réglage automatique ne les compte pas (il ne les écrase jamais)
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // « Tous les textes » : s'applique APRÈS l'ajustement automatique (sinon il serait annulé par lui)
-  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg]);
+  const anec = useAnec(); const anecEl = anec.sig ? <AnecdoteBox fmt={fmt} scale={format === "CARRE" ? 0.8 : 1} style={{ margin: 0 }} /> : null;
+  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg, anec.sig]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -209,7 +211,7 @@ function EventPosterElegant({ e, format, showWho, fmt, partners, bg = "", light 
         <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 15, fontWeight: 800, letterSpacing: "0.4em", color: onPhoto ? "#fff" : NAVY, textShadow: onPhoto ? "0 2px 8px rgba(0,0,0,.7)" : undefined, ...HALO }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div></div>
       </div>
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH, bottom: ftH + partH, padding: `${sq ? 14 : 22}px ${px}px ${sq ? 18 : 24}px`, ["--k" as any]: k * g }}>
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{i === 0 ? <>{c}{rule}</> : c}</div> : null))}</div>
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null, anecEl].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{i === 0 ? <>{c}{rule}</> : c}</div> : null))}</div>
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, borderTop: `1px solid ${GOLDL}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px`, background: onPhoto ? "transparent" : "rgba(251,248,242,.9)", ...HALO }}>

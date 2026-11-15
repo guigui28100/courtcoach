@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ClubEvent, colorOf, DAYS, MONTHS, seasonOf, titleOf, todayParis, weekdayOf } from "../clubPlan";
 import { Backdrop } from "./PosterBackdrop";
@@ -44,7 +45,8 @@ export function TournoisPoster({ events, from, to, bg = "", pub = "adultes", fmt
   // la liste est mesurée puis agrandie ou réduite pour remplir exactement la place (jamais coupée)
   const box = useRef<HTMLDivElement>(null);
   const [k, setK] = useState(1);
-  const sig = events.map((e) => e.id + e.title + e.startDate + e.endDate + (e.place ?? "")).join("|") + JSON.stringify(fmt);
+  const anec = useAnec();
+  const sig = anec.sig + events.map((e) => e.id + e.title + e.startDate + e.endDate + (e.place ?? "")).join("|") + JSON.stringify(fmt);
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
     el.style.zoom = "1"; el.setAttribute("data-measuring", ""); // pendant la mesure : textes déplacés ou agrandis remis à leur taille de départ
@@ -93,6 +95,7 @@ export function TournoisPoster({ events, from, to, bg = "", pub = "adultes", fmt
             })}
           </section>
         ))}
+        {n > 0 && <AnecdoteBox fmt={fmt} scale={0.85} />}
       </div></div>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: FOOT, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", gap: 14 }}>
         <Logo size={44} />

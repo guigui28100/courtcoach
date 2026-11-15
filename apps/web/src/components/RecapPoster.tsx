@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { Backdrop } from "./PosterBackdrop";
 import { Fmts, FmtStyle, pickFmt, txt } from "./posterFmt";
 import { SERIF } from "./posterFonts";
@@ -64,7 +65,8 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   // Même principe que l'affiche d'un événement : on mesure, puis on agrandit ou réduit le contenu pour remplir la place libre
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille choisie par le coach : appliquée APRÈS l'ajustement automatique
-  const sig = JSON.stringify([fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, data.zoom, data.focus, logos.length]);
+  const anec = useAnec();
+  const sig = JSON.stringify([anec.sig, fmt, e, format, data.headline, data.message, results, matches.map(({ m, i }) => ({ ...m, i, photo: m.photo ? m.photo.length : 0 })), photos.length, data.zoom, data.focus, logos.length]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     // La phrase « TC Houdan bat TC Dreux » reste sur UNE ligne : sa taille se réduit juste assez pour tenir à côté du score
@@ -189,6 +191,7 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
             </div>
           )}
           {txt(fmt, "texte", data.message.trim()) && <p data-fmt="texte" style={{ margin: 0, borderLeft: `6px solid ${acc}`, paddingLeft: p(18), fontSize: p(lite ? 28 : 24), lineHeight: 1.35, fontStyle: "italic", color: "#3a352c", overflowWrap: "break-word" }}><NoBreak text={glue(txt(fmt, "texte", data.message.trim()))} /></p>}
+          {anec.sig !== "" && <AnecdoteBox fmt={fmt} scale={sq ? 0.8 : 1} />}
         </div>
       </div>
       {logos.length > 0 && (

@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { addDays, ClubEvent, colorOf, DAYS, evOn, MONTHS, opponentOf, seasonOf, TEAM_CATS, teamCat, textOn, todayParis, venueOf, weekdayOf } from "../clubPlan";
 import { Backdrop } from "./PosterBackdrop";
@@ -14,7 +15,7 @@ import { FmtItem } from "./FmtPanel";
 // Deux affiches de RÉSULTATS des matchs par équipes : celle du WEEK-END (toutes les équipes) et celle des JEUNES.
 // Les rencontres viennent du planning (équipe, club rencontré, domicile ou déplacement) ; le coach écrit seulement les scores.
 // Rien n'est enregistré. Aucun nom d'élève : seulement le club rencontré.
-export type MatchMode = "weekend" | "jeunes" | "anecdote"; // « anecdote » : les résultats du week-end, ouverts avec l'encadré anecdote en avant
+export type MatchMode = "weekend" | "jeunes";
 type Item = { key: string; day: string; e: ClubEvent };
 export type Score = { h: string; a: string; club: string; photo?: string; focus?: [number, number]; zoom?: number }; // photo : photo de l'équipe (facultative), réduite dans le navigateur, jamais envoyée
 const mLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
@@ -50,7 +51,7 @@ const Logo = ({ size, style }: { size: number; style?: React.CSSProperties }) =>
 );
 
 const safe = (s: string) => s.replace(/[^a-z0-9-]/gi, "-");
-export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onPick, onPan, anecdote = "", anecTitle = "" }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; anecdote?: string; anecTitle?: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (key: string, x: number, y: number) => void }) {
+export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onPick, onPan }: { list: Item[]; scores: Record<string, Score>; mode: MatchMode; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (key: string, x: number, y: number) => void }) {
   const panPhoto = (key: string, f0: [number, number]) => (ev: React.PointerEvent<HTMLDivElement>) => {
     if (!onPan) return;
     const el = ev.currentTarget; const rect = el.getBoundingClientRect(); const kk = rect.width / el.offsetWidth || 1; const x0 = ev.clientX, y0 = ev.clientY;
@@ -66,12 +67,13 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onP
   const n = shown.length, HEAD = 230, FOOT = 96, avail = POSTER_H - HEAD - FOOT - 56;
   const wins = shown.filter((x) => resultOf(scores[x.key]) === "W").length, losses = shown.filter((x) => resultOf(scores[x.key]) === "L").length, draws = n - wins - losses;
   const sum = [wins && `${wins} victoire${wins > 1 ? "s" : ""}`, draws && `${draws} nul${draws > 1 ? "s" : ""}`, losses && `${losses} défaite${losses > 1 ? "s" : ""}`].filter(Boolean).join(" · ");
+  const anec = useAnec();
   const box = useRef<HTMLDivElement>(null);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille de « tous les textes » : appliquée APRÈS l'ajustement automatique
   const [k, setK] = useState(1);
   const [tick, setTick] = useState(0);
   useEffect(() => { let on = true; (document as any).fonts?.ready?.then(() => { if (on) setTick((x) => x + 1); }); return () => { on = false; }; }, []);
-  const sig = anecdote + anecTitle + shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|") + JSON.stringify(fmt);
+  const sig = anec.sig + shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|") + JSON.stringify(fmt);
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
     el.style.zoom = "1"; el.setAttribute("data-measuring", ""); // pendant la mesure, les textes déplacés reviennent à leur place
@@ -135,13 +137,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onP
             })}
           </section>
         ))}
-        {(txt(fmt, "anec", anecdote.trim()) !== "" && n > 0) && (
-          <div style={{ margin: "18px 0 6px", position: "relative", background: "#f4ec7a", border: "3px solid #17140f", borderRadius: 22, padding: "16px 26px 18px 92px", transform: "rotate(-0.8deg)", boxShadow: "6px 6px 0 #17140f" }}>
-            <span aria-hidden style={{ position: "absolute", left: 18, top: "50%", marginTop: -29, width: 58, height: 58, borderRadius: 99, background: "#fff", border: "3px solid #17140f", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🎾</span>
-            <div data-fmt="anec-t" style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", color: "#17140f", marginBottom: 4 }}>{txt(fmt, "anec-t", anecTitle.trim() || "L'anecdote du week-end")}</div>
-            <div data-fmt="anec" style={{ fontFamily: SERIF, fontSize: 25, fontWeight: 700, fontStyle: "italic", lineHeight: 1.25, color: "#17140f", whiteSpace: "pre-line", overflowWrap: "break-word" }}>{txt(fmt, "anec", anecdote.trim())}</div>
-          </div>
-        )}
+        {n > 0 && <AnecdoteBox fmt={fmt} />}
       </div></div>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: FOOT, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", gap: 14 }}>
         <Logo size={44} />
@@ -172,18 +168,16 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const [sel, setSel] = useState("titre");
   const [typed, setTyped] = useState<Record<string, Score>>({});
   const months = Array.from({ length: 12 }, (_, i) => addMonth(`${s}-09`, i));
-  const list = useMemo(() => matchesFor(events, { mode, span: mode !== "jeunes" ? "weekend" : span, sat, from, to, scope, withTentative }), [events, mode, span, sat, from, to, scope, withTentative]);
+  const list = useMemo(() => matchesFor(events, { mode, span: mode === "weekend" ? "weekend" : span, sat, from, to, scope, withTentative }), [events, mode, span, sat, from, to, scope, withTentative]);
   // scores saisis, avec le club du planning par défaut
   const scores = useMemo(() => Object.fromEntries(list.map((x) => [x.key, typed[x.key] ?? { h: "", a: "", club: opponentOf(x.e) }])) as Record<string, Score>, [list, typed]);
   const sun = addDays(sat, 1);
   const wkLabel = sat.slice(5, 7) === sun.slice(5, 7) ? `Week-end du ${dn(sat)} et ${dn(sun)} ${MONTHS[+sat.slice(5, 7) - 1].toLowerCase()}` : `Week-end du ${dn(sat)} ${MONTHS[+sat.slice(5, 7) - 1].toLowerCase()} et ${dn(sun)} ${MONTHS[+sun.slice(5, 7) - 1].toLowerCase()}`;
   const period = from === to ? mLabel(from) : `${MONTHS[+from.slice(5, 7) - 1]} – ${mLabel(to)}`;
-  const byWeekend = mode !== "jeunes" || span === "weekend";
-  const title = mode !== "jeunes" ? "Résultats du week-end" : "Résultats équipes jeunes";
+  const byWeekend = mode === "weekend" || span === "weekend";
+  const title = mode === "weekend" ? "Résultats du week-end" : "Résultats équipes jeunes";
   const sub = byWeekend ? wkLabel : period;
   const setS = (key: string, p: Partial<Score>) => setTyped((o) => ({ ...o, [key]: { ...scores[key], ...o[key], ...p } }));
-  const [anecdote, setAnecdote] = useState("");
-  const [anecTitle, setAnecTitle] = useState("L'anecdote du week-end");
   const [msg, setMsg] = useState("");
   const addPhoto = async (key: string, f: File) => { setMsg(""); try { setS(key, { photo: await photoFromFile(f) }); } catch (x) { setMsg((x as Error).message); } };
   const shownList = list.filter((x) => resultOf(scores[x.key]) !== null);
@@ -194,7 +188,6 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
       { key: `eq-${kk}`, label: `${nm} · équipe`, edit: true }, { key: `ph-${kk}`, label: `${nm} · phrase`, edit: true },
       { key: `ch-${kk}`, label: `${nm} · domicile / déplacement`, edit: true }, { key: `sc-${kk}`, label: `${nm} · score`, edit: true }, { key: `rs-${kk}`, label: `${nm} · victoire / défaite`, edit: true },
     ] as FmtItem[]; }),
-    ...(anecdote.trim() ? [{ key: "anec-t", label: "Anecdote · titre", edit: true }, { key: "anec", label: "Anecdote · texte", edit: true }] as FmtItem[] : []),
     { key: "pied", label: "Message du bas", edit: true }, { key: "club", label: "Nom du club (bas)", edit: true }, { key: "mail", label: "E-mail (bas)", edit: true }, { key: "tout", label: "Tous les textes", sizeOnly: true },
   ];
   const done = list.filter((x) => resultOf(scores[x.key]) !== null).length;
@@ -203,7 +196,7 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const inp = "w-16 rounded-md border-2 border-line bg-white px-2 py-2 text-center text-lg font-extrabold text-ink";
   return (
     <PosterStudio
-      title={mode === "anecdote" ? "💬 Affiche anecdote" : mode === "weekend" ? "🎾 Affiche des résultats du week-end" : "🧒 Affiche des résultats des équipes jeunes"}
+      title={mode === "weekend" ? "🎾 Affiche des résultats du week-end" : "🧒 Affiche des résultats des équipes jeunes"}
       subtitle={`${sub} · ${done} résultat${done > 1 ? "s" : ""} sur ${list.length} match${list.length > 1 ? "s" : ""}`} onClose={onClose}
       formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
       content={<>
@@ -231,7 +224,7 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
             </div>
           </Sec>
         )}
-        {mode !== "jeunes" && (
+        {mode === "weekend" && (
           <Sec title="Quelles équipes ?">
             <Seg label="Équipes" value={scope} options={[{ id: "tous", label: "Toutes" }, { id: "jeunes", label: "🧒 Jeunes" }, { id: "adultes", label: "🎾 Adultes" }]} onChange={setScope} />
           </Sec>
@@ -273,23 +266,13 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
             })}
           </div>
         </Sec>
-        <Sec title="Une anecdote (facultatif)">
-          <p className="mb-2 mt-0 text-xs text-muted">Un petit mot qui donne envie de lire : un fait marquant, un coup de cœur, une blague d'équipe. Sans nom d'enfant (prénom seulement si ses parents sont d'accord).</p>
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {["L'anecdote du week-end", "Le fait marquant", "Le coup de cœur", "Le mot du capitaine", "Le saviez-vous ?"].map((t) => (
-              <button key={t} type="button" aria-pressed={anecTitle === t} className={`rounded-full border-2 px-3 py-1.5 text-xs font-bold ${anecTitle === t ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`} onClick={() => setAnecTitle(t)}>{t}</button>
-            ))}
-          </div>
-          <textarea className="w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm text-ink" rows={3} maxLength={220} aria-label="Texte de l'anecdote" placeholder="Ex. : Match décidé au super tie-break après 3 h de jeu, et personne n'a lâché !" value={anecdote} onChange={(ev) => setAnecdote(ev.target.value)} />
-          <div className="mt-1 text-right text-[11px] text-muted">{anecdote.length} / 220</div>
-        </Sec>
         <Sec title="Matchs à confirmer"><Toggle on={withTentative} onChange={setWithTentative} label="⏳ Montrer aussi les matchs prévisionnels" hint="Ils apparaissent dans la liste des scores" /></Sec>
         {list.length > 10 && <p className="rounded-md bg-[#fff3c4] p-2 text-xs font-bold text-ink">Il y a beaucoup de matchs : le texte est petit. Choisis moins de matchs pour une affiche plus lisible.</p>}
       </>}
       bg={bg} onBg={setBg}
       fmt={{ items: fmtItems, value: fmt, onChange: setFmt, selected: sel, onSelect: setSel }}
-      preview={({ pick }) => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} anecdote={anecdote} anecTitle={anecTitle} bg={bg} fmt={fmt} onPick={pick} onPan={(k, x, y) => setS(k, { focus: [x, y] })} />}
-      printNode={<MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} anecdote={anecdote} anecTitle={anecTitle} bg={bg} fmt={fmt} />}
+      preview={({ pick }) => <MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} onPan={(k, x, y) => setS(k, { focus: [x, y] })} />}
+      printNode={<MatchsPoster list={list} scores={scores} mode={mode} title={title} sub={sub} bg={bg} fmt={fmt} />}
       fileBase={() => (byWeekend ? `affiche-resultats-${mode === "jeunes" ? "jeunes-" : ""}weekend-${sat}` : `affiche-resultats-jeunes-${from}-${to}`)}
       save={{ kind: "local", text: "● Rien n'est enregistré : les scores restent dans cette fenêtre" }}
     />
