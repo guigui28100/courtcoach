@@ -1,7 +1,6 @@
 import { AnecdoteBox, useAnec } from "./Anecdote";
 import { Backdrop } from "./PosterBackdrop";
 import { Fmts, FmtStyle, pickFmt, txt } from "./posterFmt";
-import { SERIF } from "./posterFonts";
 import { catPlain, glue, teamParts, teamPlain } from "./posterCopy";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -29,7 +28,7 @@ const outcomeWord = (m: RecapMatch) => { const a = Number(m.us), b = Number(m.th
 const outcomeColor = (m: RecapMatch) => { const a = Number(m.us), b = Number(m.them); return m.us.trim() === "" || m.them.trim() === "" ? "#5e574a" : a > b ? "#15803d" : a < b ? "#b91c1c" : "#5e574a"; };
 export const emptyRecap = (): RecapData => ({ headline: "", photos: [], results: [], matches: [], message: "" });
 
-const FONT = "Archivo, ArchivoPoster, 'Arial Narrow', system-ui, sans-serif";
+const FONT = "'DM Sans', DMSansPoster, system-ui, sans-serif";
 const NAVY = "#17140f", GOLD = "#c9ad77", LINE = "#ddd3c0", MUTED = "#5e574a";
 
 // Photo choisie sur l'appareil : réduite (1000 px) et gardée en mémoire seulement
@@ -89,13 +88,13 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   const p = (n: number) => `calc(${n}px * var(--k))`;
   const hdH = sq ? 100 : 112, ftH = sq ? 96 : 104, partH = logos.length ? 92 : 0, px = 56;
   const longest = Math.max(...name.split(/\s+/).map((x) => x.length), 4);
-  const title: CSSProperties = { margin: 0, fontFamily: SERIF, fontStretch: "normal", fontSize: teamsMode ? `min(${p(sq ? 66 : 76)}, ${Math.floor((w - px * 2 - 4) / (name.length * 0.5))}px)` : `min(${p(sq ? 74 : 88)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: 900, letterSpacing: "-0.02em", color: NAVY };
+  const title: CSSProperties = { margin: 0, fontFamily: FONT, fontStretch: "normal", fontSize: teamsMode ? `min(${p(sq ? 66 : 76)}, ${Math.floor((w - px * 2 - 4) / (name.length * 0.5))}px)` : `min(${p(sq ? 74 : 88)}, ${Math.floor((w - px * 2 - 4) / (longest * 0.7))}px)`, lineHeight: 0.98, fontWeight: 700, letterSpacing: "-0.02em", color: NAVY };
   const card: CSSProperties = { flexShrink: 0, border: `2px solid ${LINE}`, borderLeft: `8px solid ${acc}`, borderRadius: 14, background: "#fff", padding: `${p(12)} ${p(18)}` };
   // Sur un fond choisi, les cartes des rencontres sont transparentes : on voit le fond à travers, le texte garde un halo clair pour rester lisible
   const clear = bg !== "";
   const HALO = clear ? "0 0 4px rgba(255,255,255,1), 0 0 10px rgba(255,255,255,.95), 0 0 22px rgba(255,255,255,.8)" : undefined;
   const mcard: CSSProperties = clear ? { ...card, background: "rgba(255,255,255,.12)", border: `2px solid rgba(255,255,255,.7)`, borderLeftWidth: 10 } : card;
-  const head = (t: string) => <div style={{ fontSize: p(15), fontWeight: 900, letterSpacing: "0.16em", color: acc, marginBottom: p(8) }}>{t}</div>;
+  const head = (t: string) => <div style={{ fontSize: p(15), fontWeight: 700, letterSpacing: "0.16em", color: acc, marginBottom: p(8) }}>{t}</div>;
 
   // Photos : de 1 à 8, rangées égales ; en prévisualisation, glisser une photo déplace le cadrage dedans
   const layout = PHOTO_ROWS[photos.length] ?? [];
@@ -125,23 +124,23 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
   );
 
   return (
-    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+    <div onClick={(ev) => pickFmt(ev, onPick)} style={{ position: "relative", width: w, height: h, overflow: "hidden", background: "#fff", color: NAVY, fontFamily: FONT, fontVariantNumeric: "lining-nums", lineHeight: 1.25, fontWeight: 400, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
       <FmtStyle fmts={fmt} />
       <Backdrop bg={bg} w={w} h={h} veil="strong" />
       <div aria-hidden style={{ position: "absolute", right: -30, bottom: ftH + partH - 40, fontSize: 420, lineHeight: 1, opacity: 0.06, filter: "grayscale(1)" }}>{kd.icon}</div>
       <div style={{ position: "relative", height: hdH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", gap: 16, padding: `0 ${px}px` }}>
         <span aria-hidden style={{ display: "inline-block", width: hdH - 36, height: hdH - 36, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
-        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div></div>
-        <div data-fmt="type" style={{ marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{txt(fmt, "type", "BILAN")}</div>
+        <div style={{ whiteSpace: "nowrap" }}><div data-fmt="entete" style={{ fontFamily: FONT, fontSize: 16, fontWeight: 900, letterSpacing: "0.32em", color: GOLD }}>{txt(fmt, "entete", "TENNIS CLUB HOUDAN")}</div></div>
+        <div data-fmt="type" style={{ fontFamily: FONT, marginLeft: "auto", background: acc, color: "#fff", borderRadius: 99, padding: "10px 20px", fontWeight: 900, fontSize: 15, letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{txt(fmt, "type", "BILAN")}</div>
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 24 : 30}px ${px}px ${sq ? 20 : 26}px`, ["--k" as any]: k * g }}>
         <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-evenly", gap: p(14) }}>
           <div>
-            {data.headline.trim() && <div data-fmt="surtitre" style={{ fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
+            {data.headline.trim() && <div data-fmt="surtitre" style={{ fontFamily: FONT, fontSize: p(sq ? 24 : 28), fontWeight: 900, letterSpacing: "0.18em", color: acc, marginBottom: p(6) }}>{txt(fmt, "surtitre", data.headline.trim()).toUpperCase()}</div>}
             <div data-fmt="titre" role="heading" aria-level={1} style={title}>{txt(fmt, "titre", name)}</div>
-            {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 900, color: acc }}>{rankLine}</div>}
-            {!(teamsMode && matches.length > 0) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 800 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
+            {rankLine && <div data-fmt="classement" style={{ marginTop: p(8), fontSize: p(sq ? 30 : 34), fontWeight: 700, color: acc }}>{rankLine}</div>}
+            {!(teamsMode && matches.length > 0) && <div data-fmt="date" style={{ marginTop: p(8), fontSize: p(sq ? 24 : 28), fontWeight: 700 }}>{txt(fmt, "date", fullRange(e).replace(/^./, (c) => c.toUpperCase()))}</div>}
           </div>
           {grid}
           {matches.length > 0 && (
@@ -155,23 +154,23 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
                 const dayTxt = (m.date || e.startDate) ? fmtDay(m.date || e.startDate).replace(/^./, (c) => c.toUpperCase()) : "";
                 return (
                   <div key={i}>
-                  {dayTxt && <div data-fmt={`dt-${i}`} style={{ textShadow: HALO, fontSize: p(one ? 28 : 24), fontWeight: 900, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
+                  {dayTxt && <div data-fmt={`dt-${i}`} style={{ textShadow: HALO, fontSize: p(one ? 28 : 24), fontWeight: 700, color: acc, letterSpacing: "0.04em", margin: `0 0 ${p(6)} ${p(4)}` }}>{txt(fmt, `dt-${i}`, dayTxt)}</div>}
                   <div style={{ ...mcard, display: "flex", alignItems: "stretch", gap: p(16), borderLeftColor: oc, borderLeftStyle: "solid", borderLeftWidth: 10, padding: p(10) }}>
                     {ph && <div role="img" aria-label="Photo de l'équipe" onPointerDown={panM(i, f0)} style={{ flex: `0 0 ${p(phW * (m.size ?? 1))}`, minHeight: p((one ? 250 : many ? 110 : 150) * (m.size ?? 1)), borderRadius: 10, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPanMatch ? "grab" : undefined, touchAction: onPanMatch ? "none" : undefined }}>
                       <img src={ph} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${f0[0]}% ${f0[1]}%`, transform: `scale(${m.zoom ?? 1})`, transformOrigin: `${f0[0]}% ${f0[1]}%`, pointerEvents: "none" }} />
-                      {num && <div data-fmt={`nu-${i}`} style={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", padding: `${p(18)} ${p(6)} ${p(6)}`, background: "linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.72))", color: "#fff", fontSize: p(one ? 24 : 20), fontWeight: 900, letterSpacing: "0.06em", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>{txt(fmt, `nu-${i}`, num)}</div>}
+                      {num && <div data-fmt={`nu-${i}`} style={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", padding: `${p(18)} ${p(6)} ${p(6)}`, background: "linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.72))", color: "#fff", fontSize: p(one ? 24 : 20), fontWeight: 700, letterSpacing: "0.06em", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>{txt(fmt, `nu-${i}`, num)}</div>}
                     </div>}
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: p(6), padding: `${p(4)} 0`, textShadow: HALO }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: p(10) }}>
                         <div style={{ lineHeight: 1.15, minWidth: 0, flex: 1 }}>
-                          <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 900 }}>{txt(fmt, `eq-${i}`, cat)}</div>
-                          {num && !ph && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 800, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
+                          <div data-fmt={`eq-${i}`} style={{ fontSize: p(one ? 28 : 24), color: NAVY, fontWeight: 700 }}>{txt(fmt, `eq-${i}`, cat)}</div>
+                          {num && !ph && <div data-fmt={`nu-${i}`} style={{ fontSize: p(one ? 22 : 19), fontWeight: 700, color: MUTED }}>{txt(fmt, `nu-${i}`, num)}</div>}
                         </div>
-                        {ow && <div data-fmt={`rs-${i}`} style={{ flex: "0 0 auto", textShadow: "none", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
+                        {ow && <div data-fmt={`rs-${i}`} style={{ fontFamily: FONT, flex: "0 0 auto", textShadow: "none", background: oc, color: "#fff", borderRadius: 99, padding: `${p(4)} ${p(14)}`, fontSize: p(15), fontWeight: 900, letterSpacing: "0.1em", textTransform: "uppercase" }}>{txt(fmt, `rs-${i}`, ow)}</div>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: p(14) }}>
-                        <div data-fmt={`ph-${i}`} data-fit style={{ flex: 1, minWidth: 0, fontSize: `calc(${p(one ? 34 : many ? 22 : 26)} * var(--fs, 1))`, fontWeight: 900, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
-                        {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 900, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
+                        <div data-fmt={`ph-${i}`} data-fit style={{ flex: 1, minWidth: 0, fontSize: `calc(${p(one ? 34 : many ? 22 : 26)} * var(--fs, 1))`, fontWeight: 700, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden" }}>{typeof raw === "string" ? raw : (() => { const [a, v, o] = matchParts(m); return <><span style={{ whiteSpace: "nowrap" }}>{a}</span> {v} <span style={{ whiteSpace: "nowrap" }}>{o}</span></>; })()}</div>
+                        {m.us.trim() !== "" && m.them.trim() !== "" && <div data-fmt={`sc-${i}`} style={{ flex: "0 0 auto", fontSize: p(one ? 80 : many ? 44 : 54), fontWeight: 700, lineHeight: 1, color: oc, whiteSpace: "nowrap" }}>{txt(fmt, `sc-${i}`, `${m.us.trim()}/${m.them.trim()}`)}</div>}
                       </div>
                     </div>
                   </div></div>);
@@ -184,8 +183,8 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
               <div style={{ display: "grid", gap: p(6) }}>
                 {results.map((r, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "baseline", gap: p(14), borderTop: i ? `1.5px solid ${LINE}` : "none", paddingTop: i ? p(6) : 0 }}>
-                    <span style={{ flex: "0 0 36%", fontSize: p(20), fontWeight: 800, color: MUTED }}>{r.what}</span>
-                    <b style={{ flex: 1, fontSize: p(24), fontWeight: 900, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
+                    <span style={{ flex: "0 0 36%", fontSize: p(20), fontWeight: 700, color: MUTED }}>{r.what}</span>
+                    <b style={{ flex: 1, fontSize: p(24), fontWeight: 700, lineHeight: 1.15 }}><NoBreak text={r.result} /></b>
                   </div>))}
               </div>
             </div>
@@ -196,14 +195,14 @@ export function RecapPoster({ e, format, data, partners, bg = "", fmt, onPick, o
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>
-          <div data-fmt="partenaires" style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>MERCI À<br />NOS PARTENAIRES</div>
+          <div data-fmt="partenaires" style={{ fontFamily: FONT, flex: "0 0 auto", fontSize: 13, fontWeight: 900, letterSpacing: "0.2em", color: acc, lineHeight: 1.3 }}>MERCI À<br />NOS PARTENAIRES</div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-around", gap: 14, height: partH - 28 }}>
             {logos.map((l, i) => <img key={i} src={l} alt="" style={{ flex: "1 1 0", minWidth: 0, maxWidth: 170, height: "100%", objectFit: "contain" }} />)}
           </div>
         </div>
       )}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: ftH, background: NAVY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, padding: `0 ${px}px` }}>
-        <div data-fmt="pied" style={{ fontSize: 22, fontWeight: 900, letterSpacing: "0.04em" }}>{txt(fmt, "pied", "Merci à tous !")}</div>
+        <div data-fmt="pied" style={{ fontSize: 22, fontWeight: 700, letterSpacing: "0.04em" }}>{txt(fmt, "pied", "Merci à tous !")}</div>
         <div data-fmt="mail" style={{ fontSize: 15, opacity: 0.92, whiteSpace: "nowrap" }}>{txt(fmt, "mail", "tennisclubhoudan@gmail.com")}</div>
         <span aria-hidden style={{ display: "inline-block", width: 60, height: 60, background: "#fff", WebkitMask: "url(/logo-tch.png) center / contain no-repeat", mask: "url(/logo-tch.png) center / contain no-repeat" }} />
       </div>
