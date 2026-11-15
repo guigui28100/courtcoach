@@ -5,7 +5,7 @@
   var BUF=3; // minutes pour changer de côté, s'installer et appeler les joueurs
   var S={dbl:false,n:11,courts:2,dur:38,avail:3,start:"14:00",fmt:"poules",names:[],mode:"jeux",opt:{jeux:"6",points:"9",temps:"20"},durManual:null,ver:0,nsig:"",csig:"",scores:{},pair:"hasard",perm:[],rounds:null,classif:"non",plan:null};
   var T=null;
-  var FORMATS=[["poules","Poules"],["tmc","TMC"],["ko","Élimination directe"],["ladder","Montante-descendante"]];
+  var FORMATS=[["poules","Poules"],["rr","Tous contre tous"],["tmc","TMC"],["ko","Élimination directe"],["ladder","Montante-descendante"]];
   var OPTS={
     jeux:[["1","1 set de 1 jeu",8],["2","1 set de 2 jeux",12],["3","1 set de 3 jeux",16],["4","1 set de 4 jeux",20],["5","1 set de 5 jeux",28],["6","1 set de 6 jeux",35],["2s","2 sets de 6 jeux + super jeu décisif",60]],
     points:[["7","7 points",10],["8","8 points",10],["9","9 points",15],["10","10 points",15],["11","11 points",15],["15","15 points",20]],
@@ -93,8 +93,8 @@
     if(main.r1.length>=2){cons=ko(main.r1.map(function(m){return {t:"l",m:m.id};}),"Consolante",1);all=all.concat(cons.matches);}
     return {matches:all,info:{type:"tmc",consolante:!!cons,r1:main.r1.length,final:main.finalId,consFinal:cons?cons.finalId:null}};
   }
-  function buildPoules(n){
-    UID=0;var G=n<=5?1:Math.max(2,Math.round(n/4)),groups=[];for(var g=0;g<G;g++)groups.push({id:g,players:[],ids:[]});
+  function buildPoules(n,single){
+    UID=0;var G=single||n<=5?1:Math.max(2,Math.round(n/4)),groups=[];for(var g=0;g<G;g++)groups.push({id:g,players:[],ids:[]});
     for(var i=0;i<n;i++){var r=Math.floor(i/G),k=i%G,gi=r%2===0?k:G-1-k;groups[gi].players.push(i);}
     var matches=[];
     groups.forEach(function(gr){
@@ -126,7 +126,7 @@
     for(var r=0;r<R;r++){var ids=[];for(var c=0;c<k;c++){var m={id:"m"+(++UID),a:{t:"p",r:r,p:2*c},b:{t:"p",r:r,p:2*c+1},base:"Tour "+(r+1),rn:"Terrain "+(c+1),phase:"Tour "+(r+1)+" · terrain "+(c+1),deps:prev.slice(),players:[],order:r*10+c,round:r+1,lad:true,r:r,c:c};matches.push(m);ids.push(m.id);}prev=ids;}
     return {matches:matches,info:{type:"ladder",k:k,R:R,bench:n-2*k}};
   }
-  function build(f,n){return f==="poules"?buildPoules(n):f==="tmc"?buildTMC(n):f==="ladder"?buildLadder(n):buildKO(n);}
+  function build(f,n){return f==="poules"?buildPoules(n):f==="rr"?buildPoules(n,true):f==="tmc"?buildTMC(n):f==="ladder"?buildLadder(n):buildKO(n);}
 
   /* ---------- planning ---------- */
   function schedule(matches,C){
@@ -153,7 +153,7 @@
   function metrics(f,B,res,dur){
     var gaps=[],firsts=[],per={};
     if(f==="ladder")return {avgGap:0,maxGap:0,avgFirst:0,maxFirst:0,per:per};
-    if(f==="poules"){
+    if(f==="poules"||f==="rr"){
       B.matches.forEach(function(m){if(m.players.length)m.players.forEach(function(p){(per[p]=per[p]||[]).push(res.slotOf[m.id]);});});
       Object.keys(per).forEach(function(p){var a=per[p].sort(function(x,y){return x-y;});firsts.push(a[0]);for(var i=1;i<a.length;i++)gaps.push(a[i]-a[i-1]-1);});
     }else{
@@ -412,7 +412,7 @@
       var tbf=el("tbody");
       fr.forEach(function(r,ri){var tr=el("tr",ri===0&&r.n?"q":"");tr.appendChild(el("td","num",r.p+(r.p===1?"er":"e")+(r.ex?" ex æquo":"")));tr.appendChild(el("td",null,r.n||"— (à venir)"));tbf.appendChild(tr);});
       tf.appendChild(tbf);var twf=el("div","tw");twf.appendChild(tf);bd.appendChild(twf);
-      if(I.type==="poules"&&S.classif!=="oui")bd.appendChild(el("p","hint","Sans match de classement, les joueurs de même rang dans leur poule sont classés « ex æquo ». Pour les départager, choisis « Matchs de classement : Oui » à l'étape ④."));
+      if(I.type==="poules"&&S.fmt!=="rr"&&S.classif!=="oui")bd.appendChild(el("p","hint","Sans match de classement, les joueurs de même rang dans leur poule sont classés « ex æquo ». Pour les départager, choisis « Matchs de classement : Oui » à l'étape ④."));
     }
     var fg=$("figs");fg.innerHTML="";
     [[doneCount+" / "+B.matches.length,"matchs joués"],[slots.length,"tours à lancer"],[hm(T.total),"durée prévue"],["vers "+hhmm(startMin()+T.total),"heure de fin prévue"]].forEach(function(o){var d=el("div","fig");d.appendChild(el("b",null,String(o[0])));d.appendChild(el("span",null,o[1]));fg.appendChild(d);});
@@ -452,7 +452,7 @@
     var recName=FORMATS.filter(function(f){return f[0]===rec;})[0][1],rr=R[rec];
     var ladderTip=n>=4&&n<=2*S.courts?" Astuce : avec "+courtsTxt()+" pour "+n+(S.dbl?" équipes":" joueurs")+", la montante-descendante fait jouer tout le monde sans aucune attente.":"";
     $("advice").textContent="Notre conseil avec "+courtsTxt()+" : "+recName+" ("+rr.count+" matchs, fini vers "+hhmm(startMin()+rr.total)+")"+(rr.total<=S.avail*60?". C'est le format le plus complet qui tient dans ton temps.":". Aucun format classique ne tient dans ton temps : celui-ci est le plus court. Ajoute un terrain ou raccourcis les matchs.")+ladderTip;
-    var DESC={poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Un tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors. Les moins bons jouent peu.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
+    var DESC={rr:"Tout le monde joue contre tout le monde, dans une seule poule. Chacun joue le même nombre de matchs : le plus juste.",poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Un tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors. Les moins bons jouent peu.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
     var box=$("fmts");box.innerHTML="";
     list.forEach(function(f){
       var r=R[f[0]],fit=r.total<=S.avail*60,over=r.total-S.avail*60;
@@ -623,7 +623,7 @@
 
   function tiles(list,cur,on){var g=H("div","tiles");list.forEach(function(o){var b=B("","tile"+(String(o.v)===String(cur)?" on":""),function(){on(o.v);});b.appendChild(H("b",null,o.l));if(o.s)b.appendChild(H("small",null,o.s));g.appendChild(b);});return g;}
   function setN(v){v=Math.floor(+v);var mn=S.dbl?6:3;if(!(v>=mn))v=mn;if(S.dbl&&v%2)v++;if(v===S.n)return;S.n=v;S.perm=[];S.pairs=[];}
-  var DESC2={poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
+  var DESC2={rr:"Une seule poule : tout le monde joue contre tout le monde.",poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
 
   var TITLES={who:"Qui joue ?",when:"Où et quand ?",names:"Les noms",teams:"Les équipes",rules:"Durée des matchs",format:"Format du tournoi",ready:"C'est prêt !"};
   function keys(){return ["who","when","ready"];}
