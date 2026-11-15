@@ -4,7 +4,7 @@ import { BadRequestException } from "@nestjs/common";
 // Le contenu est du JSON reçu du site : on le reconstruit champ par champ au lieu de le garder tel quel.
 const int = (v: unknown, min: number, max: number, d: number) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : d; };
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
-const FORMATS = ["poules", "tmc", "ko", "ladder"];
+const FORMATS = ["poules", "rr", "tmc", "ko", "ladder"];
 const MODES = ["jeux", "points", "temps"];
 const PAIRS = ["hasard", "equi", "libre", "manuel"];
 
