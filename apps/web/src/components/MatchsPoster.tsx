@@ -14,7 +14,7 @@ import { FmtItem } from "./FmtPanel";
 // Deux affiches de RÉSULTATS des matchs par équipes : celle du WEEK-END (toutes les équipes) et celle des JEUNES.
 // Les rencontres viennent du planning (équipe, club rencontré, domicile ou déplacement) ; le coach écrit seulement les scores.
 // Rien n'est enregistré. Aucun nom d'élève : seulement le club rencontré.
-export type MatchMode = "weekend" | "jeunes";
+export type MatchMode = "weekend" | "jeunes" | "anecdote"; // « anecdote » : les résultats du week-end, ouverts avec l'encadré anecdote en avant
 type Item = { key: string; day: string; e: ClubEvent };
 export type Score = { h: string; a: string; club: string; photo?: string; focus?: [number, number]; zoom?: number }; // photo : photo de l'équipe (facultative), réduite dans le navigateur, jamais envoyée
 const mLabel = (m: string) => `${MONTHS[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}`;
@@ -172,14 +172,14 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const [sel, setSel] = useState("titre");
   const [typed, setTyped] = useState<Record<string, Score>>({});
   const months = Array.from({ length: 12 }, (_, i) => addMonth(`${s}-09`, i));
-  const list = useMemo(() => matchesFor(events, { mode, span: mode === "weekend" ? "weekend" : span, sat, from, to, scope, withTentative }), [events, mode, span, sat, from, to, scope, withTentative]);
+  const list = useMemo(() => matchesFor(events, { mode, span: mode !== "jeunes" ? "weekend" : span, sat, from, to, scope, withTentative }), [events, mode, span, sat, from, to, scope, withTentative]);
   // scores saisis, avec le club du planning par défaut
   const scores = useMemo(() => Object.fromEntries(list.map((x) => [x.key, typed[x.key] ?? { h: "", a: "", club: opponentOf(x.e) }])) as Record<string, Score>, [list, typed]);
   const sun = addDays(sat, 1);
   const wkLabel = sat.slice(5, 7) === sun.slice(5, 7) ? `Week-end du ${dn(sat)} et ${dn(sun)} ${MONTHS[+sat.slice(5, 7) - 1].toLowerCase()}` : `Week-end du ${dn(sat)} ${MONTHS[+sat.slice(5, 7) - 1].toLowerCase()} et ${dn(sun)} ${MONTHS[+sun.slice(5, 7) - 1].toLowerCase()}`;
   const period = from === to ? mLabel(from) : `${MONTHS[+from.slice(5, 7) - 1]} – ${mLabel(to)}`;
-  const byWeekend = mode === "weekend" || span === "weekend";
-  const title = mode === "weekend" ? "Résultats du week-end" : "Résultats équipes jeunes";
+  const byWeekend = mode !== "jeunes" || span === "weekend";
+  const title = mode !== "jeunes" ? "Résultats du week-end" : "Résultats équipes jeunes";
   const sub = byWeekend ? wkLabel : period;
   const setS = (key: string, p: Partial<Score>) => setTyped((o) => ({ ...o, [key]: { ...scores[key], ...o[key], ...p } }));
   const [anecdote, setAnecdote] = useState("");
@@ -203,7 +203,7 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
   const inp = "w-16 rounded-md border-2 border-line bg-white px-2 py-2 text-center text-lg font-extrabold text-ink";
   return (
     <PosterStudio
-      title={mode === "weekend" ? "🎾 Affiche des résultats du week-end" : "🧒 Affiche des résultats des équipes jeunes"}
+      title={mode === "anecdote" ? "💬 Affiche anecdote" : mode === "weekend" ? "🎾 Affiche des résultats du week-end" : "🧒 Affiche des résultats des équipes jeunes"}
       subtitle={`${sub} · ${done} résultat${done > 1 ? "s" : ""} sur ${list.length} match${list.length > 1 ? "s" : ""}`} onClose={onClose}
       formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
       content={<>
@@ -231,7 +231,7 @@ export function MatchsModal({ events, mode, onClose }: { events: ClubEvent[]; mo
             </div>
           </Sec>
         )}
-        {mode === "weekend" && (
+        {mode !== "jeunes" && (
           <Sec title="Quelles équipes ?">
             <Seg label="Équipes" value={scope} options={[{ id: "tous", label: "Toutes" }, { id: "jeunes", label: "🧒 Jeunes" }, { id: "adultes", label: "🎾 Adultes" }]} onChange={setScope} />
           </Sec>
