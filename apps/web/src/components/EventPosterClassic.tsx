@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useLayoutEffect, useRef, useState } from "react";
 import { SERIF } from "./posterFonts";
 import { NoBreak, longestLink } from "./NoBreak";
@@ -64,7 +65,8 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
   // Taille du contenu : on mesure, puis on agrandit ou réduit pour remplir la place disponible (le reste est réparti entre les blocs)
   const body = useRef<HTMLDivElement>(null); const [k, setK] = useState(1);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // « Tous les textes » : s'applique APRÈS l'ajustement automatique (sinon il serait annulé par lui)
-  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg]);
+  const anec = useAnec(); const anecEl = anec.sig ? <AnecdoteBox fmt={fmt} scale={format === "CARRE" ? 0.8 : 1} style={{ margin: 0 }} /> : null;
+  const sig = JSON.stringify([e, format, showWho, fmt, (partners ?? []).length, light, bg, anec.sig]);
   useLayoutEffect(() => {
     const el = body.current; if (!el) return;
     const run = () => {
@@ -166,7 +168,7 @@ export function EventPosterClassic({ e, format, showWho, fmt, partners, bg = "",
       </div>
       <div style={{ position: "relative", height: 10, background: `linear-gradient(90deg,${acc},${GOLD})` }} />
       <div ref={body} style={{ position: "absolute", left: 0, right: 0, top: hdH + 10, bottom: ftH + partH, padding: `${sq ? 26 : 34}px ${px}px ${sq ? 24 : 30}px`, ["--k" as any]: k * g }}>
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{c}</div> : null))}</div>
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: light ? "center" : "space-evenly", gap: light ? p(26) : gap }}>{[titleEl, dateEl, rowsEl, tarifEl, noteEl || null, anecEl].map((c, i) => (c ? <div key={i} style={{ flexShrink: 0 }}>{c}</div> : null))}</div>
       </div>
       {logos.length > 0 && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: ftH, height: partH, background: "#fff", borderTop: `3px solid ${acc}`, display: "flex", alignItems: "center", gap: 18, padding: `0 ${px}px` }}>

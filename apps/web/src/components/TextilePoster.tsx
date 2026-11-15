@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useEffect, useRef, useState } from "react";
 import { Backdrop } from "./PosterBackdrop";
 import { usePartnerLogos } from "../sponsors";
@@ -115,6 +116,7 @@ export function TextilePoster({ data, format, bg = "", fmt, onPick, onPan, logos
         {n > 0 && <div style={{ position: "relative", flex: B.length ? "1 1 62%" : 1, minHeight: 0, display: "flex", justifyContent: "space-between", gap: 14 * u }}>{col(G)}{col(D)}</div>}
         {B.length > 0 && <div style={{ position: "relative", flex: "1 1 38%", minHeight: 0, display: "flex", gap: 12 * u, alignItems: "stretch" }}>{B.map((x) => tile(x, `${100 / B.length}%`, true))}</div>}
       </div>
+      {useAnec().sig !== "" && <div style={{ position: "relative", flex: "0 0 auto", padding: `0 ${40 * u}px ${8 * u}px` }}><AnecdoteBox fmt={fmt} scale={0.7 * u + 0.1} style={{ margin: `${4 * u}px 0` }} /></div>}
       {/* pied : tailles, date limite, comment commander */}
       <div style={{ position: "relative", flex: "0 0 auto" }}>
         {data.sizes.trim() && <div data-fmt="tailles" style={{ display: "flex", justifyContent: "center", gap: 14 * u, alignItems: "baseline", padding: `${4 * u}px ${30 * u}px ${8 * u}px`, fontSize: 16 * u, fontWeight: 800, letterSpacing: "0.08em" }}><span style={{ opacity: 0.8, letterSpacing: "0.18em", fontSize: 12 * u }}>TAILLES</span><span>{txt(fmt, "tailles", data.sizes)}</span></div>}

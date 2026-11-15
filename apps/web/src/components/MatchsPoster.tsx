@@ -1,3 +1,4 @@
+import { AnecdoteBox, useAnec } from "./Anecdote";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { addDays, ClubEvent, colorOf, DAYS, evOn, MONTHS, opponentOf, seasonOf, TEAM_CATS, teamCat, textOn, todayParis, venueOf, weekdayOf } from "../clubPlan";
 import { Backdrop } from "./PosterBackdrop";
@@ -66,12 +67,13 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onP
   const n = shown.length, HEAD = 230, FOOT = 96, avail = POSTER_H - HEAD - FOOT - 56;
   const wins = shown.filter((x) => resultOf(scores[x.key]) === "W").length, losses = shown.filter((x) => resultOf(scores[x.key]) === "L").length, draws = n - wins - losses;
   const sum = [wins && `${wins} victoire${wins > 1 ? "s" : ""}`, draws && `${draws} nul${draws > 1 ? "s" : ""}`, losses && `${losses} défaite${losses > 1 ? "s" : ""}`].filter(Boolean).join(" · ");
+  const anec = useAnec();
   const box = useRef<HTMLDivElement>(null);
   const g = 1 + (fmt?.tout?.size ?? 0) * 0.08; // taille de « tous les textes » : appliquée APRÈS l'ajustement automatique
   const [k, setK] = useState(1);
   const [tick, setTick] = useState(0);
   useEffect(() => { let on = true; (document as any).fonts?.ready?.then(() => { if (on) setTick((x) => x + 1); }); return () => { on = false; }; }, []);
-  const sig = shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|") + JSON.stringify(fmt);
+  const sig = anec.sig + shown.map((x) => x.key + JSON.stringify({ ...scores[x.key], photo: scores[x.key].photo ? scores[x.key].photo!.length : 0 })).join("|") + JSON.stringify(fmt);
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
     el.style.zoom = "1"; el.setAttribute("data-measuring", ""); // pendant la mesure, les textes déplacés reviennent à leur place
@@ -135,6 +137,7 @@ export function MatchsPoster({ list, scores, mode, title, sub, bg = "", fmt, onP
             })}
           </section>
         ))}
+        {n > 0 && <AnecdoteBox fmt={fmt} />}
       </div></div>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: FOOT, background: "#17140f", color: "#fff", padding: "14px 40px", display: "flex", alignItems: "center", gap: 14 }}>
         <Logo size={44} />
