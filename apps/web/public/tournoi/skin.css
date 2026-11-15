@@ -120,3 +120,26 @@
 /* Bouton « Options » du bandeau en direct : petit, discret, à droite */
 #tournoi-root .lhead .chipx{grid-column:2;justify-self:end;width:auto;min-height:36px;padding:6px 16px;background:transparent;color:#fffaf0;border:1.5px solid #c9a95b;font-weight:700}
 #tournoi-root .lhead .chipx:hover{background:rgba(201,169,91,.18)}
+
+/* ── Étape « C'est prêt » plus aérée : chaque bloc respire ── */
+#tournoi-root .wready{gap:30px;padding:28px 26px 32px}
+#tournoi-root .wready .wq{margin-bottom:2px}
+#tournoi-root .wready .recap{gap:10px;padding:20px 22px}
+#tournoi-root .wready .recap b{margin-bottom:2px}
+#tournoi-root .wready .warnb{padding:14px 18px;line-height:1.5}
+#tournoi-root .wready .fsec{display:grid;gap:18px}
+#tournoi-root .wready .fsec>h2.wsub{margin-bottom:2px}
+#tournoi-root .wready .advice{gap:12px;padding:18px 20px}
+#tournoi-root .wready .tiles{gap:14px}
+#tournoi-root .wready .tile{padding:20px 12px;min-height:92px;gap:6px}
+#tournoi-root .wready .big.go{margin-top:6px}
+#tournoi-root .wready details.fold{margin:0}
+#tournoi-root .wready details.fold>summary{padding:18px 20px}
+#tournoi-root .wready details.fold .foldin{padding:6px 20px 20px}
+#tournoi-root .wready .step,#tournoi-root .wready .row{gap:14px}
+@media (max-width:520px){#tournoi-root .wready{gap:24px;padding:22px 16px 26px}#tournoi-root .wready .recap{padding:16px}}
+#tournoi-root .wready .tiles+.tiles,#tournoi-root .wready .tiles+*:not(.tiles){margin-top:22px}
+#tournoi-root .wready .advice{margin-bottom:10px}
+#tournoi-root .wready .advice .big{margin-top:10px}
+#tournoi-root .wready .big.go{margin-top:14px;margin-bottom:6px}
+@media (max-width:520px){#tournoi-root .wready .tile{padding-inline:26px}}
