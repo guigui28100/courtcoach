@@ -143,3 +143,19 @@
 #tournoi-root .wready .advice .big{margin-top:10px}
 #tournoi-root .wready .big.go{margin-top:14px;margin-bottom:6px}
 @media (max-width:520px){#tournoi-root .wready .tile{padding-inline:26px}}
+
+/* Étape « C'est prêt » : liste « Avant de lancer » et bouton grisé */
+#tournoi-root .todo{border:1px solid #e3d3aa;background:#fffaf0;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+#tournoi-root .todo .wsub{margin:0 0 4px}
+#tournoi-root .trow{display:flex;align-items:center;gap:12px;font-size:17px;line-height:1.35}
+#tournoi-root .trow .tk{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;background:#d9efe2;color:#1f6b45}
+#tournoi-root .trow.no .tk{background:#fde2dd;color:#a3321f}
+#tournoi-root .trow.warn .tk{background:#fbe9c0;color:#8a5a00}
+#tournoi-root .trow .tt{flex:1}
+#tournoi-root .trow .tgo{flex:none;border:1px solid #1a1713;background:#fff;border-radius:10px;padding:8px 14px;font-weight:600;cursor:pointer;min-height:40px}
+#tournoi-root .todo.bad{border-color:#d9503a;background:#fff3f0}
+#tournoi-root .big.go.off{background:#b9b4aa;box-shadow:none}
+#tournoi-root .gohint{text-align:center;color:#a3321f;font-weight:600;margin:0}
+#tournoi-root .wready .todo{order:0}
+#tournoi-root .wready .big.go{order:3}
+#tournoi-root .wready .gohint{order:4}
