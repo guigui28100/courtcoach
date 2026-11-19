@@ -237,7 +237,7 @@ function ThemeEditor({ g, s, i, L, setS, changeTheme }: { g: Group; s: Session; 
 }
 
 function DomainObjectives({ i, d, list, L, onChange }: { i: number; d: (typeof DOMAINS)[number]; list: string[]; L: LevelDef; onChange: (l: string[]) => void }) {
-  const [add, setAdd] = useState(""); const options = objectiveOptions(d.key, L).filter((o) => !list.includes(o));
+  const [add, setAdd] = useState(""); const short = (o: string) => (o.includes(" : ") ? o.split(" : ").slice(1).join(" : ") : o); const options = objectiveOptions(d.key, L).filter((o) => !list.includes(short(o)));
   const push = (t: string) => { const v = t.trim(); if (v && !list.includes(v)) onChange([...list, v]); };
   return (
     <div className="grid content-start gap-2 rounded-lg border-2 bg-white p-3" style={{ borderColor: list.length ? d.color : "#e2dbc9" }}>

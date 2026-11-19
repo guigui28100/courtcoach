@@ -16,33 +16,33 @@ const T = (d: Domain, kw: RegExp, s: [string[], string[], string[]]): Theme => (
 
 export const THEMES: Record<string, Theme> = {
   "Coup droit": T("tech", /coup droit|\bcd\b|forehand/, [
-    ["Prise et position de départ", "Armer tôt, épaules de profil", "Frapper la balle devant soi"],
-    ["Finir haut vers l'épaule opposée", "Régularité cross et long de ligne", "Replacement après la frappe"],
-    ["Direction et profondeur sous pression", "Coup droit en mouvement", "Coup droit d'attaque sur balle courte"]]),
+    ["Prise semi-fermée et position d'attente", "Orientation des épaules et préparation par le haut", "Plan de frappe devant soi"],
+    ["Appuis semi-ouverts ou ouverts selon la balle", "Transfert du poids du corps vers l'avant", "Geste ample et relâchement"],
+    ["Effet lifté et hauteur de balle", "Vitesse de la tête de raquette", "Reprise d'appuis après la frappe"]]),
   "Revers": T("tech", /revers|backhand/, [
-    ["Prise, épaules de profil, armé", "Contact devant", "Équilibre à la frappe"],
-    ["Accompagner et finir haut", "Régularité cross", "Replacement au centre"],
-    ["Revers en mouvement", "Revers sous pression", "Revers slicé pour défendre ou varier"]]),
+    ["Prise et orientation des épaules", "Préparation par le haut", "Plan de frappe devant soi"],
+    ["Appuis en ligne et ancrage au sol", "Transfert du poids du corps vers l'avant", "Équilibre à la frappe"],
+    ["Revers lifté et revers slicé", "Hauteur de frappe et trajectoire", "Reprise d'appuis après la frappe"]]),
   "Service": T("tech", /service|\bsert\b|servir|2e balle|deuxieme balle/, [
-    ["Lancer de balle et position", "Geste en trois temps : armer, lancer, frapper", "Viser le carré"],
-    ["Première balle placée", "Deuxième balle sûre", "Rythme et routine avant le service"],
-    ["Service dans le match", "Zones visées : T, centre, extérieur", "Enchaîner service et premier coup"]]),
+    ["Prise marteau", "Position armée au service", "Lancer de balle et équilibre"],
+    ["Projection du coude vers le haut et l'avant", "Pronation et mise à niveau de la tête de raquette", "Poussée de la jambe arrière"],
+    ["Effet lifté et effet slicé", "Vitesse de la tête de raquette et relâchement", "Dissociation bas du corps / haut du corps"]]),
   "Retour de service": T("tech", /retour/, [
-    ["Position d'attente active", "Petit armé", "Bloquer devant soi"],
-    ["Retour profond au centre", "Se placer selon le service", "Retour croisé"],
-    ["Retour agressif sur seconde balle", "Premier coup après le retour", "Choisir le retour selon le serveur"]]),
+    ["Saut d'allègement", "Préparation courte et orientation des épaules", "Plan de frappe devant soi"],
+    ["Appuis ouverts ou semi-ouverts", "Ancrage au sol et transfert du poids du corps vers l'avant", "Retour profond"],
+    ["Trajectoire du retour selon le service", "Vitesse de la tête de raquette sur seconde balle", "Reprise d'appuis après le retour"]]),
   "Volée": T("tech", /volee|filet|monte/, [
-    ["Raquette devant, poignet ferme", "Pas de grand armé", "Un pas vers la balle"],
-    ["Volée de coup droit et de revers", "Placer la volée", "Volée basse"],
-    ["Montée et volée dans le jeu", "Volée d'attaque", "Volée de défense au filet"]]),
+    ["Raquette devant et mise à niveau de la tête de raquette", "Appuis en ligne", "Plan de frappe devant soi"],
+    ["Appuis relais vers l'avant", "Équilibre et ancrage au sol", "Hauteur de frappe : volée haute et volée basse"],
+    ["Volée de placement et trajectoire", "Relâchement et vitesse de la tête de raquette", "Reprise d'appuis après la volée"]]),
   "Smash": T("tech", /smash/, [
-    ["Reculer en pas chassés", "Main libre vers la balle", "Armer tôt"],
-    ["Frapper au point haut", "Viser le carré adverse", "Se replacer"],
-    ["Smash après lob dans les points", "Smash de volée", "Choisir de laisser rebondir"]]),
+    ["Reprise d'appuis vers l'arrière", "Position armée comme au service", "Prise marteau"],
+    ["Plan de frappe et hauteur de frappe", "Pronation", "Projection du coude vers le haut et l'avant"],
+    ["Poussée de la jambe arrière et saut", "Trajectoire et placement", "Reprise d'appuis après le smash"]]),
   "Jeu de jambes": T("tech", /jambe|appui|deplac|bouge|bougent|bouger|replac/, [
-    ["Pas chassés et petits appuis", "Genoux fléchis", "Pas d'ajustement avant la frappe"],
-    ["Appuis avant chaque frappe", "Replacement au centre", "Premier pas réactif"],
-    ["Déplacements dans l'échange", "Changements de direction", "Équilibre à la frappe"]]),
+    ["Saut d'allègement", "Appuis fixes et appuis relais", "Équilibre"],
+    ["Reprise d'appuis après chaque frappe", "Appuis ouverts, semi-ouverts et en ligne", "Ancrage au sol"],
+    ["Transfert du poids du corps vers l'avant", "Dissociation bas du corps / haut du corps", "Équilibre en déplacement"]]),
   "Défendre": T("tact", /defen|subit|recul/, [
     ["Revenir au centre", "Lober pour souffler", "Jouer haut et profond"],
     ["Défendre en slice et en lift", "Gagner du temps", "Rester dans le point"],
@@ -100,6 +100,14 @@ export const THEMES: Record<string, Theme> = {
     ["Aller au bout de chaque point", "Garder l'énergie après une erreur", "Encourager son partenaire"],
     ["Ne rien lâcher quand on est mené", "Rester agressif jusqu'à la fin", "Gagner un point difficile"]]),
 };
+// Vocabulaire technique du prof, rangé par famille : proposé comme objectifs de technique (« Appuis : Saut d'allègement »)
+export const TECH_GROUPS: { label: string; items: string[] }[] = [
+  { label: "Appuis", items: ["Saut d'allègement", "Reprise d'appuis", "Appuis ouverts", "Appuis semi-ouverts", "Appuis en ligne", "Appuis relais", "Appuis fixes", "Ancrage au sol", "Poussée de la jambe arrière", "Transfert du poids du corps vers l'avant"] },
+  { label: "Prises", items: ["Prise fermée", "Prise semi-fermée", "Prise marteau"] },
+  { label: "Préparation et geste", items: ["Orientation des épaules", "Préparation par le haut", "Geste ample", "Position armée au service", "Projection du coude vers le haut et l'avant", "Pronation", "Mise à niveau de la tête de raquette", "Dissociation bas du corps / haut du corps"] },
+  { label: "Frappe", items: ["Plan de frappe", "Hauteur de frappe", "Vitesse de la tête de raquette", "Équilibre", "Relâchement"] },
+  { label: "Balle", items: ["Effet lifté", "Effet slicé", "Hauteur de balle", "Volume de jeu", "Trajectoire"] },
+];
 export const THEME_NAMES = Object.keys(THEMES);
 
 // Niveaux : Galaxie Tennis et adultes. `ok` = thèmes proposés à ce niveau ; `core` = thèmes de base toujours programmés.
@@ -294,8 +302,10 @@ export function withObj(s: Session, obj: Objectives): Session {
   return { ...s, obj, skills: joinSkills(all).slice(0, 900), fil: fil.slice(0, 160) };
 }
 // Propositions pour un domaine : les compétences du catalogue de ce domaine, sous la forme « Thème : compétence »
-export const objectiveOptions = (d: Domain, level: LevelDef): string[] =>
-  THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`));
+export const objectiveOptions = (d: Domain, level: LevelDef): string[] => [
+  ...THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`)),
+  ...(d === "tech" ? TECH_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
+];
 export const BLOCK_NAMES = ["Échauffement", "Situation", "Jeu", "Match", "Retour au calme", "Autre"];
 export const defaultBlocks = (minutes: number): Block[] => {
   const e = Math.max(5, Math.round(minutes * 0.15 / 5) * 5), c = Math.max(5, Math.round(minutes * 0.1 / 5) * 5), r = minutes - e - c, a = Math.round(r / 2 / 5) * 5;
