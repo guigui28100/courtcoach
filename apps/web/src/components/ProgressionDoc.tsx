@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { ClubLogo } from "./ui";
-import { BILAN_LEVELS, bilanByDomain, DOMAINS, Group, KIND_LABEL, levelDef, parseSkills, PHASES, phaseOf, seasonLabel, Session, sessionColor, sessionDomain, THEMES } from "../progression";
+import { baseOfObjective } from "../techBase";
+import { BILAN_LEVELS, bilanByDomain, DOMAINS, Group, KIND_LABEL, levelDef, objCount, objOf, parseSkills, PHASES, phaseOf, seasonLabel, Session, sessionColor, sessionDomain, THEMES } from "../progression";
 
 // Documents A4 du prof : couverture, bilan, vue d'ensemble, puis UNE FICHE PAR SÉANCE. Dessinés ici (aucune image ni police extérieure), imprimables ou enregistrables en PDF.
 export const DOC_W = 794, DOC_H = 1123;
@@ -155,16 +156,17 @@ export function SessionPage({ g, i, n }: { g: Group; i: number; n: number }) {
         <div style={{ fontFamily: SERIF, fontSize: s.title.length > 40 ? 40 : 50, fontWeight: 700, lineHeight: 1.08, marginTop: 24, overflowWrap: "anywhere" }}>{s.title}</div>
         <div style={{ width: 90, height: 4, background: col, margin: "16px 0 12px" }} />
         {s.why && <div style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 19, color: MUT }}>Pourquoi cette séance : {s.why}.</div>}
-        <div style={{ marginTop: 26, fontSize: 12, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase", color: col }}>Compétences à travailler</div>
-        <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-          {skills.length ? skills.map((c) => <div key={c} style={{ display: "grid", gridTemplateColumns: "22px 1fr", gap: 12, alignItems: "center", fontSize: 18 }}><span style={{ width: 20, height: 20, border: `2px solid ${col}` }} /><span>{c}</span></div>) : <div style={{ color: MUT }}>À compléter.</div>}
+        <div style={{ marginTop: 26, fontSize: 12, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase", color: col }}>Objectifs de travail</div>
+        <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+          {objCount(objOf(s)) ? DOMAINS.filter((d) => objOf(s)[d.key].length).map((d) => <div key={d.key} style={{ borderLeft: `5px solid ${d.color}`, paddingLeft: 14 }}><div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", color: d.color }}>{d.label}</div>{objOf(s)[d.key].map((c) => { const b = d.key === "tech" ? baseOfObjective(c) : undefined; return <div key={c} style={{ marginTop: 4 }}><div style={{ display: "grid", gridTemplateColumns: "22px 1fr", gap: 10, alignItems: "center", fontSize: 17 }}><span style={{ width: 18, height: 18, border: `2px solid ${d.color}` }} /><span>{c}</span></div>{b && <div style={{ marginLeft: 32, fontSize: 12.5, color: "#555", lineHeight: 1.35 }}>À observer : {b.obs}. Exercice possible : {b.ex}.</div>}</div>; })}</div>) : skills.length ? skills.map((c) => <div key={c} style={{ display: "grid", gridTemplateColumns: "22px 1fr", gap: 12, alignItems: "center", fontSize: 18 }}><span style={{ width: 20, height: 20, border: `2px solid ${col}` }} /><span>{c}</span></div>) : <div style={{ color: MUT }}>À compléter.</div>}
         </div>
-        {s.fil && <div style={{ marginTop: 22, borderLeft: `5px solid ${GOLD}`, background: "#f3ecdc", padding: "10px 16px" }}><div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: GOLD }}>Fil rouge de la séance</div><div style={{ fontSize: 17, marginTop: 2 }}>{s.fil}</div></div>}
+        {s.blocks && s.blocks.length > 0 && <div style={{ marginTop: 20 }}><div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase", color: MUT }}>Déroulement</div>{s.blocks.map((b, k) => <div key={k} style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 12, borderBottom: `1px solid ${LINE}`, padding: "5px 0", fontSize: 14 }}><b>{b.n} · {b.m} min</b><span style={{ whiteSpace: "pre-line" }}>{b.t || "—"}</span></div>)}{s.mat && <div style={{ marginTop: 6, fontSize: 14 }}><b>Matériel :</b> {s.mat}</div>}</div>}
+        {s.fil && !s.obj && <div style={{ marginTop: 22, borderLeft: `5px solid ${GOLD}`, background: "#f3ecdc", padding: "10px 16px" }}><div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: GOLD }}>Fil rouge de la séance</div><div style={{ fontSize: 17, marginTop: 2 }}>{s.fil}</div></div>}
         <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {[["Groupe", `${g.size ? g.size + " joueurs" : "—"}`], ["Durée", `${g.minutes} minutes`], ["Cadre", `${L.ball} · ${L.terrain.split(",")[0].toLowerCase()}`]].map(([a, b]) => <div key={a} style={{ borderTop: `1px solid ${LINE}`, paddingTop: 6 }}><div style={{ fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: MUT, fontWeight: 800 }}>{a}</div><div style={{ fontSize: 14 }}>{b}</div></div>)}
         </div>
         <div style={{ marginTop: 26, fontSize: 12, fontWeight: 800, letterSpacing: ".18em", textTransform: "uppercase", color: MUT }}>Mes notes</div>
-        <div style={{ marginTop: 6 }}>{s.note.trim() ? <div style={{ fontSize: 16, whiteSpace: "pre-line", lineHeight: "30px", borderBottom: `1px solid ${LINE}` }}>{s.note}</div> : Array.from({ length: 9 }).map((_, k) => <div key={k} style={{ height: 34, borderBottom: `1px solid ${LINE}` }} />)}</div>
+        <div style={{ marginTop: 6 }}>{s.note.trim() ? <div style={{ fontSize: 16, whiteSpace: "pre-line", lineHeight: "30px", borderBottom: `1px solid ${LINE}` }}>{s.note}</div> : Array.from({ length: s.blocks && s.blocks.length ? 3 : 9 }).map((_, k) => <div key={k} style={{ height: 34, borderBottom: `1px solid ${LINE}` }} />)}</div>
         <div style={{ position: "absolute", left: 56, right: 56, bottom: 62, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14 }}>
           <span><span style={{ display: "inline-block", width: 20, height: 20, border: `2px solid ${INK}`, verticalAlign: "-4px", marginRight: 8, textAlign: "center", lineHeight: "16px" }}>{s.done ? "✓" : ""}</span>Séance faite</span>
           <span style={{ color: MUT }}>Date : ……… / ……… / ………</span>

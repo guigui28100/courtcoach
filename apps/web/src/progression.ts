@@ -16,33 +16,33 @@ const T = (d: Domain, kw: RegExp, s: [string[], string[], string[]]): Theme => (
 
 export const THEMES: Record<string, Theme> = {
   "Coup droit": T("tech", /coup droit|\bcd\b|forehand/, [
-    ["Prise et position de départ", "Armer tôt, épaules de profil", "Frapper la balle devant soi"],
-    ["Finir haut vers l'épaule opposée", "Régularité cross et long de ligne", "Replacement après la frappe"],
-    ["Direction et profondeur sous pression", "Coup droit en mouvement", "Coup droit d'attaque sur balle courte"]]),
+    ["Prise semi-fermée et position d'attente", "Orientation des épaules et préparation par le haut", "Plan de frappe et prise de balle tôt"],
+    ["Appuis semi-ouverts ou ouverts selon la balle", "Transfert du poids du corps vers l'avant", "Geste ample et relâchement"],
+    ["Effet lifté et hauteur de balle", "Vitesse de la tête de raquette", "Reprise d'appuis après la frappe", "Régularité"]]),
   "Revers": T("tech", /revers|backhand/, [
-    ["Prise, épaules de profil, armé", "Contact devant", "Équilibre à la frappe"],
-    ["Accompagner et finir haut", "Régularité cross", "Replacement au centre"],
-    ["Revers en mouvement", "Revers sous pression", "Revers slicé pour défendre ou varier"]]),
+    ["Prise et orientation des épaules", "Rôle de la main gauche", "Préparation par le haut", "Plan de frappe et prise de balle tôt"],
+    ["Appuis en ligne et ancrage au sol", "Passage des bras", "Transfert du poids du corps vers l'avant", "Équilibre à la frappe"],
+    ["Revers lifté et revers slicé", "Hauteur de frappe et trajectoire", "Reprise d'appuis après la frappe", "Régularité"]]),
   "Service": T("tech", /service|\bsert\b|servir|2e balle|deuxieme balle/, [
-    ["Lancer de balle et position", "Geste en trois temps : armer, lancer, frapper", "Viser le carré"],
-    ["Première balle placée", "Deuxième balle sûre", "Rythme et routine avant le service"],
-    ["Service dans le match", "Zones visées : T, centre, extérieur", "Enchaîner service et premier coup"]]),
+    ["Prise marteau", "Position armée au service", "Lancer de balle et équilibre"],
+    ["Projection du coude vers le haut et l'avant", "Pronation et mise à niveau de la tête de raquette", "Poussée de la jambe arrière"],
+    ["Effet lifté et effet slicé", "Vitesse de la tête de raquette et relâchement", "Dissociation bas du corps / haut du corps", "Régularité"]]),
   "Retour de service": T("tech", /retour/, [
-    ["Position d'attente active", "Petit armé", "Bloquer devant soi"],
-    ["Retour profond au centre", "Se placer selon le service", "Retour croisé"],
-    ["Retour agressif sur seconde balle", "Premier coup après le retour", "Choisir le retour selon le serveur"]]),
+    ["Saut d'allègement", "Préparation courte et orientation des épaules", "Plan de frappe et prise de balle tôt"],
+    ["Appuis ouverts ou semi-ouverts", "Ancrage au sol et transfert du poids du corps vers l'avant", "Retour profond"],
+    ["Trajectoire du retour selon le service", "Vitesse de la tête de raquette sur seconde balle", "Reprise d'appuis après le retour", "Régularité"]]),
   "Volée": T("tech", /volee|filet|monte/, [
-    ["Raquette devant, poignet ferme", "Pas de grand armé", "Un pas vers la balle"],
-    ["Volée de coup droit et de revers", "Placer la volée", "Volée basse"],
-    ["Montée et volée dans le jeu", "Volée d'attaque", "Volée de défense au filet"]]),
+    ["Raquette devant et mise à niveau de la tête de raquette", "Appuis en ligne", "Plan de frappe et prise de balle tôt"],
+    ["Appuis relais vers l'avant", "Équilibre et ancrage au sol", "Hauteur de frappe : volée haute et volée basse"],
+    ["Volée de placement et trajectoire", "Relâchement et vitesse de la tête de raquette", "Reprise d'appuis après la volée", "Régularité"]]),
   "Smash": T("tech", /smash/, [
-    ["Reculer en pas chassés", "Main libre vers la balle", "Armer tôt"],
-    ["Frapper au point haut", "Viser le carré adverse", "Se replacer"],
-    ["Smash après lob dans les points", "Smash de volée", "Choisir de laisser rebondir"]]),
+    ["Reprise d'appuis vers l'arrière", "Position armée comme au service", "Prise marteau"],
+    ["Plan de frappe et hauteur de frappe", "Pronation", "Projection du coude vers le haut et l'avant"],
+    ["Poussée de la jambe arrière et saut", "Trajectoire et placement", "Reprise d'appuis après le smash", "Régularité"]]),
   "Jeu de jambes": T("tech", /jambe|appui|deplac|bouge|bougent|bouger|replac/, [
-    ["Pas chassés et petits appuis", "Genoux fléchis", "Pas d'ajustement avant la frappe"],
-    ["Appuis avant chaque frappe", "Replacement au centre", "Premier pas réactif"],
-    ["Déplacements dans l'échange", "Changements de direction", "Équilibre à la frappe"]]),
+    ["Saut d'allègement", "Appuis fixes et appuis relais", "Pas chassés, croisés et sautés"],
+    ["Reprise d'appuis après chaque frappe", "Appuis ouverts, semi-ouverts et en ligne", "Ancrage au sol"],
+    ["Transfert du poids du corps vers l'avant", "Dissociation bas du corps / haut du corps", "Équilibre en déplacement"]]),
   "Défendre": T("tact", /defen|subit|recul/, [
     ["Revenir au centre", "Lober pour souffler", "Jouer haut et profond"],
     ["Défendre en slice et en lift", "Gagner du temps", "Rester dans le point"],
@@ -100,6 +100,20 @@ export const THEMES: Record<string, Theme> = {
     ["Aller au bout de chaque point", "Garder l'énergie après une erreur", "Encourager son partenaire"],
     ["Ne rien lâcher quand on est mené", "Rester agressif jusqu'à la fin", "Gagner un point difficile"]]),
 };
+// Vocabulaire technique du prof, rangé par famille : proposé comme objectifs de technique (« Appuis : Saut d'allègement »)
+export const TECH_GROUPS: { label: string; items: string[] }[] = [
+  { label: "Appuis", items: ["Saut d'allègement", "Reprise d'appuis", "Appuis ouverts", "Appuis semi-ouverts", "Appuis en ligne", "Appuis relais", "Appuis fixes", "Ancrage au sol", "Poussée de la jambe arrière", "Transfert du poids du corps vers l'avant", "Pas chassés", "Pas croisés", "Pas sautés"] },
+  { label: "Prises", items: ["Prise fermée", "Prise semi-fermée", "Prise marteau"] },
+  { label: "Préparation et geste", items: ["Orientation des épaules", "Préparation par le haut", "Geste ample", "Position armée au service", "Projection du coude vers le haut et l'avant", "Pronation", "Mise à niveau de la tête de raquette", "Dissociation bas du corps / haut du corps", "Forme gestuelle"] },
+  { label: "Frappe", items: ["Plan de frappe", "Hauteur de frappe", "Prise de balle tôt", "Œil sur la balle", "Vitesse de la tête de raquette", "Équilibre", "Relâchement", "Régularité"] },
+  { label: "Balle", items: ["Effet lifté", "Effet slicé", "Hauteur de balle", "Volume de jeu", "Trajectoire"] },
+];
+// Vocabulaire tactique du prof : proposé comme objectifs de tactique (« Construire le point : Contre-pied »)
+export const TACT_GROUPS: { label: string; items: string[] }[] = [
+  { label: "Construire le point", items: ["Jouer dans l'espace libre", "Contre-pied", "Fixation / débordement", "Changement de rythme et / ou d'effets", "Variation"] },
+  { label: "Au filet", items: ["Volée de construction", "Volée de finition"] },
+  { label: "Gérer le point", items: ["Neutraliser l'adversaire sur situation défavorable"] },
+];
 export const THEME_NAMES = Object.keys(THEMES);
 
 // Niveaux : Galaxie Tennis et adultes. `ok` = thèmes proposés à ce niveau ; `core` = thèmes de base toujours programmés.
@@ -121,6 +135,9 @@ export const LEVELS_FFT: LevelDef[] = [
   { key: "Balle jaune · 10-14 ans", age: "10 à 14 ans", terrain: "Terrain de 23,77 m, balle normale", ball: "balle jaune", kids: true,
     att: ["Jeu complet : service, retour, attaquer, défendre", "Choisir la bonne solution selon la situation", "Jouer des matchs en compétition"],
     ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Défendre", "Construire le point (régularité)", "Concentration"] },
+  { key: "Performance · 15 ans et plus", age: "15 ans et plus", terrain: "Terrain de 23,77 m, balle normale", ball: "balle jaune", kids: true,
+    att: ["Individualiser la technique selon le projet de jeu", "Armes offensives et service +1", "Jouer sous pression, fatigue et conditions variables"],
+    ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Défendre", "Lecture du jeu", "Gestion des émotions"] },
   { key: "Adultes · débutant", age: "Adultes", terrain: "Terrain entier ; balle verte conseillée au début", ball: "balle verte puis jaune", kids: false,
     att: ["Coup droit et revers de base", "Service simple et échanges réguliers", "Premiers points joués"],
     ok: NOT("Smash", "Lecture du jeu", "Combativité", "Explosivité"), core: ["Coup droit", "Revers", "Service", "Construire le point (régularité)", "Jeu de jambes"] },
@@ -131,6 +148,49 @@ export const LEVELS_FFT: LevelDef[] = [
     att: ["Jeu complet et varié", "Gestion du score et de l'adversaire", "Condition physique et mental"],
     ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Montées au filet", "Lecture du jeu", "Gestion des émotions", "Endurance"] },
 ];
+
+import { baseFor, baseLabel } from "./techBase";
+// Objectifs techniques par niveau (référentiel « Objectifs techniques par niveau de tennis », Tennis Club 360 : proposition pédagogique, pas la grille officielle FFT).
+// Chaque ligne : [domaine du point de repère, objectif]. Les niveaux « Blanc + Violet » et « Jaune initiation + compétition » sont regroupés.
+export const LEVEL_TECH: Record<string, [string, string][]> = {
+  "Balle violette · 4-6 ans": [
+    ["Motricité", "Courir, s'arrêter, changer de direction, s'équilibrer, lancer et attraper"], ["Raquette et balle", "Tenir et orienter la raquette, faire rouler, pousser, toucher une balle"],
+    ["Coup droit et revers", "Découvrir les deux côtés du corps, orienter la face de raquette"], ["Service", "Lancer un ballon ou une balle vers une cible, par-dessus l'épaule"],
+    ["Volée", "Intercepter une balle lente sans rebond"], ["Lecture", "Observer la trajectoire et se placer derrière la balle"],
+    ["Coup droit", "Position de départ, préparation simple, contact devant le corps, orientation"], ["Revers", "Découvrir une frappe du côté revers, contrôler le geste"],
+    ["Service", "Lancer au-dessus de la tête, coordonner lancer et frappe"], ["Déplacements", "Avancer vers la balle, s'ajuster, retrouver une position d'attente"],
+    ["Échange", "Renvoyer plusieurs balles lentes avec un partenaire"]],
+  "Balle rouge · 5-7 ans": [
+    ["Coup droit", "Prise adaptée, préparation, rotation, frappe devant, accompagnement"], ["Revers", "Coordination des bras, préparation, contrôle du contact et de la direction"],
+    ["Service", "Position de départ, lancer régulier, frappe haute, direction"], ["Retour", "Position d'attente, réaction, préparation courte"],
+    ["Volée et smash", "Prise adaptée, interception, découverte de la frappe au-dessus de la tête"], ["Déplacements", "Reprise d'appuis, déplacement latéral, ajustement, replacement"],
+    ["Échange", "Régularité, direction, hauteur au-dessus du filet"]],
+  "Balle orange · 7-9 ans": [
+    ["Coup droit", "Chaîne de coordination, accélération, trajectoire montante, premières variations d'effet"], ["Revers", "Stabilité, contrôle croisé et long de ligne, gestion des hauteurs"],
+    ["Service", "Prise continentale à développer, lancer, coordination, précision, deuxième balle"], ["Retour", "Lecture de direction, reprise d'appuis, contrôle de profondeur"],
+    ["Volée et smash", "Positionnement, déplacement vers l'avant, frappe compacte, recul sur lob"], ["Déplacements", "Pas chassés et croisés, freinage, appuis ouverts ou semi-ouverts selon la situation"],
+    ["Variations", "Lob, approche, défense, premières balles coupées"]],
+  "Balle verte · 9-12 ans": [
+    ["Coup droit", "Lift, contrôle de profondeur, accélération, adaptation aux balles hautes et basses"], ["Revers", "Régularité, lift, slice d'initiation, défense et changement de direction"],
+    ["Service", "Précision, première et deuxième balle, introduction des effets adaptés"], ["Retour", "Retour bloqué ou frappé, adaptation aux vitesses, placement"],
+    ["Volée et smash", "Volées hautes et basses, transition vers le filet, smash en déplacement"], ["Déplacements", "Reprise d'appuis synchronisée, replacement, ajustement fin, défense latérale"],
+    ["Coups spécifiques", "Lob offensif et défensif, amortie, passing-shot, demi-volée"]],
+  "Balle jaune · 10-14 ans": [
+    ["Fond de court", "Régularité sous déplacement, profondeur, directions, gestion des effets"], ["Service", "Lancer stable, coordination complète, zones, deuxième balle fiable"],
+    ["Retour", "Adaptation aux services adverses, neutralisation, retour offensif"], ["Jeu vers l'avant", "Approche, volée, smash, enchaînement"],
+    ["Défense", "Frappe en extension, balles hautes, slice, lob, replacement"], ["Appuis", "Reprise d'appuis, dissociation, accélération et freinage"],
+    ["Variations", "Alternance lift et slice, hauteur, vitesse, longueur"],
+    ["Fond de court", "Qualité de balle, lift lourd, changements de rythme, frappe en montée"], ["Service", "Variété des zones, slice et kick progressifs, vitesse, deuxième balle sous pression"],
+    ["Retour", "Lecture précoce, position avancée ou reculée, neutralisation et agression"], ["Transitions", "Attaque de balle courte, approche, volée de finition"],
+    ["Défense", "Neutralisation profonde, contre-attaque, passing, lob"], ["Déplacements", "Premier pas explosif, glissade selon surface et maîtrise, récupération"],
+    ["Précision", "Cibles, trajectoires, contrôle sous pression et fatigue"]],
+  "Performance · 15 ans et plus": [
+    ["Armes offensives", "Optimisation du coup fort, accélération, précision sous pression"], ["Service", "Variations avancées, camouflage, qualité de deuxième balle, enchaînement service +1"],
+    ["Retour", "Lecture des indices, choix de position, retour +1"], ["Fond de court", "Qualité de balle à haute intensité, variation d'effets, prise de balle tôt"],
+    ["Jeu complet", "Transitions, volées réflexes, smash complexe, amorties et contre-amorties"], ["Déplacements", "Efficacité des appuis, économie gestuelle, adaptation aux surfaces"],
+    ["Adaptation", "Technique sous fatigue, stress, adversaires et conditions variables"]],
+};
+export const levelTech = (key: string) => LEVEL_TECH[key] ?? [];
 export const levelDef = (key: string) => LEVELS_FFT.find((l) => l.key === key) ?? LEVELS_FFT[2];
 
 export const BILAN_LEVELS = [
@@ -140,8 +200,11 @@ export const BILAN_LEVELS = [
   { label: "Point fort", short: "Point fort", color: "#897e67" },
 ];
 
-export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean };
-export type Group = { id: string; name: string; level: string; size: number; minutes: number; bilan: Record<string, number>; notes: string; sessions: Session[] };
+export type Objectives = Record<Domain, string[]>;
+export type Block = { n: string; m: number; t: string };
+export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean };
+export type Attend = "p" | "a" | "e"; // présent · absent · excusé
+export type Group = { id: string; name: string; level: string; size: number; minutes: number; players?: string[]; appel?: Record<string, Record<string, Attend>>; bilan: Record<string, number>; notes: string; sessions: Session[] };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
 export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
 export const newId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -207,7 +270,10 @@ export function whyOf(g: Group, theme: string): string {
 export function sessionFor(g: Group, theme: string, phase: number, fil: string): Session {
   const th = THEMES[theme], fr = THEMES[fil];
   const skills = th.s[phase].map((x) => "• " + x).join("\n");
-  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false };
+  const obj: Objectives = { tech: [], tact: [], phys: [], ment: [] };
+  obj[th.d] = th.s[phase].slice();
+  if (fr && fr.d !== th.d) obj[fr.d] = [fr.s[phase][0]];
+  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false, obj };
 }
 
 export function generate(g: Group): Session[] {
@@ -255,7 +321,13 @@ export const filOptions = (): string[] => THEME_NAMES.filter((n) => THEMES[n].d 
 
 // ——— V2 : consultation et documents ———
 export const seasonLabel = (d = new Date()) => { const y = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1; return `${y} – ${y + 1}`; };
-export const sessionDomain = (s: Session): Domain | null => (s.theme && THEMES[s.theme] ? THEMES[s.theme].d : null);
+// Domaine d'une séance : celui de son thème ; pour une séance libre, le domaine qui a le plus d'objectifs
+export const sessionDomain = (s: Session): Domain | null => {
+  if (s.theme && THEMES[s.theme]) return THEMES[s.theme].d;
+  if (s.kind !== "theme" || !s.obj) return null;
+  const best = DOMAINS.map((d) => [d.key, s.obj![d.key].length] as const).sort((a, b) => b[1] - a[1])[0];
+  return best[1] ? best[0] : null;
+};
 export const sessionColor = (s: Session) => { const d = sessionDomain(s); return d ? domainOf(d).color : "#a8884a"; };
 export const KIND_LABEL: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
 export const nextSession = (g: Group) => { const i = g.sessions.findIndex((s) => !s.done); return i < 0 ? g.sessions.length - 1 : i; };
@@ -264,3 +336,44 @@ export function bilanByDomain(g: Group): { d: (typeof DOMAINS)[number]; rated: [
   const L = levelDef(g.level);
   return DOMAINS.map((d) => { const rated = THEME_NAMES.filter((n) => THEMES[n].d === d.key && L.ok.includes(n) && g.bilan[n] !== undefined).map((n) => [n, g.bilan[n]] as [string, number]); return { d, rated, avg: rated.length ? rated.reduce((a, [, v]) => a + v, 0) / rated.length : null }; });
 }
+
+// ——— Objectifs de travail par domaine (technique, tactique, physique, mental) et déroulement de la séance ———
+export const emptyObj = (): Objectives => ({ tech: [], tact: [], phys: [], ment: [] });
+// Objectifs d'une séance : ceux saisis par domaine ; pour une ancienne séance, les compétences sont rangées dans le domaine de son thème
+export function objOf(s: Session): Objectives {
+  if (s.obj) return { ...emptyObj(), ...s.obj };
+  const o = emptyObj(); const d = s.theme && THEMES[s.theme] ? THEMES[s.theme].d : null;
+  if (d) o[d] = parseSkills(s.skills);
+  const fr = s.fil.split(" : ")[0]; if (THEMES[fr] && THEMES[fr].d !== d) o[THEMES[fr].d] = [s.fil.slice(fr.length + 3) || s.fil];
+  return o;
+}
+export const objCount = (o: Objectives) => DOMAINS.reduce((a, d) => a + o[d.key].length, 0);
+// Les anciens champs (skills, fil) restent à jour pour que les documents et la consultation montrent les mêmes objectifs
+export function withObj(s: Session, obj: Objectives): Session {
+  const all = DOMAINS.flatMap((d) => obj[d.key]);
+  const fil = [...obj.phys, ...obj.ment].join(" · ");
+  return { ...s, obj, skills: joinSkills(all).slice(0, 900), fil: fil.slice(0, 160) };
+}
+// Propositions pour un domaine : les compétences du catalogue de ce domaine, sous la forme « Thème : compétence »
+export const objectiveOptions = (d: Domain, level: LevelDef): string[] => [
+  ...THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`)),
+  ...(d === "tech" ? baseFor(level.key).map((b) => `Référentiel : ${baseLabel(b)}`) : []),
+  ...(d === "tech" ? levelTech(level.key).map(([a, t]) => `Niveau · ${a} : ${t}`) : []),
+  ...(d === "tech" ? TECH_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
+  ...(d === "tact" ? TACT_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
+];
+export const BLOCK_NAMES = ["Échauffement", "Situation", "Jeu", "Match", "Retour au calme", "Autre"];
+export const defaultBlocks = (minutes: number): Block[] => {
+  const e = Math.max(5, Math.round(minutes * 0.15 / 5) * 5), c = Math.max(5, Math.round(minutes * 0.1 / 5) * 5), r = minutes - e - c, a = Math.round(r / 2 / 5) * 5;
+  return [{ n: "Échauffement", m: e, t: "" }, { n: "Situation", m: a, t: "" }, { n: "Jeu", m: r - a, t: "" }, { n: "Retour au calme", m: c, t: "" }];
+};
+
+// Séance créée librement par le prof : un titre, ses objectifs par domaine et son déroulement, sans thème imposé
+export const freeSession = (minutes: number): Session => ({ kind: "theme", theme: "", title: "", skills: "", fil: "", why: "Séance créée par moi", note: "", done: false, obj: emptyObj(), blocks: defaultBlocks(minutes) });
+
+// Courte évaluation après la séance : comment elle s'est passée, et si on la reprend
+export const RATINGS: { v: 1 | 2 | 3; label: string; icon: string; color: string }[] = [
+  { v: 1, label: "À reprendre", icon: "😕", color: "#c2410c" },
+  { v: 2, label: "Correcte", icon: "🙂", color: "#a8884a" },
+  { v: 3, label: "Très bien", icon: "😃", color: "#2c9a5b" },
+];

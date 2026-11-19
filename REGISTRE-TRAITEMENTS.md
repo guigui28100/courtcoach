@@ -59,3 +59,5 @@
 
 ## Progression des séances des profs (11/11/2026)
 Chaque prof (coach ou entraîneur) peut créer des groupes (nom, niveau, nombre de joueurs) avec un bilan de départ et 30 séances. Texte libre possible (« remarques », notes de séance) : l'écran demande de ne jamais écrire de nom d'élève. Visible de la seule personne qui l'a écrite (ni le coach pour un entraîneur, ni le président, le bureau, les familles). Supprimé avec le compte du prof et après 12 mois sans modification.
+
+Mise à jour du 19/11/2026 : chaque groupe peut aussi avoir la liste des PRÉNOMS de ses joueurs (pas de nom de famille, 40 au plus, 30 caractères) et un appel par séance (présent, absent, excusé ; les 80 dernières séances). Données de mineurs pour la plupart : visibles du seul prof qui les a saisies (mêmes règles que ci-dessus : ni coach pour un entraîneur, ni président, bureau, familles), effacées avec le groupe, avec le compte du prof et 12 mois après la dernière modification. Finalité : faire l'appel et suivre la présence ; pas de partage.

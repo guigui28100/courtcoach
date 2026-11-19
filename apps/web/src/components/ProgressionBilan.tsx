@@ -16,7 +16,7 @@ export function Bilan({ g, upd, next }: { g: Group; upd: (p: Partial<Group>) => 
         <label htmlFor="g-notes" className="font-serif text-2xl font-bold">1 · Parle-moi de ton groupe</label>
         <p className="m-0 text-muted">Décris ce qu'ils savent faire et ce qui ne va pas, comme tu le dirais à un collègue. La programmation part de ce texte.</p>
         <textarea id="g-notes" className="input min-h-36 text-base" maxLength={2000} value={g.notes} onChange={(e) => upd({ notes: e.target.value })} placeholder="Ex. Bon coup droit, mais beaucoup de fautes en revers. Le service est souvent raté à la 2e balle. Ils bougent peu les jambes et s'énervent quand ils perdent un point. Peu de volées, ils restent au fond." />
-        <p className="hint m-0">Pas de nom d'élève. {g.notes.length} / 2000 caractères.</p>
+        <p className="hint m-0">Pas de nom d'élève ici (les prénoms vont dans « Joueurs et appel »). {g.notes.length} / 2000 caractères.</p>
       </div>
 
       <div className="grid gap-3">

@@ -52,6 +52,32 @@ describe("Progression des séances (privée au prof)", () => {
     expect(r.groups[0].name).toBe("Groupe"); expect(r.groups[0].size).toBe(0); expect(r.groups[0].sessions[0].kind).toBe("theme"); expect(r.groups[0].sessions[0].title.length).toBe(120); expect(r.groups[0].id).not.toContain("<");
   });
 
+  it("les objectifs par domaine et le déroulement sont gardés et nettoyés", async () => {
+    const obj = { tech: ["Service : lancer", "x".repeat(300)], tact: [], phys: ["Endurance"], ment: [], pirate: ["non"] };
+    const blocks = [{ n: "Situation", m: 20, t: "Cibles" }, ...Array.from({ length: 10 }, () => ({ n: "Jeu", m: 999, t: "a" }))];
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", sessions: [{ kind: "theme", theme: "Service", obj, blocks, mat: "paniers" }] }] } }).expect(200)).body;
+    const s = r.groups[0].sessions[0];
+    expect(s.obj.tech).toEqual(["Service : lancer", "x".repeat(100)]); expect(s.obj.phys).toEqual(["Endurance"]); expect(s.obj.pirate).toBeUndefined();
+    expect(s.blocks.length).toBe(8); expect(s.blocks[0]).toEqual({ n: "Situation", m: 20, t: "Cibles" }); expect(s.blocks[1].m).toBe(10); expect(s.mat).toBe("paniers");
+  });
+
+  it("l'évaluation courte d'une séance est gardée et vérifiée", async () => {
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", sessions: [{ kind: "theme", done: true, rating: 3, redo: true }, { kind: "theme", rating: 9, redo: "oui" }] }] } }).expect(200)).body;
+    expect(r.groups[0].sessions[0].rating).toBe(3); expect(r.groups[0].sessions[0].redo).toBe(true);
+    expect(r.groups[0].sessions[1].rating).toBeUndefined(); expect(r.groups[0].sessions[1].redo).toBeUndefined();
+  });
+
+    it("les prénoms des joueurs et l'appel sont gardés, nettoyés et limités", async () => {
+    const names = ["Léa", "léa", "Tom", "  ", "x".repeat(50), ...Array.from({ length: 50 }, (_, i) => `J${i}`)];
+    const appel = { "2026-11-19": { Léa: "p", Tom: "a", Inconnu: "p", x: "pirate" }, "pas-une-date": { Léa: "p" }, "2026-11-20": { Léa: "e" } };
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", size: 3, players: names, appel, sessions: [] }] } }).expect(200)).body;
+    const g = r.groups[0];
+    expect(g.players.slice(0, 3)).toEqual(["Léa", "Tom", "x".repeat(30)]); expect(g.players.length).toBe(40); expect(g.size).toBe(40);
+    expect(g.appel["2026-11-19"]).toEqual({ Léa: "p", Tom: "a" }); expect(g.appel["2026-11-20"]).toEqual({ Léa: "e" }); expect(g.appel["pas-une-date"]).toBeUndefined();
+    const back = (await A.prof1.get("/api/progressions").expect(200)).body.groups[0];
+    expect(back.players[0]).toBe("Léa"); expect((await A.prof2.get("/api/progressions").expect(200)).body.groups).toEqual([]);
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);
