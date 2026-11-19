@@ -203,7 +203,8 @@ export const BILAN_LEVELS = [
 export type Objectives = Record<Domain, string[]>;
 export type Block = { n: string; m: number; t: string };
 export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean };
-export type Group = { id: string; name: string; level: string; size: number; minutes: number; bilan: Record<string, number>; notes: string; sessions: Session[] };
+export type Attend = "p" | "a" | "e"; // présent · absent · excusé
+export type Group = { id: string; name: string; level: string; size: number; minutes: number; players?: string[]; appel?: Record<string, Record<string, Attend>>; bilan: Record<string, number>; notes: string; sessions: Session[] };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
 export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
 export const newId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 // Progression des séances : UN document par prof (coach ou entraîneur), gardé dans ClubSetting sous la clé « prog:<id du prof> ».
-// Personne d'autre ne peut le lire (la clé vient du compte connecté, jamais de l'adresse). Aucun nom d'élève : un groupe est un niveau et un effectif.
+// Personne d'autre ne peut le lire (la clé vient du compte connecté, jamais de l'adresse). Un groupe est un niveau, un effectif et, pour l'appel, la liste des PRÉNOMS (pas de nom de famille).
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
 const int = (v: unknown, min: number, max: number, d: number) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : d; };
 const KINDS = ["bilan", "etape", "jeu", "theme"];
@@ -19,6 +19,18 @@ const objectives = (v: unknown) => {
   return out;
 };
 const blocks = (v: unknown) => (Array.isArray(v) ? v.slice(0, 8).map((b) => { const x = (b && typeof b === "object" ? b : {}) as Record<string, unknown>; return { n: str(x.n, 30) || "Autre", m: int(x.m, 0, 180, 10), t: str(x.t, 600) }; }) : undefined);
+const STATUS = ["p", "a", "e"]; // présent · absent · excusé
+const players = (v: unknown) => { const seen = new Set<string>(); const out: string[] = []; if (Array.isArray(v)) for (const x of v) { const n = str(x, 30); const k = n.toLowerCase(); if (n && !seen.has(k) && out.length < 40) { seen.add(k); out.push(n); } } return out; };
+const roll = (v: unknown, names: string[]) => {
+  const out: Record<string, Record<string, string>> = {};
+  if (v && typeof v === "object" && !Array.isArray(v)) for (const [d, day] of Object.entries(v as Record<string, unknown>).sort().reverse().slice(0, 80)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !day || typeof day !== "object" || Array.isArray(day)) continue;
+    const row: Record<string, string> = {};
+    for (const n of names) { const st = (day as Record<string, unknown>)[n]; if (typeof st === "string" && STATUS.includes(st)) row[n] = st; }
+    if (Object.keys(row).length) out[d] = row;
+  }
+  return out;
+};
 export const MAX_GROUPS = 12;
 export const MAX_SESSIONS = 40;
 
@@ -34,11 +46,14 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
     seen.add(id);
     const sessions = Array.isArray(o.sessions) ? o.sessions : [];
     if (sessions.length > MAX_SESSIONS) throw new BadRequestException(`${MAX_SESSIONS} séances au plus par groupe.`);
+    const names = players(o.players);
     return {
-      id, name: str(o.name, 60) || "Groupe", level: str(o.level, 60), size: int(o.size, 0, 60, 0),
+      id, name: str(o.name, 60) || "Groupe", level: str(o.level, 60), size: names.length || int(o.size, 0, 60, 0),
+      players: names, // prénoms seulement, pour l'appel
+      appel: roll(o.appel, names), // { "2026-11-19": { "Léa": "p" | "a" | "e" } } : les 80 dernières séances
       minutes: int(o.minutes, 20, 180, 60),
       bilan: bilan(o.bilan), // niveau de chaque thème au départ : 0 non maîtrisé · 1 en cours · 2 en maîtrise · 3 point fort
-      notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (l'écran le rappelle)
+      notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (les prénoms vont dans la liste des joueurs)
       sessions: sessions.map((s) => {
         const x = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
         return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 900), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true, ...([1, 2, 3].includes(Number(x.rating)) ? { rating: Number(x.rating) } : {}), ...(x.redo === true ? { redo: true } : {}), ...(x.obj ? { obj: objectives(x.obj) } : {}), ...(Array.isArray(x.blocks) ? { blocks: blocks(x.blocks) } : {}), ...(typeof x.mat === "string" && x.mat.trim() ? { mat: str(x.mat, 200) } : {}) };

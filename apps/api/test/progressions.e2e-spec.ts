@@ -67,6 +67,17 @@ describe("Progression des séances (privée au prof)", () => {
     expect(r.groups[0].sessions[1].rating).toBeUndefined(); expect(r.groups[0].sessions[1].redo).toBeUndefined();
   });
 
+    it("les prénoms des joueurs et l'appel sont gardés, nettoyés et limités", async () => {
+    const names = ["Léa", "léa", "Tom", "  ", "x".repeat(50), ...Array.from({ length: 50 }, (_, i) => `J${i}`)];
+    const appel = { "2026-11-19": { Léa: "p", Tom: "a", Inconnu: "p", x: "pirate" }, "pas-une-date": { Léa: "p" }, "2026-11-20": { Léa: "e" } };
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", size: 3, players: names, appel, sessions: [] }] } }).expect(200)).body;
+    const g = r.groups[0];
+    expect(g.players.slice(0, 3)).toEqual(["Léa", "Tom", "x".repeat(30)]); expect(g.players.length).toBe(40); expect(g.size).toBe(40);
+    expect(g.appel["2026-11-19"]).toEqual({ Léa: "p", Tom: "a" }); expect(g.appel["2026-11-20"]).toEqual({ Léa: "e" }); expect(g.appel["pas-une-date"]).toBeUndefined();
+    const back = (await A.prof1.get("/api/progressions").expect(200)).body.groups[0];
+    expect(back.players[0]).toBe("Léa"); expect((await A.prof2.get("/api/progressions").expect(200)).body.groups).toEqual([]);
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);
