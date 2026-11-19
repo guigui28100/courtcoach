@@ -149,6 +149,7 @@ export const LEVELS_FFT: LevelDef[] = [
     ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Montées au filet", "Lecture du jeu", "Gestion des émotions", "Endurance"] },
 ];
 
+import { baseFor, baseLabel } from "./techBase";
 // Objectifs techniques par niveau (référentiel « Objectifs techniques par niveau de tennis », Tennis Club 360 : proposition pédagogique, pas la grille officielle FFT).
 // Chaque ligne : [domaine du point de repère, objectif]. Les niveaux « Blanc + Violet » et « Jaune initiation + compétition » sont regroupés.
 export const LEVEL_TECH: Record<string, [string, string][]> = {
@@ -355,6 +356,7 @@ export function withObj(s: Session, obj: Objectives): Session {
 // Propositions pour un domaine : les compétences du catalogue de ce domaine, sous la forme « Thème : compétence »
 export const objectiveOptions = (d: Domain, level: LevelDef): string[] => [
   ...THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`)),
+  ...(d === "tech" ? baseFor(level.key).map((b) => `Référentiel : ${baseLabel(b)}`) : []),
   ...(d === "tech" ? levelTech(level.key).map(([a, t]) => `Niveau · ${a} : ${t}`) : []),
   ...(d === "tech" ? TECH_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
   ...(d === "tact" ? TACT_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),

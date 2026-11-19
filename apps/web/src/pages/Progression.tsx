@@ -1,3 +1,4 @@
+import { BaseHelp } from "../components/BaseHelp";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
 import { Err, Page, PageHead, TabsBar } from "../components/ui";
@@ -246,6 +247,7 @@ function DomainObjectives({ i, d, list, L, onChange }: { i: number; d: (typeof D
     <div className="grid content-start gap-2 rounded-lg border-2 bg-white p-3" style={{ borderColor: list.length ? d.color : "#e2dbc9" }}>
       <div className="flex items-center justify-between"><b style={{ color: d.color }}>{d.label}</b><span className="text-xs text-muted">{list.length ? `${list.length} objectif${list.length > 1 ? "s" : ""}` : "aucun"}</span></div>
       {list.length > 0 && <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">{list.map((o) => <li key={o}><button type="button" className="rounded-full px-2.5 py-1 text-left text-xs font-semibold text-white" style={{ background: d.color }} onClick={() => onChange(list.filter((x) => x !== o))} aria-label={`Retirer : ${o}`}>{o} ✕</button></li>)}</ul>}
+      {d.key === "tech" && list.map((o) => <BaseHelp key={o} text={o} />)}
       <select id={`s-ob-${i}-${d.key}`} className="input" value="" aria-label={`Ajouter un objectif ${d.label.toLowerCase()}`} onChange={(e) => { if (e.target.value) push(e.target.value.includes(" : ") ? e.target.value.split(" : ").slice(1).join(" : ") : e.target.value); }}>
         <option value="">＋ Ajouter un objectif {d.label.toLowerCase()}…</option>{options.map((o) => <option key={o} value={o}>{o}</option>)}</select>
       <div className="flex gap-2"><input id={`s-oi-${i}-${d.key}`} className="input" maxLength={100} value={add} placeholder={`Mon objectif ${d.label.toLowerCase()}`} onChange={(e) => setAdd(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); push(add); setAdd(""); } }} /><button type="button" className="btn-outline btn-sm" onClick={() => { push(add); setAdd(""); }}>Ajouter</button></div>
