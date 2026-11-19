@@ -260,7 +260,13 @@ export const filOptions = (): string[] => THEME_NAMES.filter((n) => THEMES[n].d 
 
 // ——— V2 : consultation et documents ———
 export const seasonLabel = (d = new Date()) => { const y = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1; return `${y} – ${y + 1}`; };
-export const sessionDomain = (s: Session): Domain | null => (s.theme && THEMES[s.theme] ? THEMES[s.theme].d : null);
+// Domaine d'une séance : celui de son thème ; pour une séance libre, le domaine qui a le plus d'objectifs
+export const sessionDomain = (s: Session): Domain | null => {
+  if (s.theme && THEMES[s.theme]) return THEMES[s.theme].d;
+  if (s.kind !== "theme" || !s.obj) return null;
+  const best = DOMAINS.map((d) => [d.key, s.obj![d.key].length] as const).sort((a, b) => b[1] - a[1])[0];
+  return best[1] ? best[0] : null;
+};
 export const sessionColor = (s: Session) => { const d = sessionDomain(s); return d ? domainOf(d).color : "#a8884a"; };
 export const KIND_LABEL: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
 export const nextSession = (g: Group) => { const i = g.sessions.findIndex((s) => !s.done); return i < 0 ? g.sessions.length - 1 : i; };
@@ -295,3 +301,6 @@ export const defaultBlocks = (minutes: number): Block[] => {
   const e = Math.max(5, Math.round(minutes * 0.15 / 5) * 5), c = Math.max(5, Math.round(minutes * 0.1 / 5) * 5), r = minutes - e - c, a = Math.round(r / 2 / 5) * 5;
   return [{ n: "Échauffement", m: e, t: "" }, { n: "Situation", m: a, t: "" }, { n: "Jeu", m: r - a, t: "" }, { n: "Retour au calme", m: c, t: "" }];
 };
+
+// Séance créée librement par le prof : un titre, ses objectifs par domaine et son déroulement, sans thème imposé
+export const freeSession = (minutes: number): Session => ({ kind: "theme", theme: "", title: "", skills: "", fil: "", why: "Séance créée par moi", note: "", done: false, obj: emptyObj(), blocks: defaultBlocks(minutes) });

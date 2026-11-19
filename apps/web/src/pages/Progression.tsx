@@ -5,8 +5,8 @@ import { buildPages, DocChoice } from "../components/ProgressionDoc";
 import { Bilan } from "../components/ProgressionBilan";
 import { Consult, Docs, PrintHost } from "../components/ProgressionViews";
 import {
-  compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, objCount, objectiveOptions, objOf, withObj,
-  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
+  compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
 type Tab = "bilan" | "programme" | "consulter" | "documents";
@@ -155,7 +155,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
         <h2 className="m-0 text-xl">Créer les 30 séances</h2>
         <p className="m-0">L'outil range les thèmes dans un ordre logique : d'abord ce que ton bilan montre comme à acquérir, la technique avant la tactique, puis la mise en jeu. Le physique et le mental sont un fil rouge dans chaque séance.</p>
         <p className="m-0 text-sm text-muted">{nb ? `${nb} thèmes pris en compte pour ${g.name} (${L.key}).` : "Le bilan est vide : la programmation partira des bases du niveau choisi."}</p>
-        <div><button type="button" className="btn-clay" onClick={gen}>Proposer les 30 séances</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={gen}>Proposer les 30 séances d'après le bilan</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setOpen(0); }}>Je crée mes séances moi-même</button></div>
       </section>
     );
   }
@@ -167,7 +167,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
           : <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>↻ Proposer à nouveau d'après le bilan</button>}
       </div>
       {S.map((s, i) => {
-        const dom = s.theme && THEMES[s.theme] ? domainOf(THEMES[s.theme].d) : null; const isOpen = open === i;
+        const sd = sessionDomain(s); const dom = sd ? domainOf(sd) : null; const isOpen = open === i;
         return (
           <div key={i}>
             {(i % 10 === 0) && <h3 className="m-0 mb-2 mt-2 rounded bg-ink px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white">{PHASES[phaseOf(i)]} · séances {i + 1} à {Math.min(i + 10, S.length)}</h3>}
@@ -201,7 +201,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
           </div>
         );
       })}
-      <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, { kind: "theme", theme: "", title: "Séance à écrire", skills: "", fil: "", why: "", note: "", done: false }] }); setOpen(S.length); }}>＋ Ajouter une séance à moi</button></div>
+      <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, freeSession(g.minutes)] }); setOpen(S.length); }}>＋ Créer ma propre séance</button></div>
     </section>
   );
 }
@@ -210,7 +210,8 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
 const OTHER = "__autre";
 function ThemeEditor({ g, s, i, L, setS, changeTheme }: { g: Group; s: Session; i: number; L: LevelDef; setS: (i: number, p: Partial<Session>) => void; changeTheme: (i: number, t: string) => void }) {
   void g;
-  const titles = titleOptions(s.theme), titleSel = titles.includes(s.title) ? s.title : OTHER;
+  const free = !THEMES[s.theme];
+  const titles = free ? [] : titleOptions(s.theme), titleSel = titles.includes(s.title) ? s.title : OTHER;
   const obj = objOf(s);
   const setObj = (d: Domain, list: string[]) => { const { skills, fil, obj: o } = withObj(s, { ...obj, [d]: list }); setS(i, { skills, fil, obj: o }); };
   const pickTitle = (v: string) => {
@@ -221,11 +222,12 @@ function ThemeEditor({ g, s, i, L, setS, changeTheme }: { g: Group; s: Session; 
   return (
     <>
       <label className="grid gap-1"><span className="text-sm font-bold">1 · Thème de la séance</span>
-        <select id={`s-th-${i}`} className="input" value={s.theme} onChange={(e) => changeTheme(i, e.target.value)}>{L.ok.map((n) => <option key={n}>{n}</option>)}{!L.ok.includes(s.theme) && <option>{s.theme}</option>}</select>
-        <span className="hint">Changer de thème remplace le titre et les objectifs par ceux du nouveau thème.</span></label>
+        <select id={`s-th-${i}`} className="input" value={free ? OTHER : s.theme} onChange={(e) => (e.target.value === OTHER ? setS(i, { theme: s.theme && !THEMES[s.theme] ? s.theme : " " }) : changeTheme(i, e.target.value))}>{L.ok.map((n) => <option key={n}>{n}</option>)}{!free && !L.ok.includes(s.theme) && <option>{s.theme}</option>}<option value={OTHER}>✏️ Séance libre : j'écris mon thème</option></select>
+        {free ? <input id={`s-th2-${i}`} className="input" maxLength={60} value={s.theme.trim() ? s.theme : ""} placeholder="Mon thème (facultatif)" onChange={(e) => setS(i, { theme: e.target.value || " " })} />
+          : <span className="hint">Changer de thème remplace le titre et les objectifs par ceux du nouveau thème.</span>}</label>
       <label className="grid gap-1"><span className="text-sm font-bold">2 · Titre de la séance</span>
-        <select id={`s-ti-${i}`} className="input" value={titleSel} onChange={(e) => pickTitle(e.target.value)}>{titles.map((t) => <option key={t}>{t}</option>)}<option value={OTHER}>✏️ Autre : je l'écris moi-même</option></select>
-        {titleSel === OTHER && <input id={`s-ti2-${i}`} className="input" maxLength={120} value={s.title} placeholder="Mon titre" onChange={(e) => setS(i, { title: e.target.value })} />}</label>
+        {!free && <select id={`s-ti-${i}`} className="input" value={titleSel} onChange={(e) => pickTitle(e.target.value)}>{titles.map((t) => <option key={t}>{t}</option>)}<option value={OTHER}>✏️ Autre : je l'écris moi-même</option></select>}
+        {(free || titleSel === OTHER) && <input id={`s-ti2-${i}`} className="input" maxLength={120} value={s.title} placeholder="Mon titre" onChange={(e) => setS(i, { title: e.target.value })} />}</label>
       <div className="grid gap-2">
         <span className="text-sm font-bold">3 · Objectifs de travail ({objCount(obj)}) : technique, tactique, physique, mental</span>
         <div className="grid gap-3 sm:grid-cols-2">{DOMAINS.map((d) => <DomainObjectives key={d.key} i={i} d={d} list={obj[d.key]} L={L} onChange={(l) => setObj(d.key, l)} />)}</div>
