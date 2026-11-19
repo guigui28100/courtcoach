@@ -6,7 +6,7 @@ import { Bilan } from "../components/ProgressionBilan";
 import { Consult, Docs, PrintHost, QuickEval } from "../components/ProgressionViews";
 import {
   compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
-  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
+  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
 type Tab = "bilan" | "programme" | "consulter" | "documents";
@@ -130,6 +130,9 @@ function GroupHead({ g, upd, onDelete }: { g: Group; upd: (p: Partial<Group>) =>
         <b>Attendu à ce niveau</b> <span className="text-muted">({L.age} · {L.terrain} · {L.ball})</span>
         <ul className="m-0 mt-1 list-disc pl-5">{L.att.map((a) => <li key={a}>{a}</li>)}</ul>
         <p className="hint m-0 mt-1">Repères indicatifs inspirés de la Galaxie Tennis : à confronter aux documents fédéraux.</p>
+        {levelTech(g.level).length > 0 && <details className="mt-2"><summary className="cursor-pointer font-bold">Objectifs techniques de ce niveau ({levelTech(g.level).length})</summary>
+          <ul className="m-0 mt-1 list-disc pl-5">{levelTech(g.level).map(([a, t]) => <li key={a + t}><b>{a}</b> : {t}</li>)}</ul>
+          <p className="hint m-0 mt-1">Référentiel pédagogique indicatif (Tennis Club 360), pas la grille officielle FFT. Ils sont aussi proposés dans « Technique » quand tu construis une séance.</p></details>}
       </div>
       <div className="flex justify-end">
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Supprimer ce groupe et sa programmation ?</b><button type="button" className="btn-ink btn-sm" onClick={onDelete}>Oui, supprimer</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>

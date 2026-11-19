@@ -135,6 +135,9 @@ export const LEVELS_FFT: LevelDef[] = [
   { key: "Balle jaune · 10-14 ans", age: "10 à 14 ans", terrain: "Terrain de 23,77 m, balle normale", ball: "balle jaune", kids: true,
     att: ["Jeu complet : service, retour, attaquer, défendre", "Choisir la bonne solution selon la situation", "Jouer des matchs en compétition"],
     ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Défendre", "Construire le point (régularité)", "Concentration"] },
+  { key: "Performance · 15 ans et plus", age: "15 ans et plus", terrain: "Terrain de 23,77 m, balle normale", ball: "balle jaune", kids: true,
+    att: ["Individualiser la technique selon le projet de jeu", "Armes offensives et service +1", "Jouer sous pression, fatigue et conditions variables"],
+    ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Défendre", "Lecture du jeu", "Gestion des émotions"] },
   { key: "Adultes · débutant", age: "Adultes", terrain: "Terrain entier ; balle verte conseillée au début", ball: "balle verte puis jaune", kids: false,
     att: ["Coup droit et revers de base", "Service simple et échanges réguliers", "Premiers points joués"],
     ok: NOT("Smash", "Lecture du jeu", "Combativité", "Explosivité"), core: ["Coup droit", "Revers", "Service", "Construire le point (régularité)", "Jeu de jambes"] },
@@ -145,6 +148,48 @@ export const LEVELS_FFT: LevelDef[] = [
     att: ["Jeu complet et varié", "Gestion du score et de l'adversaire", "Condition physique et mental"],
     ok: THEME_NAMES, core: ["Service", "Retour de service", "Attaquer", "Montées au filet", "Lecture du jeu", "Gestion des émotions", "Endurance"] },
 ];
+
+// Objectifs techniques par niveau (référentiel « Objectifs techniques par niveau de tennis », Tennis Club 360 : proposition pédagogique, pas la grille officielle FFT).
+// Chaque ligne : [domaine du point de repère, objectif]. Les niveaux « Blanc + Violet » et « Jaune initiation + compétition » sont regroupés.
+export const LEVEL_TECH: Record<string, [string, string][]> = {
+  "Balle violette · 4-6 ans": [
+    ["Motricité", "Courir, s'arrêter, changer de direction, s'équilibrer, lancer et attraper"], ["Raquette et balle", "Tenir et orienter la raquette, faire rouler, pousser, toucher une balle"],
+    ["Coup droit et revers", "Découvrir les deux côtés du corps, orienter la face de raquette"], ["Service", "Lancer un ballon ou une balle vers une cible, par-dessus l'épaule"],
+    ["Volée", "Intercepter une balle lente sans rebond"], ["Lecture", "Observer la trajectoire et se placer derrière la balle"],
+    ["Coup droit", "Position de départ, préparation simple, contact devant le corps, orientation"], ["Revers", "Découvrir une frappe du côté revers, contrôler le geste"],
+    ["Service", "Lancer au-dessus de la tête, coordonner lancer et frappe"], ["Déplacements", "Avancer vers la balle, s'ajuster, retrouver une position d'attente"],
+    ["Échange", "Renvoyer plusieurs balles lentes avec un partenaire"]],
+  "Balle rouge · 5-7 ans": [
+    ["Coup droit", "Prise adaptée, préparation, rotation, frappe devant, accompagnement"], ["Revers", "Coordination des bras, préparation, contrôle du contact et de la direction"],
+    ["Service", "Position de départ, lancer régulier, frappe haute, direction"], ["Retour", "Position d'attente, réaction, préparation courte"],
+    ["Volée et smash", "Prise adaptée, interception, découverte de la frappe au-dessus de la tête"], ["Déplacements", "Reprise d'appuis, déplacement latéral, ajustement, replacement"],
+    ["Échange", "Régularité, direction, hauteur au-dessus du filet"]],
+  "Balle orange · 7-9 ans": [
+    ["Coup droit", "Chaîne de coordination, accélération, trajectoire montante, premières variations d'effet"], ["Revers", "Stabilité, contrôle croisé et long de ligne, gestion des hauteurs"],
+    ["Service", "Prise continentale à développer, lancer, coordination, précision, deuxième balle"], ["Retour", "Lecture de direction, reprise d'appuis, contrôle de profondeur"],
+    ["Volée et smash", "Positionnement, déplacement vers l'avant, frappe compacte, recul sur lob"], ["Déplacements", "Pas chassés et croisés, freinage, appuis ouverts ou semi-ouverts selon la situation"],
+    ["Variations", "Lob, approche, défense, premières balles coupées"]],
+  "Balle verte · 9-12 ans": [
+    ["Coup droit", "Lift, contrôle de profondeur, accélération, adaptation aux balles hautes et basses"], ["Revers", "Régularité, lift, slice d'initiation, défense et changement de direction"],
+    ["Service", "Précision, première et deuxième balle, introduction des effets adaptés"], ["Retour", "Retour bloqué ou frappé, adaptation aux vitesses, placement"],
+    ["Volée et smash", "Volées hautes et basses, transition vers le filet, smash en déplacement"], ["Déplacements", "Reprise d'appuis synchronisée, replacement, ajustement fin, défense latérale"],
+    ["Coups spécifiques", "Lob offensif et défensif, amortie, passing-shot, demi-volée"]],
+  "Balle jaune · 10-14 ans": [
+    ["Fond de court", "Régularité sous déplacement, profondeur, directions, gestion des effets"], ["Service", "Lancer stable, coordination complète, zones, deuxième balle fiable"],
+    ["Retour", "Adaptation aux services adverses, neutralisation, retour offensif"], ["Jeu vers l'avant", "Approche, volée, smash, enchaînement"],
+    ["Défense", "Frappe en extension, balles hautes, slice, lob, replacement"], ["Appuis", "Reprise d'appuis, dissociation, accélération et freinage"],
+    ["Variations", "Alternance lift et slice, hauteur, vitesse, longueur"],
+    ["Fond de court", "Qualité de balle, lift lourd, changements de rythme, frappe en montée"], ["Service", "Variété des zones, slice et kick progressifs, vitesse, deuxième balle sous pression"],
+    ["Retour", "Lecture précoce, position avancée ou reculée, neutralisation et agression"], ["Transitions", "Attaque de balle courte, approche, volée de finition"],
+    ["Défense", "Neutralisation profonde, contre-attaque, passing, lob"], ["Déplacements", "Premier pas explosif, glissade selon surface et maîtrise, récupération"],
+    ["Précision", "Cibles, trajectoires, contrôle sous pression et fatigue"]],
+  "Performance · 15 ans et plus": [
+    ["Armes offensives", "Optimisation du coup fort, accélération, précision sous pression"], ["Service", "Variations avancées, camouflage, qualité de deuxième balle, enchaînement service +1"],
+    ["Retour", "Lecture des indices, choix de position, retour +1"], ["Fond de court", "Qualité de balle à haute intensité, variation d'effets, prise de balle tôt"],
+    ["Jeu complet", "Transitions, volées réflexes, smash complexe, amorties et contre-amorties"], ["Déplacements", "Efficacité des appuis, économie gestuelle, adaptation aux surfaces"],
+    ["Adaptation", "Technique sous fatigue, stress, adversaires et conditions variables"]],
+};
+export const levelTech = (key: string) => LEVEL_TECH[key] ?? [];
 export const levelDef = (key: string) => LEVELS_FFT.find((l) => l.key === key) ?? LEVELS_FFT[2];
 
 export const BILAN_LEVELS = [
@@ -310,6 +355,7 @@ export function withObj(s: Session, obj: Objectives): Session {
 // Propositions pour un domaine : les compétences du catalogue de ce domaine, sous la forme « Thème : compétence »
 export const objectiveOptions = (d: Domain, level: LevelDef): string[] => [
   ...THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`)),
+  ...(d === "tech" ? levelTech(level.key).map(([a, t]) => `Niveau · ${a} : ${t}`) : []),
   ...(d === "tech" ? TECH_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
   ...(d === "tact" ? TACT_GROUPS.flatMap((g) => g.items.map((c) => `${g.label} : ${c}`)) : []),
 ];
