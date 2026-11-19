@@ -18,27 +18,27 @@ export const THEMES: Record<string, Theme> = {
   "Coup droit": T("tech", /coup droit|\bcd\b|forehand/, [
     ["Prise semi-fermée et position d'attente", "Orientation des épaules et préparation par le haut", "Plan de frappe et prise de balle tôt"],
     ["Appuis semi-ouverts ou ouverts selon la balle", "Transfert du poids du corps vers l'avant", "Geste ample et relâchement"],
-    ["Effet lifté et hauteur de balle", "Vitesse de la tête de raquette", "Reprise d'appuis après la frappe"]]),
+    ["Effet lifté et hauteur de balle", "Vitesse de la tête de raquette", "Reprise d'appuis après la frappe", "Régularité"]]),
   "Revers": T("tech", /revers|backhand/, [
-    ["Prise et orientation des épaules", "Préparation par le haut", "Plan de frappe et prise de balle tôt"],
-    ["Appuis en ligne et ancrage au sol", "Transfert du poids du corps vers l'avant", "Équilibre à la frappe"],
-    ["Revers lifté et revers slicé", "Hauteur de frappe et trajectoire", "Reprise d'appuis après la frappe"]]),
+    ["Prise et orientation des épaules", "Rôle de la main gauche", "Préparation par le haut", "Plan de frappe et prise de balle tôt"],
+    ["Appuis en ligne et ancrage au sol", "Passage des bras", "Transfert du poids du corps vers l'avant", "Équilibre à la frappe"],
+    ["Revers lifté et revers slicé", "Hauteur de frappe et trajectoire", "Reprise d'appuis après la frappe", "Régularité"]]),
   "Service": T("tech", /service|\bsert\b|servir|2e balle|deuxieme balle/, [
     ["Prise marteau", "Position armée au service", "Lancer de balle et équilibre"],
     ["Projection du coude vers le haut et l'avant", "Pronation et mise à niveau de la tête de raquette", "Poussée de la jambe arrière"],
-    ["Effet lifté et effet slicé", "Vitesse de la tête de raquette et relâchement", "Dissociation bas du corps / haut du corps"]]),
+    ["Effet lifté et effet slicé", "Vitesse de la tête de raquette et relâchement", "Dissociation bas du corps / haut du corps", "Régularité"]]),
   "Retour de service": T("tech", /retour/, [
     ["Saut d'allègement", "Préparation courte et orientation des épaules", "Plan de frappe et prise de balle tôt"],
     ["Appuis ouverts ou semi-ouverts", "Ancrage au sol et transfert du poids du corps vers l'avant", "Retour profond"],
-    ["Trajectoire du retour selon le service", "Vitesse de la tête de raquette sur seconde balle", "Reprise d'appuis après le retour"]]),
+    ["Trajectoire du retour selon le service", "Vitesse de la tête de raquette sur seconde balle", "Reprise d'appuis après le retour", "Régularité"]]),
   "Volée": T("tech", /volee|filet|monte/, [
     ["Raquette devant et mise à niveau de la tête de raquette", "Appuis en ligne", "Plan de frappe et prise de balle tôt"],
     ["Appuis relais vers l'avant", "Équilibre et ancrage au sol", "Hauteur de frappe : volée haute et volée basse"],
-    ["Volée de placement et trajectoire", "Relâchement et vitesse de la tête de raquette", "Reprise d'appuis après la volée"]]),
+    ["Volée de placement et trajectoire", "Relâchement et vitesse de la tête de raquette", "Reprise d'appuis après la volée", "Régularité"]]),
   "Smash": T("tech", /smash/, [
     ["Reprise d'appuis vers l'arrière", "Position armée comme au service", "Prise marteau"],
     ["Plan de frappe et hauteur de frappe", "Pronation", "Projection du coude vers le haut et l'avant"],
-    ["Poussée de la jambe arrière et saut", "Trajectoire et placement", "Reprise d'appuis après le smash"]]),
+    ["Poussée de la jambe arrière et saut", "Trajectoire et placement", "Reprise d'appuis après le smash", "Régularité"]]),
   "Jeu de jambes": T("tech", /jambe|appui|deplac|bouge|bougent|bouger|replac/, [
     ["Saut d'allègement", "Appuis fixes et appuis relais", "Pas chassés, croisés et sautés"],
     ["Reprise d'appuis après chaque frappe", "Appuis ouverts, semi-ouverts et en ligne", "Ancrage au sol"],
@@ -105,7 +105,7 @@ export const TECH_GROUPS: { label: string; items: string[] }[] = [
   { label: "Appuis", items: ["Saut d'allègement", "Reprise d'appuis", "Appuis ouverts", "Appuis semi-ouverts", "Appuis en ligne", "Appuis relais", "Appuis fixes", "Ancrage au sol", "Poussée de la jambe arrière", "Transfert du poids du corps vers l'avant", "Pas chassés", "Pas croisés", "Pas sautés"] },
   { label: "Prises", items: ["Prise fermée", "Prise semi-fermée", "Prise marteau"] },
   { label: "Préparation et geste", items: ["Orientation des épaules", "Préparation par le haut", "Geste ample", "Position armée au service", "Projection du coude vers le haut et l'avant", "Pronation", "Mise à niveau de la tête de raquette", "Dissociation bas du corps / haut du corps", "Forme gestuelle"] },
-  { label: "Frappe", items: ["Plan de frappe", "Hauteur de frappe", "Prise de balle tôt", "Œil sur la balle", "Vitesse de la tête de raquette", "Équilibre", "Relâchement"] },
+  { label: "Frappe", items: ["Plan de frappe", "Hauteur de frappe", "Prise de balle tôt", "Œil sur la balle", "Vitesse de la tête de raquette", "Équilibre", "Relâchement", "Régularité"] },
   { label: "Balle", items: ["Effet lifté", "Effet slicé", "Hauteur de balle", "Volume de jeu", "Trajectoire"] },
 ];
 // Vocabulaire tactique du prof : proposé comme objectifs de tactique (« Construire le point : Contre-pied »)
