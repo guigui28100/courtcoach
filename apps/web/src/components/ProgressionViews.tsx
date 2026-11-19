@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BILAN_LEVELS, DOMAINS, Group, KIND_LABEL, levelDef, nextSession, objCount, objOf, parseSkills, PHASES, phaseOf, Session, sessionColor, sessionDomain, THEMES } from "../progression";
+import { BILAN_LEVELS, DOMAINS, Group, KIND_LABEL, levelDef, nextSession, objCount, objOf, RATINGS, parseSkills, PHASES, phaseOf, Session, sessionColor, sessionDomain, THEMES } from "../progression";
 import { buildPages, DOC_H, DOC_W, DocChoice } from "./ProgressionDoc";
 
 // Impression : les pages A4 sont posées dans un bloc caché à l'écran, seul visible à l'impression (même mécanisme que les affiches)
@@ -32,8 +32,21 @@ function Ring({ done, total }: { done: number; total: number }) {
   );
 }
 
+// Courte évaluation de la séance faite : 3 choix, « à refaire » et un mot
+export function QuickEval({ s, onChange }: { s: Session; onChange: (p: Partial<Session>) => void }) {
+  return (
+    <div className="mt-5 grid gap-3 rounded-lg border-2 border-line bg-white p-4">
+      <p className="m-0 font-bold">Comment s'est passée la séance ?</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Évaluation de la séance">
+        {RATINGS.map((r) => <button key={r.v} type="button" aria-pressed={s.rating === r.v} onClick={() => onChange({ rating: s.rating === r.v ? undefined : r.v })} className="rounded-full border-2 px-4 py-2 text-sm font-bold" style={s.rating === r.v ? { background: r.color, borderColor: r.color, color: "#fff" } : { borderColor: "#e2dbc9" }}>{r.icon} {r.label}</button>)}
+      </div>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-clay" checked={!!s.redo} onChange={(e) => onChange({ redo: e.target.checked || undefined })} />À refaire : on reprend ce thème</label>
+      <label className="grid gap-1"><span className="text-sm font-bold">Un mot (facultatif, sans nom d'élève)</span><textarea className="input min-h-16" maxLength={600} value={s.note} placeholder="Ce qui a marché, ce qu'il faut refaire." onChange={(e) => onChange({ note: e.target.value })} /></label>
+    </div>
+  );
+}
 // Fiche d'une séance en lecture (téléphone et ordinateur) : la même que sur le document imprimé
-export function Reader({ g, i, onClose, onGo, onDone, onPrint }: { g: Group; i: number; onClose: () => void; onGo: (i: number) => void; onDone: (i: number, v: boolean) => void; onPrint: (i: number) => void }) {
+export function Reader({ g, i, onClose, onGo, onDone, onPrint, onUpdate }: { g: Group; i: number; onClose: () => void; onGo: (i: number) => void; onDone: (i: number, v: boolean) => void; onPrint: (i: number) => void; onUpdate: (i: number, p: Partial<Session>) => void }) {
   const s = g.sessions[i], col = colorOf(s), L = levelDef(g.level), skills = parseSkills(s.skills);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); if (e.key === "ArrowRight" && i < g.sessions.length - 1) onGo(i + 1); if (e.key === "ArrowLeft" && i > 0) onGo(i - 1); }; window.addEventListener("keydown", k); document.body.style.overflow = "hidden"; return () => { window.removeEventListener("keydown", k); document.body.style.overflow = ""; }; }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
   return createPortal(
@@ -51,7 +64,7 @@ export function Reader({ g, i, onClose, onGo, onDone, onPrint }: { g: Group; i: 
           {s.blocks && s.blocks.length > 0 && <><h3 className="m-0 mt-5 text-xs font-extrabold uppercase tracking-[.18em] text-muted">Déroulement</h3><ul className="m-0 mt-1 grid list-none gap-1 p-0">{s.blocks.map((b, k) => <li key={k} className="border-b border-line py-1 text-sm"><b>{b.n} · {b.m} min</b> <span className="whitespace-pre-line">{b.t}</span></li>)}</ul>{s.mat && <p className="m-0 mt-1 text-sm"><b>Matériel :</b> {s.mat}</p>}</>}
           {s.fil && !s.obj && <div className="mt-5 border-l-4 bg-[#f3ecdc] px-4 py-2" style={{ borderColor: "#a8884a" }}><p className="m-0 text-[11px] font-extrabold uppercase tracking-[.16em]" style={{ color: "#a8884a" }}>Fil rouge de la séance</p><p className="m-0 text-base">{s.fil}</p></div>}
           <p className="m-0 mt-4 text-sm text-muted">{g.size ? `${g.size} joueurs · ` : ""}{g.minutes} min · {L.ball} · {L.terrain}</p>
-          {s.note.trim() && <><h3 className="m-0 mt-4 text-xs font-extrabold uppercase tracking-[.18em] text-muted">Mes notes</h3><p className="m-0 mt-1 whitespace-pre-line">{s.note}</p></>}
+          {s.done ? <QuickEval s={s} onChange={(p) => onUpdate(i, p)} /> : s.note.trim() && <><h3 className="m-0 mt-4 text-xs font-extrabold uppercase tracking-[.18em] text-muted">Mes notes</h3><p className="m-0 mt-1 whitespace-pre-line">{s.note}</p></>}
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-line bg-white px-4 py-3">
           <button type="button" className="btn-outline btn-sm" disabled={i === 0} onClick={() => onGo(i - 1)} aria-label="Séance précédente">‹</button>
@@ -65,7 +78,7 @@ export function Reader({ g, i, onClose, onGo, onDone, onPrint }: { g: Group; i: 
 }
 
 // Consultation : la prochaine séance en grand, la frise des 30 séances, la fiche d'une séance en un toucher
-export function Consult({ g, onDone, onPrint, onEdit }: { g: Group; onDone: (i: number, v: boolean) => void; onPrint: (c: DocChoice, a?: number, b?: number) => void; onEdit: (i: number) => void }) {
+export function Consult({ g, onDone, onUpdate, onPrint, onEdit }: { g: Group; onDone: (i: number, v: boolean) => void; onUpdate: (i: number, p: Partial<Session>) => void; onPrint: (c: DocChoice, a?: number, b?: number) => void; onEdit: (i: number) => void }) {
   const S = g.sessions, done = S.filter((s) => s.done).length, nx = nextSession(g), cur = S[nx];
   const [dom, setDom] = useState<string>("all"); const [st, setSt] = useState<"all" | "todo" | "done">("all"); const [read, setRead] = useState<number | null>(null);
   if (!S.length) return <p className="m-0 text-muted">Crée d'abord la programmation (étape 2).</p>;
@@ -108,7 +121,7 @@ export function Consult({ g, onDone, onPrint, onEdit }: { g: Group; onDone: (i: 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {items.map(({ s, i }) => (
                 <button key={i} type="button" onClick={() => setRead(i)} className={`grid gap-1.5 border border-line bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${s.done ? "opacity-70" : ""} ${i === nx && !allDone ? "ring-2 ring-clay" : ""}`} style={{ borderTop: `5px solid ${colorOf(s)}` }}>
-                  <span className="flex items-center gap-2"><b className="font-serif text-3xl leading-none" style={{ color: colorOf(s) }}>{i + 1}</b><span className="text-[11px] font-bold uppercase tracking-wide text-muted">{labelOf(s)}</span>{s.done && <span className="ml-auto rounded-full bg-ok px-2 py-0.5 text-xs font-bold text-white">✔ faite</span>}{!s.done && i === nx && <span className="ml-auto rounded-full bg-clay px-2 py-0.5 text-xs font-bold text-white">Prochaine</span>}</span>
+                  <span className="flex items-center gap-2"><b className="font-serif text-3xl leading-none" style={{ color: colorOf(s) }}>{i + 1}</b><span className="text-[11px] font-bold uppercase tracking-wide text-muted">{labelOf(s)}</span>{s.done && <span className="ml-auto flex items-center gap-1"><span className="rounded-full bg-ok px-2 py-0.5 text-xs font-bold text-white">✔ faite</span>{s.rating && <span title={RATINGS[s.rating - 1].label} aria-label={RATINGS[s.rating - 1].label}>{RATINGS[s.rating - 1].icon}</span>}{s.redo && <span className="rounded-full bg-[#c2410c] px-2 py-0.5 text-xs font-bold text-white">à refaire</span>}</span>}{!s.done && i === nx && <span className="ml-auto rounded-full bg-clay px-2 py-0.5 text-xs font-bold text-white">Prochaine</span>}</span>
                   <b className="leading-snug [overflow-wrap:anywhere]">{s.title}</b>
                   <span className="text-xs text-muted">{parseSkills(s.skills).slice(0, 2).join(" · ")}</span>
                 </button>
@@ -124,7 +137,7 @@ export function Consult({ g, onDone, onPrint, onEdit }: { g: Group; onDone: (i: 
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{Object.entries(count).sort((a, b) => b[1] - a[1]).map(([t, c]) => <p key={t} className="m-0 border border-line p-2 text-sm" style={{ borderTop: `4px solid ${DOMAINS.find((d) => d.key === THEMES[t]?.d)?.color}` }}><b>{t}</b> · {c} séance{c > 1 ? "s" : ""}{g.bilan[t] !== undefined && <span className="block text-xs text-muted">Bilan de départ : {BILAN_LEVELS[g.bilan[t]].label}</span>}</p>)}</div>
       </details>
 
-      {read !== null && <Reader g={g} i={read} onClose={() => setRead(null)} onGo={setRead} onDone={onDone} onPrint={(i) => onPrint("une", i + 1, i + 1)} />}
+      {read !== null && <Reader g={g} i={read} onClose={() => setRead(null)} onGo={setRead} onDone={onDone} onUpdate={onUpdate} onPrint={(i) => onPrint("une", i + 1, i + 1)} />}
       <p className="m-0 text-sm text-muted">Pour changer une séance : <button type="button" className="underline" onClick={() => onEdit(nx)}>ouvre l'étape 2 · Programmation</button>.</p>
     </section>
   );

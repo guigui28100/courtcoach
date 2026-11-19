@@ -61,6 +61,12 @@ describe("Progression des séances (privée au prof)", () => {
     expect(s.blocks.length).toBe(8); expect(s.blocks[0]).toEqual({ n: "Situation", m: 20, t: "Cibles" }); expect(s.blocks[1].m).toBe(10); expect(s.mat).toBe("paniers");
   });
 
+  it("l'évaluation courte d'une séance est gardée et vérifiée", async () => {
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", sessions: [{ kind: "theme", done: true, rating: 3, redo: true }, { kind: "theme", rating: 9, redo: "oui" }] }] } }).expect(200)).body;
+    expect(r.groups[0].sessions[0].rating).toBe(3); expect(r.groups[0].sessions[0].redo).toBe(true);
+    expect(r.groups[0].sessions[1].rating).toBeUndefined(); expect(r.groups[0].sessions[1].redo).toBeUndefined();
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);

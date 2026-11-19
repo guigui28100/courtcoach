@@ -142,7 +142,7 @@ export const BILAN_LEVELS = [
 
 export type Objectives = Record<Domain, string[]>;
 export type Block = { n: string; m: number; t: string };
-export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string };
+export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean };
 export type Group = { id: string; name: string; level: string; size: number; minutes: number; bilan: Record<string, number>; notes: string; sessions: Session[] };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
 export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
@@ -304,3 +304,10 @@ export const defaultBlocks = (minutes: number): Block[] => {
 
 // Séance créée librement par le prof : un titre, ses objectifs par domaine et son déroulement, sans thème imposé
 export const freeSession = (minutes: number): Session => ({ kind: "theme", theme: "", title: "", skills: "", fil: "", why: "Séance créée par moi", note: "", done: false, obj: emptyObj(), blocks: defaultBlocks(minutes) });
+
+// Courte évaluation après la séance : comment elle s'est passée, et si on la reprend
+export const RATINGS: { v: 1 | 2 | 3; label: string; icon: string; color: string }[] = [
+  { v: 1, label: "À reprendre", icon: "😕", color: "#c2410c" },
+  { v: 2, label: "Correcte", icon: "🙂", color: "#a8884a" },
+  { v: 3, label: "Très bien", icon: "😃", color: "#2c9a5b" },
+];

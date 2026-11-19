@@ -3,7 +3,7 @@ import { get, put } from "../api";
 import { Err, Page, PageHead, TabsBar } from "../components/ui";
 import { buildPages, DocChoice } from "../components/ProgressionDoc";
 import { Bilan } from "../components/ProgressionBilan";
-import { Consult, Docs, PrintHost } from "../components/ProgressionViews";
+import { Consult, Docs, PrintHost, QuickEval } from "../components/ProgressionViews";
 import {
   compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
   BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, newId, PHASES, phaseOf, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
@@ -86,7 +86,7 @@ export default function Progression() {
                   <TabsBar tabs={TABS} active={tab} onChange={(k) => setTab(k as Tab)} label="Étapes du groupe" side={false} />
                   {tab === "bilan" && <Bilan g={g} upd={upd} next={() => setTab("programme")} />}
                   {tab === "programme" && <Programme g={g} upd={upd} />}
-                  {tab === "consulter" && <Consult g={g} onDone={(i, v) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, done: v } : x)) })} onPrint={doPrint} onEdit={() => setTab("programme")} />}
+                  {tab === "consulter" && <Consult g={g} onDone={(i, v) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, done: v } : x)) })} onUpdate={(i, p) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, ...p } : x)) })} onPrint={doPrint} onEdit={() => setTab("programme")} />}
                   {tab === "documents" && <Docs g={g} onPrint={doPrint} />}
                 </div>
               )}
@@ -189,7 +189,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
                     </>
                   )}
                   <Deroulement g={g} s={s} i={i} setS={setS} />
-                  <label className="grid gap-1"><span className="text-sm font-bold">Mes notes après la séance</span><textarea id={`s-no-${i}`} className="input min-h-16" maxLength={600} value={s.note} onChange={(e) => setS(i, { note: e.target.value })} placeholder="Ce qui a marché, ce qu'il faut refaire. Pas de nom d'élève." /></label>
+                  {s.done ? <QuickEval s={s} onChange={(p) => setS(i, p)} /> : <label className="grid gap-1"><span className="text-sm font-bold">Mes notes après la séance</span><textarea id={`s-no-${i}`} className="input min-h-16" maxLength={600} value={s.note} onChange={(e) => setS(i, { note: e.target.value })} placeholder="Ce qui a marché, ce qu'il faut refaire. Pas de nom d'élève." /></label>}
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className="btn-outline btn-sm" disabled={i === 0} onClick={() => move(i, -1)}>↑ Monter</button>
                     <button type="button" className="btn-outline btn-sm" disabled={i === S.length - 1} onClick={() => move(i, 1)}>↓ Descendre</button>
