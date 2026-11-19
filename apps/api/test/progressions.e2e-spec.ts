@@ -52,6 +52,15 @@ describe("Progression des séances (privée au prof)", () => {
     expect(r.groups[0].name).toBe("Groupe"); expect(r.groups[0].size).toBe(0); expect(r.groups[0].sessions[0].kind).toBe("theme"); expect(r.groups[0].sessions[0].title.length).toBe(120); expect(r.groups[0].id).not.toContain("<");
   });
 
+  it("les objectifs par domaine et le déroulement sont gardés et nettoyés", async () => {
+    const obj = { tech: ["Service : lancer", "x".repeat(300)], tact: [], phys: ["Endurance"], ment: [], pirate: ["non"] };
+    const blocks = [{ n: "Situation", m: 20, t: "Cibles" }, ...Array.from({ length: 10 }, () => ({ n: "Jeu", m: 999, t: "a" }))];
+    const r = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [{ id: "g1", name: "G", sessions: [{ kind: "theme", theme: "Service", obj, blocks, mat: "paniers" }] }] } }).expect(200)).body;
+    const s = r.groups[0].sessions[0];
+    expect(s.obj.tech).toEqual(["Service : lancer", "x".repeat(100)]); expect(s.obj.phys).toEqual(["Endurance"]); expect(s.obj.pirate).toBeUndefined();
+    expect(s.blocks.length).toBe(8); expect(s.blocks[0]).toEqual({ n: "Situation", m: 20, t: "Cibles" }); expect(s.blocks[1].m).toBe(10); expect(s.mat).toBe("paniers");
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);

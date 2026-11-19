@@ -12,6 +12,13 @@ const bilan = (v: unknown) => {
   if (v && typeof v === "object" && !Array.isArray(v)) for (const [k, x] of Object.entries(v as Record<string, unknown>).slice(0, 60)) { const n = Math.floor(Number(x)); if (str(k, 60) && n >= 0 && n <= 3) out[str(k, 60)] = n; }
   return out;
 };
+const DOMS = ["tech", "tact", "phys", "ment"];
+const objectives = (v: unknown) => {
+  const out: Record<string, string[]> = { tech: [], tact: [], phys: [], ment: [] };
+  if (v && typeof v === "object" && !Array.isArray(v)) for (const d of DOMS) { const l = (v as Record<string, unknown>)[d]; if (Array.isArray(l)) out[d] = l.slice(0, 10).map((x) => str(x, 100)).filter(Boolean); }
+  return out;
+};
+const blocks = (v: unknown) => (Array.isArray(v) ? v.slice(0, 8).map((b) => { const x = (b && typeof b === "object" ? b : {}) as Record<string, unknown>; return { n: str(x.n, 30) || "Autre", m: int(x.m, 0, 180, 10), t: str(x.t, 600) }; }) : undefined);
 export const MAX_GROUPS = 12;
 export const MAX_SESSIONS = 40;
 
@@ -34,7 +41,7 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
       notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (l'écran le rappelle)
       sessions: sessions.map((s) => {
         const x = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
-        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 600), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true };
+        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 900), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true, ...(x.obj ? { obj: objectives(x.obj) } : {}), ...(Array.isArray(x.blocks) ? { blocks: blocks(x.blocks) } : {}), ...(typeof x.mat === "string" && x.mat.trim() ? { mat: str(x.mat, 200) } : {}) };
       }),
     };
   });

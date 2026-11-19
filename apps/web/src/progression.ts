@@ -140,7 +140,9 @@ export const BILAN_LEVELS = [
   { label: "Point fort", short: "Point fort", color: "#897e67" },
 ];
 
-export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean };
+export type Objectives = Record<Domain, string[]>;
+export type Block = { n: string; m: number; t: string };
+export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string };
 export type Group = { id: string; name: string; level: string; size: number; minutes: number; bilan: Record<string, number>; notes: string; sessions: Session[] };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
 export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
@@ -207,7 +209,10 @@ export function whyOf(g: Group, theme: string): string {
 export function sessionFor(g: Group, theme: string, phase: number, fil: string): Session {
   const th = THEMES[theme], fr = THEMES[fil];
   const skills = th.s[phase].map((x) => "• " + x).join("\n");
-  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false };
+  const obj: Objectives = { tech: [], tact: [], phys: [], ment: [] };
+  obj[th.d] = th.s[phase].slice();
+  if (fr && fr.d !== th.d) obj[fr.d] = [fr.s[phase][0]];
+  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false, obj };
 }
 
 export function generate(g: Group): Session[] {
@@ -264,3 +269,29 @@ export function bilanByDomain(g: Group): { d: (typeof DOMAINS)[number]; rated: [
   const L = levelDef(g.level);
   return DOMAINS.map((d) => { const rated = THEME_NAMES.filter((n) => THEMES[n].d === d.key && L.ok.includes(n) && g.bilan[n] !== undefined).map((n) => [n, g.bilan[n]] as [string, number]); return { d, rated, avg: rated.length ? rated.reduce((a, [, v]) => a + v, 0) / rated.length : null }; });
 }
+
+// ——— Objectifs de travail par domaine (technique, tactique, physique, mental) et déroulement de la séance ———
+export const emptyObj = (): Objectives => ({ tech: [], tact: [], phys: [], ment: [] });
+// Objectifs d'une séance : ceux saisis par domaine ; pour une ancienne séance, les compétences sont rangées dans le domaine de son thème
+export function objOf(s: Session): Objectives {
+  if (s.obj) return { ...emptyObj(), ...s.obj };
+  const o = emptyObj(); const d = s.theme && THEMES[s.theme] ? THEMES[s.theme].d : null;
+  if (d) o[d] = parseSkills(s.skills);
+  const fr = s.fil.split(" : ")[0]; if (THEMES[fr] && THEMES[fr].d !== d) o[THEMES[fr].d] = [s.fil.slice(fr.length + 3) || s.fil];
+  return o;
+}
+export const objCount = (o: Objectives) => DOMAINS.reduce((a, d) => a + o[d.key].length, 0);
+// Les anciens champs (skills, fil) restent à jour pour que les documents et la consultation montrent les mêmes objectifs
+export function withObj(s: Session, obj: Objectives): Session {
+  const all = DOMAINS.flatMap((d) => obj[d.key]);
+  const fil = [...obj.phys, ...obj.ment].join(" · ");
+  return { ...s, obj, skills: joinSkills(all).slice(0, 900), fil: fil.slice(0, 160) };
+}
+// Propositions pour un domaine : les compétences du catalogue de ce domaine, sous la forme « Thème : compétence »
+export const objectiveOptions = (d: Domain, level: LevelDef): string[] =>
+  THEME_NAMES.filter((n) => THEMES[n].d === d && level.ok.includes(n)).flatMap((n) => compsOf(n).map((c) => `${n} : ${c}`));
+export const BLOCK_NAMES = ["Échauffement", "Situation", "Jeu", "Match", "Retour au calme", "Autre"];
+export const defaultBlocks = (minutes: number): Block[] => {
+  const e = Math.max(5, Math.round(minutes * 0.15 / 5) * 5), c = Math.max(5, Math.round(minutes * 0.1 / 5) * 5), r = minutes - e - c, a = Math.round(r / 2 / 5) * 5;
+  return [{ n: "Échauffement", m: e, t: "" }, { n: "Situation", m: a, t: "" }, { n: "Jeu", m: r - a, t: "" }, { n: "Retour au calme", m: c, t: "" }];
+};
