@@ -93,9 +93,15 @@
     if(main.r1.length>=2){cons=ko(main.r1.map(function(m){return {t:"l",m:m.id};}),"Consolante",1);all=all.concat(cons.matches);}
     return {matches:all,info:{type:"tmc",consolante:!!cons,r1:main.r1.length,final:main.finalId,consFinal:cons?cons.finalId:null}};
   }
+  /* Poules composées à la main : S.pools[i] = numéro de la poule (0 = A) de l'équipe / du joueur i */
+  function autoG(n){return n<=5?1:Math.max(2,Math.round(n/4));}
+  function poolsManual(n){if(!S.pools||S.pools.length!==n||!(S.poolG>=2))return false;var c=[];for(var g=0;g<S.poolG;g++)c.push(0);for(var i=0;i<n;i++){var x=S.pools[i];if(!(x>=0&&x<S.poolG))return false;c[x]++;}return c.every(function(v){return v>=2;});}
+  function poolsDraft(n){if(S.pools&&S.pools.length===n&&S.poolG>=2)return S.pools.slice();var G=autoG(n),a=[];for(var i=0;i<n;i++){var r=Math.floor(i/G),k=i%G;a.push(r%2===0?k:G-1-k);}return a;}
   function buildPoules(n,single){
-    UID=0;var G=single||n<=5?1:Math.max(2,Math.round(n/4)),groups=[];for(var g=0;g<G;g++)groups.push({id:g,players:[],ids:[]});
-    for(var i=0;i<n;i++){var r=Math.floor(i/G),k=i%G,gi=r%2===0?k:G-1-k;groups[gi].players.push(i);}
+    UID=0;var man=!single&&S.fmt==="poules"&&poolsManual(n);
+    var G=single||n<=5?1:(man?S.poolG:autoG(n)),groups=[];for(var g=0;g<G;g++)groups.push({id:g,players:[],ids:[]});
+    if(man){for(var q=0;q<n;q++)groups[S.pools[q]].players.push(q);}
+    else for(var i=0;i<n;i++){var r=Math.floor(i/G),k=i%G,gi=r%2===0?k:G-1-k;groups[gi].players.push(i);}
     var matches=[];
     groups.forEach(function(gr){
       for(var x=0;x<gr.players.length;x++)for(var y=x+1;y<gr.players.length;y++){
@@ -444,7 +450,7 @@
     $("durinfo").textContent="Un tour = "+playMin()+" min de jeu environ + "+BUF+" min pour changer de côté et s'installer"+(S.durManual?" (durée réglée à la main).":".")+" Si tes matchs sont plus longs ou plus courts, ajuste avec − et +.";
     if(n<3){["fmts","figs","struct","tbl","wait","todo","board","next","ctbl","advice"].forEach(function(i){var x=$(i);if(x)x.innerHTML="";});T=null;return;}
     if(S.fmt==="ladder"&&!ladderOK())S.fmt="poules";
-    var csig=S.dbl+"|"+S.n+"|"+S.fmt+"|"+S.ver+"|"+S.pair+"|"+S.classif+"|"+(S.fmt==="ladder"?(S.rounds||"a")+"|"+S.courts:"");if(csig!==S.csig){S.csig=csig;S.scores={};}
+    var csig=S.dbl+"|"+S.n+"|"+S.fmt+"|"+S.ver+"|"+S.pair+"|"+S.classif+"|"+(S.fmt==="ladder"?(S.rounds||"a")+"|"+S.courts:"")+"|"+JSON.stringify(S.pools)+"|"+S.poolG;if(csig!==S.csig){S.csig=csig;S.scores={};}
     var list=FORMATS.filter(function(f){return f[0]!=="ladder"||ladderOK();});
     var R={};list.forEach(function(f){R[f[0]]=calc(f[0]);});
     var rec=null;["poules","tmc","ko"].forEach(function(f){if(!rec&&R[f].total<=S.avail*60)rec=f;});
@@ -626,15 +632,15 @@
   var DESC2={rr:"Une seule poule : tout le monde joue contre tout le monde.",poules:"Chacun joue plusieurs matchs dans sa petite poule, puis les meilleurs jouent la finale. Le plus équitable.",tmc:"Tableau où on est éliminé quand on perd… sauf au 1er match : on rejoue dans la consolante.",ko:"Le plus rapide : tu perds, tu sors.",ladder:"Tu gagnes, tu montes d'un terrain ; tu perds, tu descends. Tout le monde joue à chaque tour."};
 
   var TITLES={who:"Qui joue ?",when:"Où et quand ?",names:"Les noms",teams:"Les équipes",rules:"Durée des matchs",format:"Format du tournoi",ready:"C'est prêt !"};
-  function keys(){var a=["type","count","courts"];if(!S.plan)a.push("time");a.push("start","names");if(S.dbl)a.push("teams");a.push("fmt","go");return a;}
-  var CT={type:"Simple ou double ?",count:"Combien de participants ?",courts:"Combien de terrains ?",time:"De combien de temps disposes-tu ?",start:"À quelle heure on commence ?",names:"Les noms des joueurs",teams:"Les équipes",fmt:"Choisis ta formule"};
+  function keys(){var a=["type","count","courts"];if(!S.plan)a.push("time");a.push("start","names");if(S.dbl)a.push("teams");a.push("fmt");if(S.fmt==="poules"&&nEnt()>5)a.push("pools");a.push("go");return a;}
+  var CT={type:"Simple ou double ?",count:"Combien de participants ?",courts:"Combien de terrains ?",time:"De combien de temps disposes-tu ?",start:"À quelle heure on commence ?",names:"Les noms des joueurs",teams:"Les équipes",fmt:"Choisis ta formule",pools:"Qui joue dans quelle poule ?"};
   function fname(f){return FORMATS.filter(function(x){return x[0]===f;})[0][1];}
   function optLabel(){return optOf()[1];}
 
   /* ----- la meilleure formule pour tenir dans le temps ----- */
   var advCache={k:"",v:null};
   function advise(){
-    var key=[S.dbl,S.n,S.courts,S.avail,S.start,S.mode,JSON.stringify(S.plan)].join("|");
+    var key=[S.dbl,S.n,S.courts,S.avail,S.start,S.mode,JSON.stringify(S.plan),JSON.stringify(S.pools),S.poolG].join("|");
     if(advCache.k===key)return advCache.v;
     var kO=S.opt[S.mode],kD=S.durManual,kDur=S.dur,kF=S.fmt,kC=S.classif,n=nEnt(),best=null,shortest=null;
     var fm=["poules","tmc","ko"];if(ladderOK())fm.push("ladder");
@@ -671,6 +677,29 @@
   function pairsComplete(){return S.pair!=="libre"||unpaired().length===0;}
   function namesFilled(){var c=0;for(var q=0;q<S.n;q++)if((S.names[q]||"").trim())c++;return c;}
   function readyMiss(){var m=[];if(namesFilled()<S.n)m.push("names");if(S.dbl&&!pairsComplete())m.push("teams");return m;}
+  function drawPools(card){
+    var n=nEnt(),ents=entrants(),a=poolsDraft(n),G=(S.pools&&S.pools.length===n&&S.poolG>=2)?S.poolG:autoG(n);
+    function commit(arr,g){S.pools=arr;S.poolG=g;S.ver++;upd();}
+    var bar=H("div","pgbar");bar.appendChild(H("span","pgl","Nombre de poules"));
+    bar.appendChild(B("−","sb",function(){if(G>2){var arr=a.map(function(x){return Math.min(x,G-2);});commit(arr,G-1);}}));
+    bar.appendChild(H("b","pgn",String(G)));
+    bar.appendChild(B("+","sb",function(){if(G<Math.min(8,Math.floor(n/2)))commit(a.slice(),G+1);}));
+    card.appendChild(bar);
+    var cnt=[];for(var g=0;g<G;g++)cnt.push(0);a.forEach(function(x){if(x<G)cnt[x]++;});
+    var sum=H("div","pgsum");cnt.forEach(function(c,g){sum.appendChild(H("span","pgc"+(c<2?" bad":""),"Poule "+String.fromCharCode(65+g)+" : "+c));});card.appendChild(sum);
+    var btns=H("div","pgbtns");
+    btns.appendChild(B("⚖️ Répartir dans l'ordre","chipx",function(){S.pools=null;S.poolG=G;var arr=[];for(var i=0;i<n;i++){var r=Math.floor(i/G),k=i%G;arr.push(r%2===0?k:G-1-k);}commit(arr,G);}));
+    btns.appendChild(B("🎲 Tirer au sort","chipx",function(){var ids=[];for(var i=0;i<n;i++)ids.push(i);for(var k=ids.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=ids[k];ids[k]=ids[j];ids[j]=t;}var arr=new Array(n);ids.forEach(function(id,pos){arr[id]=pos%G;});commit(arr,G);}));
+    card.appendChild(btns);
+    var list=H("div","pglist");
+    ents.forEach(function(nm,i){var row=H("div","pgrow");row.appendChild(H("span","pgname",nm));
+      var sel=document.createElement("select");sel.className="pgsel";sel.setAttribute("aria-label","Poule de "+nm);
+      for(var g2=0;g2<G;g2++){var o=document.createElement("option");o.value=String(g2);o.textContent="Poule "+String.fromCharCode(65+g2);if(a[i]===g2)o.selected=true;sel.appendChild(o);}
+      sel.onchange=function(){var arr=a.slice();arr[i]=+sel.value;commit(arr,G);};
+      row.appendChild(sel);list.appendChild(row);});
+    card.appendChild(list);
+    if(cnt.some(function(c){return c<2;}))card.appendChild(H("div","warnb","Chaque poule doit avoir au moins 2 "+(S.dbl?"équipes":"joueurs")+"."));
+  }
   function drawTeams(card){
     card.appendChild(tiles([{v:"hasard",l:"🎲 Au hasard",s:"tirage au sort"},{v:"equi",l:"⚖️ Équilibrées",s:"fort avec moins fort"},{v:"libre",l:"✋ Je choisis",s:"je fais mes paires"}],S.pair==="manuel"?"hasard":S.pair,function(v){
       S.pair=v;V.sel=null;if(v==="hasard"){newPerm();S.ver++;}else if(v==="libre"){S.pairs=[];applyPairs();}else{S.ver++;}upd();}));
@@ -755,6 +784,8 @@
       card.appendChild(AD.players);
     }else if(k==="teams"){
       drawTeams(card);
+    }else if(k==="pools"){
+      drawPools(card);
     }else if(k==="rules"){
       card.appendChild(adviceCard());
       card.appendChild(AD.how);
@@ -830,6 +861,7 @@
     function gate(kk){
       if(kk==="count"&&nEnt()<3)return "Il faut au moins "+(S.dbl?"3 équipes (6 joueurs)":"3 joueurs")+".";
       if(kk==="names"&&namesFilled()<S.n)return "Écris le nom des "+S.n+" joueurs pour continuer ("+namesFilled()+" sur "+S.n+").";
+      if(kk==="pools"&&S.pools&&S.pools.length===nEnt()&&!poolsManual(nEnt()))return "Chaque poule doit avoir au moins 2 "+(S.dbl?"équipes":"joueurs")+".";
       if(kk==="teams"&&!pairsComplete())return "Il reste des joueurs sans partenaire : forme toutes les équipes pour continuer.";
       return "";}
     if(st<ks.length-1){nav.appendChild(B("Continuer →","big nx",function(){var w=gate(k);if(w){V.warnSub=w;skin(true);return;}V.warnSub=null;V.step++;skin(true);scrollTop();}));
