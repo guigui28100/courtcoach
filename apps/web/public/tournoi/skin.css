@@ -176,3 +176,16 @@
 #tournoi-root .cnow b{display:block;font-size:17px;line-height:1.25;color:#14213d}
 #tournoi-root .cnow em{font-style:normal;font-size:12px;color:#4a5568}
 #tournoi-root .cnext{border-top:1px dashed #cfd6e4;padding-top:6px;font-size:14px;color:#2d3748}
+
+/* Composer les poules */
+#tournoi-root .pgbar{display:flex;align-items:center;gap:12px;margin:4px 0 10px}
+#tournoi-root .pgl{font-weight:700}
+#tournoi-root .pgn{font-size:22px;min-width:26px;text-align:center}
+#tournoi-root .pgsum{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+#tournoi-root .pgc{padding:4px 10px;border-radius:99px;background:#e8efe9;font-weight:700;font-size:13px}
+#tournoi-root .pgc.bad{background:#fde4dc;color:#9b2c14}
+#tournoi-root .pgbtns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+#tournoi-root .pglist{display:grid;gap:6px}
+#tournoi-root .pgrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid #d6cfbe;border-radius:8px;background:#fff}
+#tournoi-root .pgname{font-weight:600;flex:1 1 auto;min-width:0;overflow-wrap:break-word}
+#tournoi-root .pgsel{flex:0 0 140px;width:140px;font:inherit;font-weight:700;padding:8px 10px;border:2px solid #14213d;border-radius:8px;background:#fff;min-height:42px}

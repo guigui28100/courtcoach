@@ -47,6 +47,8 @@ export function sanitizeTournoi(raw: unknown): Record<string, unknown> {
     pair: PAIRS.includes(String(r.pair)) ? r.pair : "hasard",
     perm: ints(r.perm, 200),
     pairs: Array.isArray(r.pairs) ? r.pairs.slice(0, 120).map((p) => (Array.isArray(p) ? ints(p, 4) : [])) : [],
+    pools: Array.isArray(r.pools) && r.pools.length <= 200 ? ints(r.pools, 200).map((x) => Math.min(Math.max(x, 0), 15)) : null,
+    poolG: r.poolG == null ? null : int(r.poolG, 2, 16, 2),
     rounds: r.rounds == null ? null : int(r.rounds, 1, 40, 4),
     classif: r.classif === "oui" ? "oui" : "non",
     live: r.live === true,

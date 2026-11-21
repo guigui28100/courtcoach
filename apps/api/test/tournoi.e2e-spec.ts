@@ -57,6 +57,9 @@ describe("Aide au tournoi d'une animation (rattachée à l'événement)", () => 
     await A.coach.put(`/api/club/tournoi/${anim}`).set(ORIGIN).send({ data: state({ plan: [{ c: 3, h: 2 }, { c: 2, h: 2 }, { c: -5, h: 99, x: "<b>" }, "mauvais"] }) }).expect(200);
     const dp = (await A.coach.get(`/api/club/tournoi/${anim}`).expect(200)).body.data;
     expect(dp.plan[0]).toEqual({ c: 3, h: 2 }); expect(dp.plan[1]).toEqual({ c: 2, h: 2 }); expect(dp.plan[2].h).toBeLessThanOrEqual(12); expect(dp.plan[2].c).toBeGreaterThanOrEqual(1); expect(dp.plan[2].x).toBeUndefined();
+    await A.coach.put(`/api/club/tournoi/${anim}`).set(ORIGIN).send({ data: state({ pools: [0, 1, 1, 0, 99, -3], poolG: 2 }) }).expect(200);
+    const pl = (await A.coach.get(`/api/club/tournoi/${anim}`).expect(200)).body.data;
+    expect(pl.poolG).toBe(2); expect(pl.pools).toHaveLength(6); expect(Math.max(...pl.pools)).toBeLessThanOrEqual(15); expect(Math.min(...pl.pools)).toBeGreaterThanOrEqual(0);
     await A.coach.put(`/api/club/tournoi/${anim}`).set(ORIGIN).send({ data: state({ plan: [{ c: 3, h: 2 }] }) }).expect(200);
     expect((await A.coach.get(`/api/club/tournoi/${anim}`).expect(200)).body.data.plan).toBeNull();
     await A.coach.put(`/api/club/tournoi/${anim}`).set(ORIGIN).send({ data: [1, 2] }).expect(400);
