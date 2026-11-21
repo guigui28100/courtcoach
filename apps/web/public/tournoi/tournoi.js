@@ -890,6 +890,31 @@
       if(!pick)break;pIds(pick.m).forEach(function(i){used[i]=1;});cands.splice(cands.indexOf(pick),1);out.push({court:T.court[freed[f].id],m:pick.m,j:pick.j,wait:pick.wait});}
     return out;
   }
+  /* Tableau des terrains : pour chaque terrain, le match en cours puis le suivant (mis à jour à chaque score validé). */
+  function drawCourts(body,auto){
+    if(auto<0)return;
+    var over={};if(auto>=0)freeSuggestions(auto).forEach(function(x){over[x.m.id]=x.court;});
+    var byC={},ks=[];
+    T.B.matches.forEach(function(m){if(fin(m))return;var c=over[m.id]||T.court[m.id];if(c==null)return;if(!byC[c]){byC[c]=[];ks.push(c);}byC[c].push(m);});
+    if(!ks.length)return;
+    ks.sort(function(a,b){return a-b;});
+    var box=H("div","cboard");box.appendChild(H("small","cbt","🎾 Sur chaque terrain"));
+    var g=H("div","cgrid");
+    ks.forEach(function(c){
+      var l=byC[c].slice().sort(function(a,b){return (T.res.slotOf[a.id]-T.res.slotOf[b.id])||(T.num[a.id]-T.num[b.id]);});
+      var cur=null,i0=-1;for(var i=0;i<l.length;i++){if(ready(l[i])){cur=l[i];i0=i;break;}}
+      var nx=null;for(var j=(i0<0?0:i0+1);j<l.length;j++){nx=l[j];break;}
+      var tile=H("div","ctile"+(cur?"":" wait"));
+      tile.appendChild(H("div","cnum","Terrain "+c));
+      var a=H("div","cnow");a.appendChild(H("small",null,cur?"▶ À jouer maintenant":"⏳ En attente"));
+      a.appendChild(H("b",null,cur?label(cur.a)+" contre "+label(cur.b):"Un résultat est attendu pour lancer le match."));
+      if(cur)a.appendChild(H("em",null,"match n° "+T.num[cur.id]));
+      tile.appendChild(a);
+      var n=H("div","cnext");n.appendChild(H("small",null,"⏭ Ensuite"));
+      n.appendChild(H("span",null,nx?label(nx.a)+" contre "+label(nx.b)+" (n° "+T.num[nx.id]+(ready(nx)?"":", selon les résultats")+")":"Plus de match sur ce terrain."));
+      tile.appendChild(n);g.appendChild(tile);});
+    box.appendChild(g);body.appendChild(box);
+  }
   function drawNow(body){
     var slots=T.res.slots,auto=-1;slots.forEach(function(sl,i){if(auto<0&&!slotFin(sl))auto=i;});
     var all=auto<0,idx=V.slot!=null?V.slot:(all?slots.length-1:auto);
@@ -902,6 +927,7 @@
     body.appendChild(nv);
     if(planOn()){var c0=courtsAt(idx),c1=courtsAt(idx+1),np=H("p","wh","🎾 Ce tour : "+c0+" terrain"+(c0>1?"s":"")+" disponible"+(c0>1?"s":"")+(idx+1<slots.length&&c1!==c0?" · dès le tour suivant ("+hhmm(startMin()+(idx+1)*S.dur)+") : "+c1+" terrain"+(c1>1?"s":""):"")+".");body.appendChild(np);}
     if(V.slot!=null&&V.slot!==auto&&!all)body.appendChild(B("↩ Revenir au tour en cours (tour "+(auto+1)+")","chipx",function(){V.slot=null;skin(true);}));
+    drawCourts(body,auto);
     var ord=orderRound(sl,idx);
     var say=[];ord.forEach(function(m){if(ready(m))say.push("Terrain "+T.court[m.id]+" : "+label(m.a)+" contre "+label(m.b));});
     if(say.length&&!slotFin(sl)){

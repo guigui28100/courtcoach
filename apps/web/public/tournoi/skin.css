@@ -164,3 +164,15 @@
 #tournoi-root .wtop .dots{display:none}
 #tournoi-root .pbar{height:8px;border-radius:99px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:12px;max-width:420px}
 #tournoi-root .pbar i{display:block;height:100%;background:#fff6dc;border-radius:99px;transition:width .25s}
+
+/* Tableau des terrains */
+#tournoi-root .cboard{grid-column:1 / -1;margin:0 0 14px;padding:12px;border:1px solid #d6cfbe;border-radius:12px;background:#fff}
+#tournoi-root .cbt{display:block;font-weight:700;font-size:15px;margin-bottom:8px;color:#14213d}
+#tournoi-root .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+#tournoi-root .ctile{border:1px solid #cfd6e4;border-left:6px solid #1f7a45;border-radius:10px;padding:10px 12px;background:#f7fbf8;display:flex;flex-direction:column;gap:8px}
+#tournoi-root .ctile.wait{border-left-color:#c9962b;background:#fffaf0}
+#tournoi-root .cnum{font-weight:800;font-size:16px;color:#14213d}
+#tournoi-root .cnow small,#tournoi-root .cnext small{display:block;font-size:12px;font-weight:700;color:#4a5568;margin-bottom:2px}
+#tournoi-root .cnow b{display:block;font-size:17px;line-height:1.25;color:#14213d}
+#tournoi-root .cnow em{font-style:normal;font-size:12px;color:#4a5568}
+#tournoi-root .cnext{border-top:1px dashed #cfd6e4;padding-top:6px;font-size:14px;color:#2d3748}
