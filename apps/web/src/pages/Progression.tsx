@@ -5,19 +5,19 @@ import { Err, Page, PageHead, TabsBar } from "../components/ui";
 import { buildPages, DocChoice } from "../components/ProgressionDoc";
 import { Bilan } from "../components/ProgressionBilan";
 import { Players } from "../components/ProgressionRoll";
-import { Consult, Docs, PrintHost, QuickEval } from "../components/ProgressionViews";
+import { Docs, PrintHost, QuickEval, Reader } from "../components/ProgressionViews";
 import {
-  compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
-  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
+  nextSession, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
-type Tab = "joueurs" | "bilan" | "programme" | "consulter" | "documents";
-const TABS: [Tab, string][] = [["joueurs", "👥 1 · Joueurs et appel"], ["bilan", "📋 2 · Bilan de départ"], ["programme", "🗓️ 3 · Programmation"], ["consulter", "👁️ 4 · Consulter"], ["documents", "📄 5 · Documents"]];
+type Tab = "seances" | "groupe" | "imprimer";
+const TABS: [Tab, string][] = [["seances", "🗓️ Séances"], ["groupe", "👥 Groupe et appel"], ["imprimer", "🖨️ Imprimer"]];
 const KIND: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
-  const [sel, setSel] = useState(""); const [tab, setTab] = useState<Tab>("joueurs");
+  const [sel, setSel] = useState(""); const [tab, setTab] = useState<Tab>("groupe");
   const [err, setErr] = useState(""); const [state, setState] = useState<"" | "saving" | "saved" | "error">("");
   const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null);
   const loaded = useRef(false); const sig = useRef("");
@@ -25,7 +25,7 @@ export default function Progression() {
   useEffect(() => {
     get<{ groups: Group[] }>("/progressions").then((r) => {
       const gs = (r.groups || []).map((g) => ({ ...g, bilan: g.bilan || {}, players: g.players || [], appel: g.appel || {}, sessions: g.sessions || [], minutes: g.minutes || 60 }));
-      sig.current = JSON.stringify(gs); setGroups(gs); setSel(gs[0]?.id || ""); if (gs[0]?.sessions.length) setTab("consulter"); loaded.current = true; if (!gs.length) setAdding(true);
+      sig.current = JSON.stringify(gs); setGroups(gs); setSel(gs[0]?.id || ""); if (gs[0]?.sessions.length) setTab("seances"); loaded.current = true; if (!gs.length) setAdding(true);
     }).catch((e) => setErr(e.message));
   }, []);
 
@@ -42,7 +42,7 @@ export default function Progression() {
 
   const g = groups?.find((x) => x.id === sel) ?? null;
   const upd = (patch: Partial<Group>) => setGroups((gs) => gs!.map((x) => (x.id === sel ? { ...x, ...patch } : x)));
-  const create = (n: Partial<Group>) => { const pl = n.players || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, appel: {}, minutes: n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setTab(pl.length ? "bilan" : "joueurs"); setAdding(false); };
+  const create = (n: Partial<Group>) => { const pl = n.players || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, appel: {}, minutes: n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setTab("groupe"); setAdding(false); };
   const remove = () => { setGroups((gs) => { const r = gs!.filter((x) => x.id !== sel); setSel(r[0]?.id || ""); return r; }); };
 
   const doPrint = (c: DocChoice, a = 1, b = 30) => { if (g) setPrintPages(buildPages(g, c, a, b)); };
@@ -86,11 +86,17 @@ export default function Progression() {
                 <div className="grid gap-4">
                   <GroupHead g={g} upd={upd} onDelete={remove} />
                   <TabsBar tabs={TABS} active={tab} onChange={(k) => setTab(k as Tab)} label="Étapes du groupe" side={false} />
-                  {tab === "joueurs" && <Players g={g} upd={upd} />}
-                  {tab === "bilan" && <Bilan g={g} upd={upd} next={() => setTab("programme")} />}
-                  {tab === "programme" && <Programme g={g} upd={upd} />}
-                  {tab === "consulter" && <Consult g={g} onDone={(i, v) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, done: v } : x)) })} onUpdate={(i, p) => upd({ sessions: g.sessions.map((x, k) => (k === i ? { ...x, ...p } : x)) })} onPrint={doPrint} onEdit={() => setTab("programme")} />}
-                  {tab === "documents" && <Docs g={g} onPrint={doPrint} />}
+                  {tab === "seances" && <Programme g={g} upd={upd} onPrint={doPrint} toGroup={() => setTab("groupe")} />}
+                  {tab === "groupe" && (
+                    <div className="grid gap-4">
+                      <Players g={g} upd={upd} />
+                      <details className="rounded-xl border border-line bg-white p-4" open={!g.sessions.length}>
+                        <summary className="cursor-pointer font-bold">Bilan de départ du groupe <span className="font-normal text-muted">(sert à proposer les 30 séances)</span></summary>
+                        <div className="mt-4"><Bilan g={g} upd={upd} next={() => setTab("seances")} /></div>
+                      </details>
+                    </div>
+                  )}
+                  {tab === "imprimer" && <Docs g={g} onPrint={doPrint} />}
                 </div>
               )}
           </div>
@@ -145,8 +151,8 @@ function GroupHead({ g, upd, onDelete }: { g: Group; upd: (p: Partial<Group>) =>
   );
 }
 
-function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
-  const [ask, setAsk] = useState(false); const [open, setOpen] = useState<number | null>(null);
+function Programme({ g, upd, onPrint, toGroup }: { g: Group; upd: (p: Partial<Group>) => void; onPrint: (c: DocChoice, a?: number, b?: number) => void; toGroup: () => void }) {
+  const [ask, setAsk] = useState(false); const [open, setOpen] = useState<number | null>(null); const [prep, setPrep] = useState(false); const [read, setRead] = useState<number | null>(null);
   const L = levelDef(g.level); const S = g.sessions;
   const setS = (i: number, p: Partial<Session>) => upd({ sessions: S.map((s, k) => (k === i ? { ...s, ...p } : s)) });
   const gen = () => { upd({ sessions: generate(g) }); setAsk(false); setOpen(null); };
@@ -161,7 +167,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
         <h2 className="m-0 text-xl">Créer les 30 séances</h2>
         <p className="m-0">L'outil range les thèmes dans un ordre logique : d'abord ce que ton bilan montre comme à acquérir, la technique avant la tactique, puis la mise en jeu. Le physique et le mental sont un fil rouge dans chaque séance.</p>
         <p className="m-0 text-sm text-muted">{nb ? `${nb} thèmes pris en compte pour ${g.name} (${L.key}).` : "Le bilan est vide : la programmation partira des bases du niveau choisi."}</p>
-        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={gen}>Proposer les 30 séances d'après le bilan</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setOpen(0); }}>Je crée mes séances moi-même</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={gen}>Proposer les 30 séances d'après le bilan</button><button type="button" className="btn-outline" onClick={toGroup}>Remplir d'abord le bilan du groupe</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setOpen(0); }}>Je crée mes séances moi-même</button></div>
       </section>
     );
   }
@@ -172,6 +178,24 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Remplacer les séances par une nouvelle proposition ?</b><button type="button" className="btn-ink btn-sm" onClick={gen}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>
           : <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>↻ Proposer à nouveau d'après le bilan</button>}
       </div>
+      {(() => {
+        const nx = nextSession(g), cur = S[nx], allDone = done === S.length;
+        if (prep) return <Prepare g={g} s={cur} i={nx} L={L} setS={setS} changeTheme={changeTheme} onClose={() => setPrep(false)} />;
+        const col = sessionColor(cur);
+        return (
+          <article className="grid gap-3 rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg,#16140f 0%,#26231c 60%,#3a3220 100%)", borderTop: `6px solid ${col}` }}>
+            <p className="m-0 text-xs font-extrabold uppercase tracking-[.2em] text-[#d8c18a]">{allDone ? "Saison terminée" : "Ta prochaine séance"}</p>
+            <h2 className="m-0 font-serif text-2xl font-bold text-white [overflow-wrap:anywhere]">Séance {nx + 1} · {cur.title || "à préparer"}</h2>
+            {objCount(objOf(cur)) > 0 ? <div className="grid gap-2 sm:grid-cols-2">{DOMAINS.filter((d) => objOf(cur)[d.key].length).map((d) => <p key={d.key} className="m-0 border-l-4 bg-white/10 px-3 py-2 text-sm" style={{ borderColor: d.color }}><b className="block" style={{ color: "#fff" }}>{d.label}</b>{objOf(cur)[d.key].join(" · ")}</p>)}</div> : <p className="m-0 text-sm text-white/70">Aucun objectif choisi pour l'instant.</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-clay" onClick={() => setPrep(true)}>Préparer cette séance</button>
+              {!cur.done && <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => { setS(nx, { done: true }); setOpen(nx); }}>✔ Séance faite</button>}
+              <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => setRead(nx)}>Voir la fiche</button>
+              <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => onPrint("une", nx + 1, nx + 1)}>Imprimer</button>
+            </div>
+          </article>
+        );
+      })()}
       {S.map((s, i) => {
         const sd = sessionDomain(s); const dom = sd ? domainOf(sd) : null; const isOpen = open === i;
         return (
@@ -199,6 +223,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
                   <div className="flex flex-wrap gap-2">
                     <button type="button" className="btn-outline btn-sm" disabled={i === 0} onClick={() => move(i, -1)}>↑ Monter</button>
                     <button type="button" className="btn-outline btn-sm" disabled={i === S.length - 1} onClick={() => move(i, 1)}>↓ Descendre</button>
+                    <button type="button" className="btn-outline btn-sm" onClick={() => setRead(i)}>Voir la fiche</button>
                     <button type="button" className="btn-outline btn-sm" onClick={() => { upd({ sessions: S.filter((_, k) => k !== i) }); setOpen(null); }}>🗑️ Retirer cette séance</button>
                   </div>
                 </div>
@@ -208,6 +233,7 @@ function Programme({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
         );
       })}
       <div><button type="button" className="btn-outline" disabled={S.length >= 40} onClick={() => { upd({ sessions: [...S, freeSession(g.minutes)] }); setOpen(S.length); }}>＋ Créer ma propre séance</button></div>
+      {read !== null && S[read] && <Reader g={g} i={read} onClose={() => setRead(null)} onGo={setRead} onDone={(i, v) => setS(i, { done: v })} onUpdate={(i, p) => setS(i, p)} onPrint={(i) => onPrint("une", i + 1, i + 1)} />}
     </section>
   );
 }
@@ -285,5 +311,36 @@ function Deroulement({ g, s, i, setS }: { g: Group; s: Session; i: number; setS:
         )}
       </div>
     </details>
+  );
+}
+
+// Préparer une séance en 4 cartes : thème, objectifs, déroulement, récapitulatif (tout s'enregistre au fur et à mesure)
+function Prepare({ g, s, i, L, setS, changeTheme, onClose }: { g: Group; s: Session; i: number; L: LevelDef; setS: (i: number, p: Partial<Session>) => void; changeTheme: (i: number, t: string) => void; onClose: () => void }) {
+  const [step, setStep] = useState(0); const obj = objOf(s); const blocks = s.blocks ?? [];
+  const setObj = (d: Domain, list: string[]) => { const { skills, fil, obj: o } = withObj(s, { ...obj, [d]: list }); setS(i, { skills, fil, obj: o }); };
+  const shift = (x: number) => { const base = defaultBlocks(g.minutes); const k = Math.max(5, Math.round(g.minutes / 6 / 5) * 5) * x; const nb = base.map((b) => (b.n === "Situation" ? { ...b, m: Math.max(5, b.m - k) } : b.n === "Jeu" ? { ...b, m: Math.max(5, b.m + k) } : b)); const tot = nb.reduce((a, b) => a + b.m, 0); nb[2] = { ...nb[2], m: nb[2].m + (g.minutes - tot) }; setS(i, { blocks: nb.map((b) => ({ ...b, t: blocks.find((o) => o.n === b.n)?.t || "" })) }); };
+  const TITLES = [`Quel est le thème de la séance ${i + 1} ?`, "Quels objectifs pour cette séance ?", "Comment se déroule la séance ?", "C'est prêt !"];
+  const total = blocks.reduce((a, b) => a + (b.m || 0), 0);
+  return (
+    <article className="grid gap-4 rounded-2xl border-2 border-champagne bg-white p-5">
+      <div><p className="m-0 text-xs font-bold uppercase tracking-widest text-muted">Carte {step + 1} sur 4</p><div className="mt-1 h-2 overflow-hidden rounded bg-line"><div className="h-full bg-ink" style={{ width: `${(step + 1) * 25}%` }} /></div></div>
+      <h2 className="m-0 text-xl">{TITLES[step]}</h2>
+      {step === 0 && <div className="flex flex-wrap gap-2">{L.ok.map((n) => <button key={n} type="button" aria-pressed={s.theme === n} onClick={() => changeTheme(i, n)} className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold ${s.theme === n ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>{n}</button>)}</div>}
+      {step === 1 && <div className="grid gap-3 sm:grid-cols-2">{DOMAINS.map((d) => <DomainObjectives key={d.key} i={i} d={d} list={obj[d.key]} L={L} onChange={(l) => setObj(d.key, l)} />)}</div>}
+      {step === 2 && (
+        <div className="grid gap-3">
+          <div className="flex flex-wrap gap-2"><button type="button" className="btn-outline btn-sm" onClick={() => setS(i, { blocks: defaultBlocks(g.minutes).map((b) => ({ ...b, t: blocks.find((o) => o.n === b.n)?.t || "" })) })}>Classique</button><button type="button" className="btn-outline btn-sm" onClick={() => shift(1)}>Plus de jeu</button><button type="button" className="btn-outline btn-sm" onClick={() => shift(-1)}>Plus de travail technique</button></div>
+          {blocks.length > 0 ? <ul className="m-0 grid list-none gap-1 p-0">{blocks.map((b, k) => <li key={k} className="border-b border-line py-1 text-sm"><b>{b.n}</b> · {b.m} min</li>)}</ul> : <p className="m-0 text-sm text-muted">Choisis un modèle, tu pourras écrire les consignes de chaque bloc ensuite (facultatif).</p>}
+          {blocks.length > 0 && <p className="hint m-0">Total : {total} min sur {g.minutes}.</p>}
+        </div>
+      )}
+      {step === 3 && (
+        <div className="grid gap-3"><p className="m-0"><b>{s.title || s.theme || "Séance libre"}</b></p>
+          {DOMAINS.filter((d) => obj[d.key].length).map((d) => <p key={d.key} className="m-0 border-l-4 pl-3 text-sm" style={{ borderColor: d.color }}><b style={{ color: d.color }}>{d.label}</b> : {obj[d.key].join(" · ")}</p>)}
+          {blocks.length > 0 && <p className="m-0 text-sm text-muted">{blocks.map((b) => `${b.n} ${b.m} min`).join(" · ")}</p>}
+          <p className="hint m-0">Tout est déjà enregistré. Les consignes de chaque bloc se précisent dans la liste des séances ci-dessous (« Déroulement »).</p></div>
+      )}
+      <div className="flex items-center justify-between gap-2"><button type="button" className="btn-outline" onClick={() => (step ? setStep(step - 1) : onClose())}>{step ? "← Retour" : "Fermer"}</button><button type="button" className="btn-clay" onClick={() => (step < 3 ? setStep(step + 1) : onClose())}>{step < 3 ? "Continuer →" : "Terminer"}</button></div>
+    </article>
   );
 }
