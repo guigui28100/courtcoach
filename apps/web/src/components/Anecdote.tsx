@@ -8,7 +8,7 @@ import { Fmts, txt } from "./posterFmt";
 // ───────────────────────────────────────────────────────────────────────────�
 export interface Anec { title: string; text: string; sig: string }
 export const ANEC_TITLES = ["L'anecdote du week-end", "Le fait marquant", "Le coup de cœur", "Le mot du capitaine", "Le saviez-vous ?"];
-export const ANEC_MAX = 220;
+export const ANEC_MAX = 1000;
 export const noAnec: Anec = { title: ANEC_TITLES[0], text: "", sig: "" };
 export const AnecCtx = createContext<Anec>(noAnec);
 export const useAnec = () => useContext(AnecCtx);
@@ -39,7 +39,7 @@ export function AnecdoteFields({ value, onChange }: { value: { title: string; te
           <button key={t} type="button" aria-pressed={value.title === t} className={`rounded-full border-2 px-3 py-1.5 text-xs font-bold ${value.title === t ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`} onClick={() => onChange({ ...value, title: t })}>{t}</button>
         ))}
       </div>
-      <textarea className="w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm text-ink" rows={3} maxLength={ANEC_MAX} aria-label="Texte de l'anecdote" placeholder="Ex. : Match décidé au super tie-break après 3 h de jeu, et personne n'a lâché !" value={value.text} onChange={(ev) => onChange({ ...value, text: ev.target.value })} />
+      <textarea className="w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm text-ink" rows={5} maxLength={ANEC_MAX} aria-label="Texte de l'anecdote" placeholder="Ex. : Match décidé au super tie-break après 3 h de jeu, et personne n'a lâché !" value={value.text} onChange={(ev) => onChange({ ...value, text: ev.target.value })} />
       <div className="mt-1 text-right text-[11px] text-muted">{value.text.length} / {ANEC_MAX}</div>
     </section>
   );
