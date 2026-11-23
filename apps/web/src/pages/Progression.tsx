@@ -204,8 +204,9 @@ function Programme({ g, upd, onPrint, toGoals }: { g: Group; upd: (p: Partial<Gr
           </>
         ) : (
           <>
-            <p className="m-0">Les 30 séances ne sont proposées qu'une fois tes objectifs annuels validés : c'est toi qui décides de ce qui sera travaillé.</p>
-            <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={toGoals}>Aller aux objectifs annuels</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setSheet(0); }}>Je crée mes séances moi-même</button></div>
+            <p className="m-0">Le plus complet : diagnostic, puis objectifs validés, puis 30 séances qui suivent ces objectifs.</p>
+            <p className="m-0 text-sm text-muted">Pas envie de passer par le diagnostic ? Tu peux aussi obtenir tout de suite une proposition de 30 séances d'après le niveau du groupe ({L.key}) : tu la modifies ensuite comme tu veux.</p>
+            <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={gen}>Proposer les 30 séances maintenant</button><button type="button" className="btn-outline" onClick={toGoals}>Aller aux objectifs annuels</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setSheet(0); }}>Je crée mes séances moi-même</button></div>
           </>
         )}
       </section>
