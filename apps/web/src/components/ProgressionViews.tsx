@@ -146,14 +146,14 @@ export function Consult({ g, onDone, onUpdate, onPrint, onEdit }: { g: Group; on
 
 // Documents : aperçu page par page et impression / PDF
 export function Docs({ g, onPrint }: { g: Group; onPrint: (c: DocChoice, a?: number, b?: number) => void }) {
-  const [choice, setChoice] = useState<DocChoice>("tout"); const [from, setFrom] = useState(1); const [to, setTo] = useState(10); const [n, setN] = useState(0);
+  const [choice, setChoice] = useState<DocChoice>("plan"); const [from, setFrom] = useState(1); const [to, setTo] = useState(10); const [n, setN] = useState(0);
   const pages = useMemo(() => buildPages(g, choice, from, to), [g, choice, from, to]);
   const box = useRef<HTMLDivElement>(null); const [w, setW] = useState(600);
   useLayoutEffect(() => { const el = box.current; if (!el) return; const f = () => setW(Math.min(el.clientWidth, 760)); f(); const ro = new ResizeObserver(f); ro.observe(el); return () => ro.disconnect(); }, []);
   useEffect(() => { if (n >= pages.length) setN(Math.max(0, pages.length - 1)); }, [pages.length, n]);
   if (!g.sessions.length) return <p className="m-0 text-muted">Crée d'abord la programmation (étape 2).</p>;
   const sc = w / DOC_W;
-  const OPT: [DocChoice, string, string][] = [["tout", "Le dossier complet", `${3 + g.sessions.length} pages : couverture, bilan, vue d'ensemble et une fiche par séance`], ["programme", "Le programme seulement", "3 pages : couverture, bilan, vue d'ensemble"], ["fiches", "Toutes les fiches de séance", `${g.sessions.length} pages, une par séance`], ["plage", "Quelques séances", "De la séance … à la séance …"]];
+  const OPT: [DocChoice, string, string][] = [["plan", "La programmation des 30 séances", "3 pages : pour chaque séance, le thème et les objectifs (technique, tactique, physique, mental). Sans exercices."], ["tout", "Le dossier complet", `${3 + g.sessions.length} pages : couverture, bilan, vue d'ensemble et une fiche par séance`], ["programme", "Le programme seulement", "3 pages : couverture, bilan, vue d'ensemble"], ["fiches", "Toutes les fiches de séance", `${g.sessions.length} pages, une par séance`], ["plage", "Quelques séances", "De la séance … à la séance …"]];
   return (
     <section className="grid gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
       <div className="grid content-start gap-3">
