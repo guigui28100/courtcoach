@@ -78,6 +78,19 @@ describe("Progression des séances (privée au prof)", () => {
     expect(back.players[0]).toBe("Léa"); expect((await A.prof2.get("/api/progressions").expect(200)).body.groups).toEqual([]);
   });
 
+  it("le cycle complet est gardé et nettoyé : groupe, diagnostic, objectifs, séance, appel avec retard, bilans", async () => {
+    const g = { id: "g1", name: "Orange", level: "Orange", players: ["Léa", "Tom"], appel: { "2026-11-20": { Léa: "r", Tom: "x" } }, teacher: "Guillaume", age: "8-9 ans", slot: "mardi 17 h", season: "2026-2027",
+      diag: { t_cd: 1, t_rv: 9, zz: 2 }, diagObs: { tech: "ok", bad: "x" }, playerObs: { Léa: "forte", Inconnu: "x" },
+      goals: [{ id: "o1", d: "tech", skill: "Coup droit", prio: 7 }], validated: true, checks: { "10": { text: "bilan", marks: { o1: "acquis", o9: "non" }, scores: { t_cd: 3 } }, "15": { text: "x" } },
+      sessions: [{ kind: "theme", theme: "Coup droit", title: "t", date: "2026-11-20", ready: true, gl: ["o1", "bad id!"], after: { reach: { tech: "part", ment: "zzz" }, hard: "d" }, blocks: [{ n: "Situation", m: 15, t: "c", goal: "g", org: "o", ok: "k", vars: "v", mat: "m", vigil: "w", evil: "x" }] }] };
+    const o = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [g] } }).expect(200)).body.groups[0];
+    expect(o.appel["2026-11-20"]).toEqual({ Léa: "r" }); expect(o.diag).toEqual({ t_cd: 1 }); expect(o.diagObs).toEqual({ tech: "ok" }); expect(o.playerObs).toEqual({ Léa: "forte" });
+    expect(o.teacher).toBe("Guillaume"); expect(o.validated).toBe(true); expect(o.goals[0].prio).toBe(2);
+    expect(o.checks["10"].marks).toEqual({ o1: "acquis" }); expect(o.checks["15"]).toBeUndefined();
+    const s = o.sessions[0]; expect(s.date).toBe("2026-11-20"); expect(s.ready).toBe(true); expect(s.gl).toEqual(["o1"]); expect(s.after.reach).toEqual({ tech: "part" });
+    expect(s.blocks[0].goal).toBe("g"); expect(s.blocks[0].vigil).toBe("w"); expect(s.blocks[0].evil).toBeUndefined();
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);

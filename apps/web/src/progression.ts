@@ -201,10 +201,16 @@ export const BILAN_LEVELS = [
 ];
 
 export type Objectives = Record<Domain, string[]>;
-export type Block = { n: string; m: number; t: string };
-export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean };
-export type Attend = "p" | "a" | "e"; // présent · absent · excusé
-export type Group = { id: string; name: string; level: string; size: number; minutes: number; players?: string[]; appel?: Record<string, Record<string, Attend>>; bilan: Record<string, number>; notes: string; sessions: Session[] };
+export type Block = { n: string; m: number; t: string; goal?: string; org?: string; instr?: string; ok?: string; vars?: string; mat?: string; vigil?: string };
+export type Reach = "oui" | "part" | "non";
+export type After = { reach?: Partial<Record<Domain, Reach>>; hard?: string; wins?: string; indiv?: string; best?: string; rework?: string };
+export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean; date?: string; ready?: boolean; gl?: string[]; after?: After };
+export type Attend = "p" | "a" | "r" | "e"; // présent · absent · en retard · excusé
+export type Group = { id: string; name: string; level: string; size: number; minutes: number; players?: string[]; appel?: Record<string, Record<string, Attend>>; bilan: Record<string, number>; notes: string; sessions: Session[];
+  teacher?: string; age?: string; slot?: string; season?: string; diag?: Record<string, number>; diagObs?: Partial<Record<Domain, string>>; playerObs?: Record<string, string>; goals?: AnnualGoal[]; validated?: boolean; checks?: Record<string, Check> };
+export type AnnualGoal = { id: string; d: Domain; skill: string; finding: string; expected: string; ok: string; prio: 1 | 2 | 3; evalMode: string; theme?: string };
+export type Mark = "acquis" | "cours" | "non";
+export type Check = { text: string; marks: Record<string, Mark>; scores: Record<string, number> };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
 export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
 export const newId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -377,3 +383,77 @@ export const RATINGS: { v: 1 | 2 | 3; label: string; icon: string; color: string
   { v: 2, label: "Correcte", icon: "🙂", color: "#a8884a" },
   { v: 3, label: "Très bien", icon: "😃", color: "#2c9a5b" },
 ];
+
+
+// ---------- Diagnostic initial du groupe : 4 domaines, des critères notés de 0 à 4 ----------
+export const SCALE = ["Pas acquis", "Très fragile", "En cours", "Acquis", "Acquis sous pression"];
+export const SCALE_HELP = "0 pas acquis · 1 très fragile · 2 en cours d'acquisition · 3 acquis · 4 acquis même sous pression (en match)";
+export type Criterion = { key: string; label: string; theme?: string };
+export const DIAG: Record<Domain, Criterion[]> = {
+  tech: [
+    { key: "t_cd", label: "Coup droit", theme: "Coup droit" }, { key: "t_rv", label: "Revers", theme: "Revers" }, { key: "t_sv", label: "Service", theme: "Service" }, { key: "t_rt", label: "Retour de service", theme: "Retour de service" },
+    { key: "t_vs", label: "Volée et smash", theme: "Volée" }, { key: "t_dp", label: "Déplacements et placements", theme: "Jeu de jambes" }, { key: "t_rg", label: "Régularité, précision et maîtrise des trajectoires", theme: "Construire le point (régularité)" },
+  ],
+  tact: [
+    { key: "a_cp", label: "Construction du point", theme: "Construire le point (régularité)" }, { key: "a_sf", label: "Reconnaissance des situations favorables", theme: "Lecture du jeu" }, { key: "a_zt", label: "Choix des zones et des trajectoires", theme: "Variations" },
+    { key: "a_od", label: "Gestion des situations offensives et défensives", theme: "Attaquer" }, { key: "a_pd", label: "Prise de décision et adaptation à l'adversaire", theme: "Lecture du jeu" },
+  ],
+  ment: [
+    { key: "m_co", label: "Concentration", theme: "Concentration" }, { key: "m_cf", label: "Confiance", theme: "Confiance" }, { key: "m_em", label: "Gestion des erreurs et des émotions", theme: "Gestion des émotions" },
+    { key: "m_cb", label: "Engagement et combativité", theme: "Combativité" }, { key: "m_au", label: "Autonomie et comportement", theme: "Routines" },
+  ],
+  phys: [
+    { key: "p_co", label: "Coordination", theme: "Vitesse" }, { key: "p_eq", label: "Équilibre", theme: "Jeu de jambes" }, { key: "p_vr", label: "Vitesse de réaction", theme: "Vitesse" },
+    { key: "p_ag", label: "Agilité et déplacements", theme: "Jeu de jambes" }, { key: "p_en", label: "Endurance et qualités physiques adaptées à l'âge", theme: "Endurance" },
+  ],
+};
+export const critOf = (key: string): { d: Domain; c: Criterion } | null => { for (const d of DOMAINS) { const c = DIAG[d.key].find((x) => x.key === key); if (c) return { d: d.key, c }; } return null; };
+const toBilan = (n: number) => (n <= 1 ? 0 : n === 2 ? 1 : n === 3 ? 2 : 3);
+// Le diagnostic nourrit la programmation : le niveau d'un thème = le plus bas de ses critères notés (le bilan écrit à la main reste prioritaire)
+export function diagBilan(g: Group): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const d of DOMAINS) for (const c of DIAG[d.key]) { const v = g.diag?.[c.key]; if (v === undefined || !c.theme) continue; const b = toBilan(v); out[c.theme] = out[c.theme] === undefined ? b : Math.min(out[c.theme], b); }
+  return out;
+}
+export const withDiag = (g: Group): Group => ({ ...g, bilan: { ...diagBilan(g), ...g.bilan } });
+export const diagCount = (g: Group) => Object.keys(g.diag || {}).length;
+export const diagTotal = () => DOMAINS.reduce((a, d) => a + DIAG[d.key].length, 0);
+export const domainAvg = (scores: Record<string, number> | undefined, d: Domain): number | null => { const v = DIAG[d].map((c) => scores?.[c.key]).filter((x): x is number => x !== undefined); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+
+// ---------- Objectifs annuels proposés d'après le diagnostic (le prof accepte, modifie, supprime ou ajoute) ----------
+const OK_DEFAULT: Record<Domain, string> = {
+  tech: "Réussit 6 balles sur 10 en situation dirigée, 5 sur 10 à l'échange et 4 sur 10 en opposition",
+  tact: "Choisit la bonne solution dans la majorité des points joués en situation d'opposition",
+  ment: "Garde le comportement attendu pendant tout le match, y compris après une erreur",
+  phys: "Enchaîne les exercices sans perdre la qualité du mouvement",
+};
+export const newGoalId = () => "o" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+export function proposeGoals(g: Group): AnnualGoal[] {
+  const out: AnnualGoal[] = [];
+  for (const d of DOMAINS) {
+    const rated = DIAG[d.key].map((c) => ({ c, v: g.diag?.[c.key] })).filter((x): x is { c: Criterion; v: number } => x.v !== undefined && x.v <= 2).sort((a, b) => a.v - b.v).slice(0, 3);
+    for (const { c, v } of rated) {
+      const obs = (g.diagObs?.[d.key] || "").trim();
+      out.push({ id: newGoalId(), d: d.key, skill: c.label, theme: c.theme, finding: `Diagnostic : ${c.label} évalué ${v} sur 4 (${SCALE[v].toLowerCase()})${obs ? `. ${obs.slice(0, 140)}` : ""}`, expected: `${c.label} : niveau « acquis » (3 sur 4) en situation de jeu`, ok: OK_DEFAULT[d.key], prio: v <= 1 ? 1 : 2, evalMode: "Observation en situation de jeu, bilans après les séances 10, 20 et 30" });
+    }
+  }
+  return out;
+}
+// Séances qui travaillent un objectif : celles dont le thème (ou le fil rouge) est le sien
+export const goalSessions = (g: Group, id: string) => g.sessions.map((s, i) => ({ s, i })).filter(({ s }) => s.gl?.includes(id)).map(({ i }) => i + 1);
+export function linkGoals(sessions: Session[], goals: AnnualGoal[]): Session[] {
+  return sessions.map((s) => { const gl = goals.filter((o) => o.theme && (s.theme === o.theme || (s.fil || "").startsWith(o.theme))).map((o) => o.id); return gl.length ? { ...s, gl } : s; });
+}
+export const sessionStatus = (s: Session): "realisee" | "prete" | "prepare" => (s.done ? "realisee" : s.ready ? "prete" : "prepare");
+export const STATUS_LABEL = { prepare: "À préparer", prete: "Prête", realisee: "Réalisée" } as const;
+// Ajustements proposés (jamais appliqués tout seuls) d'après le bilan de la dernière séance faite
+export function suggestFor(g: Group, i: number): string[] {
+  let p = -1; for (let k = i - 1; k >= 0; k--) if (g.sessions[k].done && g.sessions[k].after) { p = k; break; }
+  if (p < 0) return [];
+  const a = g.sessions[p].after!, o = objOf(g.sessions[p]), out: string[] = [];
+  for (const d of DOMAINS) { const r = a.reach?.[d.key]; if ((r === "non" || r === "part") && o[d.key].length) out.push(`${d.label} : « ${o[d.key].slice(0, 2).join(", ")} » ${r === "non" ? "n'a pas été atteint" : "n'a été atteint qu'en partie"} à la séance ${p + 1} : le reprendre ici avec une situation plus simple.`); }
+  if (a.rework?.trim()) out.push(`À retravailler (séance ${p + 1}) : ${a.rework.trim()}`);
+  if (g.sessions[p].redo) out.push(`Tu avais noté « à refaire » à la séance ${p + 1} : reprendre ce thème.`);
+  return out;
+}
+export const presentRate = (g: Group, name?: string) => { const days = Object.values(g.appel || {}); let t = 0, ok = 0; for (const day of days) { const list = name ? (day[name] ? [day[name]] : []) : Object.values(day); for (const v of list) { if (v === "e") continue; t++; if (v === "p" || v === "r") ok++; } } return t ? Math.round((ok / t) * 100) : null; };

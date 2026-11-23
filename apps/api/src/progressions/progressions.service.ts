@@ -18,8 +18,29 @@ const objectives = (v: unknown) => {
   if (v && typeof v === "object" && !Array.isArray(v)) for (const d of DOMS) { const l = (v as Record<string, unknown>)[d]; if (Array.isArray(l)) out[d] = l.slice(0, 10).map((x) => str(x, 100)).filter(Boolean); }
   return out;
 };
-const blocks = (v: unknown) => (Array.isArray(v) ? v.slice(0, 8).map((b) => { const x = (b && typeof b === "object" ? b : {}) as Record<string, unknown>; return { n: str(x.n, 30) || "Autre", m: int(x.m, 0, 180, 10), t: str(x.t, 600) }; }) : undefined);
-const STATUS = ["p", "a", "e"]; // présent · absent · excusé
+const blocks = (v: unknown) => (Array.isArray(v) ? v.slice(0, 8).map((b) => { const x = (b && typeof b === "object" ? b : {}) as Record<string, unknown>; return { n: str(x.n, 30) || "Autre", m: int(x.m, 0, 180, 10), t: str(x.t, 600), ...(["goal", "org", "instr", "ok", "vars", "vigil"] as const).reduce((a, k) => (typeof x[k] === "string" && (x[k] as string).trim() ? { ...a, [k]: str(x[k], 400) } : a), {} as Record<string, string>), ...(typeof x.mat === "string" && x.mat.trim() ? { mat: str(x.mat, 200) } : {}) }; }) : undefined);
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const REACH = ["oui", "part", "non"];
+const after = (v: unknown) => {
+  const x = (v && typeof v === "object" && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
+  const reach: Record<string, string> = {}; const r = (x.reach && typeof x.reach === "object" ? x.reach : {}) as Record<string, unknown>;
+  for (const d of DOMS) if (typeof r[d] === "string" && REACH.includes(r[d] as string)) reach[d] = r[d] as string;
+  return { reach, hard: str(x.hard, 600), wins: str(x.wins, 600), indiv: str(x.indiv, 900), best: str(x.best, 400), rework: str(x.rework, 600) };
+};
+const diag = (v: unknown) => { const out: Record<string, number> = {}; if (v && typeof v === "object" && !Array.isArray(v)) for (const [k, n] of Object.entries(v as Record<string, unknown>).slice(0, 60)) { const q = Math.floor(Number(n)); if (/^[a-z]_[a-z]{2}$/.test(k) && q >= 0 && q <= 4) out[k] = q; } return out; };
+const textMap = (v: unknown, keys: string[] | null, max: number, count: number) => { const out: Record<string, string> = {}; if (v && typeof v === "object" && !Array.isArray(v)) for (const [k, t] of Object.entries(v as Record<string, unknown>).slice(0, count)) { const kk = str(k, 30); const tt = str(t, max); if (kk && tt && (!keys || keys.includes(kk))) out[kk] = tt; } return out; };
+const goals = (v: unknown) => (Array.isArray(v) ? v.slice(0, 24).map((o, i) => { const x = (o && typeof o === "object" ? o : {}) as Record<string, unknown>; let id = str(x.id, 24); if (!/^[A-Za-z0-9_-]{1,24}$/.test(id)) id = `o${Date.now().toString(36)}${i}`; return { id, d: DOMS.includes(String(x.d)) ? x.d : "tech", skill: str(x.skill, 120), finding: str(x.finding, 400), expected: str(x.expected, 300), ok: str(x.ok, 400), prio: int(x.prio, 1, 3, 2), evalMode: str(x.evalMode, 300), ...(typeof x.theme === "string" && x.theme.trim() ? { theme: str(x.theme, 60) } : {}) }; }) : []);
+const MARKS = ["acquis", "cours", "non"];
+const checks = (v: unknown, ids: string[]) => {
+  const out: Record<string, unknown> = {};
+  if (v && typeof v === "object" && !Array.isArray(v)) for (const at of ["10", "20", "30"]) {
+    const c = (v as Record<string, unknown>)[at]; if (!c || typeof c !== "object") continue; const x = c as Record<string, unknown>;
+    const marks: Record<string, string> = {}; for (const [k, m] of Object.entries((x.marks && typeof x.marks === "object" ? x.marks : {}) as Record<string, unknown>).slice(0, 30)) if (ids.includes(k) && MARKS.includes(String(m))) marks[k] = String(m);
+    out[at] = { text: str(x.text, 900), marks, scores: diag(x.scores) };
+  }
+  return out;
+};
+const STATUS = ["p", "a", "r", "e"]; // présent · absent · en retard · excusé
 const players = (v: unknown) => { const seen = new Set<string>(); const out: string[] = []; if (Array.isArray(v)) for (const x of v) { const n = str(x, 30); const k = n.toLowerCase(); if (n && !seen.has(k) && out.length < 40) { seen.add(k); out.push(n); } } return out; };
 const roll = (v: unknown, names: string[]) => {
   const out: Record<string, Record<string, string>> = {};
@@ -53,10 +74,13 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
       appel: roll(o.appel, names), // { "2026-11-19": { "Léa": "p" | "a" | "e" } } : les 80 dernières séances
       minutes: int(o.minutes, 20, 180, 60),
       bilan: bilan(o.bilan), // niveau de chaque thème au départ : 0 non maîtrisé · 1 en cours · 2 en maîtrise · 3 point fort
+      ...(str(o.teacher, 60) ? { teacher: str(o.teacher, 60) } : {}), ...(str(o.age, 40) ? { age: str(o.age, 40) } : {}), ...(str(o.slot, 60) ? { slot: str(o.slot, 60) } : {}), ...(str(o.season, 20) ? { season: str(o.season, 20) } : {}),
+      diag: diag(o.diag), diagObs: textMap(o.diagObs, DOMS, 900, 4), playerObs: textMap(o.playerObs, names, 600, 40), // observations par joueur : les clés doivent être des prénoms du groupe
+      goals: goals(o.goals), validated: o.validated === true, checks: checks(o.checks, goals(o.goals).map((x) => x.id)),
       notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (les prénoms vont dans la liste des joueurs)
       sessions: sessions.map((s) => {
         const x = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
-        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 900), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true, ...([1, 2, 3].includes(Number(x.rating)) ? { rating: Number(x.rating) } : {}), ...(x.redo === true ? { redo: true } : {}), ...(x.obj ? { obj: objectives(x.obj) } : {}), ...(Array.isArray(x.blocks) ? { blocks: blocks(x.blocks) } : {}), ...(typeof x.mat === "string" && x.mat.trim() ? { mat: str(x.mat, 200) } : {}) };
+        return { kind: KINDS.includes(String(x.kind)) ? x.kind : "theme", theme: str(x.theme, 60), title: str(x.title, 120), skills: str(x.skills, 900), fil: str(x.fil, 160), why: str(x.why, 200), note: str(x.note, 600), done: x.done === true, ...([1, 2, 3].includes(Number(x.rating)) ? { rating: Number(x.rating) } : {}), ...(x.redo === true ? { redo: true } : {}), ...(x.obj ? { obj: objectives(x.obj) } : {}), ...(Array.isArray(x.blocks) ? { blocks: blocks(x.blocks) } : {}), ...(typeof x.mat === "string" && x.mat.trim() ? { mat: str(x.mat, 200) } : {}), ...(typeof x.date === "string" && DATE.test(x.date) ? { date: x.date } : {}), ...(x.ready === true ? { ready: true } : {}), ...(Array.isArray(x.gl) ? { gl: x.gl.slice(0, 12).map((k) => str(k, 24)).filter((k) => /^[A-Za-z0-9_-]{1,24}$/.test(k)) } : {}), ...(x.after ? { after: after(x.after) } : {}) };
       }),
     };
   });
