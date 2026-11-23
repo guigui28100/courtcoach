@@ -176,10 +176,36 @@ export function SessionPage({ g, i, n }: { g: Group; i: number; n: number }) {
   );
 }
 
-export type DocChoice = "tout" | "programme" | "fiches" | "une" | "plage";
+// Programmation claire : une page par temps (10 séances), seulement le thème et les objectifs par domaine. Pas d'exercices.
+export function PlanPage({ g, p, n }: { g: Group; p: number; n: number }) {
+  const S = g.sessions.slice(p * 10, p * 10 + 10), L = levelDef(g.level);
+  const objs = (s: Session) => { const o = objOf(s); return objCount(o) ? o : null; };
+  return (
+    <Frame group={g} n={n}>
+      <div style={{ padding: "34px 40px 70px" }}>
+        <Eyebrow>Programmation {seasonLabel()} · {g.name} · {L.key}</Eyebrow>
+        <div style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 700, lineHeight: 1.05, marginTop: 4 }}>{PHASES[p]} <span style={{ fontSize: 20, color: MUT, fontWeight: 400 }}>· séances {p * 10 + 1} à {p * 10 + 10}</span></div>
+        <div style={{ display: "flex", gap: 14, fontSize: 11, margin: "8px 0 10px" }}>{DOMAINS.map((d) => <span key={d.key}><i style={{ display: "inline-block", width: 10, height: 10, background: d.color, marginRight: 5 }} />{d.label}</span>)}</div>
+        <div style={{ display: "grid", gap: 0 }}>
+          {S.map((s, k) => { const i = p * 10 + k, o = objs(s), col = sessionColor(s); return (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "46px 150px 1fr", gap: 12, padding: "7px 0", borderTop: `1px solid ${LINE}`, minHeight: 84, alignItems: "start" }}>
+              <b style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: col }}>{i + 1}</b>
+              <div><div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{s.theme || s.title}</div><div style={{ fontSize: 11, color: MUT, marginTop: 2 }}>{s.theme ? s.fil.split(" : ")[0] : KIND_LABEL[s.kind]}</div></div>
+              <div style={{ display: "grid", gap: 3, fontSize: 12.5, lineHeight: 1.3 }}>
+                {o ? DOMAINS.filter((d) => o[d.key].length).map((d) => <div key={d.key} style={{ borderLeft: `4px solid ${d.color}`, paddingLeft: 8 }}><b style={{ color: d.color, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase" }}>{d.label}</b> {o[d.key].join(" · ")}</div>) : <div style={{ borderLeft: `4px solid ${col}`, paddingLeft: 8 }}>{parseSkills(s.skills).join(" · ") || "À compléter"}</div>}
+              </div>
+            </div>); })}
+        </div>
+      </div>
+    </Frame>
+  );
+}
+
+export type DocChoice = "plan" | "tout" | "programme" | "fiches" | "une" | "plage";
 export function buildPages(g: Group, choice: DocChoice, from = 1, to = 30): ReactNode[] {
   const S = g.sessions, sheets = (a: number, b: number, start: number) => { const out: ReactNode[] = []; for (let i = Math.max(0, a); i <= Math.min(S.length - 1, b); i++) out.push(<SessionPage key={"s" + i} g={g} i={i} n={start + out.length} />); return out; };
   const intro = [<CoverPage key="c" g={g} />, <BilanPage key="b" g={g} n={2} />, <OverviewPage key="o" g={g} n={3} />];
+  if (choice === "plan") return [0, 1, 2].filter((p) => p * 10 < S.length).map((p) => <PlanPage key={"p" + p} g={g} p={p} n={p + 1} />);
   if (choice === "tout") return [...intro, ...sheets(0, S.length - 1, 4)];
   if (choice === "programme") return intro;
   if (choice === "fiches") return sheets(0, S.length - 1, 1);
