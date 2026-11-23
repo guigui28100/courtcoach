@@ -9,11 +9,13 @@ import { PosterStudio, Sec } from "./PosterStudio";
 import { teamParts, tidy } from "./posterCopy";
 import { FmtStyle, Fmts, pickFmt, txt } from "./posterFmt";
 import { FmtItem } from "./FmtPanel";
+import { photoFromFile } from "./RecapPoster";
+import { PhotoTuner } from "./PhotoTuner";
 
 // Affiche de FIN DE CHAMPIONNAT : pour chaque équipe, son dernier match et son classement final.
 // Les équipes et leur dernier match viennent du planning ; le coach écrit le score, le classement et, si besoin, montée / maintien / descente.
 // Rien n'est enregistré. Aucun nom d'élève : seulement des équipes et des clubs.
-export type Row = { id: string; team: string; club: string; h: string; a: string; rank: string; of: string; issue: string; home: "" | "home" | "away" };
+export type Row = { id: string; team: string; club: string; h: string; a: string; rank: string; of: string; issue: string; home: "" | "home" | "away"; photo?: string; focus?: [number, number]; zoom?: number };
 const ISSUES = ["", "Champion", "Montée", "Maintien", "Descente"];
 const ISSUE_C: Record<string, string> = { Champion: "#8a6a2c", Montée: "#2f6b4a", Maintien: "#4a6d8f", Descente: "#a3412a" };
 const num = (v: string) => (/^\d{1,2}$/.test(v.trim()) ? +v.trim() : null);
@@ -35,12 +37,20 @@ const Logo = ({ size, style }: { size: number; style?: React.CSSProperties }) =>
 );
 const shownOf = (rows: Row[]) => rows.filter((r) => r.team && (num(r.rank) !== null || (num(r.h) !== null && num(r.a) !== null)));
 
-export function ChampionnatPoster({ rows, title, sub, bg = "", fmt, onPick }: { rows: Row[]; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void }) {
+export function ChampionnatPoster({ rows, title, sub, bg = "", fmt, onPick, onPan }: { rows: Row[]; title: string; sub: string; bg?: string; fmt?: Fmts; onPick?: (key: string) => void; onPan?: (id: string, x: number, y: number) => void }) {
+  const panPhoto = (id: string, f0: [number, number]) => (ev: React.PointerEvent<HTMLDivElement>) => {
+    if (!onPan) return;
+    const el = ev.currentTarget; const rect = el.getBoundingClientRect(); const kk = rect.width / el.offsetWidth || 1; const x0 = ev.clientX, y0 = ev.clientY;
+    el.setPointerCapture(ev.pointerId);
+    const move = (mv: PointerEvent) => onPan(id, Math.max(0, Math.min(100, f0[0] - ((mv.clientX - x0) / kk / el.offsetWidth) * 140)), Math.max(0, Math.min(100, f0[1] - ((mv.clientY - y0) / kk / el.offsetHeight) * 140)));
+    const up = () => { el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", up); el.removeEventListener("pointercancel", up); };
+    el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  };
   const shown = shownOf(rows), n = shown.length, HEAD = 230, FOOT = 96, avail = POSTER_H - HEAD - FOOT - 56;
   const anec = useAnec(); const box = useRef<HTMLDivElement>(null); const g = 1 + (fmt?.tout?.size ?? 0) * 0.08;
   const [k, setK] = useState(1); const [tick, setTick] = useState(0);
   useEffect(() => { let on = true; (document as any).fonts?.ready?.then(() => { if (on) setTick((x) => x + 1); }); return () => { on = false; }; }, []);
-  const sig = anec.sig + JSON.stringify(shown) + JSON.stringify(fmt);
+  const sig = anec.sig + JSON.stringify(shown.map((r) => ({ ...r, photo: r.photo ? r.photo.length : 0 }))) + JSON.stringify(fmt);
   useLayoutEffect(() => {
     const el = box.current; if (!el) return;
     el.style.zoom = "1"; el.setAttribute("data-measuring", "");
@@ -82,6 +92,7 @@ export function ChampionnatPoster({ rows, title, sub, bg = "", fmt, onPick }: { 
                   <div><span data-fmt={`sc-${kk}`} style={{ display: "inline-block", background: res === "W" ? "#2f6b4a" : res === "L" ? "#a3412a" : "#6b6558", color: "#fff", fontFamily: SERIF, fontSize: 24, fontWeight: 900, padding: "1px 14px", borderRadius: 6 }}>{txt(fmt, `sc-${kk}`, sc)}</span></div>
                 </> : <div style={{ fontSize: 18, color: "#6b6558" }}>Dernier match non renseigné</div>}
               </div>
+              {r.photo && <div style={{ flex: "0 0 auto", width: 130, minHeight: 90, borderRadius: 8, overflow: "hidden", position: "relative", background: "#e4dccb", cursor: onPan ? "grab" : undefined, touchAction: onPan ? "none" : undefined }} role="img" aria-label="Photo de l'équipe" onPointerDown={panPhoto(r.id, r.focus ?? [50, 50])}><img src={r.photo} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `${(r.focus ?? [50, 50])[0]}% ${(r.focus ?? [50, 50])[1]}%`, transform: `scale(${r.zoom ?? 1})`, transformOrigin: `${(r.focus ?? [50, 50])[0]}% ${(r.focus ?? [50, 50])[1]}%`, pointerEvents: "none" }} /></div>}
               <div style={{ flex: "0 0 auto", width: 190, background: "#17140f", color: "#fff", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "6px 8px" }}>
                 <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.14em", color: "#e8d9a8" }}>CLASSEMENT FINAL</div>
                 {rk !== null ? <div data-fmt={`rk-${kk}`} style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 900, lineHeight: 1.05, color: rk === 1 ? "#f0d27a" : "#fff" }}>{txt(fmt, `rk-${kk}`, rankText(rk))}{of ? <span style={{ fontSize: 22, fontWeight: 700, color: "#cfc7b4" }}> sur {of}</span> : null}</div> : <div style={{ fontSize: 20, marginTop: 6, color: "#cfc7b4" }}>—</div>}
@@ -120,12 +131,19 @@ export function ChampionnatModal({ events, onClose }: { events: ClubEvent[]; onC
   const inp = "w-14 rounded-md border-2 border-line bg-white px-2 py-2 text-center text-base font-extrabold text-ink";
   const selCls = "w-full rounded-md border-2 border-line bg-white px-2 py-2 text-sm font-bold text-ink";
   const addTeam = () => setRows((rs) => { const t = `${add}#${addN}`; return rs.some((r) => r.team === t) ? rs : [...rs, { id: uid(), team: t, club: "", h: "", a: "", rank: "", of: "", issue: "", home: "" as const }].sort((x, y) => order(x.team) - order(y.team)); });
+  const [msg, setMsg] = useState("");
+  const addPhoto = async (id: string, f: File) => { setMsg(""); try { set(id, { photo: await photoFromFile(f) }); } catch (x) { setMsg((x as Error).message); } };
   const ready = useMemo(() => shown.length, [shown.length]);
   return (
     <PosterStudio
       title="🏆 Affiche de fin de championnat" subtitle={`${sub} · ${ready} équipe${ready > 1 ? "s" : ""}`} onClose={onClose}
       formats={[{ id: "A4", label: "A4", w: POSTER_W, h: POSTER_H }]} format="A4" onFormat={() => {}}
       content={<>
+        <details className="rounded-md bg-[#fff4cc] p-3 text-sm text-[#6b4e00]">
+          <summary role="note" className="cursor-pointer font-bold">⚠️ Photos d'équipes : seulement les enfants dont les parents ont donné le droit à l'image</summary>
+          <p className="m-0 mt-2">Les photos restent dans cette fenêtre : elles ne sont ni envoyées ni enregistrées, il faudra les remettre si tu fermes.</p>
+        </details>
+        {msg && <p className="m-0 text-sm font-bold text-ink" role="status">{msg}</p>}
         <Sec title="Mes équipes">
           <p className="mb-2 mt-0 text-xs text-muted">Les équipes du planning de la saison sont déjà là avec leur dernier match. Écris le score, puis le classement final. Une équipe sans classement ni score n'apparaît pas.</p>
           <div className="grid gap-2">
@@ -137,6 +155,15 @@ export function ChampionnatModal({ events, onClose }: { events: ClubEvent[]; onC
                 <div className="mt-1 flex items-center gap-2"><span className="text-xs font-bold text-muted">Houdan</span>
                   <input className={inp} inputMode="numeric" aria-label="Score de Houdan" maxLength={2} value={r.h} onChange={(e) => set(r.id, { h: e.target.value.replace(/\D/g, "") })} /><span className="font-extrabold">–</span>
                   <input className={inp} inputMode="numeric" aria-label="Score de l'adversaire" maxLength={2} value={r.a} onChange={(e) => set(r.id, { a: e.target.value.replace(/\D/g, "") })} /><span className="text-xs font-bold text-muted">Adversaire</span></div>
+                <div className="mt-2 flex items-center gap-2">
+                  {r.photo && <img src={r.photo} alt="Photo de l'équipe" className="h-12 w-16 rounded object-cover" />}
+                  <label className="cursor-pointer rounded-md border-2 border-line bg-white px-3 py-2 text-xs font-extrabold text-ink hover:border-ink">
+                    📷 {r.photo ? "Changer la photo" : "Ajouter la photo de l'équipe"}
+                    <input type="file" accept="image/*" className="sr-only" aria-label="Photo de l'équipe" onChange={(ev) => { const f = ev.target.files?.[0]; ev.target.value = ""; if (f) addPhoto(r.id, f); }} />
+                  </label>
+                  {r.photo && <button type="button" className="text-xs font-bold text-muted underline" onClick={() => set(r.id, { photo: "", focus: undefined, zoom: undefined })}>Retirer</button>}
+                </div>
+                {r.photo && <div className="mt-2"><PhotoTuner label="équipe" value={{ focus: r.focus, zoom: r.zoom }} onChange={(t) => set(r.id, t)} /></div>}
                 <div className="mt-2 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-muted">Classé</span>
                   <input className={inp} inputMode="numeric" aria-label="Place au classement" maxLength={2} value={r.rank} onChange={(e) => set(r.id, { rank: e.target.value.replace(/\D/g, "") })} /><span className="text-xs font-bold text-muted">sur</span>
                   <input className={inp} inputMode="numeric" aria-label="Nombre d'équipes dans la poule" maxLength={2} value={r.of} onChange={(e) => set(r.id, { of: e.target.value.replace(/\D/g, "") })} />
@@ -156,7 +183,7 @@ export function ChampionnatModal({ events, onClose }: { events: ClubEvent[]; onC
       </>}
       bg={bg} onBg={setBg}
       fmt={{ items: fmtItems, value: fmt, onChange: setFmt, selected: sel, onSelect: setSel }}
-      preview={({ pick }) => <ChampionnatPoster rows={rows} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} />}
+      preview={({ pick }) => <ChampionnatPoster rows={rows} title={title} sub={sub} bg={bg} fmt={fmt} onPick={pick} onPan={(id, x, y) => set(id, { focus: [x, y] })} />}
       printNode={<ChampionnatPoster rows={rows} title={title} sub={sub} bg={bg} fmt={fmt} />}
       fileBase={() => `affiche-fin-championnat-${season}`}
       save={{ kind: "local", text: "● Rien n'est enregistré : les résultats restent dans cette fenêtre" }}
