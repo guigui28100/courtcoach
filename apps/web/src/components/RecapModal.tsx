@@ -217,7 +217,7 @@ export function RecapModal({ e, events, onClose }: { e: ClubEvent; events: ClubE
     </div>
     )}
     <label className="text-sm font-bold text-ink">{lite ? "Texte de l'affiche" : "Un mot de remerciement"} <span className="font-normal text-muted">({lite ? "déroulement, remerciements…" : "facultatif"})</span>
-      <textarea aria-label="Mot de remerciement" rows={lite ? 5 : 2} maxLength={lite ? 500 : 200} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
+      <textarea aria-label="Mot de remerciement" rows={lite ? 6 : 4} maxLength={lite ? 1500 : 1000} className={`${field} mt-1`} value={d.message} onChange={(x) => set({ message: x.target.value })} /></label>
   </>);
   const poster = (extra: object = {}) => <RecapPoster e={e} format={format} data={dated} partners={withPartners ? logos : []} bg={bg} fmt={rfmt} {...extra} />;
   return (

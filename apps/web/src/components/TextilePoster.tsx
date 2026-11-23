@@ -282,7 +282,7 @@ export function TextileModal({ onClose, canPartners = true }: { onClose: () => v
         </Sec>
         <Sec title="4 · Comment commander">
           <label className="block text-sm font-bold text-ink">Comment commander ?
-            <textarea className={`${field} mt-1`} aria-label="Comment commander" rows={3} maxLength={240} value={d.how} onChange={(e) => set({ how: e.target.value })} /></label>
+            <textarea className={`${field} mt-1`} aria-label="Comment commander" rows={4} maxLength={800} value={d.how} onChange={(e) => set({ how: e.target.value })} /></label>
           <div className="mt-2 flex flex-wrap gap-2">
             {["Au club, à l'accueil", "Par e-mail à tennisclubhoudan@gmail.com", "Bon de commande à déposer au club", "Paiement à la commande"].map((s) => <button key={s} type="button" className="btn-outline btn-sm" onClick={() => set({ how: d.how.trim() ? `${d.how.trim()}\n${s}` : s })}>＋ {s}</button>)}
           </div>
