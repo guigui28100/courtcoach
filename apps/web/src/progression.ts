@@ -444,6 +444,28 @@ export const goalSessions = (g: Group, id: string) => g.sessions.map((s, i) => (
 export function linkGoals(sessions: Session[], goals: AnnualGoal[]): Session[] {
   return sessions.map((s) => { const gl = goals.filter((o) => o.theme && (s.theme === o.theme || (s.fil || "").startsWith(o.theme))).map((o) => o.id); return gl.length ? { ...s, gl } : s; });
 }
+// Un objectif choisi dans un menu (« Thème : compétence », « Niveau · Coup droit : … ») ou écrit à la main devient un objectif annuel déjà rempli
+export function goalFrom(d: Domain, text: string): AnnualGoal {
+  const t = text.trim(); const skill = (t.includes(" : ") ? t.split(" : ").slice(1).join(" : ") : t).slice(0, 120);
+  const theme = THEME_NAMES.find((n) => THEMES[n].d === d && t.includes(n));
+  return { id: newGoalId(), d, skill, theme, finding: "", expected: `${skill} : niveau « acquis » (3 sur 4) en situation de jeu`, ok: OK_DEFAULT[d], prio: 2, evalMode: "Observation en situation de jeu, bilans après les séances 10, 20 et 30" };
+}
+// Les 30 séances reprennent les objectifs validés : chaque objectif est ajouté, en tête de son domaine, aux séances de son thème ; sans thème, à trois séances réparties dans l'année
+export function applyGoals(sessions: Session[], goals: AnnualGoal[]): Session[] {
+  const out = sessions.map((s) => ({ ...s }));
+  const themed = out.map((s, i) => ({ s, i })).filter(({ s }) => s.kind === "theme" && s.theme && THEMES[s.theme]);
+  const spread = <T,>(a: T[], n: number): T[] => (a.length <= n ? a : Array.from({ length: n }, (_, k) => a[Math.round((k * (a.length - 1)) / (n - 1))]));
+  for (const o of [...goals].sort((a, b) => a.prio - b.prio)) {
+    let target = o.theme ? themed.filter(({ s }) => s.theme === o.theme).slice(0, 8) : [];
+    if (!target.length) target = spread(themed.filter(({ s }) => sessionDomain(s) === o.d), 3);
+    if (!target.length) target = spread(themed, 3);
+    for (const { i } of target) {
+      const obj = objOf(out[i]); if (!obj[o.d].includes(o.skill)) obj[o.d] = [o.skill, ...obj[o.d]].slice(0, 10);
+      out[i] = { ...withObj(out[i], obj), gl: [...(out[i].gl || []), o.id] };
+    }
+  }
+  return out;
+}
 export const sessionStatus = (s: Session): "realisee" | "prete" | "prepare" => (s.done ? "realisee" : s.ready ? "prete" : "prepare");
 export const STATUS_LABEL = { prepare: "À préparer", prete: "Prête", realisee: "Réalisée" } as const;
 // Ajustements proposés (jamais appliqués tout seuls) d'après le bilan de la dernière séance faite

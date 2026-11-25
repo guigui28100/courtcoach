@@ -1,7 +1,7 @@
 import { BaseHelp } from "../components/BaseHelp";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { get, put } from "../api";
-import { Err, Page, PageHead, TabsBar } from "../components/ui";
+import { Err, Page, PageHead } from "../components/ui";
 import { buildPages, DocChoice } from "../components/ProgressionDoc";
 import { Bilan } from "../components/ProgressionBilan";
 import { Players } from "../components/ProgressionRoll";
@@ -11,25 +11,34 @@ import { Goals } from "../components/ProgressionGoals";
 import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
-  nextSession, linkGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  nextSession, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
   BILAN_LEVELS, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
-type Tab = "groupe" | "diag" | "objectifs" | "seances" | "progres" | "imprimer";
-const TABS: [Tab, string][] = [["groupe", "👥 Groupe et appel"], ["diag", "🔎 1 · Diagnostic"], ["objectifs", "🎯 2 · Objectifs"], ["seances", "🗓️ 3 · Séances"], ["progres", "📈 4 · Progrès"], ["imprimer", "🖨️ Imprimer"]];
 const KIND: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
+
+type Step = 1 | 2 | 3 | 4 | 5;
+const STEPS: { n: Step; t: string; help: string }[] = [
+  { n: 1, t: "Groupe", help: "Les joueurs (prénoms), l'appel et les informations du groupe." },
+  { n: 2, t: "Diagnostic", help: "Note ce que le groupe sait faire. 5 minutes, et tout le reste se prépare tout seul." },
+  { n: 3, t: "Objectifs", help: "Ce que le groupe va travailler cette année : technique d'abord, puis tactique, physique, mental s'il y en a." },
+  { n: 4, t: "Séances", help: "Les 30 séances, leurs objectifs, la fiche de chaque séance et l'appel." },
+  { n: 5, t: "Suivi", help: "Les bilans aux séances 10, 20 et 30, et le cycle suivant." },
+];
+const stepDone = (g: Group, n: Step) => (n === 1 ? (g.players?.length || g.size) > 0 : n === 2 ? diagCount(g) > 0 : n === 3 ? !!g.validated : n === 4 ? g.sessions.length > 0 : Object.values(g.checks || {}).some((c) => c && Object.keys(c.scores).length > 0));
+const firstTodo = (g: Group): Step => ((([1, 2, 3, 4, 5] as Step[]).find((n) => !stepDone(g, n)) ?? 4) as Step);
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
-  const [sel, setSel] = useState(""); const [tab, setTab] = useState<Tab>("groupe");
+  const [sel, setSel] = useState(""); const [step, setStep] = useState<Step>(1);
   const [err, setErr] = useState(""); const [state, setState] = useState<"" | "saving" | "saved" | "error">("");
-  const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null);
+  const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null); const [docs, setDocs] = useState(false);
   const loaded = useRef(false); const sig = useRef("");
 
   useEffect(() => {
     get<{ groups: Group[] }>("/progressions").then((r) => {
       const gs = (r.groups || []).map((g) => ({ ...g, bilan: g.bilan || {}, players: g.players || [], appel: g.appel || {}, sessions: g.sessions || [], minutes: g.minutes || 60 }));
-      sig.current = JSON.stringify(gs); setGroups(gs); setSel(gs[0]?.id || ""); if (gs[0]?.sessions.length) setTab("seances"); loaded.current = true; if (!gs.length) setAdding(true);
+      sig.current = JSON.stringify(gs); setGroups(gs); loaded.current = true; if (!gs.length) setAdding(true);
     }).catch((e) => setErr(e.message));
   }, []);
 
@@ -46,8 +55,10 @@ export default function Progression() {
 
   const g = groups?.find((x) => x.id === sel) ?? null;
   const upd = (patch: Partial<Group>) => setGroups((gs) => gs!.map((x) => (x.id === sel ? { ...x, ...patch } : x)));
-  const create = (n: Partial<Group>) => { const pl = n.players || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, appel: {}, minutes: n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setTab("groupe"); setAdding(false); };
-  const remove = () => { setGroups((gs) => { const r = gs!.filter((x) => x.id !== sel); setSel(r[0]?.id || ""); return r; }); };
+  const open = (x: Group, n?: Step) => { setSel(x.id); setStep(n ?? firstTodo(x)); setAdding(false); setDocs(false); window.scrollTo({ top: 0 }); };
+  const go = (n: Step) => { setStep(n); setDocs(false); window.scrollTo({ top: 0 }); };
+  const create = (n: Partial<Group>) => { const pl = n.players || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, appel: {}, minutes: n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(pl.length ? 2 : 1); setAdding(false); };
+  const remove = () => { setGroups((gs) => gs!.filter((x) => x.id !== sel)); setSel(""); };
 
   const transfer = (name: string, toId: string) => setGroups((gs) => gs!.map((x) => {
     if (x.id === sel) { const pl = (x.players || []).filter((n) => n !== name); return { ...x, players: pl, size: pl.length }; }
@@ -58,67 +69,95 @@ export default function Progression() {
     if (!g) return; const last = (["30", "20", "10"] as const).map((k) => g.checks?.[k]).find((c) => c && Object.keys(c.scores).length);
     const bump = (s?: string) => (s && /\d{4}\s*[-–/]\s*\d{4}/.test(s) ? s.replace(/(\d{4})(\s*[-–/]\s*)(\d{4})/, (_m, a, m, b) => `${+a + 1}${m}${+b + 1}`) : "");
     const ng: Group = { id: newId(), name: `${g.name} (cycle suivant)`, level: g.level, size: g.players?.length || g.size, players: g.players || [], appel: {}, minutes: g.minutes, bilan: {}, notes: "", sessions: [], teacher: g.teacher, age: g.age, slot: g.slot, season: bump(g.season), diag: { ...(g.diag || {}), ...(last?.scores || {}) }, diagObs: {}, playerObs: g.playerObs || {}, goals: [], validated: false, checks: {} };
-    setGroups((gs) => [...gs!, ng]); setSel(ng.id); setTab("diag");
+    setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(2);
   };
   const doPrint = (c: DocChoice, a = 1, b = 30) => { if (g) setPrintPages(buildPages(g, c, a, b)); };
+  // Créer les 30 séances d'après les objectifs validés, puis aller directement à l'étape Séances
+  const createSessions = () => { if (!g) return; upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); go(4); };
 
   if (err && !groups) return <Page><Err msg={err} /></Page>;
   if (!groups) return <Page><div className="skeleton h-40" /></Page>;
+  const saving = state && <span role="status" className="text-xs text-muted">{state === "saving" ? "Enregistrement…" : state === "saved" ? "✔ Enregistré" : "Pas enregistré"}</span>;
 
+  // ÉCRAN 1 : mes groupes
+  if (!g || adding) {
+    return (
+      <>
+        <PageHead eyebrow="Mon travail de prof" title="Progression des séances" icon="🗓️">Choisis un groupe, puis suis les 5 étapes. Seul toi vois cette page.</PageHead>
+        <Page>
+          {err && <Err msg={err} />}
+          {adding ? <NewGroup onCreate={create} onCancel={groups.length ? () => setAdding(false) : undefined} /> : (
+            <div className="grid gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="m-0 text-xl">Mes groupes</h2><div className="flex items-center gap-3">{saving}<button type="button" className="btn-clay" onClick={() => setAdding(true)}>＋ Nouveau groupe</button></div></div>
+              <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
+                {groups.map((x) => {
+                  const n = firstTodo(x); const done = x.sessions.filter((s) => s.done).length;
+                  return (
+                    <li key={x.id} className="grid gap-3 rounded-xl border-2 border-line bg-white p-4">
+                      <div><b className="block text-lg [overflow-wrap:anywhere]">{x.name}</b><span className="text-sm text-muted">{x.level.split(" · ")[0]}{(x.players?.length || x.size) ? ` · ${x.players?.length || x.size} joueurs` : ""}</span></div>
+                      <ol className="m-0 flex list-none gap-1 p-0" aria-label="Avancement">{STEPS.map((s) => <li key={s.n} title={s.t} className={`h-2 flex-1 rounded ${stepDone(x, s.n) ? "bg-ok" : "bg-line"}`} />)}</ol>
+                      <p className="m-0 text-sm">{x.sessions.length ? `${done} séance${done > 1 ? "s" : ""} faite${done > 1 ? "s" : ""} sur ${x.sessions.length}` : `Prochaine étape : ${STEPS[n - 1].t}`}</p>
+                      <button type="button" className="btn-clay" onClick={() => open(x)}>Continuer</button>
+                    </li>);
+                })}
+              </ul>
+            </div>)}
+        </Page>
+        <PrintHost pages={printPages} onDone={() => setPrintPages(null)} />
+      </>
+    );
+  }
+
+  // ÉCRAN 2 : un groupe, 5 étapes
+  const info = STEPS[step - 1];
   return (
     <>
-      <PageHead eyebrow="Mon travail de prof" title="Progression des séances" icon="🗓️">
-        Un groupe, son diagnostic, ses objectifs de l'année, puis 30 séances, l'appel et le suivi des progrès. Tout est modifiable. Seul toi vois cette page.
-      </PageHead>
       <Page>
         {err && <Err msg={err} />}
-        <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <aside className="grid content-start gap-3">
-            <h2 className="m-0 text-lg">Mes groupes</h2>
-            <ul className="m-0 grid list-none gap-2 p-0">
-              {groups.map((x) => {
-                const done = x.sessions.filter((s) => s.done).length;
-                return (
-                  <li key={x.id}>
-                    <button type="button" aria-pressed={x.id === sel} onClick={() => { setSel(x.id); setAdding(false); }} className={`w-full rounded-xl border-2 p-3 text-left ${x.id === sel && !adding ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
-                      <b className="block">{x.name}</b>
-                      <span className={`text-xs ${x.id === sel && !adding ? "text-white/80" : "text-muted"}`}>{x.level.split(" · ")[0]}{(x.players?.length || x.size) ? ` · ${x.players?.length || x.size} joueurs` : ""}</span>
-                      <span className={`mt-1 block text-xs ${x.id === sel && !adding ? "text-white/80" : "text-muted"}`}>{x.sessions.length ? `${done} / ${x.sessions.length} séances faites` : "Programmation à créer"}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <button type="button" className="btn-outline" onClick={() => setAdding(true)}>＋ Nouveau groupe</button>
-            {groups.length > 0 && <p className="hint m-0">Un groupe = un niveau et ses joueurs. Prénoms seulement, jamais de nom de famille.</p>}
-            {state && <p role="status" className="m-0 text-xs text-muted">{state === "saving" ? "Enregistrement…" : state === "saved" ? "✔ Enregistré" : "Pas enregistré"}</p>}
-          </aside>
+        <div className="grid gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" className="btn-outline btn-sm" onClick={() => setSel("")}>← Mes groupes</button>
+            <div className="min-w-0 flex-1 text-center sm:text-left"><b className="font-serif text-xl [overflow-wrap:anywhere]">{g.name}</b> <span className="text-sm text-muted">· {g.level.split(" · ")[0]}</span></div>
+            {saving}
+          </div>
 
-          <div className="min-w-0">
-            {adding ? <NewGroup onCreate={create} onCancel={groups.length ? () => setAdding(false) : undefined} />
-              : !g ? <p className="m-0 text-muted">Crée ton premier groupe pour commencer.</p>
-              : (
-                <div className="grid gap-4">
-                  <GroupHead g={g} upd={upd} onDelete={remove} />
-                  <TabsBar tabs={TABS} active={tab} onChange={(k) => setTab(k as Tab)} label="Étapes du groupe" side={false} />
-                  {tab === "groupe" && (
-                    <Players g={g} upd={upd} others={groups.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name }))} onTransfer={transfer} />
-                  )}
-                  {tab === "diag" && (
-                    <div className="grid gap-5">
-                      <Diag g={g} upd={upd} next={() => setTab("objectifs")} />
-                      <details className="rounded-xl border border-line bg-white p-4">
-                        <summary className="cursor-pointer font-bold">Facultatif : décrire le groupe par un texte libre, l'outil repère les thèmes</summary>
-                        <div className="mt-4"><Bilan g={g} upd={upd} next={() => setTab("objectifs")} /></div>
-                      </details>
-                    </div>
-                  )}
-                  {tab === "objectifs" && <Goals g={g} upd={upd} next={() => setTab("seances")} />}
-                  {tab === "seances" && <Programme g={g} upd={upd} onPrint={doPrint} toGoals={() => setTab("objectifs")} />}
-                  {tab === "progres" && <Eval g={g} upd={upd} onNextCycle={nextCycle} />}
-                  {tab === "imprimer" && <Docs g={g} onPrint={doPrint} />}
-                </div>
-              )}
+          <nav aria-label="Les 5 étapes">
+            <ol className="m-0 grid list-none grid-cols-5 gap-1 p-0">
+              {STEPS.map((s) => { const cur = s.n === step, ok = stepDone(g, s.n); return (
+                <li key={s.n}><button type="button" aria-current={cur ? "step" : undefined} onClick={() => go(s.n)} className={`grid w-full justify-items-center gap-1 rounded-lg border-2 px-1 py-2 text-center ${cur ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>
+                  <span className={`grid size-7 place-items-center rounded-full text-sm font-bold ${cur ? "bg-white text-ink" : ok ? "bg-ok text-white" : "bg-line text-ink"}`}>{ok && !cur ? "✔" : s.n}</span>
+                  <span className="text-xs font-bold sm:text-sm">{s.t}</span></button></li>); })}
+            </ol>
+          </nav>
+
+          <div className="rounded-lg border-l-4 border-champagne bg-paper p-3"><b>Étape {step} sur 5 : {info.t}.</b> <span className="text-muted">{info.help}</span></div>
+
+          {step === 1 && (
+            <div className="grid gap-4">
+              <Players g={g} upd={upd} others={groups.filter((x) => x.id !== g.id).map((x) => ({ id: x.id, name: x.name }))} onTransfer={transfer} />
+              <details className="rounded-xl border border-line bg-white p-4"><summary className="cursor-pointer font-bold">Informations du groupe (niveau, durée, horaire…)</summary><div className="mt-3"><GroupHead g={g} upd={upd} onDelete={remove} /></div></details>
+            </div>)}
+          {step === 2 && (
+            <div className="grid gap-5">
+              <Diag g={g} upd={upd} next={() => go(3)} />
+              <details className="rounded-xl border border-line bg-white p-4">
+                <summary className="cursor-pointer font-bold">Facultatif : décrire le groupe par un texte libre</summary>
+                <div className="mt-4"><Bilan g={g} upd={upd} next={() => go(3)} /></div>
+              </details>
+            </div>)}
+          {step === 3 && <Goals g={g} upd={upd} create={createSessions} />}
+          {step === 4 && (
+            <div className="grid gap-4">
+              <Programme g={g} upd={upd} onPrint={doPrint} toGoals={() => go(3)} />
+              {g.sessions.length > 0 && <div><button type="button" className="btn-outline" aria-expanded={docs} onClick={() => setDocs(!docs)}>🖨️ Documents à imprimer</button></div>}
+              {docs && <Docs g={g} onPrint={doPrint} />}
+            </div>)}
+          {step === 5 && <Eval g={g} upd={upd} onNextCycle={nextCycle} />}
+
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+            {step > 1 ? <button type="button" className="btn-outline" onClick={() => go((step - 1) as Step)}>← {STEPS[step - 2].t}</button> : <span />}
+            {step < 5 && step !== 3 && <button type="button" className="btn-clay" onClick={() => go((step + 1) as Step)}>Étape suivante : {STEPS[step].t} →</button>}
+            {step === 3 && !g.validated && <button type="button" className="btn-outline" onClick={() => go(4)}>Passer cette étape →</button>}
           </div>
         </div>
       </Page>
@@ -181,7 +220,7 @@ function Programme({ g, upd, onPrint, toGoals }: { g: Group; upd: (p: Partial<Gr
   const [ask, setAsk] = useState(false); const [sheet, setSheet] = useState<number | null>(null); const [prep, setPrep] = useState(false);
   const L = levelDef(g.level); const S = g.sessions;
   const setS = (i: number, p: Partial<Session>) => upd({ sessions: S.map((s, k) => (k === i ? { ...s, ...p } : s)) });
-  const gen = () => { upd({ sessions: linkGoals(generate(withDiag(g)), g.goals || []) }); setAsk(false); setSheet(null); };
+  const gen = () => { upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); setAsk(false); setSheet(null); };
   const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= S.length) return; const c = S.slice(); [c[i], c[j]] = [c[j], c[i]]; upd({ sessions: c }); setSheet(j); };
   const changeTheme = (i: number, theme: string) => { const s = S[i]; const fil = s.fil.split(" : ")[0]; setS(i, { ...sessionFor(g, theme, phaseOf(i), fil), done: s.done, note: s.note, blocks: s.blocks, mat: s.mat, date: s.date, ready: s.ready, after: s.after, gl: s.gl }); };
   const done = S.filter((s) => s.done).length;
@@ -251,7 +290,7 @@ function Programme({ g, upd, onPrint, toGoals }: { g: Group; upd: (p: Partial<Gr
                 <button key={i} type="button" onClick={() => setSheet(i)} className={`grid gap-1.5 rounded-xl border bg-white p-3 text-left transition hover:shadow-md ${i === nx && !allDone ? "ring-2 ring-clay" : "border-line"}`} style={{ borderLeft: `5px solid ${dom?.color ?? "#a8884a"}` }}>
                   <span className="flex flex-wrap items-center gap-2"><b className="font-serif text-xl">{i + 1}</b><b className="min-w-0 flex-1 [overflow-wrap:anywhere]">{s.title || s.theme || KIND[s.kind]}</b>
                     <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: st === "realisee" ? "#2c9a5b" : st === "prete" ? "#2a6f97" : "#935500" }}>{STATUS_LABEL[st]}</span></span>
-                  <span className="grid gap-0.5 text-xs">{DOMAINS.map((d) => <span key={d.key} className="flex gap-1"><b className="w-16 shrink-0" style={{ color: d.color }}>{d.label}</b><span className="min-w-0 text-muted [overflow-wrap:anywhere]">{o[d.key].length ? o[d.key].slice(0, 2).join(" · ") : "—"}</span></span>)}</span>
+                  <span className="grid gap-0.5 text-xs">{objCount(o) ? DOMAINS.filter((d) => o[d.key].length).map((d) => <span key={d.key} className="flex gap-1"><b className="w-16 shrink-0" style={{ color: d.color }}>{d.label}</b><span className="min-w-0 text-muted [overflow-wrap:anywhere]">{o[d.key].slice(0, d.key === "tech" ? 3 : 2).join(" · ")}</span></span>) : <span className="text-muted">Objectifs à choisir</span>}{s.gl?.length ? <span className="font-bold text-ok">🎯 {s.gl.length} objectif{s.gl.length > 1 ? "s" : ""} de l'année</span> : null}</span>
                 </button>
               );
             })}
