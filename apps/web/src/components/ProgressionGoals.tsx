@@ -51,11 +51,11 @@ export function Goals({ g, upd, create }: { g: Group; upd: (p: Partial<Group>) =
       <div className="grid gap-3 rounded-xl border-2 border-ink bg-white p-4">
         {g.validated ? <p className="m-0 font-bold text-ok">✔ Objectifs validés ({goals.length}).</p>
           : <p className="m-0 text-sm text-muted">{goals.length ? `${goals.length} objectif${goals.length > 1 ? "s" : ""}${nTech ? "" : " (aucun en technique)"} : vérifie, puis valide.` : "Ajoute au moins un objectif (menu ci-dessus)."}</p>}
-        {g.sessions.length > 0 && <p className="hint m-0">Des séances existent déjà : « Créer les 30 séances » les remplace par une nouvelle proposition.</p>}
+        {g.sessions.length > 0 && <p className="hint m-0">Des séances existent déjà : « Proposer la programmation » les remplace par une nouvelle proposition.</p>}
         <div className="flex flex-wrap gap-3">
           {!g.validated
             ? <button type="button" className="btn-clay" disabled={!goals.length || bad} onClick={() => upd({ validated: true })}>✔ Valider les objectifs</button>
-            : <><button type="button" className="btn-clay" onClick={create}>Créer les 30 séances d'après ces objectifs →</button><button type="button" className="btn-outline" onClick={() => upd({ validated: false })}>Modifier les objectifs</button></>}
+            : <><button type="button" className="btn-clay" onClick={create}>Proposer la programmation d'après ces objectifs →</button><button type="button" className="btn-outline" onClick={() => upd({ validated: false })}>Modifier les objectifs</button></>}
         </div>
         {bad && !g.validated && <p className="hint m-0">Chaque objectif doit avoir un texte.</p>}
       </div>

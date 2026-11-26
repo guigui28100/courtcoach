@@ -1,7 +1,7 @@
 import { BaseHelp } from "./BaseHelp";
 import { createPortal } from "react-dom";
 import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BILAN_LEVELS, DOMAINS, Group, KIND_LABEL, levelDef, nextSession, objCount, objOf, RATINGS, parseSkills, PHASES, phaseOf, Session, sessionColor, sessionDomain, THEMES } from "../progression";
+import { BILAN_LEVELS, DOMAINS, Group, KIND_LABEL, levelDef, nextSession, objCount, objOf, RATINGS, parseSkills, PHASES, phaseOf, phaseRange, Session, sessionColor, sessionDomain, THEMES } from "../progression";
 import { buildPages, DOC_H, DOC_W, DocChoice } from "./ProgressionDoc";
 
 // Impression : les pages A4 sont posées dans un bloc caché à l'écran, seul visible à l'impression (même mécanisme que les affiches)
@@ -55,7 +55,7 @@ export function Reader({ g, i, onClose, onGo, onDone, onPrint, onUpdate }: { g: 
       <div className="grid max-h-full w-full max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-[#fbf8f1] text-ink shadow-2xl sm:rounded-2xl">
         <div className="flex items-center gap-1 px-4 pt-4" aria-hidden="true">{g.sessions.map((x, k) => <i key={k} className="flex-1" style={{ height: k === i ? 12 : 6, background: k === i ? col : x.done ? "#16140f" : "#e2dbc9" }} />)}</div>
         <div className="overflow-y-auto px-5 pb-4 pt-4 sm:px-8">
-          <div className="flex items-end gap-4"><span className="font-serif font-bold leading-[.8]" style={{ fontSize: 96, color: col }}>{i + 1}</span><div className="pb-1"><p className="m-0 text-xs font-extrabold uppercase tracking-[.2em]" style={{ color: col }}>Séance {i + 1} sur {g.sessions.length}</p><p className="m-0 text-sm text-muted">{PHASES[phaseOf(i)]} · {labelOf(s)}</p></div></div>
+          <div className="flex items-end gap-4"><span className="font-serif font-bold leading-[.8]" style={{ fontSize: 96, color: col }}>{i + 1}</span><div className="pb-1"><p className="m-0 text-xs font-extrabold uppercase tracking-[.2em]" style={{ color: col }}>Séance {i + 1} sur {g.sessions.length}</p><p className="m-0 text-sm text-muted">{PHASES[phaseOf(i, g.sessions.length)]} · {labelOf(s)}</p></div></div>
           <h2 className="m-0 mt-4 font-serif text-3xl font-bold leading-tight sm:text-4xl [overflow-wrap:anywhere]">{s.title}</h2>
           <div className="my-3 h-1 w-20" style={{ background: col }} />
           {s.why && <p className="m-0 font-serif text-lg italic text-muted">Pourquoi cette séance : {s.why}.</p>}
@@ -87,12 +87,12 @@ export function Consult({ g, onDone, onUpdate, onPrint, onEdit }: { g: Group; on
   const shown = (s: Session) => (dom === "all" || sessionDomain(s) === dom || (dom === "match" && !s.theme)) && (st === "all" || (st === "done") === s.done);
   const count: Record<string, number> = {}; S.forEach((s) => { if (s.theme) count[s.theme] = (count[s.theme] || 0) + 1; });
   const byDom = DOMAINS.map((d) => ({ d, n: S.filter((s) => sessionDomain(s) === d.key).length })), tot = Math.max(1, byDom.reduce((a, x) => a + x.n, 0));
-  const phasePct = [0, 1, 2].map((p) => { const a = S.filter((_, i) => phaseOf(i) === p); return a.length ? Math.round((a.filter((s) => s.done).length / a.length) * 100) : 0; });
+  const phasePct = [0, 1, 2].map((p) => { const a = S.filter((_, i) => phaseOf(i, S.length) === p); return a.length ? Math.round((a.filter((s) => s.done).length / a.length) * 100) : 0; });
   return (
     <section className="grid gap-5">
       <article className="grid gap-5 overflow-hidden rounded-2xl p-5 text-white sm:grid-cols-[minmax(0,1fr)_auto] sm:p-7" style={{ background: "linear-gradient(135deg,#16140f 0%,#26231c 60%,#3a3220 100%)", borderTop: `6px solid ${col}` }}>
         <div className="min-w-0">
-          <p className="m-0 text-xs font-extrabold uppercase tracking-[.22em] text-[#d8c18a]">{allDone ? "Saison terminée" : `Ta prochaine séance · ${PHASES[phaseOf(nx)]}`}</p>
+          <p className="m-0 text-xs font-extrabold uppercase tracking-[.22em] text-[#d8c18a]">{allDone ? "Saison terminée" : `Ta prochaine séance · ${PHASES[phaseOf(nx, S.length)]}`}</p>
           <div className="mt-2 flex items-end gap-4"><span className="font-serif font-bold leading-[.8]" style={{ fontSize: 88, color: col === "#a8884a" ? "#d8c18a" : col }}>{nx + 1}</span><span className="pb-1 text-sm text-white/70">séance {nx + 1} sur {S.length} · {labelOf(cur)}</span></div>
           <h2 className="m-0 mt-3 font-serif text-3xl font-bold leading-tight text-white [overflow-wrap:anywhere]">{cur.title}</h2>
           <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">{parseSkills(cur.skills).slice(0, 4).map((c) => <li key={c} className="rounded-full border border-white/25 px-3 py-1 text-sm text-white/90">{c}</li>)}</ul>
@@ -114,11 +114,11 @@ export function Consult({ g, onDone, onUpdate, onPrint, onEdit }: { g: Group; on
       </div>
 
       {PHASES.map((ph, p) => {
-        const items = S.map((s, i) => ({ s, i })).filter(({ s, i }) => phaseOf(i) === p && shown(s));
+        const items = S.map((s, i) => ({ s, i })).filter(({ s, i }) => phaseOf(i, S.length) === p && shown(s));
         if (!items.length) return null;
         return (
           <div key={ph} className="grid gap-3">
-            <h3 className="m-0 flex items-baseline justify-between bg-ink px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white"><span>{ph}</span><span className="text-white/60">séances {p * 10 + 1} à {p * 10 + 10}</span></h3>
+            <h3 className="m-0 flex items-baseline justify-between bg-ink px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white"><span>{ph}</span><span className="text-white/60">séances {phaseRange(p, S.length)[0] + 1} à {phaseRange(p, S.length)[1]}</span></h3>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {items.map(({ s, i }) => (
                 <button key={i} type="button" onClick={() => setRead(i)} className={`grid gap-1.5 border border-line bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${s.done ? "opacity-70" : ""} ${i === nx && !allDone ? "ring-2 ring-clay" : ""}`} style={{ borderTop: `5px solid ${colorOf(s)}` }}>
@@ -153,7 +153,7 @@ export function Docs({ g, onPrint }: { g: Group; onPrint: (c: DocChoice, a?: num
   useEffect(() => { if (n >= pages.length) setN(Math.max(0, pages.length - 1)); }, [pages.length, n]);
   if (!g.sessions.length) return <p className="m-0 text-muted">Crée d'abord la programmation (étape 2).</p>;
   const sc = w / DOC_W;
-  const OPT: [DocChoice, string, string][] = [["plan", "La programmation des 30 séances", "3 pages : pour chaque séance, le thème et les objectifs (technique, tactique, physique, mental). Sans exercices."], ["tout", "Le dossier complet", `${3 + g.sessions.length} pages : couverture, bilan, vue d'ensemble et une fiche par séance`], ["programme", "Le programme seulement", "3 pages : couverture, bilan, vue d'ensemble"], ["fiches", "Toutes les fiches de séance", `${g.sessions.length} pages, une par séance`], ["plage", "Quelques séances", "De la séance … à la séance …"]];
+  const OPT: [DocChoice, string, string][] = [["plan", "La programmation des séances", "Pour chaque séance, le thème et les objectifs (technique, tactique, physique, mental). Sans exercices."], ["tout", "Le dossier complet", `${3 + g.sessions.length} pages : couverture, bilan, vue d'ensemble et une fiche par séance`], ["programme", "Le programme seulement", "3 pages : couverture, bilan, vue d'ensemble"], ["fiches", "Toutes les fiches de séance", `${g.sessions.length} pages, une par séance`], ["plage", "Quelques séances", "De la séance … à la séance …"]];
   return (
     <section className="grid gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
       <div className="grid content-start gap-3">
