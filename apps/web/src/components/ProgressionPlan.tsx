@@ -1,8 +1,23 @@
 import { useState } from "react";
-import { Group, levelDef, phaseRange, PHASES, sessionFor, THEMES, LevelDef, Session, sessionCount, sessionColor, domainOf, sessionDomain, KIND_LABEL } from "../progression";
+import { adaptSuggestions, Group, levelDef, phaseRange, PHASES, sessionFor, THEMES, LevelDef, Session, sessionCount, sessionColor, domainOf, sessionDomain, KIND_LABEL } from "../progression";
 import { planSummary } from "./ProgressionSchedule";
 
 const OTHER = "__autre";
+
+// La programmation s'adapte : suggestions d'après ce qui est atteint ou non (jamais appliquées toutes seules)
+export function AdaptBanner({ g, upd }: { g: Group; upd: (p: Partial<Group>) => void }) {
+  const [skip, setSkip] = useState<string[]>([]);
+  const sug = adaptSuggestions(g).filter((x) => !skip.includes(x.text));
+  if (!sug.length) return null;
+  return (
+    <div className="grid gap-2" role="status">
+      {sug.map((x) => (
+        <div key={x.id} className="grid gap-2 rounded-xl border-2 border-champagne bg-paper p-4">
+          <b>Adapter la suite ?</b><p className="m-0 text-sm">{x.text}</p>
+          <div className="flex flex-wrap gap-2"><button type="button" className="btn-clay btn-sm" onClick={() => upd({ sessions: x.sessions })}>Oui, adapter</button><button type="button" className="btn-outline btn-sm" onClick={() => setSkip([...skip, x.text])}>Non, garder la programmation</button></div>
+        </div>))}
+    </div>);
+}
 
 // Étape 4 : la programmation = seulement le thème de chaque séance (menu déroulant, ou écrit à la main)
 export function Plan({ g, upd, create, next }: { g: Group; upd: (p: Partial<Group>) => void; create: () => void; next: () => void }) {
@@ -20,7 +35,8 @@ export function Plan({ g, upd, create, next }: { g: Group; upd: (p: Partial<Grou
     </section>);
   return (
     <section className="grid gap-4">
-      <p className="m-0 text-sm text-muted">{planSummary(g)}. Pour chaque séance, change le thème avec le menu ou écris le tien. Les objectifs détaillés se règlent à l'étape suivante.</p>
+      <p className="m-0 text-sm text-muted">{planSummary(g)}. Un thème dure plusieurs séances de suite sur le même objectif : on répète pour progresser. Pour chaque séance, change le thème avec le menu ou écris le tien. Les objectifs détaillés se règlent à l'étape suivante.</p>
+      <AdaptBanner g={g} upd={upd} />
       {PHASES.map((ph, p) => { const [a, b] = phaseRange(p, n); return (
         <details key={ph} open={p === 0} className="rounded-xl border border-line bg-white">
           <summary className="cursor-pointer rounded-xl bg-ink px-3 py-2 font-bold text-white">{ph} · séances {a + 1} à {b}</summary>

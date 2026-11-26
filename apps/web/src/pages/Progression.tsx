@@ -9,7 +9,7 @@ import { Docs, PrintHost } from "../components/ProgressionViews";
 import { Diag } from "../components/ProgressionDiag";
 import { Goals } from "../components/ProgressionGoals";
 import { Schedule } from "../components/ProgressionSchedule";
-import { Plan } from "../components/ProgressionPlan";
+import { Plan, AdaptBanner } from "../components/ProgressionPlan";
 import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
@@ -259,6 +259,7 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Remplacer les séances par une nouvelle proposition ?</b><button type="button" className="btn-ink btn-sm" onClick={gen}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>
           : g.validated ? <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>↻ Proposer à nouveau d'après mes objectifs</button> : null}
       </div>
+      <AdaptBanner g={g} upd={upd} />
       {prep ? <Prepare g={g} s={cur} i={nx} L={L} setS={setS} changeTheme={changeTheme} onClose={() => setPrep(false)} /> : (
         <article className="grid gap-3 rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg,#16140f 0%,#26231c 60%,#3a3220 100%)", borderTop: `6px solid ${col}` }}>
           <p className="m-0 text-xs font-extrabold uppercase tracking-[.2em] text-[#d8c18a]">{allDone ? "Saison terminée" : "Ta prochaine séance"}</p>
