@@ -53,7 +53,10 @@ const roll = (v: unknown, names: string[]) => {
   return out;
 };
 export const MAX_GROUPS = 12;
-export const MAX_SESSIONS = 40;
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const WD = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const days = (v: any): { d: string; from: string; to: string }[] => (Array.isArray(v) ? v : []).filter((x) => x && WD.includes(x.d) && HHMM.test(x.from) && HHMM.test(x.to) && x.from < x.to).slice(0, 3).map((x) => ({ d: x.d, from: x.from, to: x.to })).filter((x, i, a) => a.findIndex((y) => y.d === x.d) === i);
+export const MAX_SESSIONS = 100;
 
 export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new BadRequestException("Progression invalide.");
@@ -74,7 +77,7 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
       appel: roll(o.appel, names), // { "2026-11-19": { "Léa": "p" | "a" | "e" } } : les 80 dernières séances
       minutes: int(o.minutes, 20, 180, 60),
       bilan: bilan(o.bilan), // niveau de chaque thème au départ : 0 non maîtrisé · 1 en cours · 2 en maîtrise · 3 point fort
-      ...(str(o.teacher, 60) ? { teacher: str(o.teacher, 60) } : {}), ...(str(o.age, 40) ? { age: str(o.age, 40) } : {}), ...(str(o.slot, 60) ? { slot: str(o.slot, 60) } : {}), ...(str(o.season, 20) ? { season: str(o.season, 20) } : {}),
+      ...(str(o.teacher, 60) ? { teacher: str(o.teacher, 60) } : {}), ...(str(o.age, 40) ? { age: str(o.age, 40) } : {}), ...(str(o.slot, 160) ? { slot: str(o.slot, 160) } : {}), ...(days(o.days).length ? { days: days(o.days) } : {}), ...(str(o.season, 20) ? { season: str(o.season, 20) } : {}),
       diag: diag(o.diag), diagObs: textMap(o.diagObs, DOMS, 900, 4), playerObs: textMap(o.playerObs, names, 600, 40), // observations par joueur : les clés doivent être des prénoms du groupe
       goals: goals(o.goals), validated: o.validated === true, checks: checks(o.checks, goals(o.goals).map((x) => x.id)),
       notes: str(o.notes, 2000), // « ce qui n'est pas acquis » : du texte libre, SANS nom d'élève (les prénoms vont dans la liste des joueurs)
@@ -85,7 +88,7 @@ export function sanitizeProgression(raw: unknown): { groups: unknown[] } {
     };
   });
   const value = { groups: out };
-  if (JSON.stringify(value).length > 400_000) throw new BadRequestException("Progression trop grosse.");
+  if (JSON.stringify(value).length > 900_000) throw new BadRequestException("Progression trop grosse.");
   return value;
 }
 

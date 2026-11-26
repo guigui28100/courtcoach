@@ -91,6 +91,12 @@ describe("Progression des séances (privée au prof)", () => {
     expect(s.blocks[0].goal).toBe("g"); expect(s.blocks[0].vigil).toBe("w"); expect(s.blocks[0].evil).toBeUndefined();
   });
 
+  it("les jours du cours sont nettoyés (3 au plus, heures valides)", async () => {
+    const g = { ...doc().groups[0], days: [{ d: "Mardi", from: "17:00", to: "18:00", x: 1 }, { d: "Mardi", from: "18:00", to: "19:00" }, { d: "Funday", from: "17:00", to: "18:00" }, { d: "Jeudi", from: "18:00", to: "17:00" }, { d: "Samedi", from: "10:00", to: "11:30" }] };
+    const o = (await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: { groups: [g] } }).expect(200)).body.groups[0];
+    expect(o.days).toEqual([{ d: "Mardi", from: "17:00", to: "18:00" }, { d: "Samedi", from: "10:00", to: "11:30" }]);
+  });
+
   it("supprimer sa progression l'efface", async () => {
     await A.prof1.put("/api/progressions").set(ORIGIN).send({ data: doc() }).expect(200);
     await A.prof1.delete("/api/progressions").set(ORIGIN).expect(204);

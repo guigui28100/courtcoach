@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { ClubLogo } from "./ui";
 import { baseOfObjective } from "../techBase";
-import { BILAN_LEVELS, bilanByDomain, DOMAINS, Group, KIND_LABEL, levelDef, objCount, objOf, parseSkills, PHASES, phaseOf, seasonLabel, Session, sessionColor, sessionDomain, THEMES } from "../progression";
+import { BILAN_LEVELS, bilanByDomain, DOMAINS, Group, KIND_LABEL, levelDef, objCount, objOf, parseSkills, PHASES, phaseOf, phaseRange, seasonLabel, Session, sessionColor, sessionDomain, THEMES } from "../progression";
 
 // Documents A4 du prof : couverture, bilan, vue d'ensemble, puis UNE FICHE PAR SÉANCE. Dessinés ici (aucune image ni police extérieure), imprimables ou enregistrables en PDF.
 export const DOC_W = 794, DOC_H = 1123;
@@ -122,9 +122,9 @@ export function OverviewPage({ g, n }: { g: Group; n: number }) {
         <div style={{ display: "flex", gap: 16, fontSize: 12, marginBottom: 18 }}>{DOMAINS.map((d) => <span key={d.key}><i style={{ display: "inline-block", width: 10, height: 10, background: d.color, marginRight: 5 }} />{d.label} · {S.filter((s) => sessionDomain(s) === d.key).length}</span>)}</div>
         {PHASES.map((ph, p) => (
           <div key={ph} style={{ marginBottom: 16 }}>
-            <div style={{ background: INK, color: "#f1ece0", padding: "5px 12px", fontSize: 11, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>{ph} · séances {p * 10 + 1} à {p * 10 + 10}</div>
+            <div style={{ background: INK, color: "#f1ece0", padding: "5px 12px", fontSize: 11, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>{ph} · séances {phaseRange(p, S.length)[0] + 1} à {phaseRange(p, S.length)[1]}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
-              {S.slice(p * 10, p * 10 + 10).map((s, k) => { const i = p * 10 + k; return (
+              {S.slice(phaseRange(p, S.length)[0], phaseRange(p, S.length)[1]).map((s, k) => { const i = phaseRange(p, S.length)[0] + k; return (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "28px 12px 1fr 16px", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: `1px solid ${LINE}`, fontSize: 13.5 }}>
                   <b style={{ fontFamily: SERIF, fontSize: 20 }}>{i + 1}</b><i style={{ width: 10, height: 10, background: sessionColor(s) }} />
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.theme || s.title}</span>
@@ -140,7 +140,7 @@ export function OverviewPage({ g, n }: { g: Group; n: number }) {
 
 // UNE page par séance : numéro, phase, titre, pourquoi, compétences à cocher, fil rouge, cadre, notes
 export function SessionPage({ g, i, n }: { g: Group; i: number; n: number }) {
-  const s: Session = g.sessions[i], L = levelDef(g.level), col = sessionColor(s), dom = sessionDomain(s), ph = phaseOf(i);
+  const s: Session = g.sessions[i], L = levelDef(g.level), col = sessionColor(s), dom = sessionDomain(s), ph = phaseOf(i, g.sessions.length);
   const skills = parseSkills(s.skills);
   return (
     <Frame group={g} n={n}>
@@ -178,16 +178,16 @@ export function SessionPage({ g, i, n }: { g: Group; i: number; n: number }) {
 
 // Programmation claire : une page par temps (10 séances), seulement le thème et les objectifs par domaine. Pas d'exercices.
 export function PlanPage({ g, p, n }: { g: Group; p: number; n: number }) {
-  const S = g.sessions.slice(p * 10, p * 10 + 10), L = levelDef(g.level);
+  const [pa, pb] = phaseRange(p, g.sessions.length); const S = g.sessions.slice(pa, pb), L = levelDef(g.level);
   const objs = (s: Session) => { const o = objOf(s); return objCount(o) ? o : null; };
   return (
     <Frame group={g} n={n}>
       <div style={{ padding: "34px 40px 70px" }}>
         <Eyebrow>Programmation {seasonLabel()} · {g.name} · {L.key}</Eyebrow>
-        <div style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 700, lineHeight: 1.05, marginTop: 4 }}>{PHASES[p]} <span style={{ fontSize: 20, color: MUT, fontWeight: 400 }}>· séances {p * 10 + 1} à {p * 10 + 10}</span></div>
+        <div style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 700, lineHeight: 1.05, marginTop: 4 }}>{PHASES[p]} <span style={{ fontSize: 20, color: MUT, fontWeight: 400 }}>· séances {pa + 1} à {pb}</span></div>
         <div style={{ display: "flex", gap: 14, fontSize: 11, margin: "8px 0 10px" }}>{DOMAINS.map((d) => <span key={d.key}><i style={{ display: "inline-block", width: 10, height: 10, background: d.color, marginRight: 5 }} />{d.label}</span>)}</div>
         <div style={{ display: "grid", gap: 0 }}>
-          {S.map((s, k) => { const i = p * 10 + k, o = objs(s), col = sessionColor(s); return (
+          {S.map((s, k) => { const i = pa + k, o = objs(s), col = sessionColor(s); return (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "46px 150px 1fr", gap: 12, padding: "7px 0", borderTop: `1px solid ${LINE}`, minHeight: 84, alignItems: "start" }}>
               <b style={{ fontFamily: SERIF, fontSize: 34, lineHeight: 1, color: col }}>{i + 1}</b>
               <div><div style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.2 }}>{s.theme || s.title}</div><div style={{ fontSize: 11, color: MUT, marginTop: 2 }}>{s.theme ? s.fil.split(" : ")[0] : KIND_LABEL[s.kind]}</div></div>
@@ -205,7 +205,7 @@ export type DocChoice = "plan" | "tout" | "programme" | "fiches" | "une" | "plag
 export function buildPages(g: Group, choice: DocChoice, from = 1, to = 30): ReactNode[] {
   const S = g.sessions, sheets = (a: number, b: number, start: number) => { const out: ReactNode[] = []; for (let i = Math.max(0, a); i <= Math.min(S.length - 1, b); i++) out.push(<SessionPage key={"s" + i} g={g} i={i} n={start + out.length} />); return out; };
   const intro = [<CoverPage key="c" g={g} />, <BilanPage key="b" g={g} n={2} />, <OverviewPage key="o" g={g} n={3} />];
-  if (choice === "plan") return [0, 1, 2].filter((p) => p * 10 < S.length).map((p) => <PlanPage key={"p" + p} g={g} p={p} n={p + 1} />);
+  if (choice === "plan") return [0, 1, 2].filter((p) => phaseRange(p, S.length)[0] < S.length).map((p) => <PlanPage key={"p" + p} g={g} p={p} n={p + 1} />);
   if (choice === "tout") return [...intro, ...sheets(0, S.length - 1, 4)];
   if (choice === "programme") return intro;
   if (choice === "fiches") return sheets(0, S.length - 1, 1);

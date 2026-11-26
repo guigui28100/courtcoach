@@ -207,12 +207,23 @@ export type After = { reach?: Partial<Record<Domain, Reach>>; hard?: string; win
 export type Session = { kind: "bilan" | "etape" | "jeu" | "theme"; theme: string; title: string; skills: string; fil: string; why: string; note: string; done: boolean; obj?: Objectives; blocks?: Block[]; mat?: string; rating?: 1 | 2 | 3; redo?: boolean; date?: string; ready?: boolean; gl?: string[]; after?: After };
 export type Attend = "p" | "a" | "r" | "e"; // présent · absent · en retard · excusé
 export type Group = { id: string; name: string; level: string; size: number; minutes: number; players?: string[]; appel?: Record<string, Record<string, Attend>>; bilan: Record<string, number>; notes: string; sessions: Session[];
-  teacher?: string; age?: string; slot?: string; season?: string; diag?: Record<string, number>; diagObs?: Partial<Record<Domain, string>>; playerObs?: Record<string, string>; goals?: AnnualGoal[]; validated?: boolean; checks?: Record<string, Check> };
+  teacher?: string; age?: string; slot?: string; days?: CourseDay[]; season?: string; diag?: Record<string, number>; diagObs?: Partial<Record<Domain, string>>; playerObs?: Record<string, string>; goals?: AnnualGoal[]; validated?: boolean; checks?: Record<string, Check> };
+export type CourseDay = { d: string; from: string; to: string };
+export const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+export const WEEKS = 30;
+export const fmtHour = (t: string) => { const [h, m] = t.split(":"); return `${+h} h${m && m !== "00" ? " " + m : ""}`; };
+export const minutesBetween = (from: string, to: string) => { const f = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; }; const d = f(to) - f(from); return d > 0 ? d : 0; };
+// Jours du cours : 1, 2 ou 3 séances par semaine ; la programmation compte 30 semaines
+export const perWeek = (g: Group) => Math.max(1, Math.min(3, g.days?.length || 1));
+export const sessionCount = (g: Group) => WEEKS * perWeek(g);
+export const slotLabel = (g: Group) => (g.days?.length ? g.days.map((x) => `${x.d} ${fmtHour(x.from)} – ${fmtHour(x.to)}`).join(" · ") : g.slot || "");
+export const fmtDuration = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h${min % 60 ? " " + String(min % 60).padStart(2, "0") : ""}` : `${min} min`);
 export type AnnualGoal = { id: string; d: Domain; skill: string; finding: string; expected: string; ok: string; prio: 1 | 2 | 3; evalMode: string; theme?: string };
 export type Mark = "acquis" | "cours" | "non";
 export type Check = { text: string; marks: Record<string, Mark>; scores: Record<string, number> };
 export const PHASES = ["Les bases", "La consolidation", "La mise en jeu"] as const;
-export const phaseOf = (i: number) => (i < 10 ? 0 : i < 20 ? 1 : 2);
+export const phaseOf = (i: number, n = 30) => (i < n / 3 ? 0 : i < (2 * n) / 3 ? 1 : 2);
+export const phaseRange = (p: number, n: number): [number, number] => [Math.round((p * n) / 3), Math.round(((p + 1) * n) / 3)];
 export const newId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -273,47 +284,53 @@ export function whyOf(g: Group, theme: string): string {
   return parts.length ? parts.join(" · ") : "complète la progression";
 }
 
-export function sessionFor(g: Group, theme: string, phase: number, fil: string): Session {
+export function sessionFor(g: Group, theme: string, phase: number, fil: string, occ = 0): Session {
   const th = THEMES[theme], fr = THEMES[fil];
-  const skills = th.s[phase].map((x) => "• " + x).join("\n");
+  const comps = th.s[phase], k = occ % comps.length;
+  const ordered = [...comps.slice(k), ...comps.slice(0, k)];
+  const skills = ordered.map((x) => "• " + x).join("\n");
   const obj: Objectives = { tech: [], tact: [], phys: [], ment: [] };
-  obj[th.d] = th.s[phase].slice();
-  if (fr && fr.d !== th.d) obj[fr.d] = [fr.s[phase][0]];
-  return { kind: "theme", theme, title: `${theme} : ${th.s[phase][0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][0]}` : fil, why: whyOf(g, theme), note: "", done: false, obj };
+  obj[th.d] = ordered.slice();
+  if (fr && fr.d !== th.d) obj[fr.d] = [fr.s[phase][occ % fr.s[phase].length]];
+  return { kind: "theme", theme, title: `${theme} : ${ordered[0]}`, skills, fil: fr ? `${fil} : ${fr.s[phase][occ % fr.s[phase].length]}` : fil, why: whyOf(g, theme), note: "", done: false, obj };
 }
 
-export function generate(g: Group): Session[] {
+export const SPECIAL_KINDS: Record<string, Session> = {
+  bilan: { kind: "bilan", theme: "", title: "Bilan", skills: "• Refaire les situations de départ\n• Écrire ce qui a progressé et ce qui reste à travailler", fil: "", why: "", note: "", done: false },
+  etape: { kind: "etape", theme: "", title: "Point d'étape", skills: "• Refaire les situations de la première séance\n• Comparer avec le départ et adapter la suite", fil: "", why: "", note: "", done: false },
+  jeu: { kind: "jeu", theme: "", title: "Match à thème", skills: "• Jeu libre avec une consigne par joueur\n• On observe, on corrige peu", fil: "", why: "", note: "", done: false },
+};
+export function generate(g: Group, n = sessionCount(g)): Session[] {
   const w = weights(g);
   let ranked = Object.keys(w).sort((a, b) => w[b] - w[a]);
   const L = levelDef(g.level);
   if (!ranked.length) ranked = L.core.slice();
-  const main = ranked.filter((n) => THEMES[n].d !== "ment" || w[n] >= 3).slice(0, 10);
+  const main = ranked.filter((x) => THEMES[x].d !== "ment" || w[x] >= 3).slice(0, n > 40 ? 14 : 10);
   const pool = main.length ? main : ranked.slice(0, 8);
-  const total = pool.reduce((a, n) => a + (w[n] || 1), 0);
+  const T = n - 6; // 6 séances « repères » : départ, matchs, point d'étape, mise en match, bilan de fin
+  const total = pool.reduce((a, x) => a + (w[x] || 1), 0);
   const q: Record<string, number> = {}; let used = 0;
-  pool.forEach((n) => { q[n] = Math.max(1, Math.round((24 * (w[n] || 1)) / total)); used += q[n]; });
-  let i = 0; while (used > 24 && i < 500) { const n = pool[pool.length - 1 - (i % pool.length)]; if (q[n] > 1) { q[n]--; used--; } i++; }
-  i = 0; while (used < 24 && i < 500) { q[pool[i % pool.length]]++; used++; i++; }
-  const seq: { n: string; pos: number }[] = [];
-  pool.forEach((n) => { for (let k = 0; k < q[n]; k++) seq.push({ n, pos: (k + 0.5) / q[n] - (g.bilan[n] === 0 ? 0.08 : 0) + (THEMES[n].d === "tact" ? 0.1 : 0) + (THEMES[n].d === "tech" ? -0.03 : 0) }); });
+  pool.forEach((x) => { q[x] = Math.max(1, Math.round((T * (w[x] || 1)) / total)); used += q[x]; });
+  let i = 0; while (used > T && i < 2000) { const x = pool[pool.length - 1 - (i % pool.length)]; if (q[x] > 1) { q[x]--; used--; } i++; }
+  i = 0; while (used < T && i < 2000) { q[pool[i % pool.length]]++; used++; i++; }
+  const seq: { n: string; pos: number; occ: number }[] = [];
+  pool.forEach((x) => { for (let k = 0; k < q[x]; k++) seq.push({ n: x, occ: k, pos: (k + 0.5) / q[x] - (g.bilan[x] === 0 ? 0.08 : 0) + (THEMES[x].d === "tact" ? 0.1 : 0) + (THEMES[x].d === "tech" ? -0.03 : 0) }); });
   seq.sort((a, b) => a.pos - b.pos || (w[b.n] || 0) - (w[a.n] || 0));
   // Fil rouge : les thèmes physique et mental les plus à travailler, sinon des valeurs par défaut
-  const fils = Object.keys(w).filter((n) => THEMES[n].d === "phys" || THEMES[n].d === "ment").sort((a, b) => w[b] - w[a]);
-  const defaults = L.ok.filter((n) => n === "Jeu de jambes" || n === "Concentration");
+  const fils = Object.keys(w).filter((x) => THEMES[x].d === "phys" || THEMES[x].d === "ment").sort((a, b) => w[b] - w[a]);
+  const defaults = L.ok.filter((x) => x === "Jeu de jambes" || x === "Concentration");
   const fr = fils.length ? fils : defaults.length ? defaults : ["Concentration"];
-  const bilanSession = (title: string, skills: string): Session => ({ kind: "bilan", theme: "", title, skills, fil: "", why: "", note: "", done: false });
-  const jeu = (t: string, skills: string): Session => ({ kind: "jeu", theme: "", title: t, skills, fil: "", why: "", note: "", done: false });
-  // Trame des 30 séances : 1 = départ, 10 / 20 = match à thème, 15 = point d'étape, 25 = mise en match, 30 = bilan ; les 24 autres sont les thèmes
+  const at = (f: number) => Math.max(1, Math.min(n - 2, Math.round(n * f) - 1));
   const special: Record<number, Session> = {
-    0: bilanSession("Point de départ", "• Situations de référence : on observe sans corriger\n• Noter ce qui est acquis et ce qui ne l'est pas\n• À refaire à la séance 15 et à la séance 30 pour comparer"),
-    9: jeu("Match à thème", "• Jeu libre avec une consigne par joueur\n• On observe, on corrige peu"),
-    14: { kind: "etape", theme: "", title: "Point d'étape", skills: "• Refaire les situations de la séance 1\n• Comparer avec le départ et adapter la suite", fil: "", why: "", note: "", done: false },
-    19: jeu("Match à thème", "• Mini-matchs avec point bonus quand le thème est réussi"),
-    24: jeu("Mise en match", "• Sets courts : appliquer ce qui a été travaillé\n• Le groupe s'auto-évalue à la fin"),
-    29: bilanSession("Bilan de fin de saison", "• Refaire les situations de départ\n• Écrire ce qui a progressé et ce qui reste à travailler\n• Chaque joueur dit ce qu'il a réussi"),
+    0: { ...SPECIAL_KINDS.bilan, title: "Point de départ", skills: "• Situations de référence : on observe sans corriger\n• Noter ce qui est acquis et ce qui ne l'est pas\n• À refaire à mi-parcours et à la fin pour comparer" },
+    [at(1 / 3)]: { ...SPECIAL_KINDS.jeu },
+    [at(1 / 2)]: { ...SPECIAL_KINDS.etape },
+    [at(2 / 3)]: { ...SPECIAL_KINDS.jeu, skills: "• Mini-matchs avec point bonus quand le thème est réussi" },
+    [at(5 / 6)]: { ...SPECIAL_KINDS.jeu, title: "Mise en match", skills: "• Sets courts : appliquer ce qui a été travaillé\n• Le groupe s'auto-évalue à la fin" },
+    [n - 1]: { ...SPECIAL_KINDS.bilan, title: "Bilan de fin de saison", skills: "• Refaire les situations de départ\n• Écrire ce qui a progressé et ce qui reste à travailler\n• Chaque joueur dit ce qu'il a réussi" },
   };
   const list: Session[] = []; let k = 0;
-  for (let i = 0; i < 30; i++) { if (special[i]) list.push(special[i]); else { const s = seq[k]; list.push(sessionFor(g, s.n, phaseOf(i), fr[k % fr.length])); k++; } }
+  for (let j = 0; j < n; j++) { if (special[j]) list.push({ ...special[j] }); else { const sq = seq[k]; list.push(sessionFor(g, sq.n, phaseOf(j, n), fr[k % fr.length], sq.occ)); k++; } }
   return list;
 }
 

@@ -38,14 +38,14 @@ export function Sheet({ g, i, upd, setS, editor, onClose, onGo, onPrint, onMove,
   return (
     <article className="grid gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className="btn-outline btn-sm" onClick={onClose}>← Les 30 séances</button>
+        <button type="button" className="btn-outline btn-sm" onClick={onClose}>← Les séances</button>
         <button type="button" className="btn-outline btn-sm" disabled={i === 0} onClick={() => onGo(i - 1)} aria-label="Séance précédente">‹</button>
         <button type="button" className="btn-outline btn-sm" disabled={i === g.sessions.length - 1} onClick={() => onGo(i + 1)} aria-label="Séance suivante">›</button>
         <span className="ml-auto rounded-full px-3 py-1 text-sm font-bold text-white" style={{ background: status === "realisee" ? "#2c9a5b" : status === "prete" ? "#2a6f97" : "#935500" }}>{STATUS_LABEL[status]}</span>
       </div>
 
       <section className="grid gap-3 rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg,#16140f 0%,#26231c 60%,#3a3220 100%)" }}>
-        <p className="m-0 text-xs font-extrabold uppercase tracking-[.2em] text-[#d8c18a]">Séance {i + 1} sur {g.sessions.length} · {PHASES[phaseOf(i)]}</p>
+        <p className="m-0 text-xs font-extrabold uppercase tracking-[.2em] text-[#d8c18a]">Séance {i + 1} sur {g.sessions.length} · {PHASES[phaseOf(i, g.sessions.length)]}</p>
         <h2 className="m-0 font-serif text-2xl font-bold text-white [overflow-wrap:anywhere]">{s.title || s.theme || "Séance à préparer"}</h2>
         <dl className="m-0 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           <div><dt className="inline text-white/60">Groupe : </dt><dd className="inline">{g.name}{g.slot ? ` · ${g.slot}` : ""}</dd></div>

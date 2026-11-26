@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import { raw } from "express";
+import { json, raw } from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
@@ -20,6 +20,7 @@ export async function createApp(): Promise<NestExpressApplication> {
   app.use(helmet());
   app.use((_req: any, res: any, next: any) => { res.setHeader("Cache-Control", "no-store"); next(); }); // données personnelles : jamais gardées en cache
   app.use(cookieParser());
+  app.use("/api/progressions", json({ limit: "1mb" })); // 100 séances au plus : plus gros que les 100 Ko habituels
   app.use("/api/videos", raw({ type: "application/octet-stream", limit: 2 * 1024 * 1024 + 1024 })); // morceaux de vidéo (2 Mo maximum chacun)
   app.use("/api/profs", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // pièces justificatives des professeurs (3 Mo maximum)
   app.use("/api/tournaments", raw({ type: "application/octet-stream", limit: 3 * 1024 * 1024 + 1024 })); // documents de tournoi (3 Mo maximum)
