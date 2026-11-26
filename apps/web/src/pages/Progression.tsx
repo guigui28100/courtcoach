@@ -14,7 +14,7 @@ import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
   nextSession, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
-  BILAN_LEVELS, CourseDay, slotLabel, minutesBetween, sessionCount, phaseRange, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
+  BILAN_LEVELS, cyclesOf, CourseDay, slotLabel, minutesBetween, sessionCount, phaseRange, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
 const KIND: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
@@ -272,23 +272,26 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
           </div>
         </article>)}
 
-      {PHASES.map((ph, p) => (
-        <div key={ph} className="grid gap-2">
-          <h3 className="m-0 rounded bg-ink px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white">{ph} · séances {phaseRange(p, S.length)[0] + 1} à {phaseRange(p, S.length)[1]}</h3>
-          <div className="grid gap-2 md:grid-cols-2">
-            {S.map((s, i) => ({ s, i })).filter(({ i }) => phaseOf(i, S.length) === p).map(({ s, i }) => {
-              const sd = sessionDomain(s); const dom = sd ? domainOf(sd) : null; const o = objOf(s); const st = sessionStatus(s);
-              return (
-                <button key={i} type="button" onClick={() => setSheet(i)} className={`grid gap-1.5 rounded-xl border bg-white p-3 text-left transition hover:shadow-md ${i === nx && !allDone ? "ring-2 ring-clay" : "border-line"}`} style={{ borderLeft: `5px solid ${dom?.color ?? "#a8884a"}` }}>
-                  <span className="flex flex-wrap items-center gap-2"><b className="font-serif text-xl">{i + 1}</b><b className="min-w-0 flex-1 [overflow-wrap:anywhere]">{s.title || s.theme || KIND[s.kind]}</b>
-                    <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: st === "realisee" ? "#2c9a5b" : st === "prete" ? "#2a6f97" : "#935500" }}>{STATUS_LABEL[st]}</span></span>
-                  <span className="grid gap-0.5 text-xs">{objCount(o) ? DOMAINS.filter((d) => o[d.key].length).map((d) => <span key={d.key} className="flex gap-1"><b className="w-16 shrink-0" style={{ color: d.color }}>{d.label}</b><span className="min-w-0 text-muted [overflow-wrap:anywhere]">{o[d.key].slice(0, d.key === "tech" ? 3 : 2).join(" · ")}</span></span>) : <span className="text-muted">Objectifs à choisir</span>}{s.gl?.length ? <span className="font-bold text-ok">🎯 {s.gl.length} objectif{s.gl.length > 1 ? "s" : ""} de l'année</span> : null}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+      <div className="grid gap-2">
+        {cyclesOf(S).map((c) => {
+          const s0 = S[c.a]; const ph = phaseOf(c.a, S.length); const first = c.a === 0 || phaseOf(cyclesOf(S).find((x) => x.b === c.a - 1)?.a ?? 0, S.length) !== ph;
+          const dom = sessionDomain(s0); const col = dom ? domainOf(dom).color : "#a8884a"; const count = c.b - c.a + 1; const nDone = S.slice(c.a, c.b + 1).filter((x) => x.done).length;
+          const row = (i: number) => { const s = S[i]; const o = objOf(s); const st = sessionStatus(s); return (
+            <button key={i} type="button" onClick={() => setSheet(i)} className={`grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-line px-1 py-2 text-left last:border-0 hover:bg-paper ${i === nx && !allDone ? "bg-paper font-bold" : ""}`}>
+              <b className="font-serif text-lg" style={{ color: col }}>{i + 1}</b>
+              <span className="min-w-0 text-sm [overflow-wrap:anywhere]">{c.single ? <b>{s.title || KIND[s.kind]}</b> : (DOMAINS.filter((d) => o[d.key].length).map((d) => o[d.key][0]).slice(0, 2).join(" · ") || "Objectifs à choisir")}{s.gl?.length ? <span className="text-ok"> · 🎯{s.gl.length}</span> : null}</span>
+              <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: st === "realisee" ? "#2c9a5b" : st === "prete" ? "#2a6f97" : "#935500" }}>{STATUS_LABEL[st]}</span>
+            </button>); };
+          return (
+            <div key={c.a} className="grid gap-2">
+              {first && <h3 className="m-0 mt-2 rounded bg-ink px-3 py-1.5 text-sm font-bold text-white">{PHASES[ph]}</h3>}
+              {c.single ? <div className="rounded-xl border border-line bg-white px-2" style={{ borderLeft: `5px solid ${col}` }}>{row(c.a)}</div> : (
+                <details open={nx >= c.a && nx <= c.b} className="rounded-xl border border-line bg-white" style={{ borderLeft: `5px solid ${col}` }}>
+                  <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5"><b className="min-w-0 flex-1 [overflow-wrap:anywhere]">{c.theme}</b><span className="text-sm text-muted">{count > 1 ? `séances ${c.a + 1} à ${c.b + 1}` : `séance ${c.a + 1}`} · {nDone}/{count} faite{nDone > 1 ? "s" : ""}</span></summary>
+                  <div className="px-2 pb-1">{Array.from({ length: count }, (_, k) => row(c.a + k))}</div>
+                </details>)}
+            </div>); })}
+      </div>
       <div><button type="button" className="btn-outline" disabled={S.length >= 100} onClick={() => { upd({ sessions: [...S, freeSession(g.minutes)] }); setSheet(S.length); }}>＋ Créer ma propre séance</button></div>
     </section>
   );

@@ -332,16 +332,33 @@ export function generate(g: Group, n = sessionCount(g)): Session[] {
   const defaults = L.ok.filter((x) => x === "Jeu de jambes" || x === "Concentration");
   const fr = fils.length ? fils : defaults.length ? defaults : ["Concentration"];
   const at = (f: number) => Math.max(1, Math.min(n - 2, Math.round(n * f) - 1));
-  const special: Record<number, Session> = {
-    0: { ...SPECIAL_KINDS.bilan, title: "Point de départ", skills: "• Situations de référence : on observe sans corriger\n• Noter ce qui est acquis et ce qui ne l'est pas\n• À refaire à mi-parcours et à la fin pour comparer" },
-    [at(1 / 3)]: { ...SPECIAL_KINDS.jeu },
-    [at(1 / 2)]: { ...SPECIAL_KINDS.etape },
-    [at(2 / 3)]: { ...SPECIAL_KINDS.jeu, skills: "• Mini-matchs avec point bonus quand le thème est réussi" },
-    [at(5 / 6)]: { ...SPECIAL_KINDS.jeu, title: "Mise en match", skills: "• Sets courts : appliquer ce qui a été travaillé\n• Le groupe s'auto-évalue à la fin" },
-    [n - 1]: { ...SPECIAL_KINDS.bilan, title: "Bilan de fin de saison", skills: "• Refaire les situations de départ\n• Écrire ce qui a progressé et ce qui reste à travailler\n• Chaque joueur dit ce qu'il a réussi" },
-  };
-  const list: Session[] = []; let k = 0;
-  for (let j = 0; j < n; j++) { if (special[j]) list.push({ ...special[j] }); else { const sq = seq[k]; if (sq.c.ph === undefined) sq.c.ph = phaseOf(j, n); const se = sessionFor(g, sq.c.n, sq.c.ph, fr[sq.c.occ % fr.length], sq.c.occ + Math.floor(sq.c.ph)); if (sq.c.len > 1) se.why = `Répétition ${sq.r + 1} sur ${sq.c.len} : même objectif que la séance d'avant, pour qu'il s'installe. ${se.why}`; list.push(se); k++; } }
+  const first: Session = { ...SPECIAL_KINDS.bilan, title: "Point de départ", skills: "• Situations de référence : on observe sans corriger\n• Noter ce qui est acquis et ce qui ne l'est pas\n• À refaire à mi-parcours et à la fin pour comparer" };
+  const lastS: Session = { ...SPECIAL_KINDS.bilan, title: "Bilan de fin de saison", skills: "• Refaire les situations de départ\n• Écrire ce qui a progressé et ce qui reste à travailler\n• Chaque joueur dit ce qu'il a réussi" };
+  const mids: { t: number; s: Session }[] = [
+    { t: at(1 / 3), s: { ...SPECIAL_KINDS.jeu } },
+    { t: at(1 / 2), s: { ...SPECIAL_KINDS.etape } },
+    { t: at(2 / 3), s: { ...SPECIAL_KINDS.jeu, skills: "• Mini-matchs avec point bonus quand le thème est réussi" } },
+    { t: at(5 / 6), s: { ...SPECIAL_KINDS.jeu, title: "Mise en match", skills: "• Sets courts : appliquer ce qui a été travaillé\n• Le groupe s'auto-évalue à la fin" } },
+  ];
+  // Les séances « repères » se posent ENTRE deux cycles (jamais au milieu d'une répétition), au plus près de leur place idéale
+  const bounds: number[] = [0]; ordered.forEach((c) => bounds.push(bounds[bounds.length - 1] + c.len));
+  const usedB = new Set<number>(); const slotAt = new Map<number, Session>();
+  mids.forEach((m, k) => {
+    const want = m.t - 1 - k; let best = -1;
+    bounds.forEach((bd, bi) => { if (bi === 0 || bi === bounds.length - 1 || usedB.has(bi)) return; if (best < 0 || Math.abs(bd - want) < Math.abs(bounds[best] - want)) best = bi; });
+    if (best < 0) best = bounds.findIndex((_, bi) => bi > 0 && !usedB.has(bi)); if (best < 0) return;
+    usedB.add(best); slotAt.set(bounds[best], m.s);
+  });
+  const list: Session[] = [first]; let pos = 0; let ci = 0;
+  seq.forEach((sq) => {
+    if (slotAt.has(pos)) list.push({ ...slotAt.get(pos)! });
+    if (sq.c.ph === undefined) sq.c.ph = phaseOf(list.length, n);
+    const se = sessionFor(g, sq.c.n, sq.c.ph, fr[sq.c.occ % fr.length], sq.c.occ + Math.floor(sq.c.ph));
+    if (sq.c.len > 1) se.why = `Répétition ${sq.r + 1} sur ${sq.c.len} : même objectif que la séance d'avant, pour qu'il s'installe. ${se.why}`;
+    list.push(se); pos++; ci++;
+  });
+  if (slotAt.has(pos)) list.push({ ...slotAt.get(pos)! });
+  list.push(lastS);
   return list;
 }
 
@@ -540,4 +557,16 @@ export function adaptSuggestions(g: Group): Suggestion[] {
     if (k > 0 && prev && prev.done && prev.theme === cur.theme && outcomeOf(prev) === "acquis") return [{ id: "advance", text: `« ${cur.theme} » est acquis deux séances de suite : on peut passer à « ${S[k].theme} » dès la séance ${nxt + 1}.`, sessions: swapWith(nxt, k) }];
   }
   return [];
+}
+
+// Blocs : séances de suite sur le même thème (un cycle de répétition) ; les séances « repères » sont seules
+export type Cycle = { a: number; b: number; theme: string; single: boolean };
+export function cyclesOf(S: Session[]): Cycle[] {
+  const out: Cycle[] = [];
+  S.forEach((s, i) => {
+    const t = s.kind === "theme" ? s.theme.trim() || s.title : "";
+    const l = out[out.length - 1];
+    if (t && l && !l.single && l.theme === t && l.b === i - 1) l.b = i; else out.push({ a: i, b: i, theme: t, single: !t });
+  });
+  return out;
 }
