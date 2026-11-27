@@ -1,3 +1,4 @@
+import { readyBlocks, specialBlocks } from "./lessonKit";
 // Progression des séances : catalogue des thèmes, repères par niveau (Galaxie Tennis et adultes) et génération des 30 séances.
 // Tout est calculé dans le navigateur par des règles écrites ici (aucune intelligence artificielle, aucun service extérieur).
 // Les âges et terrains de la Galaxie sont des repères indicatifs, variables selon les clubs : à confronter aux documents FFT.
@@ -349,16 +350,18 @@ export function generate(g: Group, n = sessionCount(g)): Session[] {
     if (best < 0) best = bounds.findIndex((_, bi) => bi > 0 && !usedB.has(bi)); if (best < 0) return;
     usedB.add(best); slotAt.set(bounds[best], m.s);
   });
-  const list: Session[] = [first]; let pos = 0; let ci = 0;
+  const prep = (x: Session): Session => ({ ...x, blocks: specialBlocks(g, x), ready: true });
+  const list: Session[] = [prep(first)]; let pos = 0; let ci = 0;
   seq.forEach((sq) => {
-    if (slotAt.has(pos)) list.push({ ...slotAt.get(pos)! });
+    if (slotAt.has(pos)) list.push(prep({ ...slotAt.get(pos)! }));
     if (sq.c.ph === undefined) sq.c.ph = phaseOf(list.length, n);
     const se = sessionFor(g, sq.c.n, sq.c.ph, fr[sq.c.occ % fr.length], sq.c.occ + Math.floor(sq.c.ph));
     if (sq.c.len > 1) se.why = `Répétition ${sq.r + 1} sur ${sq.c.len} : même objectif que la séance d'avant, pour qu'il s'installe. ${se.why}`;
+    se.blocks = readyBlocks(g, se, sq.r, sq.c.len); se.ready = true;
     list.push(se); pos++; ci++;
   });
-  if (slotAt.has(pos)) list.push({ ...slotAt.get(pos)! });
-  list.push(lastS);
+  if (slotAt.has(pos)) list.push(prep({ ...slotAt.get(pos)! }));
+  list.push(prep(lastS));
   return list;
 }
 
@@ -569,4 +572,16 @@ export function cyclesOf(S: Session[]): Cycle[] {
     if (t && l && !l.single && l.theme === t && l.b === i - 1) l.b = i; else out.push({ a: i, b: i, theme: t, single: !t });
   });
   return out;
+}
+
+// Change le thème d'une série (ou d'une séance) : titre, objectifs ET déroulement prêt sont refaits ; ce que le prof a déjà noté est gardé
+export function retheme(g: Group, S: Session[], a: number, b: number, theme: string): Session[] {
+  const n = S.length; const len = b - a + 1;
+  return S.map((x, k) => {
+    if (k < a || k > b || x.kind !== "theme") return x;
+    if (!THEMES[theme]) return { ...x, theme: theme || " ", title: theme.trim() || x.title };
+    const se = sessionFor(g, theme, phaseOf(a, n), x.fil.split(" : ")[0], 0);
+    se.blocks = readyBlocks(g, se, k - a, len); se.ready = true;
+    return { ...se, done: x.done, note: x.note, date: x.date, after: x.after, gl: x.gl, rating: x.rating, redo: x.redo };
+  });
 }
