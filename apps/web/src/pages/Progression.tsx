@@ -31,6 +31,7 @@ const firstTodo = (g: Group): Step => (g.sessions.length ? 2 : 1);
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
+  const [delId, setDelId] = useState("");
   const [sel, setSel] = useState(""); const [step, setStep] = useState<Step>(1);
   const [err, setErr] = useState(""); const [state, setState] = useState<"" | "saving" | "saved" | "error">("");
   const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null); const [docs, setDocs] = useState(false);
@@ -60,6 +61,7 @@ export default function Progression() {
   const go = (n: Step) => { setStep(n); setDocs(false); window.scrollTo({ top: 0 }); };
   const create = (n: Partial<Group>) => { const pl = n.players || []; const dy = n.days || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, days: dy, slot: dy.length ? slotLabel({ days: dy } as Group) : "", appel: {}, minutes: dy.length ? minutesBetween(dy[0].from, dy[0].to) || 60 : n.minutes || 60, bilan: {}, notes: "", sessions: [] }; ng.sessions = generate(ng); setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(2); setAdding(false); };
   const remove = () => { setGroups((gs) => gs!.filter((x) => x.id !== sel)); setSel(""); };
+  const removeId = (id: string) => { setGroups((gs) => gs!.filter((x) => x.id !== id)); setDelId(""); };
 
   const transfer = (name: string, toId: string) => setGroups((gs) => gs!.map((x) => {
     if (x.id === sel) { const pl = (x.players || []).filter((n) => n !== name); return { ...x, players: pl, size: pl.length }; }
@@ -100,6 +102,8 @@ export default function Progression() {
                       <ol className="m-0 flex list-none gap-1 p-0" aria-label="Avancement">{STEPS.map((s) => <li key={s.n} title={s.t} className={`h-2 flex-1 rounded ${stepDone(x, s.n) ? "bg-ok" : "bg-line"}`} />)}</ol>
                       <p className="m-0 text-sm">{x.sessions.length ? `${done} séance${done > 1 ? "s" : ""} faite${done > 1 ? "s" : ""} sur ${x.sessions.length}` : `Prochaine étape : ${STEPS[n - 1].t}`}</p>
                       <button type="button" className="btn-clay" onClick={() => open(x)}>Continuer</button>
+                      {delId === x.id ? <div className="grid gap-2 rounded-lg border border-line bg-paper p-2 text-sm"><b>Supprimer « {x.name} » et toute sa programmation ?</b><div className="flex gap-2"><button type="button" className="btn-ink btn-sm" onClick={() => removeId(x.id)}>Oui, supprimer</button><button type="button" className="btn-outline btn-sm" onClick={() => setDelId("")}>Non</button></div></div>
+                        : <button type="button" className="btn-outline btn-sm" onClick={() => setDelId(x.id)}>🗑️ Supprimer ce groupe</button>}
                     </li>);
                 })}
               </ul>
