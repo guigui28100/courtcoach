@@ -13,7 +13,7 @@ import { Plan, AdaptBanner } from "../components/ProgressionPlan";
 import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
-  nextSession, retheme, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  nextSession, retheme, refreshExercises, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
   BILAN_LEVELS, cyclesOf, CourseDay, slotLabel, minutesBetween, sessionCount, phaseRange, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
@@ -31,6 +31,7 @@ const firstTodo = (g: Group): Step => (g.sessions.length ? 2 : 1);
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
+  const [delId, setDelId] = useState("");
   const [sel, setSel] = useState(""); const [step, setStep] = useState<Step>(1);
   const [err, setErr] = useState(""); const [state, setState] = useState<"" | "saving" | "saved" | "error">("");
   const [adding, setAdding] = useState(false); const [printPages, setPrintPages] = useState<ReactNode[] | null>(null); const [docs, setDocs] = useState(false);
@@ -60,6 +61,7 @@ export default function Progression() {
   const go = (n: Step) => { setStep(n); setDocs(false); window.scrollTo({ top: 0 }); };
   const create = (n: Partial<Group>) => { const pl = n.players || []; const dy = n.days || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, days: dy, slot: dy.length ? slotLabel({ days: dy } as Group) : "", appel: {}, minutes: dy.length ? minutesBetween(dy[0].from, dy[0].to) || 60 : n.minutes || 60, bilan: {}, notes: "", sessions: [] }; ng.sessions = generate(ng); setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(2); setAdding(false); };
   const remove = () => { setGroups((gs) => gs!.filter((x) => x.id !== sel)); setSel(""); };
+  const removeId = (id: string) => { setGroups((gs) => gs!.filter((x) => x.id !== id)); setDelId(""); };
 
   const transfer = (name: string, toId: string) => setGroups((gs) => gs!.map((x) => {
     if (x.id === sel) { const pl = (x.players || []).filter((n) => n !== name); return { ...x, players: pl, size: pl.length }; }
@@ -100,6 +102,8 @@ export default function Progression() {
                       <ol className="m-0 flex list-none gap-1 p-0" aria-label="Avancement">{STEPS.map((s) => <li key={s.n} title={s.t} className={`h-2 flex-1 rounded ${stepDone(x, s.n) ? "bg-ok" : "bg-line"}`} />)}</ol>
                       <p className="m-0 text-sm">{x.sessions.length ? `${done} séance${done > 1 ? "s" : ""} faite${done > 1 ? "s" : ""} sur ${x.sessions.length}` : `Prochaine étape : ${STEPS[n - 1].t}`}</p>
                       <button type="button" className="btn-clay" onClick={() => open(x)}>Continuer</button>
+                      {delId === x.id ? <div className="grid gap-2 rounded-lg border border-line bg-paper p-2 text-sm"><b>Supprimer « {x.name} » et toute sa programmation ?</b><div className="flex gap-2"><button type="button" className="btn-ink btn-sm" onClick={() => removeId(x.id)}>Oui, supprimer</button><button type="button" className="btn-outline btn-sm" onClick={() => setDelId("")}>Non</button></div></div>
+                        : <button type="button" className="btn-outline btn-sm" onClick={() => setDelId(x.id)}>🗑️ Supprimer ce groupe</button>}
                     </li>);
                 })}
               </ul>
@@ -225,7 +229,7 @@ function GroupHead({ g, upd, onDelete }: { g: Group; upd: (p: Partial<Group>) =>
 }
 
 function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Group>) => void; onPrint: (c: DocChoice, a?: number, b?: number) => void; toPlan: () => void }) {
-  const [ask, setAsk] = useState(false); const [sheet, setSheet] = useState<number | null>(null); const [prep, setPrep] = useState(false);
+  const [ask, setAsk] = useState(false); const [sheet, setSheet] = useState<number | null>(null); const [prep, setPrep] = useState(false); const [refreshAsk, setRefreshAsk] = useState(false);
   const L = levelDef(g.level); const S = g.sessions;
   const setS = (i: number, p: Partial<Session>) => upd({ sessions: S.map((s, k) => (k === i ? { ...s, ...p } : s)) });
   const gen = () => { upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); setAsk(false); setSheet(null); };
@@ -259,6 +263,11 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
         <div className="min-w-48 flex-1"><b>{done} séance{done > 1 ? "s" : ""} réalisée{done > 1 ? "s" : ""} sur {S.length}</b>{rate !== null && <span className="text-sm text-muted"> · présence du groupe : {rate} %</span>}<div className="mt-1 h-2 overflow-hidden rounded bg-line"><div className="h-full bg-ok" style={{ width: `${(done / S.length) * 100}%` }} /></div></div>
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Remplacer les séances par une nouvelle proposition ?</b><button type="button" className="btn-ink btn-sm" onClick={gen}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>
           : g.validated ? <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>↻ Proposer à nouveau d'après mes objectifs</button> : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-white px-3 py-2 text-sm">
+        <span className="min-w-48 flex-1">Les exercices ont été enrichis. Tes séances déjà créées gardent leurs anciens exercices tant que tu ne les mets pas à jour.</span>
+        {refreshAsk ? <span className="flex items-center gap-2"><b>Remplacer les exercices des séances non faites ?</b><button type="button" className="btn-ink btn-sm" onClick={() => { upd({ sessions: refreshExercises(g) }); setRefreshAsk(false); }}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setRefreshAsk(false)}>Non</button></span>
+          : <button type="button" className="btn-outline btn-sm" onClick={() => setRefreshAsk(true)}>↻ Mettre à jour les exercices</button>}
       </div>
       <AdaptBanner g={g} upd={upd} />
       {prep ? <Prepare g={g} s={cur} i={nx} L={L} setS={setS} changeTheme={changeTheme} onClose={() => setPrep(false)} /> : (
