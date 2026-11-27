@@ -585,3 +585,19 @@ export function retheme(g: Group, S: Session[], a: number, b: number, theme: str
     return { ...se, done: x.done, note: x.note, date: x.date, after: x.after, gl: x.gl, rating: x.rating, redo: x.redo };
   });
 }
+
+// Remet les exercices les plus récents dans les séances PAS ENCORE FAITES (thème, objectifs, notes et dates sont gardés)
+export function refreshExercises(g: Group): Session[] {
+  const S = g.sessions; const out = S.slice();
+  for (const c of cyclesOf(S)) {
+    for (let k = c.a; k <= c.b; k++) {
+      const x = S[k];
+      if (x.kind !== "theme" || x.done || !THEMES[x.theme]) continue;
+      out[k] = { ...x, blocks: readyBlocks(g, x, k - c.a, c.b - c.a + 1), ready: true };
+    }
+  }
+  return out.map((x, k) => {
+    if (x.kind === "theme" || x.done || S[k].done) return x;
+    return { ...x, blocks: specialBlocks(g, x), ready: true };
+  });
+}

@@ -13,7 +13,7 @@ import { Plan, AdaptBanner } from "../components/ProgressionPlan";
 import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
-  nextSession, retheme, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  nextSession, retheme, refreshExercises, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
   BILAN_LEVELS, cyclesOf, CourseDay, slotLabel, minutesBetween, sessionCount, phaseRange, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
@@ -225,7 +225,7 @@ function GroupHead({ g, upd, onDelete }: { g: Group; upd: (p: Partial<Group>) =>
 }
 
 function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Group>) => void; onPrint: (c: DocChoice, a?: number, b?: number) => void; toPlan: () => void }) {
-  const [ask, setAsk] = useState(false); const [sheet, setSheet] = useState<number | null>(null); const [prep, setPrep] = useState(false);
+  const [ask, setAsk] = useState(false); const [sheet, setSheet] = useState<number | null>(null); const [prep, setPrep] = useState(false); const [refreshAsk, setRefreshAsk] = useState(false);
   const L = levelDef(g.level); const S = g.sessions;
   const setS = (i: number, p: Partial<Session>) => upd({ sessions: S.map((s, k) => (k === i ? { ...s, ...p } : s)) });
   const gen = () => { upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); setAsk(false); setSheet(null); };
@@ -259,6 +259,11 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
         <div className="min-w-48 flex-1"><b>{done} séance{done > 1 ? "s" : ""} réalisée{done > 1 ? "s" : ""} sur {S.length}</b>{rate !== null && <span className="text-sm text-muted"> · présence du groupe : {rate} %</span>}<div className="mt-1 h-2 overflow-hidden rounded bg-line"><div className="h-full bg-ok" style={{ width: `${(done / S.length) * 100}%` }} /></div></div>
         {ask ? <span className="flex items-center gap-2 text-sm"><b>Remplacer les séances par une nouvelle proposition ?</b><button type="button" className="btn-ink btn-sm" onClick={gen}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setAsk(false)}>Non</button></span>
           : g.validated ? <button type="button" className="btn-outline btn-sm" onClick={() => setAsk(true)}>↻ Proposer à nouveau d'après mes objectifs</button> : null}
+      </div>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-white px-3 py-2 text-sm">
+        <span className="min-w-48 flex-1">Les exercices ont été enrichis. Tes séances déjà créées gardent leurs anciens exercices tant que tu ne les mets pas à jour.</span>
+        {refreshAsk ? <span className="flex items-center gap-2"><b>Remplacer les exercices des séances non faites ?</b><button type="button" className="btn-ink btn-sm" onClick={() => { upd({ sessions: refreshExercises(g) }); setRefreshAsk(false); }}>Oui</button><button type="button" className="btn-outline btn-sm" onClick={() => setRefreshAsk(false)}>Non</button></span>
+          : <button type="button" className="btn-outline btn-sm" onClick={() => setRefreshAsk(true)}>↻ Mettre à jour les exercices</button>}
       </div>
       <AdaptBanner g={g} upd={upd} />
       {prep ? <Prepare g={g} s={cur} i={nx} L={L} setS={setS} changeTheme={changeTheme} onClose={() => setPrep(false)} /> : (
