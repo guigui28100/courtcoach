@@ -13,23 +13,21 @@ import { Plan, AdaptBanner } from "../components/ProgressionPlan";
 import { Sheet } from "../components/ProgressionSheet";
 import { Eval } from "../components/ProgressionEval";
 import {
-  nextSession, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
+  nextSession, retheme, applyGoals, sessionStatus, STATUS_LABEL, withDiag, diagCount, presentRate, compsOf, titleOptions, LevelDef, BLOCK_NAMES, defaultBlocks, freeSession, objCount, objectiveOptions, objOf, withObj,
   BILAN_LEVELS, cyclesOf, CourseDay, slotLabel, minutesBetween, sessionCount, phaseRange, DOMAINS, Domain, domainOf, generate, Group, LEVELS_FFT, levelDef, levelTech, newId, PHASES, phaseOf, sessionColor, sessionDomain, sessionFor, Session, THEMES, THEME_NAMES, themesInText, weights,
 } from "../progression";
 
 const KIND: Record<Session["kind"], string> = { bilan: "Bilan", etape: "Point d'étape", jeu: "Match", theme: "Thème" };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type Step = 1 | 2 | 3 | 4;
 const STEPS: { n: Step; t: string; help: string }[] = [
   { n: 1, t: "Groupe", help: "Les élèves (prénoms), les jours et l'horaire du cours, et l'appel." },
-  { n: 2, t: "Analyse de départ", help: "Note ce que le groupe sait faire. 5 minutes, et l'outil te propose ensuite des objectifs." },
-  { n: 3, t: "Objectifs", help: "Ce que le groupe va travailler cette année : technique d'abord, puis tactique, physique, mental s'il y en a." },
-  { n: 4, t: "Programmation", help: "Le thème de chaque séance sur 30 semaines. Tu changes un thème avec le menu, ou tu l'écris." },
-  { n: 5, t: "Séances", help: "Pour chaque séance : le thème et les objectifs détaillés (technique, tactique, physique, mental), la fiche et l'appel." },
-  { n: 6, t: "Suivi", help: "Les bilans en cours et en fin d'année, et le cycle suivant." },
+  { n: 2, t: "Séances", help: "Tes séances sont déjà prêtes : thème, objectifs et déroulement complet. Ouvre-en une pour la lire, la modifier ou l'imprimer." },
+  { n: 3, t: "Affiner", help: "Facultatif : décris le niveau de ton groupe et choisis tes objectifs, l'outil refait alors les séances sur mesure." },
+  { n: 4, t: "Suivi", help: "Les bilans en cours et en fin d'année, et le cycle suivant." },
 ];
-const stepDone = (g: Group, n: Step) => (n === 1 ? (g.players?.length || g.size) > 0 : n === 2 ? diagCount(g) > 0 : n === 3 ? !!g.validated : n === 4 ? g.sessions.length > 0 : n === 5 ? g.sessions.some((x) => x.done || x.ready) : Object.values(g.checks || {}).some((c) => c && Object.keys(c.scores).length > 0));
-const firstTodo = (g: Group): Step => ((([1, 2, 3, 4, 5, 6] as Step[]).find((n) => !stepDone(g, n)) ?? 5) as Step);
+const stepDone = (g: Group, n: Step) => (n === 1 ? (g.players?.length || g.size) > 0 && !!g.days?.length : n === 2 ? g.sessions.some((s) => s.done) : n === 3 ? !!g.validated || diagCount(g) > 0 : Object.values(g.checks || {}).some((c) => c && Object.keys(c.scores).length > 0));
+const firstTodo = (g: Group): Step => (g.sessions.length ? 2 : 1);
 
 export default function Progression() {
   const [groups, setGroups] = useState<Group[] | null>(null);
@@ -60,7 +58,7 @@ export default function Progression() {
   const upd = (patch: Partial<Group>) => setGroups((gs) => gs!.map((x) => (x.id === sel ? { ...x, ...patch } : x)));
   const open = (x: Group, n?: Step) => { setSel(x.id); setStep(n ?? firstTodo(x)); setAdding(false); setDocs(false); window.scrollTo({ top: 0 }); };
   const go = (n: Step) => { setStep(n); setDocs(false); window.scrollTo({ top: 0 }); };
-  const create = (n: Partial<Group>) => { const pl = n.players || []; const dy = n.days || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, days: dy, slot: dy.length ? slotLabel({ days: dy } as Group) : "", appel: {}, minutes: dy.length ? minutesBetween(dy[0].from, dy[0].to) || 60 : n.minutes || 60, bilan: {}, notes: "", sessions: [] }; setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(pl.length && dy.length ? 2 : 1); setAdding(false); };
+  const create = (n: Partial<Group>) => { const pl = n.players || []; const dy = n.days || []; const ng: Group = { id: newId(), name: n.name || "Nouveau groupe", level: n.level || LEVELS_FFT[2].key, size: pl.length || n.size || 0, players: pl, days: dy, slot: dy.length ? slotLabel({ days: dy } as Group) : "", appel: {}, minutes: dy.length ? minutesBetween(dy[0].from, dy[0].to) || 60 : n.minutes || 60, bilan: {}, notes: "", sessions: [] }; ng.sessions = generate(ng); setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(2); setAdding(false); };
   const remove = () => { setGroups((gs) => gs!.filter((x) => x.id !== sel)); setSel(""); };
 
   const transfer = (name: string, toId: string) => setGroups((gs) => gs!.map((x) => {
@@ -71,12 +69,12 @@ export default function Progression() {
   const nextCycle = () => {
     if (!g) return; const last = (["30", "20", "10"] as const).map((k) => g.checks?.[k]).find((c) => c && Object.keys(c.scores).length);
     const bump = (s?: string) => (s && /\d{4}\s*[-–/]\s*\d{4}/.test(s) ? s.replace(/(\d{4})(\s*[-–/]\s*)(\d{4})/, (_m, a, m, b) => `${+a + 1}${m}${+b + 1}`) : "");
-    const ng: Group = { id: newId(), name: `${g.name} (cycle suivant)`, level: g.level, size: g.players?.length || g.size, players: g.players || [], appel: {}, minutes: g.minutes, bilan: {}, notes: "", sessions: [], teacher: g.teacher, age: g.age, slot: g.slot, days: g.days, season: bump(g.season), diag: { ...(g.diag || {}), ...(last?.scores || {}) }, diagObs: {}, playerObs: g.playerObs || {}, goals: [], validated: false, checks: {} };
+    const ng: Group = { id: newId(), name: `${g.name} (cycle suivant)`, level: g.level, size: g.players?.length || g.size, players: g.players || [], appel: {}, minutes: g.minutes, bilan: {}, notes: "", sessions: [], teacher: g.teacher, age: g.age, slot: g.slot, days: g.days, season: bump(g.season), diag: { ...(g.diag || {}), ...(last?.scores || {}) }, diagObs: {}, playerObs: g.playerObs || {}, goals: [], validated: false, checks: {} }; ng.sessions = generate(withDiag(ng));
     setGroups((gs) => [...gs!, ng]); setSel(ng.id); setStep(2);
   };
   const doPrint = (c: DocChoice, a = 1, b = 30) => { if (g) setPrintPages(buildPages(g, c, a, b)); };
   // Créer les 30 séances d'après les objectifs validés, puis aller directement à l'étape Séances
-  const createSessions = () => { if (!g) return; upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); go(4); };
+  const createSessions = () => { if (!g) return; upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); go(2); };
   const days = (d: CourseDay[]) => upd({ days: d, slot: slotLabel({ days: d } as Group), ...(d.length ? { minutes: minutesBetween(d[0].from, d[0].to) || g!.minutes } : {}) });
 
   if (err && !groups) return <Page><Err msg={err} /></Page>;
@@ -87,7 +85,7 @@ export default function Progression() {
   if (!g || adding) {
     return (
       <>
-        <PageHead eyebrow="Mon travail de prof" title="Mes cours" icon="🗓️">Choisis un groupe, puis suis les 6 étapes. Seul toi vois cette page.</PageHead>
+        <PageHead eyebrow="Mon travail de prof" title="Mes cours" icon="🗓️">Crée ton groupe : tes séances sont prêtes tout de suite. Seul toi vois cette page.</PageHead>
         <Page>
           {err && <Err msg={err} />}
           {adding ? <NewGroup onCreate={create} onCancel={groups.length ? () => setAdding(false) : undefined} /> : (
@@ -125,8 +123,8 @@ export default function Progression() {
             {saving}
           </div>
 
-          <nav aria-label="Les 6 étapes">
-            <ol className="m-0 grid list-none grid-cols-3 gap-1 p-0 sm:grid-cols-6">
+          <nav aria-label="Les étapes">
+            <ol className="m-0 grid list-none grid-cols-4 gap-1 p-0">
               {STEPS.map((s) => { const cur = s.n === step, ok = stepDone(g, s.n); return (
                 <li key={s.n}><button type="button" aria-current={cur ? "step" : undefined} onClick={() => go(s.n)} className={`grid w-full justify-items-center gap-1 rounded-lg border-2 px-1 py-2 text-center ${cur ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink"}`}>
                   <span className={`grid size-7 place-items-center rounded-full text-sm font-bold ${cur ? "bg-white text-ink" : ok ? "bg-ok text-white" : "bg-line text-ink"}`}>{ok && !cur ? "✔" : s.n}</span>
@@ -134,7 +132,7 @@ export default function Progression() {
             </ol>
           </nav>
 
-          <div className="rounded-lg border-l-4 border-champagne bg-paper p-3"><b>Étape {step} sur 6 : {info.t}.</b> <span className="text-muted">{info.help}</span></div>
+          <div className="rounded-lg border-l-4 border-champagne bg-paper p-3"><b>{info.t}.</b> <span className="text-muted">{info.help}</span></div>
 
           {step === 1 && (
             <div className="grid gap-4">
@@ -143,27 +141,30 @@ export default function Progression() {
               <details className="rounded-xl border border-line bg-white p-4"><summary className="cursor-pointer font-bold">Informations du groupe (niveau, durée, horaire…)</summary><div className="mt-3"><GroupHead g={g} upd={upd} onDelete={remove} /></div></details>
             </div>)}
           {step === 2 && (
-            <div className="grid gap-5">
-              <Diag g={g} upd={upd} next={() => go(3)} />
-              <details className="rounded-xl border border-line bg-white p-4">
-                <summary className="cursor-pointer font-bold">Facultatif : décrire le groupe par un texte libre</summary>
-                <div className="mt-4"><Bilan g={g} upd={upd} next={() => go(3)} /></div>
-              </details>
-            </div>)}
-          {step === 3 && <Goals g={g} upd={upd} create={createSessions} />}
-          {step === 4 && <Plan g={g} upd={upd} create={createSessions} next={() => go(5)} />}
-          {step === 5 && (
             <div className="grid gap-4">
-              <Programme g={g} upd={upd} onPrint={doPrint} toPlan={() => go(4)} />
-              {g.sessions.length > 0 && <div><button type="button" className="btn-outline" aria-expanded={docs} onClick={() => setDocs(!docs)}>🖨️ Documents à imprimer</button></div>}
+              <Programme g={g} upd={upd} onPrint={doPrint} toPlan={() => go(3)} />
+              {g.sessions.length > 0 && <div><button type="button" className="btn-outline" aria-expanded={docs} onClick={() => setDocs(!docs)}>Documents à imprimer</button></div>}
               {docs && <Docs g={g} onPrint={doPrint} />}
             </div>)}
-          {step === 6 && <Eval g={g} upd={upd} onNextCycle={nextCycle} />}
+          {step === 3 && (
+            <div className="grid gap-4">
+              <details open={diagCount(g) === 0} className="rounded-xl border border-line bg-white p-4">
+                <summary className="cursor-pointer text-lg font-bold">A · Analyse de départ du groupe</summary>
+                <div className="mt-4 grid gap-5">
+                  <Diag g={g} upd={upd} next={() => undefined} />
+                  <details className="rounded-xl border border-line p-4"><summary className="cursor-pointer font-bold">Facultatif : décrire le groupe par un texte libre</summary><div className="mt-4"><Bilan g={g} upd={upd} next={() => undefined} /></div></details>
+                </div>
+              </details>
+              <details open={diagCount(g) > 0} className="rounded-xl border border-line bg-white p-4">
+                <summary className="cursor-pointer text-lg font-bold">B · Objectifs de l'année</summary>
+                <div className="mt-4"><Goals g={g} upd={upd} create={createSessions} /></div>
+              </details>
+            </div>)}
+          {step === 4 && <Eval g={g} upd={upd} onNextCycle={nextCycle} />}
 
           <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
             {step > 1 ? <button type="button" className="btn-outline" onClick={() => go((step - 1) as Step)}>← {STEPS[step - 2].t}</button> : <span />}
-            {step < 6 && step !== 3 && <button type="button" className="btn-clay" onClick={() => go((step + 1) as Step)}>Étape suivante : {STEPS[step].t} →</button>}
-            {step === 3 && !g.validated && <button type="button" className="btn-outline" onClick={() => go(4)}>Passer cette étape →</button>}
+            {step < 4 && <button type="button" className="btn-clay" onClick={() => go((step + 1) as Step)}>{STEPS[step].t} →</button>}
           </div>
         </div>
       </Page>
@@ -229,7 +230,7 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
   const setS = (i: number, p: Partial<Session>) => upd({ sessions: S.map((s, k) => (k === i ? { ...s, ...p } : s)) });
   const gen = () => { upd({ sessions: applyGoals(generate(withDiag(g)), g.goals || []) }); setAsk(false); setSheet(null); };
   const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= S.length) return; const c = S.slice(); [c[i], c[j]] = [c[j], c[i]]; upd({ sessions: c }); setSheet(j); };
-  const changeTheme = (i: number, theme: string) => { const s = S[i]; const fil = s.fil.split(" : ")[0]; setS(i, { ...sessionFor(g, theme, phaseOf(i, S.length), fil), done: s.done, note: s.note, blocks: s.blocks, mat: s.mat, date: s.date, ready: s.ready, after: s.after, gl: s.gl }); };
+  const changeTheme = (i: number, theme: string) => upd({ sessions: retheme(g, S, i, i, theme) });
   const done = S.filter((s) => s.done).length;
   const rate = presentRate(g);
 
@@ -237,8 +238,8 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
     return (
       <section className="grid max-w-2xl gap-3 rounded-xl border border-line bg-white p-5">
         <h2 className="m-0 text-xl">Les séances</h2>
-        <p className="m-0">Il faut d'abord la programmation (le thème de chaque séance).</p>
-        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={toPlan}>Aller à la programmation</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setSheet(0); }}>Je crée mes séances moi-même</button></div>
+        <p className="m-0">Aucune séance pour l'instant.</p>
+        <div className="flex flex-wrap gap-3"><button type="button" className="btn-clay" onClick={toPlan}>Affiner avec une analyse de départ</button><button type="button" className="btn-outline" onClick={() => { upd({ sessions: [freeSession(g.minutes)] }); setSheet(0); }}>Je crée mes séances moi-même</button></div>
       </section>
     );
   }
@@ -265,9 +266,10 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
           <p className="m-0 text-xs font-extrabold uppercase tracking-[.2em] text-[#d8c18a]">{allDone ? "Saison terminée" : "Ta prochaine séance"}</p>
           <h2 className="m-0 font-serif text-2xl font-bold text-white [overflow-wrap:anywhere]">Séance {nx + 1} · {cur.title || "à préparer"}</h2>
           {objCount(objOf(cur)) > 0 ? <div className="grid gap-2 sm:grid-cols-2">{DOMAINS.filter((d) => objOf(cur)[d.key].length).map((d) => <p key={d.key} className="m-0 border-l-4 bg-white/10 px-3 py-2 text-sm" style={{ borderColor: d.color }}><b className="block" style={{ color: "#fff" }}>{d.label}</b>{objOf(cur)[d.key].join(" · ")}</p>)}</div> : <p className="m-0 text-sm text-white/70">Aucun objectif choisi pour l'instant.</p>}
+          {cur.blocks?.length ? <p className="m-0 text-sm text-white/80">{cur.blocks.map((b) => `${b.n} ${b.m} min`).join(" · ")}</p> : null}
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-clay" onClick={() => setSheet(nx)}>Ouvrir la fiche</button>
-            <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => setPrep(true)}>Préparer en 4 cartes</button>
+            <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => setPrep(true)}>Changer thème et objectifs</button>
             <button type="button" className="rounded border border-white/40 bg-transparent px-4 py-2 font-bold text-white hover:bg-white/10" onClick={() => onPrint("une", nx + 1, nx + 1)}>Imprimer</button>
           </div>
         </article>)}
@@ -288,6 +290,10 @@ function Programme({ g, upd, onPrint, toPlan }: { g: Group; upd: (p: Partial<Gro
               {c.single ? <div className="rounded-xl border border-line bg-white px-2" style={{ borderLeft: `5px solid ${col}` }}>{row(c.a)}</div> : (
                 <details open={nx >= c.a && nx <= c.b} className="rounded-xl border border-line bg-white" style={{ borderLeft: `5px solid ${col}` }}>
                   <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5"><b className="min-w-0 flex-1 [overflow-wrap:anywhere]">{c.theme}</b><span className="text-sm text-muted">{count > 1 ? `séances ${c.a + 1} à ${c.b + 1}` : `séance ${c.a + 1}`} · {nDone}/{count} faite{nDone > 1 ? "s" : ""}</span></summary>
+                  <div className="grid gap-1 px-3 pb-2"><label className="grid gap-1 text-sm"><span className="font-bold">Thème de cette série</span>
+                    <select className="input" aria-label={`Thème : séances ${c.a + 1} à ${c.b + 1}`} value={THEMES[c.theme] ? c.theme : "__autre"} onChange={(e) => { if (e.target.value !== "__autre") upd({ sessions: retheme(g, S, c.a, c.b, e.target.value) }); }}>
+                      {L.ok.map((t) => <option key={t}>{t}</option>)}{THEMES[c.theme] && !L.ok.includes(c.theme) && <option>{c.theme}</option>}{!THEMES[c.theme] && <option value="__autre">{c.theme}</option>}</select>
+                    <span className="hint">Changer le thème refait aussitôt les séances de la série (déroulement compris).</span></label></div>
                   <div className="px-2 pb-1">{Array.from({ length: count }, (_, k) => row(c.a + k))}</div>
                 </details>)}
             </div>); })}
